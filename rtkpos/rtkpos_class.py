@@ -113,17 +113,10 @@ class Rtkpos:
             self.logger.error(f"Error reading file {self.pos_fn}: {e}")
             raise e
 
-        with pl.Config(tbl_cols=-1):
-            print(f"pos_df = \n{pos_df.collect()}")
-        sys.exit(7)
+        # with pl.Config(tbl_cols=-1):
+        #     print(f"pos_df = \n{pos_df.collect()}")
 
-        # get the keys from this schema as a list
-        pos_headers = list(pos_schema.keys())
-        print(f"pos_headers = \n{pos_headers}")
-
-        # add the header to the dataframe
-
-        return pos_df
+        return pos_df.collect()
 
     def rtkpos_schema(self) -> dict:
         """determines header and dtypes to the dataframe
@@ -213,3 +206,23 @@ class Rtkpos:
 
         # print(f"info_processing = \n{info_processing}")
         return info_processing, col_names
+
+    def add_columns(self, pos_df: pl.DataFrame) -> pl.DataFrame:
+        """checks if we can create a datetime, PRN, UTM columns in the dataframe
+
+        Args:
+            pos_df (pl.DataFrame): dataframe corresponding to RNX2RTKP POS file
+
+        Returns:
+            pl.DataFrame: dataframe with added information
+        """
+        # add date-time and PRN (as str) to the dataframe
+        if "WNc" in pos_df.columns and "TOW(s)" in pos_df.columns:
+            pos_df = pos_df.with_columns(
+                pl.struct(["WNc [w]", "TOW(s)"])
+                .map_elements(
+                    lambda x: gpsms2dt(week=x["WNc"], towms=x["TOW(s)"]),
+                    return_dtype=datetime.datetime,
+                )
+                .alias("DT")
+            ).lazy()
