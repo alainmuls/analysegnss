@@ -3,9 +3,11 @@
 import os
 import sys
 
+import polars as pl
+
 import globalvars
-from utils import argument_parser, init_logger
 from rtkpos.rtkpos_class import Rtkpos
+from utils import argument_parser, init_logger
 
 
 def rnx2rtkp_pos(argv: list):
@@ -41,7 +43,9 @@ def rnx2rtkp_pos(argv: list):
         sys.exit(1)
 
     # read the CVS position file into polars dataframe
-    rtkpos.read_pos_file()
+    pos_df = rtkpos.read_pos_file()
+    with pl.Config(tbl_cols=-1):
+        print(pos_df)
 
 
 if __name__ == "__main__":
