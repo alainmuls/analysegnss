@@ -36,6 +36,17 @@
                 "--sbf_fn",
                 "./data/1342172Z.24_"
             ]
-        }
+        },
+        {
+            "name": "Python Debugger: rnx2rtkp_pos SaltonSea rover",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "rnx2rtkp_pos.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--pos_fn",
+                "./data/ROVR00BEL_R_20241701647_05H_10Z_MO.pos"
+            ]
+        },
     ]
 }
