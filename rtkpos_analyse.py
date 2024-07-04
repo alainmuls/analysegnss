@@ -8,7 +8,7 @@ import polars as pl
 import globalvars
 from rtkpos.rtkpos_class import Rtkpos
 from utils import argument_parser, init_logger
-from gnss.plot import plot_utm
+from rtkpos import rtk_constants as rtkc
 
 
 def rtkp_pos(argv: list) -> pl.DataFrame:
@@ -48,6 +48,24 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
 
     # read the CVS position file into polars dataframe
     pos_df = rtkpos.read_pos_file()
+
+    with pl.Config(tbl_cols=-1):
+        print(f"pos_df.describe(): \n{pos_df.describe()}")
+
+    # analysis of the quality of the position data
+    print(f"\nAnalysis of the quality of the position data")
+    for qual, qual_data in pos_df.groupby("Q"):
+        print(f"\t{rtkc.dict_rtk_pvtmode[qual]['desc']}: {qual_data.shape[0]}")
+
+    import TableIt
+
+    myList = [
+        ["Name", "Email"],
+        ["Richard", "richard@fakeemail.com"],
+        ["Tasha", "tash@fakeemail.com"],
+    ]
+
+    TableIt.print(myList, useFieldNames=True)
 
     return pos_df
 
