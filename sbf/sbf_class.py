@@ -11,7 +11,7 @@ import utm
 
 import globalvars
 from sbf import sbf_constants as sbfc
-from utils.gnss_dt import gpsms2dt
+from gnss.gnss_dt import gpsms2dt
 from utils.utilities import locate, str_red, str_yellow
 
 
@@ -231,18 +231,18 @@ class SBF:
             # Convert latitude and longitude from radians to degrees
             block_df = block_df.with_columns(
                 [
-                    (pl.col("Latitude [rad]") * 180 / np.pi).alias("latitude_deg"),
-                    (pl.col("Longitude [rad]") * 180 / np.pi).alias("longitude_deg"),
+                    (pl.col("Latitude [rad]") * 180 / np.pi).alias("latitude [deg]"),
+                    (pl.col("Longitude [rad]") * 180 / np.pi).alias("longitude [deg]"),
                 ]
             ).lazy()
 
             # Apply the conversion function lazily using map_elements with specified return_dtype
             block_df = block_df.with_columns(
                 [
-                    pl.struct(["latitude_deg", "longitude_deg"])
+                    pl.struct(["latitude [deg]", "longitude [deg]"])
                     .map_elements(
                         lambda row: latlon_to_utm(
-                            row["latitude_deg"], row["longitude_deg"]
+                            row["latitude [deg]"], row["longitude [deg]"]
                         ),
                         return_dtype=pl.Struct(
                             [
@@ -258,14 +258,14 @@ class SBF:
             # Extract the UTM.East and UTM.North from the computed struct
             block_df = block_df.with_columns(
                 [
-                    pl.col("utm_coords").struct.field("easting").alias("UTM.E"),
-                    pl.col("utm_coords").struct.field("northing").alias("UTM.N"),
+                    pl.col("utm_coords").struct.field("easting").alias("UTM.E [m]"),
+                    pl.col("utm_coords").struct.field("northing").alias("UTM.N [m]"),
                 ]
             ).lazy()
 
             # Drop intermediate columns
             block_df = block_df.drop(
-                ["latitude_deg", "longitude_deg", "utm_coords"]
+                ["Latitude [rad]", "Longitude [rad]", "utm_coords"]
             ).lazy()
 
         # add orthometric height to the dataframe
@@ -277,7 +277,7 @@ class SBF:
                 .alias("orthoH [m]")
             ).lazy()
 
-        self.logger.info("\tcollecting the dataframe.")
+        self.logger.warning(f"\tcollecting the dataframe. {str_red('Be patient.')}")
         return block_df.collect()
 
     def used_columns(self, sbf_block: str) -> list:
