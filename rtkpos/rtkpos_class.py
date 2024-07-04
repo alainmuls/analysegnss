@@ -113,10 +113,13 @@ class Rtkpos:
             self.logger.error(f"Error reading file {self.pos_fn}: {e}")
             raise e
 
+        # add columns to the dataframe
+        pos_df = self.add_columns(df_pos=pos_df)
+
         # with pl.Config(tbl_cols=-1):
         #     print(f"pos_df = \n{pos_df.collect()}")
 
-        return pos_df.collect()
+        return pos_df
 
     def rtkpos_schema(self) -> dict:
         """determines header and dtypes to the dataframe
@@ -207,22 +210,70 @@ class Rtkpos:
         # print(f"info_processing = \n{info_processing}")
         return info_processing, col_names
 
-    def add_columns(self, pos_df: pl.DataFrame) -> pl.DataFrame:
+    def add_columns(self, df_pos: pl.DataFrame) -> pl.DataFrame:
         """checks if we can create a datetime, PRN, UTM columns in the dataframe
 
         Args:
-            pos_df (pl.DataFrame): dataframe corresponding to RNX2RTKP POS file
+            df_pos (pl.DataFrame): dataframe corresponding to RNX2RTKP POS file
 
         Returns:
             pl.DataFrame: dataframe with added information
         """
         # add date-time and PRN (as str) to the dataframe
-        if "WNc" in pos_df.columns and "TOW(s)" in pos_df.columns:
-            pos_df = pos_df.with_columns(
-                pl.struct(["WNc [w]", "TOW(s)"])
+        if "WNc" in df_pos.columns and "TOW(s)" in df_pos.columns:
+            df_pos = df_pos.with_columns(
+                pl.struct(["WNc", "TOW(s)"])
                 .map_elements(
                     lambda x: gpsms2dt(week=x["WNc"], towms=x["TOW(s)"]),
                     return_dtype=datetime.datetime,
                 )
                 .alias("DT")
             ).lazy()
+
+        # add UTM coordinates
+        if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
+            # Function to convert lat/lon in degrees to UTM
+            def latlon_to_utm(lat, lon):
+                easting, northing, _, _ = utm.from_latlon(lat, lon)
+                return {"easting": easting, "northing": northing}
+
+            # Apply the conversion function lazily using map_elements with specified return_dtype
+            df_pos = df_pos.with_columns(
+                [
+                    pl.struct(["latitude(deg)", "longitude(deg)"])
+                    .map_elements(
+                        lambda row: latlon_to_utm(
+                            row["latitude(deg)"], row["longitude(deg)"]
+                        ),
+                        return_dtype=pl.Struct(
+                            [
+                                pl.Field("easting", pl.Float64),
+                                pl.Field("northing", pl.Float64),
+                            ]
+                        ),
+                    )
+                    .alias("utm_coords")
+                ]
+            )
+
+            # Extract the UTM.East and UTM.North from the computed struct
+            df_pos = df_pos.with_columns(
+                [
+                    pl.col("utm_coords").struct.field("easting").alias("UTM.E"),
+                    pl.col("utm_coords").struct.field("northing").alias("UTM.N"),
+                ]
+            )
+
+            # Drop intermediate columns
+            df_pos = df_pos.drop(["utm_coords"])
+
+            # initialise the geodheight class
+            gh_model = geoid.GeoidHeight(
+                "/usr/share/GeographicLib/geoids/egm2008-1.pgm"
+            )
+            df_pos["ortoH"] = [
+                ellH - geoid_undulation(lat, lon, gh_model)
+                for lat, lon, ellH in zip(df_pos["lat"], dfPos["lon"], dfPos["ellH"])
+            ]
+
+        return df_pos.collect()
