@@ -47,7 +47,8 @@ def pvtgeod_analyse(argv: list):
 
     df_geod = sbf.extract_pvtgeodetic2()
     print(f"df_geod.columns = \n{df_geod.columns}")
-    print(f"df_geod = \n{df_geod}")
+    with pl.Config(tbl_cols=-1):
+        print(df_geod)
     # print(f"df_geod[1000:1015] = \n{df_geod[1000:1015]}")
     print(
         f"bin_nibble(df_geod[1000]['SignalInfo'][0]) = {bin_nibble(df_geod[1000]['SignalInfo'][0])}"
@@ -61,8 +62,10 @@ def pvtgeod_analyse(argv: list):
     # create a grouping based on the Type of the positioning
     df = df_geod.groupby("Type")
     print(f"df = \n{df}")
-    for pvtmode, pvtdata in df:
-        print(f"pvtmode = {pvtmode}, pvtdata = \n{pvtdata}")
+
+    with pl.Config(tbl_cols=-1):
+        for pvtmode, pvtdata in df:
+            print(f"pvtmode = {pvtmode}, pvtdata = \n{pvtdata}")
 
     # create a plot
     sns.set_theme()
