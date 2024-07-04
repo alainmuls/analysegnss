@@ -13,7 +13,7 @@
             "args": [
                 "--sbf_fn",
                 "./data/1342172q.24_",
-                "-vv"
+                "-v"
             ]
         },
         {
@@ -25,7 +25,7 @@
             "args": [
                 "--sbf_fn",
                 "./data/1342172o.24_",
-                "-vv"
+                "-v"
             ]
         },
         {
@@ -37,7 +37,7 @@
             "args": [
                 "--sbf_fn",
                 "./data/1342172Z.24_",
-                "-vv"
+                "-v"
             ]
         },
         {
@@ -49,7 +49,20 @@
             "args": [
                 "--pos_fn",
                 "./data/ROVR00BEL_R_20241701647_05H_10Z_MO.pos",
-                "-vv"
+                "-v",
+            ]
+        },
+        {
+            "name": "Python Debugger: rtkpos_plot SaltonSea rover",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "rtkpos_plot.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--pos_fn",
+                "./data/ROVR00BEL_R_20241701647_05H_10Z_MO.pos",
+                "-v",
+                "--plot",
             ]
         },
     ]
