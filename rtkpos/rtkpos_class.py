@@ -9,10 +9,10 @@ import numpy as np
 import pandas as pd
 import polars as pl
 import utm
+from gnss import geoid
 
 import globalvars
 from utils.gnss_dt import gpsms2dt
-from utils.utilities import locate, str_red, str_yellow
 
 
 @dataclass
@@ -254,7 +254,7 @@ class Rtkpos:
                     )
                     .alias("utm_coords")
                 ]
-            )
+            ).lazy()
 
             # Extract the UTM.East and UTM.North from the computed struct
             df_pos = df_pos.with_columns(
@@ -262,18 +262,30 @@ class Rtkpos:
                     pl.col("utm_coords").struct.field("easting").alias("UTM.E"),
                     pl.col("utm_coords").struct.field("northing").alias("UTM.N"),
                 ]
-            )
+            ).lazy()
 
             # Drop intermediate columns
-            df_pos = df_pos.drop(["utm_coords"])
+            df_pos = df_pos.drop(["utm_coords"]).lazy()
 
+        # add geoid undulation and orthometric height
+        if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
             # initialise the geodheight class
-            gh_model = geoid.GeoidHeight(
-                "/usr/share/GeographicLib/geoids/egm2008-1.pgm"
-            )
-            df_pos["ortoH"] = [
-                ellH - geoid_undulation(lat, lon, gh_model)
-                for lat, lon, ellH in zip(df_pos["lat"], dfPos["lon"], dfPos["ellH"])
-            ]
+            gh_model = geoid.GeoidHeight("./gnss/geoids/egm2008-1.pgm")
+
+            df_pos = df_pos.with_columns(
+                pl.struct(["latitude(deg)", "longitude(deg)"])
+                .apply(
+                    lambda x: gh_model.get(
+                        x["latitude(deg)"], x["longitude(deg)"], gh_model
+                    )
+                )
+                .alias("undulation(m)")
+            ).lazy()
+
+            df_pos = df_pos.with_columns(
+                pl.struct(["height(m)", "undulation(m)"])
+                .apply(lambda x: x["height(m)"] - x["undulation(m)"])
+                .alias("orthoH(m)")
+            ).lazy()
 
         return df_pos.collect()

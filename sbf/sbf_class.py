@@ -229,7 +229,7 @@ class SBF:
                     (pl.col("Latitude [rad]") * 180 / np.pi).alias("latitude_deg"),
                     (pl.col("Longitude [rad]") * 180 / np.pi).alias("longitude_deg"),
                 ]
-            )
+            ).lazy()
 
             # Apply the conversion function lazily using map_elements with specified return_dtype
             block_df = block_df.with_columns(
@@ -248,7 +248,7 @@ class SBF:
                     )
                     .alias("utm_coords")
                 ]
-            )
+            ).lazy()
 
             # Extract the UTM.East and UTM.North from the computed struct
             block_df = block_df.with_columns(
@@ -256,10 +256,20 @@ class SBF:
                     pl.col("utm_coords").struct.field("easting").alias("UTM.E"),
                     pl.col("utm_coords").struct.field("northing").alias("UTM.N"),
                 ]
-            )
+            ).lazy()
 
             # Drop intermediate columns
-            block_df = block_df.drop(["latitude_deg", "longitude_deg", "utm_coords"])
+            block_df = block_df.drop(
+                ["latitude_deg", "longitude_deg", "utm_coords"]
+            ).lazy()
+
+        # add orthometric height to the dataframe
+        if "Height [m]" in block_df.columns and "Undulation [m]" in block_df.columns:
+            block_df = block_df.with_columns(
+                pl.struct(["Height [m]", "Undulation [m]"])
+                .apply(lambda x: x["Height [m]"] - x["Undulation [m]"])
+                .alias("orthoH [m]")
+            ).lazy()
 
         return block_df.collect()
 
