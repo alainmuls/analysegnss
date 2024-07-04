@@ -8,13 +8,17 @@ import polars as pl
 import globalvars
 from rtkpos.rtkpos_class import Rtkpos
 from utils import argument_parser, init_logger
+from gnss.plot import plot_utm
 
 
-def rnx2rtkp_pos(argv: list):
+def rtkp_pos(argv: list) -> pl.DataFrame:
     """analyses the rnx2rtkp output file and extracts the position information
 
     Args:
         argv (list): CLI arguments
+
+    Returns:
+        pl.DataFrame: RTK position dataframe
     """
     pass
     # init the global variables
@@ -24,7 +28,7 @@ def rnx2rtkp_pos(argv: list):
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    args_parsed = argument_parser.argument_parser_pos(args=argv[1:])
+    args_parsed = argument_parser.argument_parser_rtkpos(args=argv[1:])
     # print(f"\nParsed arguments: {args_parsed}")
 
     # create the file/console logger
@@ -44,9 +48,11 @@ def rnx2rtkp_pos(argv: list):
 
     # read the CVS position file into polars dataframe
     pos_df = rtkpos.read_pos_file()
-    with pl.Config(tbl_cols=-1):
-        print(pos_df)
+
+    return pos_df
 
 
 if __name__ == "__main__":
-    rnx2rtkp_pos(argv=sys.argv)
+    df_rtkpos = rtkp_pos(argv=sys.argv)
+    with pl.Config(tbl_cols=-1):
+        print(df_rtkpos)
