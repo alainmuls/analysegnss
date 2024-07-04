@@ -24,7 +24,7 @@ def pvtgeod_analyse(argv: list):
     # parse the CLI arguments
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
-    args_parsed = argument_parser.argument_parser(args=argv[1:])
+    args_parsed = argument_parser.argument_parser_sbf(args=argv[1:])
     # print(f"\nParsed arguments: {args_parsed}")
 
     # create the file/console logger
