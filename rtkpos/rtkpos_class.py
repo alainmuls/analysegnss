@@ -12,7 +12,8 @@ import utm
 from gnss import geoid
 
 import globalvars
-from utils.gnss_dt import gpsms2dt
+from gnss.gnss_dt import gpsms2dt
+from utils.utilities import str_red
 
 
 @dataclass
@@ -262,8 +263,8 @@ class Rtkpos:
             # Extract the UTM.East and UTM.North from the computed struct
             df_pos = df_pos.with_columns(
                 [
-                    pl.col("utm_coords").struct.field("easting").alias("UTM.E"),
-                    pl.col("utm_coords").struct.field("northing").alias("UTM.N"),
+                    pl.col("utm_coords").struct.field("easting").alias("UTM.E(m)"),
+                    pl.col("utm_coords").struct.field("northing").alias("UTM.N(m)"),
                 ]
             ).lazy()
 
@@ -294,5 +295,5 @@ class Rtkpos:
                 .alias("orthoH(m)")
             ).lazy()
 
-        self.logger.info("\tcollecting the dataframe.")
+        self.logger.warning(f"\tcollecting the dataframe. {str_red('Be patient.')}")
         return df_pos.collect()
