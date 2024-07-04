@@ -171,6 +171,7 @@ class SBF:
                     null_values="NaN",
                 )
 
+                # add columns to the dataframe
                 sbf_df = self.add_columns(block_df=sbf_df)
 
                 sbf_dfs[sbf_block] = sbf_df
@@ -217,38 +218,6 @@ class SBF:
             "Latitude [rad]" in block_df.columns
             and "Longitude [rad]" in block_df.columns
         ):
-            # block_df = block_df.collect()
-
-            # # Convert latitude and longitude from radians to degrees
-            # block_df = block_df.with_columns(
-            #     [
-            #         (pl.col("Latitude [rad]") * 180 / np.pi).alias("latitude_deg"),
-            #         (pl.col("Longitude [rad]") * 180 / np.pi).alias("longitude_deg"),
-            #     ]
-            # )
-
-            # # Function to convert lat/lon to UTM
-            # def latlon_to_utm(group_df):
-            #     utm_east = []
-            #     utm_north = []
-            #     for lat, lon in zip(
-            #         group_df["latitude_deg"], group_df["longitude_deg"]
-            #     ):
-            #         easting, northing, _, _ = utm.from_latlon(lat, lon)
-            #         utm_east.append(easting)
-            #         utm_north.append(northing)
-            #     group_df = group_df.with_columns(
-            #         [pl.Series("UTM.East", utm_east), pl.Series("UTM.North", utm_north)]
-            #     )
-            #     return group_df
-
-            # # Group by a constant to ensure map_groups is applied to the entire DataFrame
-            # block_df = block_df.with_columns(pl.lit(1).alias("group"))
-            # block_df = block_df.groupby("group").apply(latlon_to_utm).drop("group")
-
-            # # Drop the intermediate columns
-            # block_df = block_df.drop(["latitude_deg", "longitude_deg"])
-
             # Function to convert lat/lon in degrees to UTM
             def latlon_to_utm(lat, lon):
                 easting, northing, _, _ = utm.from_latlon(lat, lon)
