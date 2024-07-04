@@ -12,7 +12,8 @@
             "console": "integratedTerminal",
             "args": [
                 "--sbf_fn",
-                "./data/1342172q.24_"
+                "./data/1342172q.24_",
+                "-vv"
             ]
         },
         {
@@ -23,7 +24,8 @@
             "console": "integratedTerminal",
             "args": [
                 "--sbf_fn",
-                "./data/1342172o.24_"
+                "./data/1342172o.24_",
+                "-vv"
             ]
         },
         {
@@ -34,7 +36,8 @@
             "console": "integratedTerminal",
             "args": [
                 "--sbf_fn",
-                "./data/1342172Z.24_"
+                "./data/1342172Z.24_",
+                "-vv"
             ]
         },
         {
@@ -45,7 +48,8 @@
             "console": "integratedTerminal",
             "args": [
                 "--pos_fn",
-                "./data/ROVR00BEL_R_20241701647_05H_10Z_MO.pos"
+                "./data/ROVR00BEL_R_20241701647_05H_10Z_MO.pos",
+                "-vv"
             ]
         },
     ]

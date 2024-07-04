@@ -221,6 +221,7 @@ class Rtkpos:
         """
         # add date-time and PRN (as str) to the dataframe
         if "WNc" in df_pos.columns and "TOW(s)" in df_pos.columns:
+            self.logger.info("\tadding datetime to the dataframe")
             df_pos = df_pos.with_columns(
                 pl.struct(["WNc", "TOW(s)"])
                 .map_elements(
@@ -232,6 +233,8 @@ class Rtkpos:
 
         # add UTM coordinates
         if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
+            self.logger.info("\tadding UTM coordinates to the dataframe")
+
             # Function to convert lat/lon in degrees to UTM
             def latlon_to_utm(lat, lon):
                 easting, northing, _, _ = utm.from_latlon(lat, lon)
@@ -269,6 +272,9 @@ class Rtkpos:
 
         # add geoid undulation and orthometric height
         if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
+            self.logger.info(
+                "\tadding geoid undulation & orthometric height to the dataframe"
+            )
             # initialise the geodheight class
             gh_model = geoid.GeoidHeight("./gnss/geoids/egm2008-1.pgm")
 
@@ -288,4 +294,5 @@ class Rtkpos:
                 .alias("orthoH(m)")
             ).lazy()
 
+        self.logger.info("\tcollecting the dataframe.")
         return df_pos.collect()

@@ -189,11 +189,13 @@ class SBF:
         """
         # print(f"block_df = \n{block_df}")
         # remove the rows where 'Type' equals 0 (no PVT available)
+        self.logger.info("\tremoving rows with no PVT solution")
         block_df = block_df.filter(pl.col("Type") != 0).lazy()
         # print(f"block_df = \n{block_df}")
 
         # add date-time and PRN (as str) to the dataframe
         if "WNc [w]" in block_df.columns and "TOW [0.001 s]" in block_df.columns:
+            self.logger.info("\tadding datetime column to the dataframe")
             block_df = block_df.with_columns(
                 pl.struct(["WNc [w]", "TOW [0.001 s]"])
                 .map_elements(
@@ -205,6 +207,7 @@ class SBF:
 
         # add date-time and PRN (as str) to the dataframe
         if "SVID" in block_df.columns:
+            self.logger.info("\tadding PRN column to the dataframe")
             block_df = block_df.with_columns(
                 pl.struct(["SVID"])
                 .map_elements(
@@ -218,6 +221,8 @@ class SBF:
             "Latitude [rad]" in block_df.columns
             and "Longitude [rad]" in block_df.columns
         ):
+            self.logger.info("\tadding UTM coordinates to the dataframe")
+
             # Function to convert lat/lon in degrees to UTM
             def latlon_to_utm(lat, lon):
                 easting, northing, _, _ = utm.from_latlon(lat, lon)
@@ -265,12 +270,14 @@ class SBF:
 
         # add orthometric height to the dataframe
         if "Height [m]" in block_df.columns and "Undulation [m]" in block_df.columns:
+            self.logger.info("\tadding orthometric height to the dataframe")
             block_df = block_df.with_columns(
                 pl.struct(["Height [m]", "Undulation [m]"])
                 .apply(lambda x: x["Height [m]"] - x["Undulation [m]"])
                 .alias("orthoH [m]")
             ).lazy()
 
+        self.logger.info("\tcollecting the dataframe.")
         return block_df.collect()
 
     def used_columns(self, sbf_block: str) -> list:
