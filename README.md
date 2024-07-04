@@ -1,4 +1,4 @@
-# analyseGNSS
+# analyseSBF
 
 
 
@@ -15,14 +15,14 @@ Already a pro? Just edit this README.md and make it your own. Want to make it ea
 
 ```
 cd existing_repo
-git remote add origin https://gitlab.cylab.be/personal/analysegnss.git
+git remote add origin https://gitlab.cylab.be/personal/analysesbf.git
 git branch -M main
 git push -uf origin main
 ```
 
 ## Integrate with your tools
 
-- [ ] [Set up project integrations](https://gitlab.cylab.be/personal/analysegnss/-/settings/integrations)
+- [ ] [Set up project integrations](https://gitlab.cylab.be/personal/analysesbf/-/settings/integrations)
 
 ## Collaborate with your team
 

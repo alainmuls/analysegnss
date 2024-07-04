@@ -1,0 +1,423 @@
+import datetime
+import glob
+import logging
+import os
+import subprocess
+import sys
+from dataclasses import dataclass, field
+import numpy as np
+import polars as pl
+import utm
+
+import globalvars
+from sbf import sbf_constants as sbfc
+from utils.gnss_dt import gpsms2dt
+from utils.utilities import locate, str_red, str_yellow
+
+
+@dataclass
+class SBF:
+    sbf_fn: str
+    start_time: datetime.time = field(default=None)
+    end_time: datetime.time = field(default=None)
+
+    logger: logging.Logger = field(default=None)
+
+    def __post_init__(self):
+        self.validate_file()
+        self.validate_start_time()
+        self.validate_end_time()
+
+    def validate_file(self):
+        if not os.path.isfile(self.sbf_fn):
+            if self.logger:
+                self.logger.error(f"File does not exist: {self.sbf_fn}")
+            raise ValueError(f"File does not exist: {self.sbf_fn}")
+
+        with open(self.sbf_fn, "rb") as f:
+            first_two_bytes = f.read(2)
+
+        if first_two_bytes != b"$@":
+            if self.logger:
+                self.logger.error(
+                    f'Invalid file type, first two bytes must be "$@" for file: {self.sbf_fn}'
+                )
+            raise ValueError(
+                f'File type is not valid, first two bytes must be "$@": {self.sbf_fn}'
+            )
+
+        if self.logger:
+            self.logger.info(f"File validated successfully: {self.sbf_fn}")
+
+    def validate_start_time(self):
+        print(f"self.start_time = {self.start_time}")
+        if self.start_time is not None:
+            if not isinstance(self.start_time, datetime.time):
+                self.logger.error(
+                    f"Invalid start_time {self.start_time}: not a valid datetime.time object."
+                )
+                raise ValueError(
+                    f"Invalid start_time {self.start_time}: not a valid datetime.time object."
+                )
+            else:
+                self.logger.info(
+                    f"Start time {self.start_time} validated successfully."
+                )
+        else:
+            self.logger.info("No start time specified.")
+
+    def validate_end_time(self):
+        print(f"self.end_time = {self.end_time}")
+        if self.end_time is not None:
+            if not isinstance(self.end_time, datetime.time):
+                self.logger.error(
+                    f"Invalid end_time {self.end_time}: not a valid datetime.time object."
+                )
+                raise ValueError(
+                    f"Invalid end_time {self.end_time}: not a valid datetime.time object."
+                )
+            else:
+                self.logger.info(f"end time {self.end_time} validated successfully.")
+        else:
+            self.logger.info("No end time specified.")
+
+    def extract_pvtgeodetic2(self) -> pl.DataFrame:
+        """extracts the PVTGeodetic2 SBF block using bin2asc"""
+        sbfblock = ["PVTGeodetic2"]
+        df_blocks = self.bin2asc_dataframe(lst_sbfblocks=sbfblock)
+        return df_blocks["PVTGeodetic2"]
+
+    def bin2asc_dataframe(self, lst_sbfblocks: list) -> dict:
+        """
+        bin2asc_dataframe converts binary SBF to CVS files for the sbfblocks in
+        lst_sbfblocks and load these files in dataframes
+
+        Arguments:
+            lst_sbfblocks: list of SBF blocks to convert to a dataframe
+            (Remark; sbfblocks starting with Meas3... are not decoded using bin2asc)
+
+        Raises:
+            Exception when the bin2asc program fails
+
+        Returns:
+            dict of sbfblocks and corresponding dataframes
+        """
+        # sbf to CSV conversion utility
+        run_bin2asc = locate("bin2asc")
+        self.logger.info(
+            f"{str_yellow(run_bin2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files and importing into dataframes for SBF blocks\n{str_yellow(' '.join(lst_sbfblocks))}"
+        )
+
+        # create options for bin2asc
+        cmd_bin2asc = [
+            run_bin2asc,
+            "-f",
+            self.sbf_fn,
+            "-n",
+            "NaN",
+            "-E",
+            "-r",
+            "-t",
+            "-v",
+        ]
+        # "-b",
+        # self.epoch_start.strftime("%H:%M:%S"),
+        # "-e",
+        # self.epoch_end.strftime("%H:%M:%S"),
+
+        for sbf_block in lst_sbfblocks:
+            cmd_bin2asc.append("-m")
+            cmd_bin2asc.append(sbf_block)
+
+        # Convert binary to text messages
+        self.logger.debug(f"... running: {str_yellow(' '.join(cmd_bin2asc))}")
+        process = subprocess.run(cmd_bin2asc)
+
+        if process.returncode != 0:
+            self.logger.error(
+                f"\t... subprocess {str_yellow(' '.join(cmd_bin2asc))} returned exit code"
+                f"\t... {str_red(process.returncode)}. Program exits."
+            )
+            sys.exit(globalvars._ERROR_CODES["E_PROCESS"])
+        else:
+            # find created files
+            bin2asc_fns = {}
+            for sbf_block in lst_sbfblocks:
+                bin2asc_fns[sbf_block] = glob.glob(
+                    rf"{self.sbf_fn}_SBF_{sbf_block}.txt"
+                )
+
+            # create dictionary for containing the obtained dataframes
+            sbf_dfs = {}
+
+            # iterate over the CVS files and convert them to dataframe
+            for sbf_block, bin2asc_fn in bin2asc_fns.items():
+                self.logger.debug(
+                    f"\t... converting {str_yellow(bin2asc_fn[0])} to dataframe"
+                )
+
+                # remove unused columns
+                keep_cols = self.used_columns(sbf_block)
+                # print(f"list(keep_cols.keys()) = \n{list(keep_cols.keys())}")
+
+                sbf_df = pl.read_csv(
+                    source=bin2asc_fn[0],
+                    separator=",",
+                    columns=list(keep_cols.keys()),
+                    comment_prefix="#",
+                    has_header=True,
+                    skip_rows_after_header=1,  # Skip 1 row after the header
+                    dtypes=keep_cols,
+                    null_values="NaN",
+                )
+
+                sbf_df = self.add_columns(block_df=sbf_df)
+
+                sbf_dfs[sbf_block] = sbf_df
+
+        return sbf_dfs
+
+    def add_columns(self, block_df: pl.DataFrame) -> pl.DataFrame:
+        """checks if we can create a datetime,PRN, UTM columns in the dataframe
+
+        Args:
+            block_df (pl.DataFrame): dataframe corresponding to a SBF block
+
+        Returns:
+            pl.DataFrame: dataframe with datetime and PRN columns added if possible
+        """
+        # print(f"block_df = \n{block_df}")
+        # remove the rows where 'Type' equals 0 (no PVT available)
+        block_df = block_df.filter(pl.col("Type") != 0).lazy()
+        # print(f"block_df = \n{block_df}")
+
+        # add date-time and PRN (as str) to the dataframe
+        if "WNc [w]" in block_df.columns and "TOW [0.001 s]" in block_df.columns:
+            block_df = block_df.with_columns(
+                pl.struct(["WNc [w]", "TOW [0.001 s]"])
+                .map_elements(
+                    lambda x: gpsms2dt(week=x["WNc [w]"], towms=x["TOW [0.001 s]"]),
+                    return_dtype=datetime.datetime,
+                )
+                .alias("DT")
+            ).lazy()
+
+        # add date-time and PRN (as str) to the dataframe
+        if "SVID" in block_df.columns:
+            block_df = block_df.with_columns(
+                pl.struct(["SVID"])
+                .map_elements(
+                    lambda x: sbfc.ssnerr_prn2str(prn=x["SVID"]), return_dtype=str
+                )
+                .alias("PRN")
+            ).lazy()
+
+        # add UTM coordinates
+        if (
+            "Latitude [rad]" in block_df.columns
+            and "Longitude [rad]" in block_df.columns
+        ):
+            # block_df = block_df.collect()
+
+            # # Convert latitude and longitude from radians to degrees
+            # block_df = block_df.with_columns(
+            #     [
+            #         (pl.col("Latitude [rad]") * 180 / np.pi).alias("latitude_deg"),
+            #         (pl.col("Longitude [rad]") * 180 / np.pi).alias("longitude_deg"),
+            #     ]
+            # )
+
+            # # Function to convert lat/lon to UTM
+            # def latlon_to_utm(group_df):
+            #     utm_east = []
+            #     utm_north = []
+            #     for lat, lon in zip(
+            #         group_df["latitude_deg"], group_df["longitude_deg"]
+            #     ):
+            #         easting, northing, _, _ = utm.from_latlon(lat, lon)
+            #         utm_east.append(easting)
+            #         utm_north.append(northing)
+            #     group_df = group_df.with_columns(
+            #         [pl.Series("UTM.East", utm_east), pl.Series("UTM.North", utm_north)]
+            #     )
+            #     return group_df
+
+            # # Group by a constant to ensure map_groups is applied to the entire DataFrame
+            # block_df = block_df.with_columns(pl.lit(1).alias("group"))
+            # block_df = block_df.groupby("group").apply(latlon_to_utm).drop("group")
+
+            # # Drop the intermediate columns
+            # block_df = block_df.drop(["latitude_deg", "longitude_deg"])
+
+            # Function to convert lat/lon in degrees to UTM
+            def latlon_to_utm(lat, lon):
+                easting, northing, _, _ = utm.from_latlon(lat, lon)
+                return {"easting": easting, "northing": northing}
+
+            # Convert latitude and longitude from radians to degrees
+            block_df = block_df.with_columns(
+                [
+                    (pl.col("Latitude [rad]") * 180 / np.pi).alias("latitude_deg"),
+                    (pl.col("Longitude [rad]") * 180 / np.pi).alias("longitude_deg"),
+                ]
+            )
+
+            # Apply the conversion function lazily using map_elements with specified return_dtype
+            block_df = block_df.with_columns(
+                [
+                    pl.struct(["latitude_deg", "longitude_deg"])
+                    .map_elements(
+                        lambda row: latlon_to_utm(
+                            row["latitude_deg"], row["longitude_deg"]
+                        ),
+                        return_dtype=pl.Struct(
+                            [
+                                pl.Field("easting", pl.Float64),
+                                pl.Field("northing", pl.Float64),
+                            ]
+                        ),
+                    )
+                    .alias("utm_coords")
+                ]
+            )
+
+            # Extract the UTM.East and UTM.North from the computed struct
+            block_df = block_df.with_columns(
+                [
+                    pl.col("utm_coords").struct.field("easting").alias("UTM.E"),
+                    pl.col("utm_coords").struct.field("northing").alias("UTM.N"),
+                ]
+            )
+
+            # Drop intermediate columns
+            block_df = block_df.drop(["latitude_deg", "longitude_deg", "utm_coords"])
+
+        return block_df.collect()
+
+    def used_columns(self, sbf_block: str) -> list:
+        """returns the column names we use when extracting a SBF block from the SBF file
+
+        Args:
+            sbf_block (str): the SBF block we are extracting
+
+        Returns:
+            list: column names we use
+        """
+        if sbf_block == "MeasEpoch2":
+            keep_cols = [
+                "TOW [0.001 s]",
+                "WNc [w]",
+                "CumClkJumps [0.001 s]",
+                "SVID",
+                "MeasType",
+                "LockTime [s]",
+                "SignalType",
+                "CN0_dBHz [dB-Hz]",
+                "PR_m [m]",
+                "Doppler_Hz",
+                "L_cycles [cyc]",
+            ]
+        elif sbf_block == "PVTGeodetic2":
+            # ['TOW [0.001 s]', 'WNc [w]', 'Type', 'AutoBase', 'Flag2D', 'Error',
+            # 'Latitude [rad]', 'Longitude [rad]', 'Height [m]', 'Undulation [m]',
+            # 'Vn [m/s]', 'Ve [m/s]', 'Vu [m/s]', 'COG [°]',
+            # 'RxClkBias [ms]', 'RxClkDrift [ppm]', 'TimeSystem', 'Datum',
+            # 'NrSV', 'LC', 'FC', 'I', 'AI', 'PA',
+            # 'RtkBaseType', 'ReferenceID', 'MeanCorrAge [0.01 s]',
+            # 'SignalInfo', 'RAIM integrity flag', 'Integrity failed',
+            # 'Storm Flag', 'Accuracy limit exceeded', 'NrBases',
+            # 'SeedAge [s]', 'SeedType', 'Latency [0.0001 s]',
+            # 'HAccuracy [0.01 m]', 'VAccuracy [0.01 m]', 'Misc',
+            # 'Baseline', 'Phase center variation', 'SIGIL',
+            # 'RTCMV', 'PPVTAge', 'ARPMarkerOffset']
+
+            # dict of your column names keyed by dtype
+            col_types = {
+                pl.Float64: [
+                    "Latitude [rad]",
+                    "Longitude [rad]",
+                    "Height [m]",
+                ],
+                pl.Float32: [
+                    "Undulation [m]",
+                    "COG [°]",
+                ],
+                pl.UInt32: [
+                    "TOW [0.001 s]",
+                    "SignalInfo",
+                ],
+                pl.UInt16: [
+                    "WNc [w]",
+                    "MeanCorrAge [0.01 s]",
+                ],
+                pl.UInt8: [
+                    "Type",
+                    "Error",
+                    "NrSV",
+                ],
+            }
+
+        elif sbf_block == "PVTCartesian2":
+            keep_cols = [
+                "TOW [0.001 s]",
+                "WNc [w]",
+                "Type",
+                "Flag2D",
+                "Error",
+                "X [m]",
+                "Y [m]",
+                "Z [m]",
+                "Undulation [m]",
+                "RxClkBias [ms]",
+                "RxClkDrift [ppm]",
+                "NrSV",
+            ]
+        elif sbf_block == "PVTResiduals2":
+            keep_cols = [
+                "TOW [0.001 s]",
+                "WNc [w]",
+                "N",
+                "SVID",
+                "FreqNr",
+                "Type",
+                "MeasInfo",
+                "ResidualType",
+                "Pseudorange residuals",
+                "Carrier-phase residuals",
+                "Doppler residuals",
+                "Fixed ambiguity",
+                "Residual [m]",
+                "Residual [cyc]",
+                "Residual [m/s]",
+            ]
+        elif sbf_block == "SatVisibility1":
+            keep_cols = [
+                "TOW [0.001 s]",
+                "WNc [w]",
+                "SVID",
+                "Azimuth_deg",
+                "Elevation_deg",
+                "RiseSet",
+                "SatelliteInfo",
+            ]
+        elif sbf_block == "ReceiverTime":
+            keep_cols = [
+                "TOW [0.001 s]",
+                "WNc [w]",
+                "UTCYear [Y]",
+                "UTCMonth [month]",
+                "UTCDay [d]",
+                "UTCHour [h]",
+                "UTCMin [min.]",
+                "UTCSec [s]",
+                "DeltaLS [s]",
+            ]
+
+        keep_cols = {}
+        for dtype, columns in col_types.items():
+            for col in columns:
+                keep_cols[col] = dtype
+
+        print(keep_cols)
+
+        return keep_cols
