@@ -53,10 +53,10 @@
             ]
         },
         {
-            "name": "Python Debugger: rtkpos_plot SaltonSea rover",
+            "name": "Python Debugger: rtkppk_plot SaltonSea rover",
             "type": "debugpy",
             "request": "launch",
-            "program": "rtkpos_plot.py",
+            "program": "rtkppk_plot.py",
             "console": "integratedTerminal",
             "args": [
                 "--pos_fn",
