@@ -25,7 +25,7 @@ def rtkppk_plot(argv: list):
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    args_parsed = argument_parser.argument_parser_rtkpos_plot(args=argv[1:])
+    args_parsed = argument_parser.argument_parser_ppk_plot(args=argv[1:])
     # print(f"\nParsed arguments: {args_parsed}")
 
     # create the file/console logger
@@ -46,7 +46,7 @@ def rtkppk_plot(argv: list):
     if args_parsed.plot:
         plot_utm.plot_utm_coords(
             utm_df=df_pos.select(["DT", "Q", "ns", "UTM.E", "UTM.N", "orthoH"]),
-            origin="RTKPos",
+            origin="PPK",
             title="Salton Sea RWY 31L/13R",
         )
 
