@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 import polars as pl
 
 from sbf import sbf_constants as sbfc
-from rtkpos import rtk_constants as rtkc
+from PPK import rtk_constants as rtkc
 
 
 def plot_utm_coords(utm_df: pl.DataFrame, origin: str, title: str) -> None:
@@ -11,14 +11,14 @@ def plot_utm_coords(utm_df: pl.DataFrame, origin: str, title: str) -> None:
 
     Args:
         utm_df (pl.Dataframe): polar dataframe containing the UTM coordinates
-        origin (str): Origin of the plot ('PVTGeodetic' or 'RTKPos')
+        origin (str): Origin of the plot ('RTK' or 'PPK')
         title (str): Title of the plot
     """
     print(f"utm_df = \n{utm_df}")
 
     fig = go.Figure()
 
-    if origin == "PVTGeodetic":
+    if origin == "RTK":
         for pvtmode, pvtdata in utm_df:
             fig.add_trace(
                 go.Scatter(
@@ -29,7 +29,7 @@ def plot_utm_coords(utm_df: pl.DataFrame, origin: str, title: str) -> None:
                     marker=dict(color=sbfc.dict_sbf_pvtmode[pvtmode]["color"], size=1),
                 )
             )
-    elif origin == "RTKPos":
+    elif origin == "PPK":
         for qual, qual_data in utm_df.groupby("Q"):
             fig.add_trace(
                 go.Scatter(
