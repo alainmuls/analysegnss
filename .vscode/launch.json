@@ -65,5 +65,35 @@
                 "--plot",
             ]
         },
+        {
+            "name": "Python Debugger: ebh_lines SaltonSea rover",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "ebh_lines.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--ppk",
+                "--ebh_fn",
+                "data/ROVR00BEL_R_20241701647_05H_10Z_MO.pos",
+                "--timing_fn",
+                "data/salton_timings.txt",
+                "-v",
+            ]
+        },
+        {
+            "name": "Python Debugger: ebh_lines ocotillo rover hour 'q'",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "ebh_lines.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--rtk",
+                "--ebh_fn",
+                "./data/1342172q.24_",
+                "--timing_fn",
+                "data/salton_timings.txt",
+                "-v",
+            ]
+        },
     ]
 }
