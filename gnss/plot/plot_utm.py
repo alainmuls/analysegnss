@@ -33,8 +33,8 @@ def plot_utm_coords(utm_df: pl.DataFrame, origin: str, title: str) -> None:
         for qual, qual_data in utm_df.groupby("Q"):
             fig.add_trace(
                 go.Scatter(
-                    x=qual_data["UTM.E(m)"],
-                    y=qual_data["UTM.N(m)"],
+                    x=qual_data["UTM.E"],
+                    y=qual_data["UTM.N"],
                     mode="markers",
                     name=f"{rtkc.dict_rtk_pvtmode[qual]['desc']}",
                     marker=dict(color=rtkc.dict_rtk_pvtmode[qual]["color"], size=1),

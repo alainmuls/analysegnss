@@ -263,8 +263,8 @@ class Rtkpos:
             # Extract the UTM.East and UTM.North from the computed struct
             df_pos = df_pos.with_columns(
                 [
-                    pl.col("utm_coords").struct.field("easting").alias("UTM.E(m)"),
-                    pl.col("utm_coords").struct.field("northing").alias("UTM.N(m)"),
+                    pl.col("utm_coords").struct.field("easting").alias("UTM.E"),
+                    pl.col("utm_coords").struct.field("northing").alias("UTM.N"),
                 ]
             ).lazy()
 
@@ -286,13 +286,13 @@ class Rtkpos:
                         x["latitude(deg)"], x["longitude(deg)"], gh_model
                     )
                 )
-                .alias("undulation(m)")
+                .alias("undulation")
             ).lazy()
 
             df_pos = df_pos.with_columns(
-                pl.struct(["height(m)", "undulation(m)"])
-                .apply(lambda x: x["height(m)"] - x["undulation(m)"])
-                .alias("orthoH(m)")
+                pl.struct(["height(m)", "undulation"])
+                .apply(lambda x: x["height(m)"] - x["undulation"])
+                .alias("orthoH")
             ).lazy()
 
         self.logger.warning(f"\tcollecting the dataframe. {str_red('Be patient.')}")

@@ -4,11 +4,12 @@ import os
 import sys
 
 import polars as pl
+from tabulate import tabulate
 
 import globalvars
+from rtkpos import rtk_constants as rtkc
 from rtkpos.rtkpos_class import Rtkpos
 from utils import argument_parser, init_logger
-from rtkpos import rtk_constants as rtkc
 
 
 def rtkp_pos(argv: list) -> pl.DataFrame:
@@ -54,18 +55,24 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
 
     # analysis of the quality of the position data
     print(f"\nAnalysis of the quality of the position data")
+    qual_analysis = []
+    total_obs = pos_df.shape[0]
     for qual, qual_data in pos_df.groupby("Q"):
-        print(f"\t{rtkc.dict_rtk_pvtmode[qual]['desc']}: {qual_data.shape[0]}")
+        qual_analysis.append(
+            [
+                rtkc.dict_rtk_pvtmode[qual]["desc"],
+                qual_data.shape[0],
+                f"{qual_data.shape[0]/total_obs*100:.2f}%",
+            ]
+        )
 
-    import TableIt
-
-    myList = [
-        ["Name", "Email"],
-        ["Richard", "richard@fakeemail.com"],
-        ["Tasha", "tash@fakeemail.com"],
-    ]
-
-    TableIt.print(myList, useFieldNames=True)
+    print(
+        tabulate(
+            qual_analysis,
+            headers=["PNT Mode", "Count", "Percentage"],
+            tablefmt="fancy_outline",
+        )
+    )
 
     return pos_df
 

@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: pvtgeod_analyse Ocotillo rover hour 'q'",
+            "name": "Python Debugger: rtk_pvtgeod Ocotillo rover hour 'q'",
             "type": "debugpy",
             "request": "launch",
-            "program": "pvtgeod_analyse.py",
+            "program": "rtk_pvtgeod.py",
             "console": "integratedTerminal",
             "args": [
                 "--sbf_fn",
@@ -17,10 +17,10 @@
             ]
         },
         {
-            "name": "Python Debugger: pvtgeod_analyse Ocotillo rover hour 'o'",
+            "name": "Python Debugger: rtk_pvtgeod Ocotillo rover hour 'o'",
             "type": "debugpy",
             "request": "launch",
-            "program": "pvtgeod_analyse.py",
+            "program": "rtk_pvtgeod.py",
             "console": "integratedTerminal",
             "args": [
                 "--sbf_fn",
@@ -29,10 +29,10 @@
             ]
         },
         {
-            "name": "Python Debugger: pvtgeod_analyse Ocotillo rover",
+            "name": "Python Debugger: rtk_pvtgeod Ocotillo rover",
             "type": "debugpy",
             "request": "launch",
-            "program": "pvtgeod_analyse.py",
+            "program": "rtk_pvtgeod.py",
             "console": "integratedTerminal",
             "args": [
                 "--sbf_fn",
@@ -41,10 +41,10 @@
             ]
         },
         {
-            "name": "Python Debugger: rtkpos_analyse SaltonSea rover",
+            "name": "Python Debugger: ppk_rnx2rtkp SaltonSea rover",
             "type": "debugpy",
             "request": "launch",
-            "program": "rtkpos_analyse.py",
+            "program": "ppk_rnx2rtkp.py",
             "console": "integratedTerminal",
             "args": [
                 "--pos_fn",

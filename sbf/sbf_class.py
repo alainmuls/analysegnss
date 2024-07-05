@@ -258,8 +258,8 @@ class SBF:
             # Extract the UTM.East and UTM.North from the computed struct
             block_df = block_df.with_columns(
                 [
-                    pl.col("utm_coords").struct.field("easting").alias("UTM.E [m]"),
-                    pl.col("utm_coords").struct.field("northing").alias("UTM.N [m]"),
+                    pl.col("utm_coords").struct.field("easting").alias("UTM.E"),
+                    pl.col("utm_coords").struct.field("northing").alias("UTM.N"),
                 ]
             ).lazy()
 
@@ -274,7 +274,7 @@ class SBF:
             block_df = block_df.with_columns(
                 pl.struct(["Height [m]", "Undulation [m]"])
                 .apply(lambda x: x["Height [m]"] - x["Undulation [m]"])
-                .alias("orthoH [m]")
+                .alias("orthoH")
             ).lazy()
 
         self.logger.warning(f"\tcollecting the dataframe. {str_red('Be patient.')}")
@@ -305,7 +305,7 @@ class SBF:
             ]
         elif sbf_block == "PVTGeodetic2":
             # ['TOW [0.001 s]', 'WNc [w]', 'Type', 'AutoBase', 'Flag2D', 'Error',
-            # 'Latitude [rad]', 'Longitude [rad]', 'Height [m]', 'Undulation [m]',
+            # 'Latitude [rad]', 'Longitude [rad]', 'Height [m]', 'Undulation',
             # 'Vn [m/s]', 'Ve [m/s]', 'Vu [m/s]', 'COG [°]',
             # 'RxClkBias [ms]', 'RxClkDrift [ppm]', 'TimeSystem', 'Datum',
             # 'NrSV', 'LC', 'FC', 'I', 'AI', 'PA',

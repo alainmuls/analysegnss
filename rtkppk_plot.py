@@ -8,10 +8,10 @@ import polars as pl
 import globalvars
 from utils import argument_parser, init_logger
 from gnss.plot import plot_utm
-import rtkpos_analyse
+import ppk_rnx2rtkp
 
 
-def rtkppos_plot(argv: list):
+def rtkppk_plot(argv: list):
     """analyses the rnx2rtkp output file and extracts the position information
 
     Args:
@@ -34,24 +34,22 @@ def rtkppos_plot(argv: list):
     # logger.warning(f"Parsed arguments: {args_parsed}")
     # logger.debug(f"program arguments: {args_parsed}")
 
-    # create the RTK position dataframe by calling rtkpos_analyse.py
+    # create the RTK position dataframe by calling ppk_rnx2rtkp.py
     # adjust the arguments to exclude the "--plot" argument
-    rtkpos_analyse_args = [val for val in argv if val != "--plot"]
-    # print(f"rtkpos_analyse_args = {rtkpos_analyse_args}")
-    df_pos = rtkpos_analyse.rtkp_pos(argv=rtkpos_analyse_args)
+    ppk_rnx2rtkp_args = [val for val in argv if val != "--plot"]
+    # print(f"ppk_rnx2rtkp_args = {ppk_rnx2rtkp_args}")
+    df_pos = ppk_rnx2rtkp.rtkp_pos(argv=ppk_rnx2rtkp_args)
     with pl.Config(tbl_cols=-1):
         print(f"from rtkpos_plot df_pos = \n{df_pos}")
 
     # plot the UTM and orthoH coordinates
     if args_parsed.plot:
         plot_utm.plot_utm_coords(
-            utm_df=df_pos.select(
-                ["DT", "Q", "ns", "UTM.E(m)", "UTM.N(m)", "orthoH(m)"]
-            ),
+            utm_df=df_pos.select(["DT", "Q", "ns", "UTM.E", "UTM.N", "orthoH"]),
             origin="RTKPos",
             title="Salton Sea RWY 31L/13R",
         )
 
 
 if __name__ == "__main__":
-    df_rtkpos = rtkppos_plot(argv=sys.argv)  # type: ignore
+    df_rtkpos = rtkppk_plot(argv=sys.argv)  # type: ignore
