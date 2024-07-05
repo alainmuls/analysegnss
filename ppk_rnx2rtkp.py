@@ -21,7 +21,6 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
     Returns:
         pl.DataFrame: RTK position dataframe
     """
-    pass
     # init the global variables
     globalvars.initialize()
 
@@ -29,13 +28,13 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    args_parsed = argument_parser.argument_parser_rtkpos(args=argv[1:])
+    args_parsed = argument_parser.argument_parser_ppk(args=argv[1:])
     # print(f"\nParsed arguments: {args_parsed}")
 
     # create the file/console logger
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
     # # test logger
-    # logger.warning(f"Parsed arguments: {args_parsed}")
+    logger.info(f"Parsed arguments: {args_parsed}")
     # logger.debug(f"program arguments: {args_parsed}")
 
     # create a SBF class object

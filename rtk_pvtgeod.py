@@ -17,7 +17,7 @@ from utils.utilities import bin_nibble
 from sbf import sbf_constants as sbfc
 
 
-def pvtgeod_analyse(argv: list) -> pl.DataFrame:
+def rtk_pvtgeod(argv: list) -> pl.DataFrame:
     """
     Convert PVT Geodetic2 SBF block to dataframe and analyse quality of data
 
@@ -30,13 +30,13 @@ def pvtgeod_analyse(argv: list) -> pl.DataFrame:
     # parse the CLI arguments
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
-    args_parsed = argument_parser.argument_parser_sbf(args=argv[1:])
+    args_parsed = argument_parser.argument_parser_rtk(args=argv[1:])
     # print(f"\nParsed arguments: {args_parsed}")
 
     # create the file/console logger
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
     # # test logger
-    # logger.warning(f"Parsed arguments: {args_parsed}")
+    logger.info(f"Parsed arguments: {args_parsed}")
     # logger.debug(f"program arguments: {args_parsed}")
 
     # create a SBF class object
@@ -54,6 +54,6 @@ def pvtgeod_analyse(argv: list) -> pl.DataFrame:
 
 
 if __name__ == "__main__":
-    geod_df = pvtgeod_analyse(argv=sys.argv)
+    geod_df = rtk_pvtgeod(argv=sys.argv)
     with pl.Config(tbl_cols=-1):
         print(geod_df)
