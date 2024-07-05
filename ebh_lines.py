@@ -15,9 +15,10 @@ from rtkpos.rtkpos_class import Rtkpos
 from utils import argument_parser, init_logger
 from utils.utilities import str_yellow
 from gnss.gnss_dt import sod_to_time
+from logging import Logger
 
 
-def get_ppk_dataframe(parsed_args: argparse.Namespace) -> pl.DataFrame:
+def get_ppk_dataframe(parsed_args: argparse.Namespace, logger: Logger) -> pl.DataFrame:
     """get the dataframe obtained from PPK processing
 
     Args:
@@ -38,14 +39,14 @@ def get_ppk_dataframe(parsed_args: argparse.Namespace) -> pl.DataFrame:
             case 3:
                 ppk_rnx2rtkp_args.append("-vvv")
 
-    print(f"ppk_rnx2rtkp_args = {ppk_rnx2rtkp_args}")
+    logger.info(f"ppk_rnx2rtkp_args = {ppk_rnx2rtkp_args}")
 
     df_pos = ppk_rnx2rtkp.rtkp_pos(argv=ppk_rnx2rtkp_args)
 
     return df_pos
 
 
-def get_rtk_dataframe(parsed_args: argparse.Namespace) -> pl.DataFrame:
+def get_rtk_dataframe(parsed_args: argparse.Namespace, logger: Logger) -> pl.DataFrame:
     """get the dataframe obtained from RTK processing
 
     Args:
@@ -66,14 +67,14 @@ def get_rtk_dataframe(parsed_args: argparse.Namespace) -> pl.DataFrame:
             case 3:
                 rtk_pvtgeod_args.append("-vvv")
 
-    print(f"rtk_pvtgeod_args = {rtk_pvtgeod_args}")
+    logger.info(f"rtk_pvtgeod_args = {rtk_pvtgeod_args}")
 
     df_pos = rtk_pvtgeod.rtk_pvtgeod(argv=rtk_pvtgeod_args)
 
     return df_pos
 
 
-def read_ebh_line_timings(timings_fn: str) -> dict:
+def read_ebh_line_timings(timings_fn: str, logger: Logger) -> dict:
     """read the ebh lines timings from the file
 
     Args:
@@ -93,14 +94,24 @@ def read_ebh_line_timings(timings_fn: str) -> dict:
         while line := f.readline():
             key = line.split(":")[0]
             vals = line.split(":")[1:]
-            line_timings[key] = [
-                sod_to_time(float(value)) for value in vals[0].strip().split(",")
-            ]
+            line_timings[key] = tuple(
+                [sod_to_time(float(value)) for value in vals[0].strip().split(",")]
+            )
 
-    for line, timings in line_timings.items():
-        print(
-            f"{line} = {timings[0].strftime('%H:%M:%S')} - {timings[1].strftime('%H:%M:%S')}"
+    # for line, timings in line_timings.items():
+    #     print(
+    #         f"{line} = {timings[0].strftime('%H:%M:%S')} - {timings[1].strftime('%H:%M:%S')}"
+    #     )
+
+    logger.info(
+        tabulate(
+            line_timings.items(),
+            headers=["EBH Line", "EBH Timings"],
+            tablefmt="fancy_outline",
         )
+    )
+
+    return line_timings
 
 
 def ebh_lines(argv: list):
@@ -117,19 +128,19 @@ def ebh_lines(argv: list):
 
     # parse the CLI arguments
     args_parsed = argument_parser.argument_parser_ebh_lines(args=argv[1:])
-    print(f"\nParsed arguments: {args_parsed}")
-    print(f"\nParsed arguments: {type(args_parsed)}")
+    # print(f"\nParsed arguments: {type(args_parsed)}")
 
     # create the file/console logger
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
     # # test logger
     logger.info(f"Parsed arguments: {args_parsed}")
+
     # logger.debug(f"program arguments: {args_parsed}")
 
     # get the dataframe according to the processing type (RTK or PPK)
     if args_parsed.ppk:
         # call ppp_rnx2rtkp to get the position dataframe
-        pos_df = get_ppk_dataframe(parsed_args=args_parsed)
+        pos_df = get_ppk_dataframe(parsed_args=args_parsed, logger=logger)
 
         logger.info(f"Dataframe obtained from PPK processing of {args_parsed.ebh_fn}")
         print(
@@ -138,7 +149,7 @@ def ebh_lines(argv: list):
         df_pos = pos_df.select(["DT", "Q", "ns", "UTM.E", "UTM.N", "orthoH"])
     elif args_parsed.rtk:
         # call rtk_pvtgeod to get the position dataframe
-        pos_df = get_rtk_dataframe(parsed_args=args_parsed)
+        pos_df = get_rtk_dataframe(parsed_args=args_parsed, logger=logger)
 
         logger.info(f"Dataframe obtained from RTK processing of {args_parsed.ebh_fn}")
         print(
@@ -154,7 +165,19 @@ def ebh_lines(argv: list):
         print(df_pos)
 
     # read the timings for the ebh_lines
-    ebh_timings = read_ebh_line_timings(timings_fn=args_parsed.timing_fn)
+    ebh_timings = read_ebh_line_timings(timings_fn=args_parsed.timing_fn, logger=logger)
+
+    # calculate the map_angle for each ebh_line
+    for ebh_line, timings in ebh_timings.items():
+        print(f"ebh_line = {ebh_line}, timings = {timings}")
+        # find in 'DT' the datetime values that equal timings[0]
+        print(f"df_pos['DT'][0].time() = {df_pos['DT'][0].time()}")
+
+        valuet = df_pos.select(pl.col("DT") == timings[0])
+        print(f"valuet = {valuet}")
+        # find in 'DT' the datetime values that equal timings[1]
+        # calculate the map_angle
+        sys.exit(99)
 
 
 if __name__ == "__main__":
