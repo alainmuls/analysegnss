@@ -226,7 +226,7 @@ class Rtkpos:
             df_pos = df_pos.with_columns(
                 pl.struct(["WNc", "TOW(s)"])
                 .map_elements(
-                    lambda x: gpsms2dt(week=x["WNc"], towms=x["TOW(s)"]),
+                    lambda x: gpsms2dt(week=x["WNc"], towms=x["TOW(s)"] * 1000),
                     return_dtype=datetime.datetime,
                 )
                 .alias("DT")
