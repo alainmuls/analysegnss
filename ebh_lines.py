@@ -2,7 +2,10 @@
 
 import argparse
 import os
+import re
 import sys
+from logging import Logger
+from math import atan2, degrees
 
 import polars as pl
 from tabulate import tabulate
@@ -10,12 +13,11 @@ from tabulate import tabulate
 import globalvars
 import ppk_rnx2rtkp
 import rtk_pvtgeod
+from gnss.gnss_dt import gnss2dt
 from rtkpos import rtk_constants as rtkc
 from rtkpos.rtkpos_class import Rtkpos
 from utils import argument_parser, init_logger
 from utils.utilities import str_yellow
-from gnss.gnss_dt import sod_to_time
-from logging import Logger
 
 
 def get_ppk_dataframe(parsed_args: argparse.Namespace, logger: Logger) -> pl.DataFrame:
@@ -88,19 +90,35 @@ def read_ebh_line_timings(timings_fn: str, logger: Logger) -> dict:
         print(f"File {timings_fn} is not readable")
         sys.exit(globalvars._ERROR_CODES["E_FILE_NOT_EXIST"])
 
+    # Regular expression pattern to match both integers and float values
+    pattern = r"\d+\.\d+|\d+"
+
     # read the timings file
     line_timings = dict()
     with open(timings_fn, "r") as f:
         while line := f.readline():
             key = line.split(":")[0]
             vals = line.split(":")[1:]
-            line_timings[key] = tuple(
-                [sod_to_time(float(value)) for value in vals[0].strip().split(",")]
-            )
+
+            # Find all matches of the pattern in the input string
+            matches = re.findall(pattern, vals[0])
+
+            # Convert the extracted strings to their appropriate types (int or float)
+            values = [float(value) if "." in value else int(value) for value in matches]
+            # print(f"values = {values}")
+
+            line_timings[key] = [
+                gnss2dt(week=values[0], tow=values[1]),
+                gnss2dt(week=values[2], tow=values[3]),
+            ]
+
+            # line_timings[key] = tuple(
+            #     [sod_to_time(float(value)) for value in vals[0].strip().split(",")]
+            # )
 
     # for line, timings in line_timings.items():
     #     print(
-    #         f"{line} = {timings[0].strftime('%H:%M:%S')} - {timings[1].strftime('%H:%M:%S')}"
+    #         f"{line} = {timings[0].strftime('%Y/%m/%d %H:%M:%S')} - {timings[1].strftime('%Y/%m/%d %H:%M:%S')}"
     #     )
 
     logger.info(
@@ -112,6 +130,47 @@ def read_ebh_line_timings(timings_fn: str, logger: Logger) -> dict:
     )
 
     return line_timings
+
+
+def ebh_lines_map_angle(
+    df_pos: pl.DataFrame, ebh_timings: dict, logger: Logger
+) -> None:
+    """calculate the map angle for each ebh line
+
+    Args:
+        df_pos (pl.DataFrame): dataframe with position information
+        ebh_timings (dict): dictionary with ebh lines and timings
+    """
+    for ebh_key, timings in ebh_timings.items():
+        # print(f"ebh_key = {ebh_key}, timings = {timings}")
+
+        row_start = df_pos.filter(pl.col("DT") == timings[0])
+        row_end = df_pos.filter(pl.col("DT") == timings[1])
+
+        print(f"row_start = {row_start}")
+        # print(
+        # f"row_start.select(['UTM.E']) = {row_start.select(['UTM.E'])} |  {type(row_start.select(['UTM.E']))}"
+        # )
+        # print(
+        # f"row_start.select(['UTM.E']).to_numpy()[0] = {row_start.select(['UTM.E'])} |  {type(row_start.select(['UTM.E']))}"
+        # )
+        # print(
+        # f"row_start.select(['UTM.E', 'UTM.N']) = {row_start.select(['UTM.E', 'UTM.N'])}"
+        # )
+        print(f"row_end = {row_end}")
+
+        # calculate the map_angle
+        map_angle = atan2(
+            row_end["UTM.E"].to_numpy()[0] - row_start["UTM.E"].to_numpy()[0],
+            row_end["UTM.N"].to_numpy()[0] - row_start["UTM.N"].to_numpy()[0],
+        )
+        print(f"map_angle = {map_angle} | {degrees(map_angle)}")
+
+        # add the map_angle to the ebh_timings dictionary
+        ebh_timings[ebh_key].append(degrees(map_angle))
+
+    for ebh_key, timings in ebh_timings.items():
+        print(f"{ebh_key}: {timings}")
 
 
 def ebh_lines(argv: list):
@@ -146,7 +205,18 @@ def ebh_lines(argv: list):
         print(
             f"Dataframe obtained from {str_yellow('PPK')} processing of {str_yellow(args_parsed.ebh_fn)}"
         )
-        df_pos = pos_df.select(["DT", "Q", "ns", "UTM.E", "UTM.N", "orthoH"])
+        df_pos = pos_df.select(
+            [
+                "DT",
+                "Q",
+                "ns",
+                "UTM.E",
+                "UTM.N",
+                "orthoH",
+                "latitude(deg)",
+                "longitude(deg)",
+            ]
+        )
     elif args_parsed.rtk:
         # call rtk_pvtgeod to get the position dataframe
         pos_df = get_rtk_dataframe(parsed_args=args_parsed, logger=logger)
@@ -168,16 +238,7 @@ def ebh_lines(argv: list):
     ebh_timings = read_ebh_line_timings(timings_fn=args_parsed.timing_fn, logger=logger)
 
     # calculate the map_angle for each ebh_line
-    for ebh_line, timings in ebh_timings.items():
-        print(f"ebh_line = {ebh_line}, timings = {timings}")
-        # find in 'DT' the datetime values that equal timings[0]
-        print(f"df_pos['DT'][0].time() = {df_pos['DT'][0].time()}")
-
-        valuet = df_pos.select(pl.col("DT") == timings[0])
-        print(f"valuet = {valuet}")
-        # find in 'DT' the datetime values that equal timings[1]
-        # calculate the map_angle
-        sys.exit(99)
+    ebh_lines_map_angle(df_pos=df_pos, ebh_timings=ebh_timings, logger=logger)
 
 
 if __name__ == "__main__":
