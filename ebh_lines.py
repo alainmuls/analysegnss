@@ -147,7 +147,7 @@ def ebh_lines_map_angle(
         row_start = df_pos.filter(pl.col("DT") == timings[0])
         row_end = df_pos.filter(pl.col("DT") == timings[1])
 
-        print(f"row_start = {row_start}")
+        # print(f"row_start = {row_start}")
         # print(
         # f"row_start.select(['UTM.E']) = {row_start.select(['UTM.E'])} |  {type(row_start.select(['UTM.E']))}"
         # )
@@ -157,20 +157,58 @@ def ebh_lines_map_angle(
         # print(
         # f"row_start.select(['UTM.E', 'UTM.N']) = {row_start.select(['UTM.E', 'UTM.N'])}"
         # )
-        print(f"row_end = {row_end}")
+        # print(f"row_end = {row_end}")
 
         # calculate the map_angle
         map_angle = atan2(
             row_end["UTM.E"].to_numpy()[0] - row_start["UTM.E"].to_numpy()[0],
             row_end["UTM.N"].to_numpy()[0] - row_start["UTM.N"].to_numpy()[0],
         )
-        print(f"map_angle = {map_angle} | {degrees(map_angle)}")
+        # print(f"map_angle = {map_angle} | {degrees(map_angle)}")
 
         # add the map_angle to the ebh_timings dictionary
         ebh_timings[ebh_key].append(degrees(map_angle))
 
+
+def ebh_lines_extract(df_pos: pl.DataFrame, ebh_timings: dict, logger: Logger):
+    """extract the EBH lines from the dataframe and order them according to the same map_angle
+
+    Args:
+        df_pos (pl.DataFrame): dataframe of whole measurement campaign
+        ebh_timings (dict): timings and map_angle of each EBH line
+        logger (Logger): logger object
+    """
+    cl_map_angle = ebh_timings["CL"][2]
+    print(f"cl_map_angle = {cl_map_angle}")
+
     for ebh_key, timings in ebh_timings.items():
-        print(f"{ebh_key}: {timings}")
+        print(f"ebh_key = {ebh_key}, timings = {timings}")
+
+        # filter the dataframe for the ebh line
+        ebh_df = df_pos.filter(pl.col("DT") >= timings[0]).filter(
+            pl.col("DT") <= timings[1]
+        )
+
+        # check orientation of the current line
+        if cl_map_angle - 10 < timings[2] < cl_map_angle + 10:
+            df_line = df_pos.filter(
+                pl.col("DT").is_between((timings[0]), (timings[1])),
+            )
+        else:
+            df_line = df_pos.filter(
+                pl.col("DT").is_between((timings[0]), (timings[1])),
+            ).reverse()
+
+        print(f"df_line = {df_line}")
+        pass
+        # # sort the dataframe according to the map_angle
+        # ebh_df = ebh_df.sort("map_angle")
+
+        # logger.info(f"EBH Line: {ebh_key}")
+        # print(f"EBH Line: {ebh_key}")
+        # with pl.Config(tbl_cols=-1):
+        #     logger.info(ebh_df)
+        #     print(ebh_df)
 
 
 def ebh_lines(argv: list):
@@ -239,6 +277,14 @@ def ebh_lines(argv: list):
 
     # calculate the map_angle for each ebh_line
     ebh_lines_map_angle(df_pos=df_pos, ebh_timings=ebh_timings, logger=logger)
+    for ebh_key, timings in ebh_timings.items():
+        print(
+            f"{ebh_key:9s}: {timings[0].strftime('%Y/%m/%d %H:%M:%S')}"
+            f" - {timings[1].strftime('%Y/%m/%d %H:%M:%S')} | {timings[2]:6.1f}"
+        )
+
+    # extract the lines from the dataframe
+    ebh_lines_extract(df_pos=df_pos, ebh_timings=ebh_timings, logger=logger)
 
 
 if __name__ == "__main__":
