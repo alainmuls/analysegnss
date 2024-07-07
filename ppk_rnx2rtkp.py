@@ -49,8 +49,8 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
     # read the CVS position file into polars dataframe
     pos_df = rtkpos.read_pos_file()
 
-    with pl.Config(tbl_cols=-1):
-        print(f"pos_df.describe(): \n{pos_df.describe()}")
+    # with pl.Config(tbl_cols=-1):
+    #     print(f"pos_df.describe(): \n{pos_df.describe()}")
 
     # analysis of the quality of the position data
     print(f"\nAnalysis of the quality of the position data")
