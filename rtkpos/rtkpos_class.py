@@ -284,7 +284,7 @@ class Rtkpos:
                 .apply(
                     lambda x: gh_model.get(
                         x["latitude(deg)"], x["longitude(deg)"], gh_model
-                    )
+                    ),
                 )
                 .alias("undulation")
             ).lazy()

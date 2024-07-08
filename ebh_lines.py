@@ -5,7 +5,7 @@ import os
 import re
 import sys
 from logging import Logger
-from math import atan2, degrees
+from math import atan2, degrees, sqrt, fabs
 
 import polars as pl
 from tabulate import tabulate
@@ -200,15 +200,53 @@ def ebh_lines_extract(df_pos: pl.DataFrame, ebh_timings: dict, logger: Logger):
             ).reverse()
 
         print(f"df_line = {df_line}")
-        pass
-        # # sort the dataframe according to the map_angle
-        # ebh_df = ebh_df.sort("map_angle")
 
-        # logger.info(f"EBH Line: {ebh_key}")
-        # print(f"EBH Line: {ebh_key}")
-        # with pl.Config(tbl_cols=-1):
-        #     logger.info(ebh_df)
-        #     print(ebh_df)
+        # thin out the df_line to keep positions every 0.5 meters
+        df_assur = ebh_lines_thin_out(df_line=df_line, logger=logger)
+        print(f"df_assur = \n{df_assur}")
+
+
+def euclidean_distance(x1, y1, x2, y2):
+    return sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2) % 0.5
+
+
+def ebh_lines_thin_out(df_line: pl.DataFrame, logger: Logger) -> pl.DataFrame:
+    """thin out the dataframe to keep positions every 0.5 meters
+
+    Args:
+        df_line (pl.DataFrame): dataframe with positions of the ebh line
+
+    Returns:
+        pl.DataFrame: thinned out dataframe
+    """
+    # get the UTM coordinates of the first point of the line
+    utm_start = df_line.select(["UTM.E", "UTM.N"]).row(index=0)
+    print(f"utm_start = {utm_start}")
+
+    # add distance from start point of current line
+    df_line = df_line.with_columns(
+        pl.struct(["UTM.E", "UTM.N"])
+        .map_elements(
+            lambda x: euclidean_distance(
+                utm_start[0],
+                utm_start[1],
+                x["UTM.E"],
+                x["UTM.N"],
+            ),
+            return_dtype=pl.Float32,
+        )
+        .alias("dist0")
+    )
+
+    pl.Config.set_tbl_rows(100)
+    print(f"df_line = \n{df_line}")
+    # print first 30 rows of the dataframe
+    print(f"df_line.head(30) = \n{df_line.head(30)}")
+    # thin out the df_line to keep positions every 0.5 meters
+    df_assur = df_line.filter(fabs(pl.col("dist0") % 0.5 < 0.1))
+    print(f"df_assur = \n{df_assur}")
+
+    return df_assur
 
 
 def ebh_lines(argv: list):
