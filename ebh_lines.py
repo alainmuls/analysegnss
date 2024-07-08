@@ -179,10 +179,13 @@ def ebh_lines_extract(df_pos: pl.DataFrame, ebh_timings: dict, logger: Logger):
         logger (Logger): logger object
     """
     cl_map_angle = ebh_timings["CL"][2]
-    print(f"cl_map_angle = {cl_map_angle}")
+    # print(f"cl_map_angle = {cl_map_angle}")
+
+    # keep the dataframes in a dictionary
+    ebh_lines_assur = dict()
 
     for ebh_key, timings in ebh_timings.items():
-        print(f"ebh_key = {ebh_key}, timings = {timings}")
+        # print(f"ebh_key = {ebh_key}, timings = {timings}")
 
         # filter the dataframe for the ebh line
         ebh_df = df_pos.filter(pl.col("DT") >= timings[0]).filter(
@@ -199,15 +202,16 @@ def ebh_lines_extract(df_pos: pl.DataFrame, ebh_timings: dict, logger: Logger):
                 pl.col("DT").is_between((timings[0]), (timings[1])),
             ).reverse()
 
-        print(f"df_line = {df_line}")
+        # print(f"df_line = {df_line}")
 
         # thin out the df_line to keep positions every 0.5 meters
-        df_assur = ebh_lines_thin_out(df_line=df_line, logger=logger)
-        print(f"df_assur = \n{df_assur}")
+        ebh_lines_assur[ebh_key] = ebh_lines_thin_out(df_line=df_line, logger=logger)
+
+    return ebh_lines_assur
 
 
 def euclidean_distance(x1, y1, x2, y2):
-    return sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2) % 0.5
+    return sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
 
 def ebh_lines_thin_out(df_line: pl.DataFrame, logger: Logger) -> pl.DataFrame:
@@ -221,7 +225,7 @@ def ebh_lines_thin_out(df_line: pl.DataFrame, logger: Logger) -> pl.DataFrame:
     """
     # get the UTM coordinates of the first point of the line
     utm_start = df_line.select(["UTM.E", "UTM.N"]).row(index=0)
-    print(f"utm_start = {utm_start}")
+    # print(f"utm_start = {utm_start}")
 
     # add distance from start point of current line
     df_line = df_line.with_columns(
@@ -232,21 +236,29 @@ def ebh_lines_thin_out(df_line: pl.DataFrame, logger: Logger) -> pl.DataFrame:
                 utm_start[1],
                 x["UTM.E"],
                 x["UTM.N"],
-            ),
+            )
+            % 0.5,
             return_dtype=pl.Float32,
         )
         .alias("dist0")
-    )
+    ).lazy()
 
-    pl.Config.set_tbl_rows(100)
-    print(f"df_line = \n{df_line}")
-    # print first 30 rows of the dataframe
-    print(f"df_line.head(30) = \n{df_line.head(30)}")
-    # thin out the df_line to keep positions every 0.5 meters
-    df_assur = df_line.filter(fabs(pl.col("dist0") % 0.5 < 0.1))
-    print(f"df_assur = \n{df_assur}")
+    # calculate the distance difference between successive points
+    df_line = df_line.with_columns(change=pl.col("dist0").diff()).lazy()
+    # keep only the rows where the difference is negative
+    df_assur = df_line.filter(pl.col("change") < 0).lazy()
+    # keep only the rows where the quality is 1 (FIX)
+    df_assur = df_assur.filter(pl.col("Q") == 1).lazy()
 
-    return df_assur
+    # pl.Config.set_tbl_rows(30)
+    # print(f"df_line = \n{df_line.collect()}")
+    # # print first 30 rows of the dataframe
+    # print(f"df_line.head(30) = \n{df_line.head(30)}")
+    # # thin out the df_line to keep positions every 0.5 meters
+    # print(f"df_assur = \n{df_assur}")
+    # print(f"df_assur.head(30) = \n{df_assur.head(30)}")
+
+    return df_assur.collect()
 
 
 def ebh_lines(argv: list):
@@ -289,8 +301,8 @@ def ebh_lines(argv: list):
                 "UTM.E",
                 "UTM.N",
                 "orthoH",
-                "latitude(deg)",
-                "longitude(deg)",
+                # "latitude(deg)",
+                # "longitude(deg)",
             ]
         )
     elif args_parsed.rtk:
@@ -316,13 +328,27 @@ def ebh_lines(argv: list):
     # calculate the map_angle for each ebh_line
     ebh_lines_map_angle(df_pos=df_pos, ebh_timings=ebh_timings, logger=logger)
     for ebh_key, timings in ebh_timings.items():
-        print(
+        logger.info(
             f"{ebh_key:9s}: {timings[0].strftime('%Y/%m/%d %H:%M:%S')}"
             f" - {timings[1].strftime('%Y/%m/%d %H:%M:%S')} | {timings[2]:6.1f}"
         )
 
     # extract the lines from the dataframe
-    ebh_lines_extract(df_pos=df_pos, ebh_timings=ebh_timings, logger=logger)
+    ebh_assur_lines = ebh_lines_extract(
+        df_pos=df_pos, ebh_timings=ebh_timings, logger=logger
+    )
+
+    # save in CSV files using ";" as separator
+    for ebh_key, ebh_assur_line in ebh_assur_lines.items():
+        # name the file according to the ebh line key
+        ebh_line_fn = f"saltonsea_{ebh_key}.csv"
+        logger.info(f"Writing CSV assurtool file for {ebh_key} to {ebh_line_fn}")
+
+        # keep the columns UTM.E, UTM.N and ortoH and write to CSV file
+        ebh_assur_line.select(["UTM.E", "UTM.N", "orthoH"]).write_csv(
+            ebh_line_fn, separator=";", include_header=False, float_precision=3
+        )
+        pass
 
 
 if __name__ == "__main__":
