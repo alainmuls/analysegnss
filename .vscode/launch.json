@@ -77,7 +77,7 @@
                 "data/ROVR00BEL_R_20241701647_05H_10Z_MO.pos",
                 "--timing_fn",
                 "data/salton_timings.txt",
-                "-v",
+                "-vv",
             ]
         },
         {

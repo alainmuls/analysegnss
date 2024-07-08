@@ -342,7 +342,10 @@ def ebh_lines(argv: list):
     for ebh_key, ebh_assur_line in ebh_assur_lines.items():
         # name the file according to the ebh line key
         ebh_line_fn = f"saltonsea_{ebh_key}.csv"
-        logger.info(f"Writing CSV assurtool file for {ebh_key} to {ebh_line_fn}")
+        logger.info(
+            f"Writing CSV assurtool file for {str_yellow(ebh_key)} to {str_yellow(ebh_line_fn)}\n"
+            f"{ebh_assur_line.select(['UTM.E', 'UTM.N', 'orthoH'])}"
+        )
 
         # keep the columns UTM.E, UTM.N and ortoH and write to CSV file
         ebh_assur_line.select(["UTM.E", "UTM.N", "orthoH"]).write_csv(
