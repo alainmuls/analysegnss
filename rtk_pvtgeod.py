@@ -27,7 +27,7 @@ def rtk_pvtgeod(argv: list) -> pl.DataFrame:
     # init the global variables
     globalvars.initialize()
 
-    # parse the CLI arguments
+    # get the name of this script for naming the logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     args_parsed = argument_parser.argument_parser_rtk(args=argv[1:])
@@ -35,9 +35,7 @@ def rtk_pvtgeod(argv: list) -> pl.DataFrame:
 
     # create the file/console logger
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
-    # # test logger
     logger.info(f"Parsed arguments: {args_parsed}")
-    # logger.debug(f"program arguments: {args_parsed}")
 
     # create a SBF class object
     try:
@@ -48,7 +46,11 @@ def rtk_pvtgeod(argv: list) -> pl.DataFrame:
         logger.error(f"Error creating SBF object: {e}")
         sys.exit(1)
 
-    df_geod = sbf.extract_pvtgeodetic2()
+    # extract the PVT Geodetic2 block from SBF file
+    # df_geod = sbf.extract_pvtgeodetic2()
+    df_geod = sbf.bin2asc_dataframe(lst_sbfblocks=["PVTGeodetic2"])
+    # with pl.Config(tbl_cols=-1):
+    #     print(f"df_geod: \n{df_geod}")
 
     return df_geod
 
