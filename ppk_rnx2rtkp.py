@@ -12,6 +12,35 @@ from rtkpos.rtkpos_class import Rtkpos
 from utils import argument_parser, init_logger
 
 
+def quality_analysis(df_pos: pl.DataFrame, logger) -> None:
+    """display the quality analysis
+
+    Args:
+        df (pl.DataFrame): dataframe containing the RTK solution
+        logger (_type_): logger object
+    """
+    # analysis of the quality of the position data
+    print(f"\nAnalysis of the quality of the position data")
+    qual_analysis = []
+    total_obs = df_pos.shape[0]
+    for qual, qual_data in df_pos.groupby("Q"):
+        qual_analysis.append(
+            [
+                rtkc.dict_rtk_pvtmode[qual]["desc"],
+                qual_data.shape[0],
+                f"{qual_data.shape[0]/total_obs*100:.2f}%",
+            ]
+        )
+
+    logger.warning(
+        tabulate(
+            qual_analysis,
+            headers=["PNT Mode", "Count", "Percentage"],
+            tablefmt="fancy_outline",
+        )
+    )
+
+
 def rtkp_pos(argv: list) -> pl.DataFrame:
     """analyses the rnx2rtkp output file and extracts the position information
 
@@ -47,29 +76,11 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
     # read the CVS position file into polars dataframe
     pos_df = rtkpos.read_pos_file()
 
+    # analyse the quality of the solution
+    quality_analysis(df_pos=pos_df, logger=logger)
+
     # with pl.Config(tbl_cols=-1):
     #     print(f"pos_df.describe(): \n{pos_df.describe()}")
-
-    # analysis of the quality of the position data
-    print(f"\nAnalysis of the quality of the position data")
-    qual_analysis = []
-    total_obs = pos_df.shape[0]
-    for qual, qual_data in pos_df.groupby("Q"):
-        qual_analysis.append(
-            [
-                rtkc.dict_rtk_pvtmode[qual]["desc"],
-                qual_data.shape[0],
-                f"{qual_data.shape[0]/total_obs*100:.2f}%",
-            ]
-        )
-
-    print(
-        tabulate(
-            qual_analysis,
-            headers=["PNT Mode", "Count", "Percentage"],
-            tablefmt="fancy_outline",
-        )
-    )
 
     return pos_df
 

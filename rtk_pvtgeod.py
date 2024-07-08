@@ -8,13 +8,42 @@ import sys
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import polars as pl
-import seaborn as sns
+from tabulate import tabulate
 
 import globalvars
+from sbf import sbf_constants as sbfc
 from sbf.sbf_class import SBF
 from utils import argument_parser, init_logger
 from utils.utilities import bin_nibble
-from sbf import sbf_constants as sbfc
+
+
+def quality_analysis(geod_df: pl.DataFrame, logger) -> None:
+    """display the quality analysis
+
+    Args:
+        df (pl.DataFrame): dataframe containing the RTK solution
+        logger (_type_): logger object
+    """
+    # analysis of the quality of the position data
+    print(f"\nAnalysis of the quality of the position data")
+    qual_analysis = []
+    total_obs = geod_df.shape[0]
+    for qual, qual_data in geod_df.groupby("Type"):
+        qual_analysis.append(
+            [
+                sbfc.dict_sbf_pvtmode[qual]["desc"],
+                qual_data.shape[0],
+                f"{qual_data.shape[0]/total_obs*100:.2f}%",
+            ]
+        )
+
+    logger.warning(
+        tabulate(
+            qual_analysis,
+            headers=["PNT Mode", "Count", "Percentage"],
+            tablefmt="fancy_outline",
+        )
+    )
 
 
 def rtk_pvtgeod(argv: list) -> pl.DataFrame:
@@ -47,8 +76,11 @@ def rtk_pvtgeod(argv: list) -> pl.DataFrame:
         sys.exit(1)
 
     # extract the PVT Geodetic2 block from SBF file
-    # df_geod = sbf.extract_pvtgeodetic2()
-    df_geod = sbf.bin2asc_dataframe(lst_sbfblocks=["PVTGeodetic2"])
+    df_geod = sbf.bin2asc_dataframe(lst_sbfblocks=["PVTGeodetic2"])["PVTGeodetic2"]
+
+    # analyse the quality of the solution
+    quality_analysis(geod_df=df_geod, logger=logger)
+
     # with pl.Config(tbl_cols=-1):
     #     print(f"df_geod: \n{df_geod}")
 
