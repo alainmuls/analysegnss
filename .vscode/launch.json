@@ -77,11 +77,13 @@
                 "data/ROVR00BEL_R_20241701647_05H_10Z_MO.pos",
                 "--timing_fn",
                 "data/salton_timings.txt",
+                "--desc",
+                "salton_sea",
                 "-vv",
             ]
         },
         {
-            "name": "Python Debugger: ebh_lines ocotillo rover hour 'q'",
+            "name": "Python Debugger: ebh_lines ocotillo rover",
             "type": "debugpy",
             "request": "launch",
             "program": "ebh_lines.py",
@@ -89,10 +91,12 @@
             "args": [
                 "--rtk",
                 "--ebh_fn",
-                "./data/1342172q.24_",
+                "./data/1342172Z.24_",
                 "--timing_fn",
-                "data/salton_timings.txt",
-                "-v",
+                "data/ocotillo_timings.txt",
+                "--desc",
+                "ocotillo",
+                "-vvv",
             ]
         },
     ]

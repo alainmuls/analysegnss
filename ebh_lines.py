@@ -170,12 +170,18 @@ def ebh_lines_map_angle(
         ebh_timings[ebh_key].append(degrees(map_angle))
 
 
-def ebh_lines_extract(df_pos: pl.DataFrame, ebh_timings: dict, logger: Logger):
+def ebh_lines_extract(
+    df_pos: pl.DataFrame,
+    ebh_timings: dict,
+    parsed_args: argparse.Namespace,
+    logger: Logger,
+):
     """extract the EBH lines from the dataframe and order them according to the same map_angle
 
     Args:
         df_pos (pl.DataFrame): dataframe of whole measurement campaign
         ebh_timings (dict): timings and map_angle of each EBH line
+        parsed_args (argparse.Namespace): CLI arguments
         logger (Logger): logger object
     """
     cl_map_angle = ebh_timings["CL"][2]
@@ -205,7 +211,9 @@ def ebh_lines_extract(df_pos: pl.DataFrame, ebh_timings: dict, logger: Logger):
         # print(f"df_line = {df_line}")
 
         # thin out the df_line to keep positions every 0.5 meters
-        ebh_lines_assur[ebh_key] = ebh_lines_thin_out(df_line=df_line, logger=logger)
+        ebh_lines_assur[ebh_key] = ebh_lines_thin_out(
+            df_line=df_line, parsed_args=parsed_args, logger=logger
+        )
 
     return ebh_lines_assur
 
@@ -214,11 +222,15 @@ def euclidean_distance(x1, y1, x2, y2):
     return sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
 
-def ebh_lines_thin_out(df_line: pl.DataFrame, logger: Logger) -> pl.DataFrame:
+def ebh_lines_thin_out(
+    df_line: pl.DataFrame, parsed_args: argparse.Namespace, logger: Logger
+) -> pl.DataFrame:
     """thin out the dataframe to keep positions every 0.5 meters
 
     Args:
         df_line (pl.DataFrame): dataframe with positions of the ebh line
+        parsed_args (argparse.Namespace): CLI arguments
+        logger (Logger): logger object
 
     Returns:
         pl.DataFrame: thinned out dataframe
@@ -247,8 +259,15 @@ def ebh_lines_thin_out(df_line: pl.DataFrame, logger: Logger) -> pl.DataFrame:
     df_line = df_line.with_columns(change=pl.col("dist0").diff()).lazy()
     # keep only the rows where the difference is negative
     df_assur = df_line.filter(pl.col("change") < 0).lazy()
+
     # keep only the rows where the quality is 1 (FIX)
-    df_assur = df_assur.filter(pl.col("Q") == 1).lazy()
+    if parsed_args.ppk:
+        df_assur = df_assur.filter(pl.col("Q") == 1).lazy()
+    elif parsed_args.rtk:
+        df_assur = df_assur.filter(pl.col("Type") == 4).lazy()
+    else:
+        logger.error("No processing type 'Q' or 'Type' found. Exiting...")
+        sys.exit(2)
 
     # pl.Config.set_tbl_rows(30)
     # print(f"df_line = \n{df_line.collect()}")
@@ -335,13 +354,13 @@ def ebh_lines(argv: list):
 
     # extract the lines from the dataframe
     ebh_assur_lines = ebh_lines_extract(
-        df_pos=df_pos, ebh_timings=ebh_timings, logger=logger
+        df_pos=df_pos, ebh_timings=ebh_timings, parsed_args=args_parsed, logger=logger
     )
 
     # save in CSV files using ";" as separator
     for ebh_key, ebh_assur_line in ebh_assur_lines.items():
         # name the file according to the ebh line key
-        ebh_line_fn = f"saltonsea_{ebh_key}.csv"
+        ebh_line_fn = f"{args_parsed.desc}_{ebh_key}.csv"
         logger.info(
             f"Writing CSV assurtool file for {str_yellow(ebh_key)} to {str_yellow(ebh_line_fn)}\n"
             f"{ebh_assur_line.select(['UTM.E', 'UTM.N', 'orthoH'])}"

@@ -157,6 +157,13 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--desc",
+        help="description of EBH lines project",
+        type=str,
+        required=True,
+    )
+
+    parser.add_argument(
         "--ebh_fn",
         help="input RTK/PPK filename",
         type=str,
@@ -169,6 +176,7 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
         type=str,
         required=True,
     )
+
     parser.add_argument(
         "--plot",
         help="displays plots (default False)",
