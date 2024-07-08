@@ -24,7 +24,7 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
     # init the global variables
     globalvars.initialize()
 
-    # parse the CLI arguments
+    # get the name of this script for naming the logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
@@ -33,9 +33,7 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
 
     # create the file/console logger
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
-    # # test logger
     logger.info(f"Parsed arguments: {args_parsed}")
-    # logger.debug(f"program arguments: {args_parsed}")
 
     # create a SBF class object
     try:
