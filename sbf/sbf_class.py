@@ -81,12 +81,6 @@ class SBF:
         else:
             self.logger.info("No end time specified.")
 
-    # def extract_pvtgeodetic2(self) -> pl.DataFrame:
-    #     """extracts the PVTGeodetic2 SBF block using bin2asc"""
-    #     sbfblock = ["PVTGeodetic2"]
-    #     df_blocks = self.bin2asc_dataframe(lst_sbfblocks=sbfblock)
-    #     return df_blocks["PVTGeodetic2"]
-
     def bin2asc_dataframe(self, lst_sbfblocks: list) -> dict:
         """
         bin2asc_dataframe converts binary SBF to CVS files for the sbfblocks in
