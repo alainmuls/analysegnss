@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 import polars as pl
 
 from sbf import sbf_constants as sbfc
-from PPK import rtk_constants as rtkc
+from rtkpos import rtk_constants as rtkc
 
 
 def plot_utm_coords(utm_df: pl.DataFrame, origin: str, title: str) -> None:
