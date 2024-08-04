@@ -48,7 +48,7 @@
             "console": "integratedTerminal",
             "args": [
                 "--pos_fn",
-                "./data/ROVR00BEL_R_20241701647_05H_10Z_MO.pos",
+                "/home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos",
                 "-v",
             ]
         },
@@ -60,7 +60,7 @@
             "console": "integratedTerminal",
             "args": [
                 "--pos_fn",
-                "./data/ROVR00BEL_R_20241701647_05H_10Z_MO.pos",
+                "/home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos",
                 "-v",
                 "--plot",
             ]
@@ -74,9 +74,9 @@
             "args": [
                 "--ppk",
                 "--ebh_fn",
-                "data/ROVR00BEL_R_20241701647_05H_10Z_MO.pos",
+                "/home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos",
                 "--timing_fn",
-                "data/salton_timings.txt",
+                "/home/amuls/GNSSData/USA_CA_2024/SaltonSea/salton_timings.txt",
                 "--desc",
                 "salton_sea",
                 "-vv",
