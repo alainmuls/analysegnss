@@ -172,3 +172,4 @@ processing/constants/*.pkl
 *.pyc
 utils/__pycache__/*.pyc
 data/*.txt
+ltex*.txt
