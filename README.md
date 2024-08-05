@@ -221,6 +221,288 @@ shape: (138_699, 16)
 
 The created polars dataframe is returned and can thus be used by another script which calls this script.
 
+### The script `ppk_rnx2rtkp.py`
+
+```bash
+± ppk_rnx2rtkp.py -h
+usage: ppk_rnx2rtkp.py [-h] [-V] [-v] --pos_fn POS_FN
+
+argument_parser.py analysis of rnx2rtkp position file
+
+options:
+  -h, --help       show this help message and exit
+  -V, --version    show program's version number and exit
+  -v, --verbose    verbose level... repeat up to three times.
+  --pos_fn POS_FN  input rnx2rtkp pos filename
+```
+
+This script reads the CSV position file and returns a polar dataframe.
+
+```bash
+± ppk_rnx2rtkp.py --pos_fn /home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos -vv
+2024-08-05 14:28:54,744 [INFO](ppk_rnx2rtkp:init_logger.pylogger_setup:78): ---------- start ppk_rnx2rtkp -------------
+2024-08-05 14:28:54,744 [INFO](ppk_rnx2rtkp:ppk_rnx2rtkp.pyrtkp_pos:65): Parsed arguments: Namespace(verbose=2, pos_fn='/home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos')
+2024-08-05 14:28:54,744 [INFO](ppk_rnx2rtkp:rtkpos_class.pyvalidate_file:46): File validated successfully: /home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos
+2024-08-05 14:28:54,745 [INFO](ppk_rnx2rtkp:rtkpos_class.pyvalidate_start_time:67): No start time specified.
+2024-08-05 14:28:54,745 [INFO](ppk_rnx2rtkp:rtkpos_class.pyvalidate_end_time:86): No end time specified.
+2024-08-05 14:28:54,749 [INFO](ppk_rnx2rtkp:rtkpos_class.pyadd_columns:225): 	adding datetime to the dataframe
+2024-08-05 14:28:54,752 [INFO](ppk_rnx2rtkp:rtkpos_class.pyadd_columns:237): 	adding UTM coordinates to the dataframe
+2024-08-05 14:28:54,753 [INFO](ppk_rnx2rtkp:rtkpos_class.pyadd_columns:276): 	adding geoid undulation & orthometric height to the dataframe
+2024-08-05 14:28:54,754 [WARNING](ppk_rnx2rtkp:rtkpos_class.pyadd_columns:298): 	collecting the dataframe. Be patient.
+
+Analysis of the quality of the position data
+2024-08-05 14:29:01,383 [WARNING](ppk_rnx2rtkp:ppk_rnx2rtkp.pyquality_analysis:35): ╒═══════════════════════════╤═════════╤══════════════╕
+│ PNT Mode                  │   Count │ Percentage   │
+╞═══════════════════════════╪═════════╪══════════════╡
+│ Differential PVT          │       3 │ 0.00%        │
+│ PPK with ﬁxed ambiguities │  141661 │ 98.09%       │
+│ PPK with ﬂoat ambiguities │    2757 │ 1.91%        │
+╘═══════════════════════════╧═════════╧══════════════╛
+shape: (144_421, 20)
+┌──────┬──────────┬───────────────┬────────────────┬───────────┬─────┬─────┬────────┬────────┬────────┬─────────┬─────────┬─────────┬────────┬───────┬─────────────────────────┬───────────────┬──────────┬────────────┬────────────┐
+│ WNc  ┆ TOW(s)   ┆ latitude(deg) ┆ longitude(deg) ┆ height(m) ┆ Q   ┆ ns  ┆ sdn(m) ┆ sde(m) ┆ sdu(m) ┆ sdne(m) ┆ sdeu(m) ┆ sdun(m) ┆ age(s) ┆ ratio ┆ DT                      ┆ UTM.E         ┆ UTM.N    ┆ undulation ┆ orthoH     │
+│ ---  ┆ ---      ┆ ---           ┆ ---            ┆ ---       ┆ --- ┆ --- ┆ ---    ┆ ---    ┆ ---    ┆ ---     ┆ ---     ┆ ---     ┆ ---    ┆ ---   ┆ ---                     ┆ ---           ┆ ---      ┆ ---        ┆ ---        │
+│ i32  ┆ f64      ┆ f64           ┆ f64            ┆ f64       ┆ i16 ┆ i16 ┆ f32    ┆ f32    ┆ f32    ┆ f32     ┆ f32     ┆ f32     ┆ f32    ┆ f32   ┆ datetime[μs]            ┆ f64           ┆ f64      ┆ f64        ┆ f64        │
+╞══════╪══════════╪═══════════════╪════════════════╪═══════════╪═════╪═════╪════════╪════════╪════════╪═════════╪═════════╪═════════╪════════╪═══════╪═════════════════════════╪═══════════════╪══════════╪════════════╪════════════╡
+│ 2319 ┆ 233263.0 ┆ 33.241161     ┆ -115.95132     ┆ -64.425   ┆ 2   ┆ 4   ┆ 0.7209 ┆ 0.7955 ┆ 0.2946 ┆ 0.7573  ┆ -0.4839 ┆ -0.4607 ┆ 0.0    ┆ 0.0   ┆ 2024-06-18 16:47:43     ┆ 597698.092701 ┆ 3.6785e6 ┆ -34.169563 ┆ -30.255437 │
+│ 2319 ┆ 233263.1 ┆ 33.241164     ┆ -115.951317    ┆ -64.5365  ┆ 2   ┆ 4   ┆ 0.6971 ┆ 0.7693 ┆ 0.2849 ┆ 0.7323  ┆ -0.468  ┆ -0.4455 ┆ 0.1    ┆ 0.0   ┆ 2024-06-18 16:47:43.100 ┆ 597698.377292 ┆ 3.6785e6 ┆ -34.16957  ┆ -30.36693  │
+│ 2319 ┆ 233263.2 ┆ 33.241166     ┆ -115.951314    ┆ -64.655   ┆ 2   ┆ 4   ┆ 0.6738 ┆ 0.7437 ┆ 0.2754 ┆ 0.7079  ┆ -0.4524 ┆ -0.4306 ┆ 0.2    ┆ 0.0   ┆ 2024-06-18 16:47:43.200 ┆ 597698.681733 ┆ 3.6785e6 ┆ -34.169577 ┆ -30.485423 │
+│ 2319 ┆ 233263.3 ┆ 33.24117      ┆ -115.951309    ┆ -64.844   ┆ 2   ┆ 4   ┆ 0.6528 ┆ 0.7206 ┆ 0.2667 ┆ 0.6859  ┆ -0.4383 ┆ -0.4172 ┆ 0.3    ┆ 0.0   ┆ 2024-06-18 16:47:43.300 ┆ 597699.179407 ┆ 3.6785e6 ┆ -34.169588 ┆ -30.674412 │
+│ 2319 ┆ 233263.4 ┆ 33.241174     ┆ -115.951304    ┆ -65.0024  ┆ 2   ┆ 4   ┆ 0.6321 ┆ 0.6977 ┆ 0.2582 ┆ 0.664   ┆ -0.4243 ┆ -0.4038 ┆ 0.4    ┆ 0.0   ┆ 2024-06-18 16:47:43.400 ┆ 597699.590065 ┆ 3.6785e6 ┆ -34.169597 ┆ -30.832803 │
+│ …    ┆ …        ┆ …             ┆ …              ┆ …         ┆ …   ┆ …   ┆ …      ┆ …      ┆ …      ┆ …       ┆ …       ┆ …       ┆ …      ┆ …     ┆ …                       ┆ …             ┆ …        ┆ …          ┆ …          │
+│ 2319 ┆ 248622.7 ┆ 33.241207     ┆ -115.951254    ┆ -67.0951  ┆ 1   ┆ 8   ┆ 0.0037 ┆ 0.0029 ┆ 0.005  ┆ -0.0013 ┆ -0.0019 ┆ -0.0015 ┆ -0.3   ┆ 3.9   ┆ 2024-06-18 21:03:42.700 ┆ 597704.273984 ┆ 3.6785e6 ┆ -34.169702 ┆ -32.925398 │
+│ 2319 ┆ 248622.8 ┆ 33.241207     ┆ -115.951254    ┆ -67.0964  ┆ 1   ┆ 8   ┆ 0.0037 ┆ 0.0029 ┆ 0.005  ┆ -0.0013 ┆ -0.0019 ┆ -0.0015 ┆ -0.2   ┆ 3.9   ┆ 2024-06-18 21:03:42.800 ┆ 597704.274067 ┆ 3.6785e6 ┆ -34.169702 ┆ -32.926698 │
+│ 2319 ┆ 248622.9 ┆ 33.241207     ┆ -115.951254    ┆ -67.098   ┆ 1   ┆ 8   ┆ 0.0037 ┆ 0.0029 ┆ 0.0049 ┆ -0.0013 ┆ -0.0019 ┆ -0.0015 ┆ -0.1   ┆ 3.9   ┆ 2024-06-18 21:03:42.900 ┆ 597704.274896 ┆ 3.6785e6 ┆ -34.169703 ┆ -32.928297 │
+│ 2319 ┆ 248623.0 ┆ 33.241207     ┆ -115.951254    ┆ -67.0985  ┆ 1   ┆ 8   ┆ 0.0037 ┆ 0.0029 ┆ 0.0049 ┆ -0.0013 ┆ -0.0019 ┆ -0.0015 ┆ 0.0    ┆ 4.0   ┆ 2024-06-18 21:03:43     ┆ 597704.275547 ┆ 3.6785e6 ┆ -34.169703 ┆ -32.928797 │
+│ 2319 ┆ 248623.1 ┆ 33.241207     ┆ -115.951254    ┆ -67.1     ┆ 1   ┆ 8   ┆ 0.0037 ┆ 0.0029 ┆ 0.0049 ┆ -0.0013 ┆ -0.0019 ┆ -0.0015 ┆ 0.1    ┆ 4.0   ┆ 2024-06-18 21:03:43.100 ┆ 597704.276395 ┆ 3.6785e6 ┆ -34.169703 ┆ -32.930297 │
+└──────┴──────────┴───────────────┴────────────────┴───────────┴─────┴─────┴────────┴────────┴────────┴─────────┴─────────┴─────────┴────────┴───────┴─────────────────────────┴───────────────┴──────────┴────────────┴────────────┘
+```
+
+### The script `rtkppk_plot.py`
+
+This script plots the data obtained from the polars dataframe created by the script `rtk_pvtgeod.py` or `ppk_rnx2rtkp.py`.
+
+_Remark: currently only implemented for the RTK solution_
+
+The script calls one of the previous scripts to create the polars dataframe, extracts the columns needed for plotting and plots the data.
+
+```bash
+± rtkppk_plot.py -h
+usage: rtkppk_plot.py [-h] [-V] [-v] --pos_fn POS_FN [--plot]
+
+argument_parser.py analysis of rnx2rtkp position file
+
+options:
+  -h, --help       show this help message and exit
+  -V, --version    show program's version number and exit
+  -v, --verbose    verbose level... repeat up to three times.
+  --pos_fn POS_FN  input rnx2rtkp pos filename
+  --plot           displays plots (default False)
+```
+
+```bash
+± rtkppk_plot.py --pos_fn /home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos -vv --plot
+2024-08-05 14:34:30,771 [INFO](rtkppk_plot:init_logger.pylogger_setup:78): ---------- start rtkppk_plot -------------
+2024-08-05 14:34:30,772 [INFO](ppk_rnx2rtkp:init_logger.pylogger_setup:78): ---------- start ppk_rnx2rtkp -------------
+2024-08-05 14:34:30,772 [INFO](ppk_rnx2rtkp:ppk_rnx2rtkp.pyrtkp_pos:65): Parsed arguments: Namespace(verbose=2, pos_fn='/home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos')
+2024-08-05 14:34:30,772 [INFO](ppk_rnx2rtkp:rtkpos_class.pyvalidate_file:46): File validated successfully: /home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos
+2024-08-05 14:34:30,772 [INFO](ppk_rnx2rtkp:rtkpos_class.pyvalidate_start_time:67): No start time specified.
+2024-08-05 14:34:30,772 [INFO](ppk_rnx2rtkp:rtkpos_class.pyvalidate_end_time:86): No end time specified.
+2024-08-05 14:34:30,777 [INFO](ppk_rnx2rtkp:rtkpos_class.pyadd_columns:225): 	adding datetime to the dataframe
+2024-08-05 14:34:30,780 [INFO](ppk_rnx2rtkp:rtkpos_class.pyadd_columns:237): 	adding UTM coordinates to the dataframe
+2024-08-05 14:34:30,781 [INFO](ppk_rnx2rtkp:rtkpos_class.pyadd_columns:276): 	adding geoid undulation & orthometric height to the dataframe
+2024-08-05 14:34:30,782 [WARNING](ppk_rnx2rtkp:rtkpos_class.pyadd_columns:298): 	collecting the dataframe. Be patient.
+
+Analysis of the quality of the position data
+2024-08-05 14:34:37,218 [WARNING](ppk_rnx2rtkp:ppk_rnx2rtkp.pyquality_analysis:35): ╒═══════════════════════════╤═════════╤══════════════╕
+│ PNT Mode                  │   Count │ Percentage   │
+╞═══════════════════════════╪═════════╪══════════════╡
+│ Differential PVT          │       3 │ 0.00%        │
+│ PPK with ﬁxed ambiguities │  141661 │ 98.09%       │
+│ PPK with ﬂoat ambiguities │    2757 │ 1.91%        │
+╘═══════════════════════════╧═════════╧══════════════╛
+from rtkpos_plot df_pos = 
+shape: (144_421, 20)
+┌──────┬──────────┬───────────────┬────────────────┬───────────┬─────┬─────┬────────┬────────┬────────┬─────────┬─────────┬─────────┬────────┬───────┬─────────────────────────┬───────────────┬──────────┬────────────┬────────────┐
+│ WNc  ┆ TOW(s)   ┆ latitude(deg) ┆ longitude(deg) ┆ height(m) ┆ Q   ┆ ns  ┆ sdn(m) ┆ sde(m) ┆ sdu(m) ┆ sdne(m) ┆ sdeu(m) ┆ sdun(m) ┆ age(s) ┆ ratio ┆ DT                      ┆ UTM.E         ┆ UTM.N    ┆ undulation ┆ orthoH     │
+│ ---  ┆ ---      ┆ ---           ┆ ---            ┆ ---       ┆ --- ┆ --- ┆ ---    ┆ ---    ┆ ---    ┆ ---     ┆ ---     ┆ ---     ┆ ---    ┆ ---   ┆ ---                     ┆ ---           ┆ ---      ┆ ---        ┆ ---        │
+│ i32  ┆ f64      ┆ f64           ┆ f64            ┆ f64       ┆ i16 ┆ i16 ┆ f32    ┆ f32    ┆ f32    ┆ f32     ┆ f32     ┆ f32     ┆ f32    ┆ f32   ┆ datetime[μs]            ┆ f64           ┆ f64      ┆ f64        ┆ f64        │
+╞══════╪══════════╪═══════════════╪════════════════╪═══════════╪═════╪═════╪════════╪════════╪════════╪═════════╪═════════╪═════════╪════════╪═══════╪═════════════════════════╪═══════════════╪══════════╪════════════╪════════════╡
+│ 2319 ┆ 233263.0 ┆ 33.241161     ┆ -115.95132     ┆ -64.425   ┆ 2   ┆ 4   ┆ 0.7209 ┆ 0.7955 ┆ 0.2946 ┆ 0.7573  ┆ -0.4839 ┆ -0.4607 ┆ 0.0    ┆ 0.0   ┆ 2024-06-18 16:47:43     ┆ 597698.092701 ┆ 3.6785e6 ┆ -34.169563 ┆ -30.255437 │
+│ 2319 ┆ 233263.1 ┆ 33.241164     ┆ -115.951317    ┆ -64.5365  ┆ 2   ┆ 4   ┆ 0.6971 ┆ 0.7693 ┆ 0.2849 ┆ 0.7323  ┆ -0.468  ┆ -0.4455 ┆ 0.1    ┆ 0.0   ┆ 2024-06-18 16:47:43.100 ┆ 597698.377292 ┆ 3.6785e6 ┆ -34.16957  ┆ -30.36693  │
+│ 2319 ┆ 233263.2 ┆ 33.241166     ┆ -115.951314    ┆ -64.655   ┆ 2   ┆ 4   ┆ 0.6738 ┆ 0.7437 ┆ 0.2754 ┆ 0.7079  ┆ -0.4524 ┆ -0.4306 ┆ 0.2    ┆ 0.0   ┆ 2024-06-18 16:47:43.200 ┆ 597698.681733 ┆ 3.6785e6 ┆ -34.169577 ┆ -30.485423 │
+│ 2319 ┆ 233263.3 ┆ 33.24117      ┆ -115.951309    ┆ -64.844   ┆ 2   ┆ 4   ┆ 0.6528 ┆ 0.7206 ┆ 0.2667 ┆ 0.6859  ┆ -0.4383 ┆ -0.4172 ┆ 0.3    ┆ 0.0   ┆ 2024-06-18 16:47:43.300 ┆ 597699.179407 ┆ 3.6785e6 ┆ -34.169588 ┆ -30.674412 │
+│ 2319 ┆ 233263.4 ┆ 33.241174     ┆ -115.951304    ┆ -65.0024  ┆ 2   ┆ 4   ┆ 0.6321 ┆ 0.6977 ┆ 0.2582 ┆ 0.664   ┆ -0.4243 ┆ -0.4038 ┆ 0.4    ┆ 0.0   ┆ 2024-06-18 16:47:43.400 ┆ 597699.590065 ┆ 3.6785e6 ┆ -34.169597 ┆ -30.832803 │
+│ …    ┆ …        ┆ …             ┆ …              ┆ …         ┆ …   ┆ …   ┆ …      ┆ …      ┆ …      ┆ …       ┆ …       ┆ …       ┆ …      ┆ …     ┆ …                       ┆ …             ┆ …        ┆ …          ┆ …          │
+│ 2319 ┆ 248622.7 ┆ 33.241207     ┆ -115.951254    ┆ -67.0951  ┆ 1   ┆ 8   ┆ 0.0037 ┆ 0.0029 ┆ 0.005  ┆ -0.0013 ┆ -0.0019 ┆ -0.0015 ┆ -0.3   ┆ 3.9   ┆ 2024-06-18 21:03:42.700 ┆ 597704.273984 ┆ 3.6785e6 ┆ -34.169702 ┆ -32.925398 │
+│ 2319 ┆ 248622.8 ┆ 33.241207     ┆ -115.951254    ┆ -67.0964  ┆ 1   ┆ 8   ┆ 0.0037 ┆ 0.0029 ┆ 0.005  ┆ -0.0013 ┆ -0.0019 ┆ -0.0015 ┆ -0.2   ┆ 3.9   ┆ 2024-06-18 21:03:42.800 ┆ 597704.274067 ┆ 3.6785e6 ┆ -34.169702 ┆ -32.926698 │
+│ 2319 ┆ 248622.9 ┆ 33.241207     ┆ -115.951254    ┆ -67.098   ┆ 1   ┆ 8   ┆ 0.0037 ┆ 0.0029 ┆ 0.0049 ┆ -0.0013 ┆ -0.0019 ┆ -0.0015 ┆ -0.1   ┆ 3.9   ┆ 2024-06-18 21:03:42.900 ┆ 597704.274896 ┆ 3.6785e6 ┆ -34.169703 ┆ -32.928297 │
+│ 2319 ┆ 248623.0 ┆ 33.241207     ┆ -115.951254    ┆ -67.0985  ┆ 1   ┆ 8   ┆ 0.0037 ┆ 0.0029 ┆ 0.0049 ┆ -0.0013 ┆ -0.0019 ┆ -0.0015 ┆ 0.0    ┆ 4.0   ┆ 2024-06-18 21:03:43     ┆ 597704.275547 ┆ 3.6785e6 ┆ -34.169703 ┆ -32.928797 │
+│ 2319 ┆ 248623.1 ┆ 33.241207     ┆ -115.951254    ┆ -67.1     ┆ 1   ┆ 8   ┆ 0.0037 ┆ 0.0029 ┆ 0.0049 ┆ -0.0013 ┆ -0.0019 ┆ -0.0015 ┆ 0.1    ┆ 4.0   ┆ 2024-06-18 21:03:43.100 ┆ 597704.276395 ┆ 3.6785e6 ┆ -34.169703 ┆ -32.930297 │
+└──────┴──────────┴───────────────┴────────────────┴───────────┴─────┴─────┴────────┴────────┴────────┴─────────┴─────────┴─────────┴────────┴───────┴─────────────────────────┴───────────────┴──────────┴────────────┴────────────┘
+utm_df = 
+shape: (144_421, 6)
+┌─────────────────────────┬─────┬─────┬───────────────┬──────────┬────────────┐
+│ DT                      ┆ Q   ┆ ns  ┆ UTM.E         ┆ UTM.N    ┆ orthoH     │
+│ ---                     ┆ --- ┆ --- ┆ ---           ┆ ---      ┆ ---        │
+│ datetime[μs]            ┆ i16 ┆ i16 ┆ f64           ┆ f64      ┆ f64        │
+╞═════════════════════════╪═════╪═════╪═══════════════╪══════════╪════════════╡
+│ 2024-06-18 16:47:43     ┆ 2   ┆ 4   ┆ 597698.092701 ┆ 3.6785e6 ┆ -30.255437 │
+│ 2024-06-18 16:47:43.100 ┆ 2   ┆ 4   ┆ 597698.377292 ┆ 3.6785e6 ┆ -30.36693  │
+│ 2024-06-18 16:47:43.200 ┆ 2   ┆ 4   ┆ 597698.681733 ┆ 3.6785e6 ┆ -30.485423 │
+│ 2024-06-18 16:47:43.300 ┆ 2   ┆ 4   ┆ 597699.179407 ┆ 3.6785e6 ┆ -30.674412 │
+│ 2024-06-18 16:47:43.400 ┆ 2   ┆ 4   ┆ 597699.590065 ┆ 3.6785e6 ┆ -30.832803 │
+│ …                       ┆ …   ┆ …   ┆ …             ┆ …        ┆ …          │
+│ 2024-06-18 21:03:42.700 ┆ 1   ┆ 8   ┆ 597704.273984 ┆ 3.6785e6 ┆ -32.925398 │
+│ 2024-06-18 21:03:42.800 ┆ 1   ┆ 8   ┆ 597704.274067 ┆ 3.6785e6 ┆ -32.926698 │
+│ 2024-06-18 21:03:42.900 ┆ 1   ┆ 8   ┆ 597704.274896 ┆ 3.6785e6 ┆ -32.928297 │
+│ 2024-06-18 21:03:43     ┆ 1   ┆ 8   ┆ 597704.275547 ┆ 3.6785e6 ┆ -32.928797 │
+│ 2024-06-18 21:03:43.100 ┆ 1   ┆ 8   ┆ 597704.276395 ┆ 3.6785e6 ┆ -32.930297 │
+└─────────────────────────┴─────┴─────┴───────────────┴──────────┴────────────┘
+```
+
+![Salton Sea RTK Plot](data/saltonsea_rtk.png)
+
+### The script `ebh_lines.py`
+
+```bash
+± ebh_lines.py -h
+usage: ebh_lines.py [-h] [-V] [-v] (--rtk | --ppk) --desc DESC --ebh_fn EBH_FN --timing_fn TIMING_FN [--plot]
+
+argument_parser.py extracts the EBH lines from RTK or PPK created dataframe
+
+options:
+  -h, --help            show this help message and exit
+  -V, --version         show program's version number and exit
+  -v, --verbose         verbose level... repeat up to three times.
+  --rtk                 extract lines from RTK solution
+  --ppk                 extract lines from PPK solution
+  --desc DESC           description of EBH lines project
+  --ebh_fn EBH_FN       input RTK/PPK filename
+  --timing_fn TIMING_FN
+                        input ebh lines timing filename
+```
+
+Using the created polars dataframes in RTK or PPK mode, the script `ebh_lines.py` extracts the EBH lines from the RTK or PPK created dataframe based on timing information provided.
+
+```bash
+± ebh_lines.py --ppk --ebh_fn /home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos --timing_fn /home/amuls/GNSSData/USA_CA_2024/SaltonSea/salton_timings.txt --desc salton_sea -vv
+2024-08-05 14:40:55,472 [INFO](ebh_lines:init_logger.pylogger_setup:78): ---------- start ebh_lines -------------
+2024-08-05 14:40:55,472 [INFO](ebh_lines:ebh_lines.pyebh_lines:302): Parsed arguments: Namespace(verbose=2, rtk=False, ppk=True, desc='salton_sea', ebh_fn='/home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos', timing_fn='/home/amuls/GNSSData/USA_CA_2024/SaltonSea/salton_timings.txt', plot=False)
+2024-08-05 14:40:55,472 [INFO](ebh_lines:ebh_lines.pyget_ppk_dataframe:44): ppk_rnx2rtkp_args = ['ppk_rnx2rtkp.py', '--pos_fn', '/home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos', '-vv']
+2024-08-05 14:40:55,473 [INFO](ppk_rnx2rtkp:init_logger.pylogger_setup:78): ---------- start ppk_rnx2rtkp -------------
+2024-08-05 14:40:55,473 [INFO](ppk_rnx2rtkp:ppk_rnx2rtkp.pyrtkp_pos:65): Parsed arguments: Namespace(verbose=2, pos_fn='/home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos')
+2024-08-05 14:40:55,473 [INFO](ppk_rnx2rtkp:rtkpos_class.pyvalidate_file:46): File validated successfully: /home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos
+2024-08-05 14:40:55,473 [INFO](ppk_rnx2rtkp:rtkpos_class.pyvalidate_start_time:67): No start time specified.
+2024-08-05 14:40:55,473 [INFO](ppk_rnx2rtkp:rtkpos_class.pyvalidate_end_time:86): No end time specified.
+2024-08-05 14:40:55,478 [INFO](ppk_rnx2rtkp:rtkpos_class.pyadd_columns:225): 	adding datetime to the dataframe
+2024-08-05 14:40:55,482 [INFO](ppk_rnx2rtkp:rtkpos_class.pyadd_columns:237): 	adding UTM coordinates to the dataframe
+2024-08-05 14:40:55,483 [INFO](ppk_rnx2rtkp:rtkpos_class.pyadd_columns:276): 	adding geoid undulation & orthometric height to the dataframe
+2024-08-05 14:40:55,484 [WARNING](ppk_rnx2rtkp:rtkpos_class.pyadd_columns:298): 	collecting the dataframe. Be patient.
+
+Analysis of the quality of the position data
+2024-08-05 14:41:02,185 [WARNING](ppk_rnx2rtkp:ppk_rnx2rtkp.pyquality_analysis:35): ╒═══════════════════════════╤═════════╤══════════════╕
+│ PNT Mode                  │   Count │ Percentage   │
+╞═══════════════════════════╪═════════╪══════════════╡
+│ PPK with ﬁxed ambiguities │  141661 │ 98.09%       │
+│ Differential PVT          │       3 │ 0.00%        │
+│ PPK with ﬂoat ambiguities │    2757 │ 1.91%        │
+╘═══════════════════════════╧═════════╧══════════════╛
+2024-08-05 14:41:02,186 [INFO](ebh_lines:ebh_lines.pyebh_lines:311): Dataframe obtained from PPK processing of /home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos
+Dataframe obtained from PPK processing of /home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos
+2024-08-05 14:41:02,186 [INFO](ebh_lines:ebh_lines.pyebh_lines:341): shape: (144_421, 6)
+┌─────────────────────────┬─────┬─────┬───────────────┬──────────┬────────────┐
+│ DT                      ┆ Q   ┆ ns  ┆ UTM.E         ┆ UTM.N    ┆ orthoH     │
+│ ---                     ┆ --- ┆ --- ┆ ---           ┆ ---      ┆ ---        │
+│ datetime[μs]            ┆ i16 ┆ i16 ┆ f64           ┆ f64      ┆ f64        │
+╞═════════════════════════╪═════╪═════╪═══════════════╪══════════╪════════════╡
+│ 2024-06-18 16:47:43     ┆ 2   ┆ 4   ┆ 597698.092701 ┆ 3.6785e6 ┆ -30.255437 │
+│ 2024-06-18 16:47:43.100 ┆ 2   ┆ 4   ┆ 597698.377292 ┆ 3.6785e6 ┆ -30.36693  │
+│ 2024-06-18 16:47:43.200 ┆ 2   ┆ 4   ┆ 597698.681733 ┆ 3.6785e6 ┆ -30.485423 │
+│ 2024-06-18 16:47:43.300 ┆ 2   ┆ 4   ┆ 597699.179407 ┆ 3.6785e6 ┆ -30.674412 │
+│ 2024-06-18 16:47:43.400 ┆ 2   ┆ 4   ┆ 597699.590065 ┆ 3.6785e6 ┆ -30.832803 │
+│ …                       ┆ …   ┆ …   ┆ …             ┆ …        ┆ …          │
+│ 2024-06-18 21:03:42.700 ┆ 1   ┆ 8   ┆ 597704.273984 ┆ 3.6785e6 ┆ -32.925398 │
+│ 2024-06-18 21:03:42.800 ┆ 1   ┆ 8   ┆ 597704.274067 ┆ 3.6785e6 ┆ -32.926698 │
+│ 2024-06-18 21:03:42.900 ┆ 1   ┆ 8   ┆ 597704.274896 ┆ 3.6785e6 ┆ -32.928297 │
+│ 2024-06-18 21:03:43     ┆ 1   ┆ 8   ┆ 597704.275547 ┆ 3.6785e6 ┆ -32.928797 │
+│ 2024-06-18 21:03:43.100 ┆ 1   ┆ 8   ┆ 597704.276395 ┆ 3.6785e6 ┆ -32.930297 │
+└─────────────────────────┴─────┴─────┴───────────────┴──────────┴────────────┘
+shape: (144_421, 6)
+┌─────────────────────────┬─────┬─────┬───────────────┬──────────┬────────────┐
+│ DT                      ┆ Q   ┆ ns  ┆ UTM.E         ┆ UTM.N    ┆ orthoH     │
+│ ---                     ┆ --- ┆ --- ┆ ---           ┆ ---      ┆ ---        │
+│ datetime[μs]            ┆ i16 ┆ i16 ┆ f64           ┆ f64      ┆ f64        │
+╞═════════════════════════╪═════╪═════╪═══════════════╪══════════╪════════════╡
+│ 2024-06-18 16:47:43     ┆ 2   ┆ 4   ┆ 597698.092701 ┆ 3.6785e6 ┆ -30.255437 │
+│ 2024-06-18 16:47:43.100 ┆ 2   ┆ 4   ┆ 597698.377292 ┆ 3.6785e6 ┆ -30.36693  │
+│ 2024-06-18 16:47:43.200 ┆ 2   ┆ 4   ┆ 597698.681733 ┆ 3.6785e6 ┆ -30.485423 │
+│ 2024-06-18 16:47:43.300 ┆ 2   ┆ 4   ┆ 597699.179407 ┆ 3.6785e6 ┆ -30.674412 │
+│ 2024-06-18 16:47:43.400 ┆ 2   ┆ 4   ┆ 597699.590065 ┆ 3.6785e6 ┆ -30.832803 │
+│ …                       ┆ …   ┆ …   ┆ …             ┆ …        ┆ …          │
+│ 2024-06-18 21:03:42.700 ┆ 1   ┆ 8   ┆ 597704.273984 ┆ 3.6785e6 ┆ -32.925398 │
+│ 2024-06-18 21:03:42.800 ┆ 1   ┆ 8   ┆ 597704.274067 ┆ 3.6785e6 ┆ -32.926698 │
+│ 2024-06-18 21:03:42.900 ┆ 1   ┆ 8   ┆ 597704.274896 ┆ 3.6785e6 ┆ -32.928297 │
+│ 2024-06-18 21:03:43     ┆ 1   ┆ 8   ┆ 597704.275547 ┆ 3.6785e6 ┆ -32.928797 │
+│ 2024-06-18 21:03:43.100 ┆ 1   ┆ 8   ┆ 597704.276395 ┆ 3.6785e6 ┆ -32.930297 │
+└─────────────────────────┴─────┴─────┴───────────────┴──────────┴────────────┘
+2024-08-05 14:41:02,196 [INFO](ebh_lines:ebh_lines.pyread_ebh_line_timings:124): ╒════════════╤══════════════════════════════════════════════════════════════════════════════════════════════════════════╕
+│ EBH Line   │ EBH Timings                                                                                              │
+╞════════════╪══════════════════════════════════════════════════════════════════════════════════════════════════════════╡
+│ CL         │ [datetime.datetime(2024, 6, 18, 17, 24, 47, 500000), datetime.datetime(2024, 6, 18, 17, 50, 52, 600000)] │
+│ L+4        │ [datetime.datetime(2024, 6, 18, 17, 51, 3, 600000), datetime.datetime(2024, 6, 18, 18, 16, 57, 900000)]  │
+│ L-4        │ [datetime.datetime(2024, 6, 18, 18, 17, 12, 300000), datetime.datetime(2024, 6, 18, 18, 43, 19, 100000)] │
+│ L+8        │ [datetime.datetime(2024, 6, 18, 18, 43, 36, 300000), datetime.datetime(2024, 6, 18, 19, 9, 28)]          │
+│ L-8        │ [datetime.datetime(2024, 6, 18, 19, 9, 49), datetime.datetime(2024, 6, 18, 19, 35, 52, 500000)]          │
+│ L+10       │ [datetime.datetime(2024, 6, 18, 19, 36, 17, 600000), datetime.datetime(2024, 6, 18, 20, 2, 9, 800000)]   │
+│ L-10       │ [datetime.datetime(2024, 6, 18, 20, 2, 38, 200000), datetime.datetime(2024, 6, 18, 20, 48, 3, 200000)]   │
+╘════════════╧══════════════════════════════════════════════════════════════════════════════════════════════════════════╛
+2024-08-05 14:41:02,203 [INFO](ebh_lines:ebh_lines.pyebh_lines:350): CL       : 2024/06/18 17:24:47 - 2024/06/18 17:50:52 |  -95.9
+2024-08-05 14:41:02,204 [INFO](ebh_lines:ebh_lines.pyebh_lines:350): L+4      : 2024/06/18 17:51:03 - 2024/06/18 18:16:57 |   84.1
+2024-08-05 14:41:02,204 [INFO](ebh_lines:ebh_lines.pyebh_lines:350): L-4      : 2024/06/18 18:17:12 - 2024/06/18 18:43:19 |  -95.9
+2024-08-05 14:41:02,204 [INFO](ebh_lines:ebh_lines.pyebh_lines:350): L+8      : 2024/06/18 18:43:36 - 2024/06/18 19:09:28 |   84.1
+2024-08-05 14:41:02,204 [INFO](ebh_lines:ebh_lines.pyebh_lines:350): L-8      : 2024/06/18 19:09:49 - 2024/06/18 19:35:52 |  -95.9
+2024-08-05 14:41:02,204 [INFO](ebh_lines:ebh_lines.pyebh_lines:350): L+10     : 2024/06/18 19:36:17 - 2024/06/18 20:02:09 |   84.1
+2024-08-05 14:41:02,204 [INFO](ebh_lines:ebh_lines.pyebh_lines:350): L-10     : 2024/06/18 20:02:38 - 2024/06/18 20:48:03 |  -95.9
+2024-08-05 14:41:02,325 [INFO](ebh_lines:ebh_lines.pyebh_lines:364): Writing CSV assurtool file for CL to salton_sea_CL.csv
+shape: (3_018, 3)
+┌───────────────┬──────────┬────────────┐
+│ UTM.E         ┆ UTM.N    ┆ orthoH     │
+│ ---           ┆ ---      ┆ ---        │
+│ f64           ┆ f64      ┆ f64        │
+╞═══════════════╪══════════╪════════════╡
+│ 598342.379212 ┆ 3.6786e6 ┆ -38.822464 │
+│ 598341.862121 ┆ 3.6786e6 ┆ -38.800377 │
+│ 598341.315612 ┆ 3.6786e6 ┆ -38.77819  │
+│ 598340.861908 ┆ 3.6786e6 ┆ -38.771801 │
+│ 598340.343613 ┆ 3.6786e6 ┆ -38.764014 │
+│ …             ┆ …        ┆ …          │
+│ 596824.307531 ┆ 3.6784e6 ┆ -25.88892  │
+│ 596824.316694 ┆ 3.6784e6 ┆ -25.88742  │
+│ 596824.332462 ┆ 3.6784e6 ┆ -25.88632  │
+│ 596824.355554 ┆ 3.6784e6 ┆ -25.885019 │
+│ 596824.380941 ┆ 3.6784e6 ┆ -25.884418 │
+└───────────────┴──────────┴────────────┘
+2024-08-05 14:41:02,326 [INFO](ebh_lines:ebh_lines.pyebh_lines:364): Writing CSV assurtool file for L+4 to salton_sea_L+4.csv
+shape: (3_037, 3)
+┌───────────────┬──────────┬────────────┐
+│ UTM.E         ┆ UTM.N    ┆ orthoH     │
+│ ---           ┆ ---      ┆ ---        │
+│ f64           ┆ f64      ┆ f64        │
+╞═══════════════╪══════════╪════════════╡
+│ 598344.053805 ┆ 3.6786e6 ┆ -38.954431 │
+│ 598344.032138 ┆ 3.6786e6 ┆ -38.955232 │
+│ 598343.50315  ┆ 3.6786e6 ┆ -38.957145 │
+│ 598343.026289 ┆ 3.6786e6 ┆ -38.874356 │
+│ 598342.526608 ┆ 3.6786e6 ┆ -38.840469 │
+│ …             ┆ …        ┆ …          │
+│ 596825.642656 ┆ 3.6784e6 ┆ -25.906399 │
+│ 596825.100252 ┆ 3.6784e6 ┆ -25.913013 │
+│ 596824.611932 ┆ 3.6784e6 ┆ -25.926125 │
+│ 596824.158559 ┆ 3.6784e6 ┆ -25.926336 │
+│ 596823.952149 ┆ 3.6784e6 ┆ -25.913642 │
+└───────────────┴──────────┴────────────┘
+```
 
 ## Roadmap
 If you have ideas for releases in the future, it is a good idea to list them in the README.
@@ -233,8 +515,9 @@ For people who want to make changes to your project, it's helpful to have some d
 You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
 
 ## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
 
+- Alain MULS
+- 
 ## License
 For open source projects, say how it is licensed.
 
