@@ -1,61 +1,39 @@
-# analyseSBF
+# Repository for analyzing GNSS Data
 
+The purpose of this repository is to provide a set of tools to analyze GNSS data or to extract data from GNSS data in a reusable way. GNSS data can come from different sources, such as:
+- GNSS raw data from a GNSS receiver (SBF or u-Blox raw data)
+- GNSS data from a GNSS simulator
+- GNSS data from NMEA sentences
+- GNSS data coming from a RTCM server
+- processed GNSS data from software (RTKLib or gLab)
 
-
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://gitlab.cylab.be/personal/analysesbf.git
-git branch -M main
-git push -uf origin main
-```
-
-## Integrate with your tools
-
-- [ ] [Set up project integrations](https://gitlab.cylab.be/personal/analysesbf/-/settings/integrations)
-
-## Collaborate with your team
-
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
+Using classes for each data source and commonly used functions, the GNSS data can be analyzed or used in a way that is reusable.
 
 ## Description
+
+The repository contains python scripts and python classes for analyzing GNSS data. The repository is organized as follows:
+- `sbf`: contains the classes for reading and parsing SBF files
+- `rtkpos`: contains the classes for reading and parsing the position and status files obtained by RTKLib processing
+- `glab`: contains the classes for reading and parsing GLAB files (*not yet implemented*)
+
+Each of these directories contain a python class for reading and parsing the data. The classes are designed to be used in a way that is reusable.
+
+Next to these directories there is a `utils` directory which contains utility functions that can be used by python scripts or the classes. The `gnss` directory contains at present the `geoid` directory which is used to calculate the geoid height $H$ from the ellipsoid height $h$ and the geoid undulation $N$. The `plot` directory contains functions for plotting GNSS data.
+
+
+The repository contains the following classes:
+- `sbf/sbf_class`: class for reading and parsing SBF files
+- `rtkpos/rtkpos_class`: class for reading and parsing the position and status files obtained by RTKLib processing
+- `glab/glab_class`: class for reading and parsing the GLAB files (*not yet implemented*)
+
+The 
+
+Provide a short description explaining the what, why, and how of your project. Use the following questions as a guide:
+- What was your motivation?
+- What problem does it solve?
+- What did you learn?
+- What makes your project stand out?
+
 Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
 
 ## Badges
