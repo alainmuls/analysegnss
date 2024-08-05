@@ -7,7 +7,7 @@ import polars as pl
 
 import globalvars
 from utils import argument_parser, init_logger
-from gnss.plot import plot_utm
+from plots import plot_utm
 import ppk_rnx2rtkp
 
 
