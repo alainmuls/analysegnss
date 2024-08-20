@@ -53,6 +53,18 @@
             ]
         },
         {
+            "name": "Python Debugger: ppk_rnx2rtkp SaltonSea rover MKL",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "ppk_rnx2rtkp.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--pos_fn",
+                "/home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO-MKL.pos",
+                "-v",
+            ]
+        },
+        {
             "name": "Python Debugger: rtkppk_plot SaltonSea rover",
             "type": "debugpy",
             "request": "launch",
@@ -75,6 +87,23 @@
                 "--ppk",
                 "--ebh_fn",
                 "/home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos",
+                "--timing_fn",
+                "/home/amuls/GNSSData/USA_CA_2024/SaltonSea/salton_timings.txt",
+                "--desc",
+                "salton_sea",
+                "-vv",
+            ]
+        },
+        {
+            "name": "Python Debugger: ebh_lines SaltonSea rover MKL",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "ebh_lines.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--ppk",
+                "--ebh_fn",
+                "/home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO-MKL.pos",
                 "--timing_fn",
                 "/home/amuls/GNSSData/USA_CA_2024/SaltonSea/salton_timings.txt",
                 "--desc",
