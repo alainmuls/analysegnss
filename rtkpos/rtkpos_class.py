@@ -41,6 +41,8 @@ class Rtkpos:
             if self.logger:
                 self.logger.error(f"File does not exist: {self.pos_fn}")
             raise ValueError(f"File does not exist or is not accessible: {self.pos_fn}")
+        else:
+            self._csv_fn = self.pos_fn.replace(".pos", ".csv")
 
         if self.logger:
             self.logger.info(f"File validated successfully: {self.pos_fn}")
@@ -100,10 +102,18 @@ class Rtkpos:
         pos_schema = self.rtkpos_schema()
         # print(f"pos_schema = \n{pos_schema}")
 
+        # change the multiple spaces in char comma
+        sed_cmd = "sed 's/[[:blank:]]\{1,\}/,/g'"
+        sed_cmd = sed_cmd + f" {self.pos_fn}"
+        # print(f"sed_cmd = {sed_cmd}")
+        content = os.popen(sed_cmd).read()
+        with open(self._csv_fn, "w") as fd:
+            fd.write(content)
         # read the position file skipping the lines with '%'
         try:
             pos_df = pl.scan_csv(
-                self.pos_fn,
+                # self.pos_fn,
+                self._csv_fn,
                 has_header=False,
                 separator=",",
                 comment_prefix="%",
@@ -192,7 +202,7 @@ class Rtkpos:
                     info_processing[f"{key}-{counter}"] = val
                     counter += 1
             else:  # line holding the column names
-                col_names = line.split(",")
+                col_names = line.split()
 
         # rename the 'inp file' parts to reflect rover and base obs and nav files
         if counter == 2:
@@ -205,7 +215,7 @@ class Rtkpos:
 
         # treat the column names to get the correct list of column names
         col_names = [col.strip() for col in col_names]
-        col_names = ["WNc", "TOW(s)"] + col_names[1:]
+        col_names = ["WNc", "TOW(s)"] + col_names[2:]
         # print(f"column names = \n{col_names}")
 
         # print(f"info_processing = \n{info_processing}")
@@ -295,5 +305,5 @@ class Rtkpos:
                 .alias("orthoH")
             ).lazy()
 
-        self.logger.warning(f"\tcollecting the dataframe. {str_red('Be patient.')}")
+        self.logger.info(f"\tcollecting the dataframe. {str_red('Be patient.')}")
         return df_pos.collect()
