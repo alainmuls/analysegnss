@@ -237,7 +237,7 @@ def locate(prog: str) -> str:
             f"\n\tplease install {str_red(prog)}\n\tor adjust"
             f" your path:\n\t{str_red(os.environ['PATH'])}.\n"
         )
-        sys.exit(globalvars._ERROR_CODES["E_EXE_NOT_FOUND"])
+        sys.exit(globalvars._ERROR_CODES["E_MISSING_BIN"])
 
 
 # def RMSE(ps: pd.Series) -> float:
