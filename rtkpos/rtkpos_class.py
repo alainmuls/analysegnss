@@ -235,8 +235,8 @@ class Rtkpos:
             self.logger.info("\tadding datetime to the dataframe")
             df_pos = df_pos.with_columns(
                 pl.struct(["WNc", "TOW(s)"])
-                .map_elements(
-                    lambda x: gpsms2dt(week=x["WNc"], towms=x["TOW(s)"] * 1000),
+                .apply(
+                    lambda x: gpsms2dt(x["WNc"], x["TOW(s)"] * 1000),
                     return_dtype=datetime.datetime,
                 )
                 .alias("DT")
@@ -253,21 +253,19 @@ class Rtkpos:
 
             # Apply the conversion function lazily using map_elements with specified return_dtype
             df_pos = df_pos.with_columns(
-                [
-                    pl.struct(["latitude(deg)", "longitude(deg)"])
-                    .map_elements(
-                        lambda row: latlon_to_utm(
-                            row["latitude(deg)"], row["longitude(deg)"]
-                        ),
-                        return_dtype=pl.Struct(
-                            [
-                                pl.Field("easting", pl.Float64),
-                                pl.Field("northing", pl.Float64),
-                            ]
-                        ),
-                    )
-                    .alias("utm_coords")
-                ]
+                pl.struct(["latitude(deg)", "longitude(deg)"])
+                .apply(
+                    lambda row: latlon_to_utm(
+                        row["latitude(deg)"], row["longitude(deg)"]
+                    ),
+                    return_dtype=pl.Struct(
+                        [
+                            pl.Field("easting", pl.Float64),
+                            pl.Field("northing", pl.Float64),
+                        ]
+                    ),
+                )
+                .alias("utm_coords")
             ).lazy()
 
             # Extract the UTM.East and UTM.North from the computed struct
@@ -295,13 +293,16 @@ class Rtkpos:
                     lambda x: gh_model.get(
                         x["latitude(deg)"], x["longitude(deg)"], gh_model
                     ),
+                    return_dtype=pl.Float64,
                 )
                 .alias("undulation")
             ).lazy()
 
             df_pos = df_pos.with_columns(
                 pl.struct(["height(m)", "undulation"])
-                .apply(lambda x: x["height(m)"] - x["undulation"])
+                .apply(
+                    lambda x: x["height(m)"] - x["undulation"], return_dtype=pl.Float64
+                )
                 .alias("orthoH")
             ).lazy()
 
