@@ -99,7 +99,8 @@ class SBF:
         # sbf to CSV conversion utility
         run_bin2asc = locate("bin2asc")
         self.logger.info(
-            f"{str_yellow(run_bin2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files and importing into dataframes for SBF blocks\n{str_yellow(' '.join(lst_sbfblocks))}"
+            f"{str_yellow(run_bin2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files "
+            f"and importing into dataframes for SBF blocks\n{str_yellow(' '.join(lst_sbfblocks))}"
         )
 
         # create options for bin2asc

@@ -249,7 +249,6 @@ def ebh_lines_thin_out(
                 x["UTM.E"],
                 x["UTM.N"],
             )
-            % 0.5,
             return_dtype=pl.Float32,
         )
         .alias("dist0")
