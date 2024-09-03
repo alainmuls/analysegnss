@@ -126,8 +126,26 @@ class SBF:
 
         # Convert binary to text messages
         self.logger.debug(f"... running: {str_yellow(' '.join(cmd_bin2asc))}")
-        process = subprocess.run(cmd_bin2asc)
-
+        
+        try:
+            process = subprocess.run(cmd_bin2asc)
+        except subprocess.CalledProcessError as e:
+            print(f"{process} Error: {e}")
+            self.logger.error(
+                f"\t... subprocess {str_yellow(' '.join(cmd_bin2asc))} return exit code"
+                f"\t... {str_red(e)}. Program exits."
+            )
+            sys.exit(globalvars._ERROR_CODES["E_PROCESS"])
+        except IndexError as e:
+            print(f"{process} Error: {e}")
+            self.logger.error(
+                f"\t... subprocess {str_yellow(' '.join(cmd_bin2asc))} return exit code"
+                f"\t... {str_red(e)}. Program exits."
+            )
+            sys.exit(globalvars._ERROR_CODES["E_PROCESS"])
+        
+        
+        # not sure if the following check is still needed ... 
         if process.returncode != 0:
             self.logger.error(
                 f"\t... subprocess {str_yellow(' '.join(cmd_bin2asc))} returned exit code"
@@ -185,8 +203,10 @@ class SBF:
         # print(f"block_df = \n{block_df}")
         # remove the rows where 'Type' equals 0 (no PVT available)
         self.logger.info("\tremoving rows with no PVT solution")
-        block_df = block_df.filter(pl.col("Type") != 0).lazy()
-        # print(f"block_df = \n{block_df}")
+
+        if "Type" in block_df.columns:
+            block_df = block_df.filter(pl.col("Type") != 0).lazy()
+            # print(f"block_df = \n{block_df}")
 
         # add date-time and PRN (as str) to the dataframe
         if "WNc [w]" in block_df.columns and "TOW [0.001 s]" in block_df.columns:
@@ -393,7 +413,20 @@ class SBF:
                 "UTCSec [s]",
                 "DeltaLS [s]",
             ]
-
+        elif sbf_block == "PosCovGeodetic1":
+            col_types = {
+                pl.Float32: [
+                    "Cov_latlat [m²]",
+                    "Cov_lonlon [m²]",
+                    "Cov_hgthgt [m²]",
+                ],
+                pl.UInt32: [
+                    "TOW [0.001 s]",
+                ],
+                pl.UInt16: [
+                    "WNc [w]",
+                ],
+            }
         keep_cols = {}
         for dtype, columns in col_types.items():
             for col in columns:
