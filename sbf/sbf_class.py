@@ -129,14 +129,7 @@ class SBF:
         
         try:
             process = subprocess.run(cmd_bin2asc)
-        except subprocess.CalledProcessError as e:
-            print(f"{process} Error: {e}")
-            self.logger.error(
-                f"\t... subprocess {str_yellow(' '.join(cmd_bin2asc))} return exit code"
-                f"\t... {str_red(e)}. Program exits."
-            )
-            sys.exit(globalvars._ERROR_CODES["E_PROCESS"])
-        except IndexError as e:
+        except Exception as e:
             print(f"{process} Error: {e}")
             self.logger.error(
                 f"\t... subprocess {str_yellow(' '.join(cmd_bin2asc))} return exit code"
@@ -144,53 +137,94 @@ class SBF:
             )
             sys.exit(globalvars._ERROR_CODES["E_PROCESS"])
         
-        
-        # not sure if the following check is still needed ... 
-        if process.returncode != 0:
-            self.logger.error(
-                f"\t... subprocess {str_yellow(' '.join(cmd_bin2asc))} returned exit code"
-                f"\t... {str_red(process.returncode)}. Program exits."
+        # find created files
+        bin2asc_fns = {}
+        for sbf_block in lst_sbfblocks:
+            bin2asc_fns[sbf_block] = glob.glob(
+                rf"{self.sbf_fn}_SBF_{sbf_block}.txt"
             )
-            sys.exit(globalvars._ERROR_CODES["E_PROCESS"])
-        else:
-            # find created files
-            bin2asc_fns = {}
-            for sbf_block in lst_sbfblocks:
-                bin2asc_fns[sbf_block] = glob.glob(
-                    rf"{self.sbf_fn}_SBF_{sbf_block}.txt"
-                )
 
-            # create dictionary for containing the obtained dataframes
-            sbf_dfs = {}
+        # create dictionary for containing the obtained dataframes
+        sbf_dfs = {}
 
-            # iterate over the CVS files and convert them to dataframe
-            for sbf_block, bin2asc_fn in bin2asc_fns.items():
-                self.logger.debug(
-                    f"\t... converting {str_yellow(bin2asc_fn[0])} to dataframe"
-                )
+        # iterate over the CVS files and convert them to dataframe
+        for sbf_block, bin2asc_fn in bin2asc_fns.items():
+            self.logger.debug(
+                f"\t... converting {str_yellow(bin2asc_fn[0])} to dataframe"
+            )
 
-                # remove unused columns
-                keep_cols = self.used_columns(sbf_block)
-                # print(f"list(keep_cols.keys()) = \n{list(keep_cols.keys())}")
+            # remove unused columns
+            keep_cols = self.used_columns(sbf_block)
+            # print(f"list(keep_cols.keys()) = \n{list(keep_cols.keys())}")
 
-                sbf_df = pl.read_csv(
-                    source=bin2asc_fn[0],
-                    separator=",",
-                    columns=list(keep_cols.keys()),
-                    comment_prefix="#",
-                    has_header=True,
-                    skip_rows_after_header=1,  # Skip 1 row after the header
-                    dtypes=keep_cols,
-                    null_values="NaN",
-                )
+            sbf_df = pl.read_csv(
+                source=bin2asc_fn[0],
+                separator=",",
+                columns=list(keep_cols.keys()),
+                comment_prefix="#",
+                has_header=True,
+                skip_rows_after_header=1,  # Skip 1 row after the header
+                dtypes=keep_cols,
+                null_values="NaN",
+            )
 
-                # add columns to the dataframe
-                sbf_df = self.add_columns(block_df=sbf_df)
+            # add columns to the dataframe
+            sbf_df = self.add_columns(block_df=sbf_df)
 
-                sbf_dfs[sbf_block] = sbf_df
+            sbf_dfs[sbf_block] = sbf_df
 
         return sbf_dfs
 
+    def sbf2asc_dataframe(self, lst_sbfblocks: list) -> dict:
+        """
+        this definition is analogue to bin2asc and is used to convert the SBF files to dataframes.
+        Sbf2asc can be installed on most platforms including OS running on ARM processors (e.g. Raspberry Pi).
+        This is not the case for bin2asc
+        
+        Arguments:
+            lst_sbfblocks: list of SBF blocks to convert to a dataframe
+            (Remark; sbfblocks starting with Meas3... are not decoded using bin2asc)
+
+        Raises:
+            Exception when the bin2asc program fails
+
+        Returns:
+            dict of sbfblocks and corresponding dataframes               
+        """
+        # sbf to CSV conversion utility
+        run_sbf2asc = locate("sbf2asc")
+        self.logger.info(
+            f"{str_yellow(run_bin2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files "
+            f"and importing into dataframes for SBF blocks\n{str_yellow(' '.join(lst_sbfblocks))}"
+        )
+
+
+        # create options for bin2asc
+        cmd_sbf2asc = [
+            run_sbf2asc,
+            "-f",
+            self.sbf_fn,
+            "-E",
+            "-v",
+        ]
+
+        for sbf_block in lst_sbfblocks:
+            cmd_sbf2asc.append(sbf_block)
+
+        # Convert binary to text messages
+        self.logger.debug(f"... running: {str_yellow(' '.join(cmd_sbf2asc))}")
+        
+        try:
+            process = subprocess.run(cmd_sbf2asc)
+        except Exception as e:
+            print(f"{process} Error: {e}")
+            self.logger.error(
+                f"\t... subprocess {str_yellow(' '.join(cmd_sbf2asc))} return exit code"
+                f"\t... {str_red(e)}. Program exits."
+            )
+            sys.exit(globalvars._ERROR_CODES["E_PROCESS"])
+    
+    
     def add_columns(self, block_df: pl.DataFrame) -> pl.DataFrame:
         """checks if we can create a datetime,PRN, UTM columns in the dataframe
 
@@ -435,3 +469,7 @@ class SBF:
         print(keep_cols)
 
         return keep_cols
+
+    def  sbf2asc_convert_sbfblocklist(self, sbf_block: str) -> str:
+        
+        
