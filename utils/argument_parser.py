@@ -35,6 +35,12 @@ def argument_parser_rtk(args: list) -> argparse.Namespace:
         type=str,
         required=True,
     )
+    parser.add_argument(
+        "--sbf2asc",
+        help="Using sbf2asc instead of bin2asc as sbf converter. On some platforms (e.g. ARM env) it is not possible to install bin2asc",
+        action="store_true",
+        required=False,
+    )
 
     # allow argument completion
     argcomplete.autocomplete(parser)
