@@ -141,9 +141,7 @@ class SBF:
         # find created files
         bin2asc_fns = {}
         for sbf_block in lst_sbfblocks:
-            bin2asc_fns[sbf_block] = glob.glob(
-                rf"{self.sbf_fn}_SBF_{sbf_block}.txt"
-            )
+            bin2asc_fns[sbf_block] = glob.glob(rf"{self.sbf_fn}_SBF_{sbf_block}.txt")
 
         # create dictionary for containing the obtained dataframes
         sbf_dfs = {}
@@ -181,7 +179,7 @@ class SBF:
         this definition is analogue to bin2asc and is used to convert the SBF files to dataframes.
         Sbf2asc can be installed on most platforms including OS running on ARM processors (e.g. Raspberry Pi).
         This is not the case for bin2asc
-        
+
         Arguments:
             lst_sbfblocks: list of SBF blocks to convert to a dataframe
             (Remark; sbfblocks starting with Meas3... are not decoded using bin2asc)
@@ -190,10 +188,10 @@ class SBF:
             Exception when the bin2asc program fails
 
         Returns:
-            dict of sbfblocks and corresponding dataframes               
+            dict of sbfblocks and corresponding dataframes
         """
         # sbf to CSV conversion utility
-        run_sbf2asc = locate("sbf2asc")
+        run_sbf2asc = "/home/base/Programs_BaseStation/sbf2asc/sbf2asc"
         self.logger.info(
             f"{str_yellow(run_sbf2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files "
             f"and importing into dataframes for SBF blocks\n{str_yellow(' '.join(lst_sbfblocks))}"
@@ -210,7 +208,9 @@ class SBF:
         ]
 
         for sbf_block in lst_sbfblocks:
-            cmd_sbf2asc.append(f"{self.sbf_fn}_sbf2asc_{sbf_block}.txt") # this comes after the -o argument so a correct output file is created 
+            cmd_sbf2asc.append(
+                f"{self.sbf_fn}_sbf2asc_{sbf_block}.txt"
+            )  # this comes after the -o argument so a correct output file is created
             sbf2asc_block = self.sbf2asc_convert_sbfblock(sbf_block=sbf_block)
             cmd_sbf2asc.append(sbf2asc_block)
 
@@ -243,7 +243,6 @@ class SBF:
                 f"\t... converting {str_yellow(sbf2asc_fn[0])} to dataframe"
             )
 
-            
             # REMOVING WHITESPACES from the file name
             sed_cmd = "sed 's/[[:blank:]]\{1,\}/,/g'"
             sed_cmd = sed_cmd + f" {sbf2asc_fn[0]}"
@@ -251,8 +250,9 @@ class SBF:
             content = os.popen(sed_cmd).read()
             with open(sbf2asc_fn[0], "w") as fd:
                 fd.write(content)
-                
-    
+
+            sbf_df = pl.DataFrame()
+
             try:
                 sbf_df = pl.read_csv(
                     source=sbf2asc_fn[0],
@@ -262,18 +262,18 @@ class SBF:
                 )
             except Exception as e:
                 self.logger.error(f"Error reading file {sbf2asc_fn[0]}: {e}")
-                raise e               
-            
-            #TODO remove unused columns
-           
-            # Drop columns with only zeroes
-            sbf_df = sbf_df.drop(columns=[
-                col for col in sbf_df.columns if sbf_df[col].sum()==0
-                ])             
+            except polars.exceptions.NoDataError as e:
+                self.logger.error(f"Empty file {sbf2asc_fn[0]}: {e}")
 
-            
-            #TODO add columns to the dataframe of sbf2asc e.g. time, ...etc
-            #sbf_df = self.add_columns(block_df=sbf_df)
+            # TODO remove unused columns
+
+            # Drop columns with only zeroes
+            sbf_df = sbf_df.drop(
+                columns=[col for col in sbf_df.columns if sbf_df[col].sum() == 0]
+            )
+
+            # TODO add columns to the dataframe of sbf2asc e.g. time, ...etc
+            # sbf_df = self.add_columns(block_df=sbf_df)
 
             sbf_dfs[sbf_block] = sbf_df
 
@@ -281,7 +281,6 @@ class SBF:
             self.logger.info(sbf_dfs[sbf_block])
 
         return sbf_dfs
-
 
     def add_columns(self, block_df: pl.DataFrame) -> pl.DataFrame:
         """checks if we can create a datetime,PRN, UTM columns in the dataframe
@@ -530,22 +529,21 @@ class SBF:
 
     def sbf2asc_convert_sbfblock(self, sbf_block: str) -> str:
         """This looks up which sbf2asc argument belongs to which sbfblock
-        
+
         Arguments:
             lst_sbfblocks: list of SBF blocks to convert to a dataframe
 
         Returns:
-            str of correspond sbfblock argument for sbf2asc cli program                       
+            str of correspond sbfblock argument for sbf2asc cli program
         """
-        
-        
+
         print(
             "sbf2asc is chosen as sbf converter. Looking up corresponding sbf block arguments"
         )
         self.logger.info(
             "sbf2asc is chosen as sbf converter. Looking up corresponding sbf block arguments"
         )
-        #TODO expand look up table for sbf2asc
+        # TODO expand look up table for sbf2asc
         lookup_sbfblk = {
             "PVTCartesian2": "-p",
             "PVTGeodetic2": "-g",
@@ -554,17 +552,19 @@ class SBF:
 
         try:
             sbf_block_sbf2asc = lookup_sbfblk[sbf_block]
-            self.logger.info(f"Returning sbf block {sbf_block} corresponding arguments {sbf_block_sbf2asc} for sbf2asc")
-        except  KeyError as e: 
+            self.logger.info(
+                f"Returning sbf block {sbf_block} corresponding arguments {sbf_block_sbf2asc} for sbf2asc"
+            )
+        except KeyError as e:
             self.logger.error(f"Could not find sbf block {sbf_block} in lookup table")
             sys.exit()
-            
+
         return sbf_block_sbf2asc
-    
-    def sb2asc_sbfblock_colnames(self, sbf_block: str)  -> list:
-        """The sbf2asc does not give any header information. 
+
+    def sb2asc_sbfblock_colnames(self, sbf_block: str) -> list:
+        """The sbf2asc does not give any header information.
         This function looks up the column names for each sbf block
-        
+
         Arguments:
             lst_sbfblocks: list of SBF blocks to convert to a dataframe
 
@@ -572,7 +572,7 @@ class SBF:
             Exception when the sbf2asc program fails
 
         Returns:
-            list of correct column names for each sbfblocks                       
+            list of correct column names for each sbfblocks
         """
         print(
             "sbf2asc is chosen as sbf converter. Looking up corresponding column names for each sbf block"
@@ -580,17 +580,26 @@ class SBF:
         self.logger.info(
             "sbf2asc is chosen as sbf converter. Looking up corresponding column names for each sbf block"
         )
-        
-        #TODO this dict needs to be expanded
+
+        # TODO this dict needs to be expanded
         sbf_blocks_colnames = {
-            "PosCovGeodetic1":  ["-2","Time [GPS seconds]","Cov_XX [m²]", "Cov_YY [m²]", "Cov_ZZ  [m²]", "Cov_tt  [s²]"]
+            "PosCovGeodetic1": [
+                "-2",
+                "Time [GPS seconds]",
+                "Cov_XX [m²]",
+                "Cov_YY [m²]",
+                "Cov_ZZ [m²]",
+                "Cov_tt [s²]",
+            ]
         }
-        
+
         try:
             sbf_block_colnames = sbf_blocks_colnames[sbf_block]
-            self.logger.info(f"Returning sbf block {sbf_block} corresponding column names {sbf_block_colnames} for sbf2asc")
-        except   KeyError as e: 
+            self.logger.info(
+                f"Returning sbf block {sbf_block} corresponding column names {sbf_block_colnames} for sbf2asc"
+            )
+        except KeyError as e:
             self.logger.error(f"Could not find sbf block {sbf_block} in lookup table")
             sys.exit()
-            
+
         return sbf_block_colnames
