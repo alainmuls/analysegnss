@@ -78,7 +78,20 @@ def argument_parser_ppk(args: list) -> argparse.Namespace:
         type=str,
         required=True,
     )
-
+    parser.add_argument(
+        "--plot",
+        help="displays plots (default False)",
+        action="store_true",
+        required=False,
+        default=False,
+    )
+    parser.add_argument(
+        "--title",
+        help="title used for plots",
+        type=str,
+        required=False,
+        default='PPK results',
+    )
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
@@ -87,7 +100,8 @@ def argument_parser_ppk(args: list) -> argparse.Namespace:
 
 
 def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
-    """parses the arguments and creates console/file logger
+    """(Deprecated. Use ppk_rnx2rtkp instead.)
+    Parses the arguments and creates console/file logger
 
     Args:
         argv (list): list of arguments
@@ -122,7 +136,7 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
         required=False,
         default=False,
     )
-
+    
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
