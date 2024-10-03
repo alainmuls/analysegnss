@@ -90,7 +90,7 @@ def argument_parser_ppk(args: list) -> argparse.Namespace:
         help="title used for plots",
         type=str,
         required=False,
-        default='PPK results',
+        default="PPK results",
     )
     # allow argument completion
     argcomplete.autocomplete(parser)
@@ -136,7 +136,7 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
         required=False,
         default=False,
     )
-    
+
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
@@ -192,7 +192,7 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
 
     parser.add_argument(
         "--timing_fn",
-        help="input ebh lines timing filename",
+        help="input ebh lines timing filename. One of the keys needs to be called CL. The other keys of each track can be freely chosen. e.g. key: Wnc TOWstart, Wnc TOWend",
         type=str,
         required=True,
     )

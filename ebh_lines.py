@@ -208,7 +208,7 @@ def ebh_lines_extract(
                 pl.col("DT").is_between((timings[0]), (timings[1])),
             ).reverse()
 
-        # print(f"df_line = {df_line}")
+        print(f"df_line = {df_line}")
 
         # thin out the df_line to keep positions every 0.5 meters
         ebh_lines_assur[ebh_key] = ebh_lines_thin_out(
@@ -254,28 +254,41 @@ def ebh_lines_thin_out(
         .alias("dist0")
     ).lazy()
 
-    # calculate the distance difference between successive points
-    df_line = df_line.with_columns(change=pl.col("dist0").diff()).lazy()
-    # keep only the rows where the difference is negative
-    df_assur = df_line.filter(pl.col("change") < 0).lazy()
-
     # keep only the rows where the quality is 1 (FIX)
     if parsed_args.ppk:
-        df_assur = df_assur.filter(pl.col("Q") == 1).lazy()
+        df_line = df_line.filter(pl.col("Q") == 1).lazy()
     elif parsed_args.rtk:
-        df_assur = df_assur.filter(pl.col("Type") == 4).lazy()
+        df_line = df_line.filter(pl.col("Type") == 4).lazy()
     else:
         logger.error("No processing type 'Q' or 'Type' found. Exiting...")
         sys.exit(2)
 
-    # pl.Config.set_tbl_rows(30)
-    # print(f"df_line = \n{df_line.collect()}")
-    # # print first 30 rows of the dataframe
-    # print(f"df_line.head(30) = \n{df_line.head(30)}")
-    # # thin out the df_line to keep positions every 0.5 meters
-    # print(f"df_assur = \n{df_assur}")
-    # print(f"df_assur.head(30) = \n{df_assur.head(30)}")
+    #  Thinning out the dataframe to keep positions every 0.5 meters
+    
+    # This is done first by applying the modulo operator of 0.5 on dist0
+    df_line = df_line.with_columns(
+        dist0_mod05=pl.col("dist0")
+        .map_elements(
+            lambda x: x % 0.5,
+            return_dtype=float
+        )
+    ).lazy()
+    
+    # Then, we calculate the difference between the current value and the previous values
+    df_line = df_line.with_columns(dist_mod05_diff=pl.col("dist0_mod05").diff()).lazy()
 
+    # keep only the rows where the difference is lower than -0.25. This will produce df with the same length
+    df_assur = df_line.filter(pl.col("dist_mod05_diff") < -0.25).lazy()
+
+    #pl.Config.set_tbl_rows(30)
+    #print(f"df_line = \n{df_line.collect()}")
+    # # print first 30 rows of the dataframe
+    #print(f"df_line.head(30) = \n{df_line.head(30)}")
+    # # thin out the df_line to keep positions every 0.5 meters
+    #print(f"df_assur = \n{df_assur.collect()}")
+    #print(f"df_assur.head(30) = \n{df_assur.head(30)}")
+
+    
     return df_assur.collect()
 
 
