@@ -75,6 +75,10 @@ def rtk_pvtgeod(argv: list) -> pl.DataFrame:
         logger.error(f"Error creating SBF object: {e}")
         sys.exit(1)
 
+    if args_parsed.sbf2asc:
+        df_poscov = sbf.sbf2asc_dataframe(lst_sbfblocks=["PosCovGeodetic1"])["PosCovGeodetic1"]
+        print(df_poscov)
+        sys.exit()
     # extract the PVT Geodetic2 block from SBF file
     df_geod = sbf.bin2asc_dataframe(lst_sbfblocks=["PVTGeodetic2"])["PVTGeodetic2"]
 

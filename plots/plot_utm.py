@@ -37,7 +37,7 @@ def plot_utm_coords(utm_df: pl.DataFrame, origin: str, title: str) -> None:
                     y=qual_data["UTM.N"],
                     mode="markers",
                     name=f"{rtkc.dict_rtk_pvtmode[qual]['desc']}",
-                    marker=dict(color=rtkc.dict_rtk_pvtmode[qual]["color"], size=1),
+                    marker=dict(color=rtkc.dict_rtk_pvtmode[qual]["color"], size=3),
                 )
             )
 

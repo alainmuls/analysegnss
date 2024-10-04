@@ -123,7 +123,7 @@ class Rtkpos:
         except Exception as e:
             self.logger.error(f"Error reading file {self.pos_fn}: {e}")
             raise e
-
+        
         # add columns to the dataframe
         pos_df = self.add_columns(df_pos=pos_df)
 
@@ -139,7 +139,6 @@ class Rtkpos:
             dict: schema for the RTK position dataframe
         """
         col_types = {
-            pl.Int32: ["WNc"],
             pl.Float64: [
                 "TOW(s)",
                 "latitude(deg)",
@@ -215,10 +214,14 @@ class Rtkpos:
 
         # treat the column names to get the correct list of column names
         col_names = [col.strip() for col in col_names]
-        col_names = ["WNc", "TOW(s)"] + col_names[2:]
-        # print(f"column names = \n{col_names}")
+        
+        col_names = ["WNc", "TOW(s)"] + col_names[2:] 
 
+        self.logger.info(f"column names = \n{col_names}")
+        self.logger.info(f"info_processing = \n{info_processing}")       
+        #print(f"column names = \n{col_names}")
         # print(f"info_processing = \n{info_processing}")
+        
         return info_processing, col_names
 
     def add_columns(self, df_pos: pl.DataFrame) -> pl.DataFrame:
@@ -230,6 +233,7 @@ class Rtkpos:
         Returns:
             pl.DataFrame: dataframe with added information
         """
+        
         # add date-time and PRN (as str) to the dataframe
         if "WNc" in df_pos.columns and "TOW(s)" in df_pos.columns:
             self.logger.info("\tadding datetime to the dataframe")
@@ -241,7 +245,7 @@ class Rtkpos:
                 )
                 .alias("DT")
             ).lazy()
-
+        
         # add UTM coordinates
         if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
             self.logger.info("\tadding UTM coordinates to the dataframe")
@@ -307,4 +311,20 @@ class Rtkpos:
             ).lazy()
 
         self.logger.info(f"\tcollecting the dataframe. {str_red('Be patient.')}")
-        return df_pos.collect()
+        
+        try:
+            df_pos = df_pos.collect()
+        except pl.exceptions.ComputeError as e:
+            print(f"""{str_red("""
+                \r[ERROR] Probably a dtype error.
+                \rCheck if RTKlib date time is set to tow and not dms.
+                """)}
+            """)
+            self.logger.error(f"""
+                \r Error collecting dataframe: {e}\n
+                \rProbably a dtype error.
+                \rCheck if RTKlib date time is set to tow and not dms.
+            """)         
+            sys.exit()
+        
+        return df_pos
