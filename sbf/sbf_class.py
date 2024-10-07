@@ -191,7 +191,9 @@ class SBF:
             dict of sbfblocks and corresponding dataframes
         """
         # sbf to CSV conversion utility
-        run_sbf2asc = "/home/base/Programs_BaseStation/sbf2asc/sbf2asc"
+        run_sbf2asc = locate("sbf2asc")
+        if run_sbf2asc is None:
+            run_sbf2asc = "/home/base/Programs_BaseStation/sbf2asc/sbf2asc"
         self.logger.info(
             f"{str_yellow(run_sbf2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files "
             f"and importing into dataframes for SBF blocks\n{str_yellow(' '.join(lst_sbfblocks))}"
