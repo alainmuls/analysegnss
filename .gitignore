@@ -173,3 +173,4 @@ processing/constants/*.pkl
 utils/__pycache__/*.pyc
 data/*.txt
 ltex*.txt
+*.csv
