@@ -1,5 +1,6 @@
 #!/bin/bash 
 
+
 OPTIONS=$(getopt -o hf:r:x: -l help,sbf_fn,rnx_dir,excl_GNSS -- "$@")
 
 function usage {
@@ -12,6 +13,11 @@ function usage {
     echo "  -x excl_GNSS    exclude GNSS (default: RSCJI)"
     exit 1
 }
+
+# Add this section at the beginning of the script, right after the shebang
+if [ $# -eq 0 ]; then
+    usage
+fi
 
 if [ $? -ne 0 ]; then
   echo "getopt error"
