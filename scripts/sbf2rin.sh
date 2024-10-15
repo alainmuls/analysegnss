@@ -21,7 +21,7 @@ fi
 
 if [ $? -ne 0 ]; then
   echo "getopt error"
-  exit 1
+  exit 2
 fi
 
 eval set -- $OPTIONS
@@ -49,44 +49,21 @@ fi
 
 # locate sbf2rin and gfzrnx executables
 SBF2RIN=`which sbf2rin`
-GFZRNX=`which gfzrnx`
-RM=/usr/bin/rm
-
-# Extract directory
-SBF_DIR=${SBF_FN%/*}
-# Extract filename with extension
-SBF_FILE=${SBF_FN##*/}
-# Extract filename without extension
-FILENAME=${SBF_FILE%.*}
-# Extract extension
-EXT=${SBF_FILE##*.}
 
 # create the RNX_DIR if it does not exist
 if [ ! -d ${RNX_DIR} ]; then
     mkdir -p ${RNX_DIR}
 fi
 
-SBF2RINOBSOPTS=" -x "${EXCL_GNSS}" -s -D -v -R3 -l -O BEL"
-RNX_OBS=${FILENAME%.*}.obs
-
-SBF2RINNAVOPTS=" -x "${EXCL_GNSS}" -v -R3 -l -O BEL -n P"
-RNX_NAV=${FILENAME%.*}.nav
+OBS_OPTS=" -x "${EXCL_GNSS}" -s -D -v -R3 -l -O BEL -c"
+NAV_OPTS=" -x "${EXCL_GNSS}" -v -R3 -l -O BEL -n P"
 
 # switch to the RINEX directory
 cd ${RNX_DIR}
 
 echo -e "\e[1;34mCreating RINEX observation file \e[1;32m${RNX_DIR}/${RNX_OBS}\e[0m"
-${SBF2RIN} ${SBF2RINOBSOPTS} -f ${SBF_DIR}/${SBF_FILE} -o ${RNX_DIR}/${RNX_OBS}
-${GFZRNX} -f -finp ${RNX_DIR}/${RNX_OBS} -fout ::RX3::00,BEL 
-# if success remove the first RNX_OBS file
-if [ $? -eq 0 ]; then
-    ${RM} ${RNX_OBS}
-fi
+${SBF2RIN} ${OBS_OPTS} -f ${SBF_FN} 
+# fi
 
 echo -e "\e[1;34mCreating RINEX navigation file \e[1;32m${RNX_DIR}/${RNX_NAV}\e[0m"
-${SBF2RIN} ${SBF2RINNAVOPTS} -f ${SBF_DIR}/${SBF_FILE} -o ${RNX_DIR}/${RNX_NAV} -n P
-${GFZRNX} -f -finp ${RNX_DIR}/${RNX_NAV} -fout ::RX3::00,BEL 
-# if success remove the first RNX_OBS file
-if [ $? -eq 0 ]; then
-    ${RM} ${RNX_NAV}
-fi
+${SBF2RIN} ${NAV_OPTS} -f ${SBF_FN}
