@@ -14,6 +14,7 @@ import globalvars
 import ppk_rnx2rtkp
 import rtk_pvtgeod
 from gnss.gnss_dt import gnss2dt
+from plots import plot_utm
 from rtkpos import rtk_constants as rtkc
 from rtkpos.rtkpos_class import Rtkpos
 from utils import argument_parser, init_logger
@@ -382,8 +383,16 @@ def ebh_lines(argv: list):
         ebh_assur_line.select(["UTM.E", "UTM.N", "orthoH"]).write_csv(
             ebh_line_fn, separator=";", include_header=False, float_precision=3
         )
+        
+        if args_parsed.plot and args_parsed.ppk:
+            # plot the UTM and orthoH coordinates
+            plot_utm.plot_utm_coords(
+                utm_df=ebh_assur_line.select(["UTM.E", "UTM.N", "orthoH"]),
+                origin="PPK",
+                title=f"PPK_{args_parsed.desc}_{ebh_key}",
         pass
-
+    
+    
 
 if __name__ == "__main__":
     ebh_lines(argv=sys.argv)

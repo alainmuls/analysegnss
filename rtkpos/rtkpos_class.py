@@ -103,7 +103,7 @@ class Rtkpos:
         # print(f"pos_schema = \n{pos_schema}")
 
         # change the multiple spaces in char comma
-        sed_cmd = "sed 's/[[:blank:]]\{1,\}/,/g'"
+        sed_cmd = r"sed 's/[[:blank:]]\{1,\}/,/g'"
         sed_cmd = sed_cmd + f" {self.pos_fn}"
         # print(f"sed_cmd = {sed_cmd}")
         content = os.popen(sed_cmd).read()
@@ -317,13 +317,13 @@ class Rtkpos:
         except pl.exceptions.ComputeError as e:
             print(f"""{str_red("""
                 \r[ERROR] Probably a dtype error.
-                \rCheck if RTKlib date time is set to tow and not dms.
+                \rCheck if RTKlib date time is set to tow and not hms.
                 """)}
             """)
             self.logger.error(f"""
                 \r Error collecting dataframe: {e}\n
                 \rProbably a dtype error.
-                \rCheck if RTKlib date time is set to tow and not dms.
+                \rCheck if RTKlib date time is set to tow and not hms.
             """)         
             sys.exit()
         
