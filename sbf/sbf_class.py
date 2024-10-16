@@ -246,7 +246,7 @@ class SBF:
             )
 
             # REMOVING WHITESPACES from the file name
-            sed_cmd = "sed 's/[[:blank:]]\{1,\}/,/g'"
+            sed_cmd = r"sed 's/[[:blank:]]\{1,\}/,/g'"
             sed_cmd = sed_cmd + f" {sbf2asc_fn[0]}"
             print(f"sed_cmd = {sed_cmd}")
             content = os.popen(sed_cmd).read()
