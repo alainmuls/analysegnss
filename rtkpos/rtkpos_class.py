@@ -5,15 +5,14 @@ import sys
 from dataclasses import dataclass, field
 from typing import Tuple
 
-import numpy as np
-import pandas as pd
 import polars as pl
 import utm
 from gnss import geoid
 
-import globalvars
+# import globalvars
 from gnss.gnss_dt import gpsms2dt
 from utils.utilities import str_red
+from config import GEOID_PATH, ERROR_CODES
 
 
 @dataclass
@@ -38,13 +37,13 @@ class Rtkpos:
             ValueError: when file is not accessible
         """
         if not os.path.isfile(self.pos_fn) or not os.access(self.pos_fn, os.R_OK):
-            if self.logger:
+            if self.logger is not None:
                 self.logger.error(f"File does not exist: {self.pos_fn}")
             raise ValueError(f"File does not exist or is not accessible: {self.pos_fn}")
         else:
             self._csv_fn = self.pos_fn.replace(".pos", ".csv")
 
-        if self.logger:
+        if self.logger is not None:
             self.logger.info(f"File validated successfully: {self.pos_fn}")
 
     def validate_start_time(self):
@@ -55,18 +54,21 @@ class Rtkpos:
         """
         if self.start_time is not None:
             if not isinstance(self.start_time, datetime.time):
-                self.logger.error(
-                    f"Invalid start_time {self.start_time}: not a valid datetime.time object."
-                )
+                if self.logger is not None:
+                    self.logger.error(
+                        f"Invalid start_time {self.start_time}: not a valid datetime.time object."
+                    )
                 raise ValueError(
                     f"Invalid start_time {self.start_time}: not a valid datetime.time object."
                 )
             else:
-                self.logger.info(
-                    f"Start time {self.start_time} validated successfully."
-                )
+                if self.logger is not None:
+                    self.logger.info(
+                        f"Start time {self.start_time} validated successfully."
+                    )
         else:
-            self.logger.info("No start time specified.")
+            if self.logger is not None:
+                self.logger.info("No start time specified.")
 
     def validate_end_time(self):
         """validate if the argument is instance of datetime.time
@@ -76,16 +78,21 @@ class Rtkpos:
         """
         if self.end_time is not None:
             if not isinstance(self.end_time, datetime.time):
-                self.logger.error(
-                    f"Invalid end_time {self.end_time}: not a valid datetime.time object."
-                )
+                if self.logger is not None:
+                    self.logger.error(
+                        f"Invalid end_time {self.end_time}: not a valid datetime.time object."
+                    )
                 raise ValueError(
                     f"Invalid end_time {self.end_time}: not a valid datetime.time object."
                 )
             else:
-                self.logger.info(f"end time {self.end_time} validated successfully.")
+                if self.logger is not None:
+                    self.logger.info(
+                        f"end time {self.end_time} validated successfully."
+                    )
         else:
-            self.logger.info("No end time specified.")
+            if self.logger is not None:
+                self.logger.info("No end time specified.")
 
     def read_pos_file(self) -> pl.DataFrame:
         """read the RTK position file
@@ -121,9 +128,10 @@ class Rtkpos:
                 schema_overrides=pos_schema,
             )
         except Exception as e:
-            self.logger.error(f"Error reading file {self.pos_fn}: {e}")
+            if self.logger is not None:
+                self.logger.error(f"Error reading file {self.pos_fn}: {e}")
             raise e
-        
+
         # add columns to the dataframe
         pos_df = self.add_columns(df_pos=pos_df)
 
@@ -214,14 +222,14 @@ class Rtkpos:
 
         # treat the column names to get the correct list of column names
         col_names = [col.strip() for col in col_names]
-        
-        col_names = ["WNc", "TOW(s)"] + col_names[2:] 
+
+        col_names = ["WNc", "TOW(s)"] + col_names[2:]
 
         self.logger.info(f"column names = \n{col_names}")
-        self.logger.info(f"info_processing = \n{info_processing}")       
-        #print(f"column names = \n{col_names}")
+        self.logger.info(f"info_processing = \n{info_processing}")
+        # print(f"column names = \n{col_names}")
         # print(f"info_processing = \n{info_processing}")
-        
+
         return info_processing, col_names
 
     def add_columns(self, df_pos: pl.DataFrame) -> pl.DataFrame:
@@ -233,10 +241,11 @@ class Rtkpos:
         Returns:
             pl.DataFrame: dataframe with added information
         """
-        
+
         # add date-time and PRN (as str) to the dataframe
         if "WNc" in df_pos.columns and "TOW(s)" in df_pos.columns:
-            self.logger.info("\tadding datetime to the dataframe")
+            if self.logger is not None:
+                self.logger.info("\tadding datetime to the dataframe")
             df_pos = df_pos.with_columns(
                 pl.struct(["WNc", "TOW(s)"])
                 .apply(
@@ -245,10 +254,11 @@ class Rtkpos:
                 )
                 .alias("DT")
             ).lazy()
-        
+
         # add UTM coordinates
         if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
-            self.logger.info("\tadding UTM coordinates to the dataframe")
+            if self.logger is not None:
+                self.logger.info("\tadding UTM coordinates to the dataframe")
 
             # Function to convert lat/lon in degrees to UTM
             def latlon_to_utm(lat, lon):
@@ -285,11 +295,21 @@ class Rtkpos:
 
         # add geoid undulation and orthometric height
         if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
-            self.logger.info(
-                "\tadding geoid undulation & orthometric height to the dataframe"
-            )
+            if self.logger is not None:
+                self.logger.info(
+                    "\tadding geoid undulation & orthometric height to the dataframe"
+                )
             # initialise the geodheight class
-            gh_model = geoid.GeoidHeight("./gnss/geoids/egm2008-1.pgm")
+            """
+            Initializes a GeoidHeight object with the specified geoid model file.
+            
+            Args:
+                geoid_file (str): The path to the geoid model file (e.g. GEOID_PATH).
+            
+            Returns:
+                GeoidHeight: An instance of the GeoidHeight class initialized with the specified geoid model.
+            """
+            gh_model = geoid.GeoidHeight(GEOID_PATH)
 
             df_pos = df_pos.with_columns(
                 pl.struct(["latitude(deg)", "longitude(deg)"])
@@ -310,21 +330,27 @@ class Rtkpos:
                 .alias("orthoH")
             ).lazy()
 
-        self.logger.info(f"\tcollecting the dataframe. {str_red('Be patient.')}")
-        
+        if self.logger is not None:
+            self.logger.info(f"\tcollecting the dataframe. {str_red('Be patient.')}")
+
         try:
             df_pos = df_pos.collect()
         except pl.exceptions.ComputeError as e:
-            print(f"""{str_red("""
+            print(
+                f"""{str_red("""
                 \r[ERROR] Probably a dtype error.
-                \rCheck if RTKlib date time is set to tow and not dms.
+                \rCheck if RTKlib date time is set to WkNr/TOW and not HMS.
                 """)}
-            """)
-            self.logger.error(f"""
-                \r Error collecting dataframe: {e}\n
-                \rProbably a dtype error.
-                \rCheck if RTKlib date time is set to tow and not dms.
-            """)         
-            sys.exit()
-        
+            """
+            )
+            if self.logger is not None:
+                self.logger.error(
+                    f"""
+                    \r Error collecting dataframe: {e}\n
+                    \rProbably a dtype error.
+                    \rCheck if RTKlib date time is set to WkNr/TOW and not HMS.
+                """
+                )
+            sys.exit(ERROR_CODES["E_FAILURE"])
+
         return df_pos
