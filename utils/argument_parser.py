@@ -113,7 +113,9 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
     """
     baseName = str_yellow(os.path.basename(__file__))
 
-    help_txt = baseName + " analysis of rnx2rtkp position file"
+    help_txt = (
+        baseName + " Plot PPK (from ppk_rnx2rtkp.py) or RTK (from rtk_pvtgeod.py) data"
+    )
 
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=help_txt)
@@ -125,12 +127,22 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
         default=None,
         help="verbose level... repeat up to three times.",
     )
-    parser.add_argument(
+
+    # Create a mutually exclusive group
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.description = "Specify either a POS file or an SBF file (required)"
+
+    group.add_argument(
         "--pos_fn",
         help="input rnx2rtkp pos filename",
         type=str,
-        required=True,
     )
+    group.add_argument(
+        "--sbf_fn",
+        help="input SBF filename",
+        type=str,
+    )
+
     parser.add_argument(
         "--title",
         help="title for plot",
@@ -140,7 +152,7 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
     )
     parser.add_argument(
         "--plot",
-        help="displays plots (default False)",
+        help="display plots (default False)",
         action="store_true",
         required=False,
         default=False,
