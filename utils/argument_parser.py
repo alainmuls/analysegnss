@@ -21,14 +21,6 @@ def argument_parser_rtk(args: list) -> argparse.Namespace:
 
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=help_txt)
-    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="count",
-        default=None,
-        help="verbose level... repeat up to three times.",
-    )
     parser.add_argument(
         "--sbf_fn",
         help="input SBF filename",
@@ -37,9 +29,17 @@ def argument_parser_rtk(args: list) -> argparse.Namespace:
     )
     parser.add_argument(
         "--sbf2asc",
-        help="Using sbf2asc instead of bin2asc as sbf converter. On some platforms (e.g. ARM env) it is not possible to install bin2asc",
+        help="Using sbf2asc instead of bin2asc as sbf converter.",
         action="store_true",
         required=False,
+    )
+
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
     )
 
     # allow argument completion
@@ -78,20 +78,21 @@ def argument_parser_ppk(args: list) -> argparse.Namespace:
         type=str,
         required=True,
     )
-    parser.add_argument(
-        "--plot",
-        help="displays plots (default False)",
-        action="store_true",
-        required=False,
-        default=False,
-    )
-    parser.add_argument(
-        "--title",
-        help="title used for plots",
-        type=str,
-        required=False,
-        default="PPK results",
-    )
+    # parser.add_argument(
+    #     "--plot",
+    #     help="displays plots (default False)",
+    #     action="store_true",
+    #     required=False,
+    #     default=False,
+    # )
+    # parser.add_argument(
+    #     "--title",
+    #     help="title used for plots",
+    #     type=str,
+    #     required=False,
+    #     default="PPK results",
+    # )
+
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
@@ -128,6 +129,13 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
         help="input rnx2rtkp pos filename",
         type=str,
         required=True,
+    )
+    parser.add_argument(
+        "--title",
+        help="title for plot",
+        type=str,
+        required=False,
+        default=None,
     )
     parser.add_argument(
         "--plot",
