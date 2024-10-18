@@ -128,21 +128,6 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
         help="verbose level... repeat up to three times.",
     )
 
-    # Create a mutually exclusive group
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.description = "Specify either a POS file or an SBF file (required)"
-
-    group.add_argument(
-        "--pos_fn",
-        help="input rnx2rtkp pos filename",
-        type=str,
-    )
-    group.add_argument(
-        "--sbf_fn",
-        help="input SBF filename",
-        type=str,
-    )
-
     parser.add_argument(
         "--title",
         help="title for plot",
@@ -158,9 +143,30 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
         default=False,
     )
 
+    # Create a mutually exclusive group
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.description = "Specify either a POS file or an SBF file (required)"
+    # parser.add_argument(
+    #     "--mutually-exclusive",
+    #     action="store_true",
+    #     help="One of the following options is required:",
+    # )
+
+    group.add_argument(
+        "--pos_fn",
+        help="input rnx2rtkp pos filename",
+        type=str,
+    )
+    group.add_argument(
+        "--sbf_fn",
+        help="input SBF filename",
+        type=str,
+    )
+
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
+    print(f"Parsed arguments: {vars(args)}")
 
     return args
 
