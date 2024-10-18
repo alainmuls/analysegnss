@@ -193,7 +193,11 @@ class SBF:
         # sbf to CSV conversion utility
         run_sbf2asc = locate("sbf2asc")
         if run_sbf2asc is None:
-            run_sbf2asc = "/home/base/Programs_BaseStation/sbf2asc/sbf2asc"
+            self.logger.error(
+                f"sbf2asc not found in PATH. Please install sbf2asc. Program exits."
+            )
+            sys.exit(globalvars._ERROR_CODES["E_PROCESS"])
+            
         self.logger.info(
             f"{str_yellow(run_sbf2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files "
             f"and importing into dataframes for SBF blocks\n{str_yellow(' '.join(lst_sbfblocks))}"
