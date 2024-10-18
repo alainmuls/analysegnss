@@ -84,34 +84,10 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
     # analyse the quality of the solution
     quality_analysis(df_pos=pos_df, logger=logger)
 
-    # if args_parsed.plot:
-    #     rtkppk_plot(pos_df=pos_df, title=args_parsed.title, logger=logger)
+    with pl.Config(tbl_cols=-1):
+        logger.debug(f"df_pos = \n{pos_df}")
 
     return pos_df
-
-
-# def rtkppk_plot(
-#     pos_df: pl.DataFrame,
-#     title: str,
-#     logger: Logger = None,
-# ) -> None:
-#     """analyses the rnx2rtkp output file and extracts the position information
-
-#     Args:
-#         pos_df: polars dataframe with DT, Q, ns, UTM data
-#     """
-
-#     # create the RTK position dataframe by calling ppk_rnx2rtkp.py
-#     # adjust the arguments to exclude the "--plot" argument
-#     with pl.Config(tbl_cols=-1):
-#         print(f"df_pos = \n{pos_df}")
-
-#     # plot the UTM and orthoH coordinates
-#     plot_utm.plot_utm_coords(
-#         utm_df=pos_df.select(["DT", "Q", "ns", "UTM.E", "UTM.N", "orthoH"]),
-#         origin="PPK",
-#         title=title,
-#     )
 
 
 if __name__ == "__main__":
