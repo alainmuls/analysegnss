@@ -2,13 +2,14 @@
 
 import os
 import sys
-import argparse
+
 import polars as pl
 
-import globalvars
-from utils import argument_parser, init_logger
-from plots import plot_utm
 import ppk_rnx2rtkp
+import rtk_pvtgeod
+from config import ERROR_CODES
+from plots import plot_utm
+from utils import argument_parser, init_logger
 
 
 def rtkppk_plot(argv: list):
@@ -17,10 +18,6 @@ def rtkppk_plot(argv: list):
     Args:
         argv (list): CLI arguments
     """
-    # init the global variables
-    globalvars.initialize()
-
-
     # parse the CLI arguments
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
@@ -33,19 +30,64 @@ def rtkppk_plot(argv: list):
     # # test logger
     logger.info(f"Parsed arguments: {args_parsed}")
 
-    # create the RTK position dataframe by calling ppk_rnx2rtkp.py
-    # adjust the arguments to exclude the "--plot" argument
-    ppk_rnx2rtkp_args = [val for val in argv if val != "--plot"]
-    df_pos = ppk_rnx2rtkp.rtkp_pos(argv=ppk_rnx2rtkp_args)
-    with pl.Config(tbl_cols=-1):
-        print(f"from rtkpos_plot df_pos = \n{df_pos}")
+    if args_parsed.pos_fn is not None:
+        # create the PPK position dataframe by calling ppk_rnx2rtkp.py
+        pos_fn_index = argv.index("--pos_fn")
+        pos_fn_value = argv[pos_fn_index + 1]
+
+        ppk_rnx2rtkp_args = ["ppk_rnx2rtkp.py", "--pos_fn", pos_fn_value]
+        df_pos = ppk_rnx2rtkp.rtkp_pos(argv=ppk_rnx2rtkp_args)
+
+        # select the columns needed for the plot
+        df_utm = df_pos.select(["DT", "Q", "ns", "UTM.E", "UTM.N", "orthoH"])
+
+        with pl.Config(tbl_cols=-1):
+            if logger is not None:
+                logger.info(f"df_pos = \n{df_pos}")
+                logger.info(f"df_utm = \n{df_utm}")
+
+        origin = "PPK"
+        if args_parsed.title is not None:
+            title = args_parsed.title
+        else:
+            title = args_parsed.pos_fn + " (" + origin + ")"
+
+    elif args_parsed.sbf_fn is not None:
+        # create the RTK position dataframe by calling rtk_pvtgeod.py
+        # create the PPK position dataframe by calling ppk_rnx2rtkp.py
+        sbf_fn_index = argv.index("--sbf_fn")
+        sbf_fn_value = argv[sbf_fn_index + 1]
+
+        rtk_pvtgeod_args = ["rtk_pvtgeod.py", "--sbf_fn", sbf_fn_value]
+        df_rtk = rtk_pvtgeod.rtk_pvtgeod(argv=rtk_pvtgeod_args)
+
+        # select the columns needed for the plot
+        df_utm = df_rtk.select(["DT", "Type", "NrSV", "UTM.E", "UTM.N", "orthoH"])
+
+        with pl.Config(tbl_cols=-1):
+            if logger is not None:
+                logger.info(f"df_rtk = \n{df_rtk}")
+                logger.info(f"df_utm = \n{df_utm}")
+
+        origin = "RTK"
+        if args_parsed.title is not None:
+            title = args_parsed.title
+        else:
+            title = args_parsed.sbf_fn + " (" + origin + ")"
+
+    else:
+        if logger is not None:
+            logger.error("No position file specified")
+        print("No position file specified")
+        sys.exit(ERROR_CODES["E_INVALID_ARGS"])
 
     # plot the UTM and orthoH coordinates
     if args_parsed.plot:
         plot_utm.plot_utm_coords(
-            utm_df=df_pos.select(["DT", "Q", "ns", "UTM.E", "UTM.N", "orthoH"]),
-            origin="PPK",
-            title="PNT scatter plot",
+            utm_df=df_utm,
+            origin=origin,
+            title=title,
+            logger=logger,
         )
 
 
