@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 
+from logging import Logger
 import os
 import sys
 
 import polars as pl
 from tabulate import tabulate
 
-import globalvars
+# import globalvars
 from plots import plot_utm
 from rtkpos import rtk_constants as rtkc
 from rtkpos.rtkpos_class import Rtkpos
 from utils import argument_parser, init_logger
 
 
-def quality_analysis(df_pos: pl.DataFrame, logger) -> None:
+def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> None:
     """display the quality analysis
 
     Args:
@@ -26,20 +27,23 @@ def quality_analysis(df_pos: pl.DataFrame, logger) -> None:
     total_obs = df_pos.shape[0]
     for qual, qual_data in df_pos.group_by(["Q"]):
         qual_analysis.append(
-            [   
+            [
                 rtkc.dict_rtk_pvtmode[qual[0]]["desc"],
                 qual_data.shape[0],
                 f"{qual_data.shape[0]/total_obs*100:.2f}%",
             ]
         )
 
-    logger.warning(
-        tabulate(
-            qual_analysis,
-            headers=["PNT Mode", "Count", "Percentage"],
-            tablefmt="fancy_outline",
-        )
+    qual_tabular = tabulate(
+        qual_analysis,
+        headers=["PNT Mode", "Count", "Percentage"],
+        tablefmt="fancy_outline",
     )
+
+    print(qual_tabular)
+
+    if logger is not None:
+        logger.warn(qual_tabular)
 
 
 def rtkp_pos(argv: list) -> pl.DataFrame:
@@ -52,7 +56,7 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
         pl.DataFrame: RTK position dataframe
     """
     # init the global variables
-    globalvars.initialize()
+    # globalvars.initialize()
 
     # get the name of this script for naming the logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
@@ -80,33 +84,34 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
     # analyse the quality of the solution
     quality_analysis(df_pos=pos_df, logger=logger)
 
-    if args_parsed.plot:
-        rtkppk_plot(pos_df=pos_df, title=args_parsed.title, logger=logger)
-    # with pl.Config(tbl_cols=-1):
-    #     print(f"pos_df.describe(): \n{pos_df.describe()}")
+    # if args_parsed.plot:
+    #     rtkppk_plot(pos_df=pos_df, title=args_parsed.title, logger=logger)
 
     return pos_df
 
 
-def rtkppk_plot(pos_df: pl.DataFrame, title: str, logger) -> None:
-    """analyses the rnx2rtkp output file and extracts the position information
+# def rtkppk_plot(
+#     pos_df: pl.DataFrame,
+#     title: str,
+#     logger: Logger = None,
+# ) -> None:
+#     """analyses the rnx2rtkp output file and extracts the position information
 
-    Args:
-        pos_df: polars dataframe with DT, Q, ns, UTM data
-    """
+#     Args:
+#         pos_df: polars dataframe with DT, Q, ns, UTM data
+#     """
 
-    # create the RTK position dataframe by calling ppk_rnx2rtkp.py
-    # adjust the arguments to exclude the "--plot" argument
-    with pl.Config(tbl_cols=-1):
-        print(f"from rtkpos_plot df_pos = \n{pos_df}")
+#     # create the RTK position dataframe by calling ppk_rnx2rtkp.py
+#     # adjust the arguments to exclude the "--plot" argument
+#     with pl.Config(tbl_cols=-1):
+#         print(f"df_pos = \n{pos_df}")
 
-    # plot the UTM and orthoH coordinates
-    plot_utm.plot_utm_coords(
-        utm_df=pos_df.select(["DT", "Q", "ns", "UTM.E", "UTM.N", "orthoH"]),
-        origin="PPK",
-        title=title,
-    )
-
+#     # plot the UTM and orthoH coordinates
+#     plot_utm.plot_utm_coords(
+#         utm_df=pos_df.select(["DT", "Q", "ns", "UTM.E", "UTM.N", "orthoH"]),
+#         origin="PPK",
+#         title=title,
+#     )
 
 
 if __name__ == "__main__":
