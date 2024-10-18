@@ -37,6 +37,7 @@ def argument_parser_rtk(args: list) -> argparse.Namespace:
     parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
     parser.add_argument(
         "-v",
+        "--verbose",
         action="count",
         default=None,
         help="verbose level... repeat up to three times.",
