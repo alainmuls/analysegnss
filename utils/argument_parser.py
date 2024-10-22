@@ -21,14 +21,6 @@ def argument_parser_rtk(args: list) -> argparse.Namespace:
 
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=help_txt)
-    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="count",
-        default=None,
-        help="verbose level... repeat up to three times.",
-    )
     parser.add_argument(
         "--sbf_fn",
         help="input SBF filename",
@@ -37,9 +29,18 @@ def argument_parser_rtk(args: list) -> argparse.Namespace:
     )
     parser.add_argument(
         "--sbf2asc",
-        help="Using sbf2asc instead of bin2asc as sbf converter. On some platforms (e.g. ARM env) it is not possible to install bin2asc",
+        help="Using sbf2asc instead of bin2asc as sbf converter.",
         action="store_true",
         required=False,
+    )
+
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
     )
 
     # allow argument completion
@@ -78,20 +79,21 @@ def argument_parser_ppk(args: list) -> argparse.Namespace:
         type=str,
         required=True,
     )
-    parser.add_argument(
-        "--plot",
-        help="displays plots (default False)",
-        action="store_true",
-        required=False,
-        default=False,
-    )
-    parser.add_argument(
-        "--title",
-        help="title used for plots",
-        type=str,
-        required=False,
-        default="PPK results",
-    )
+    # parser.add_argument(
+    #     "--plot",
+    #     help="displays plots (default False)",
+    #     action="store_true",
+    #     required=False,
+    #     default=False,
+    # )
+    # parser.add_argument(
+    #     "--title",
+    #     help="title used for plots",
+    #     type=str,
+    #     required=False,
+    #     default="PPK results",
+    # )
+
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
@@ -111,7 +113,9 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
     """
     baseName = str_yellow(os.path.basename(__file__))
 
-    help_txt = baseName + " analysis of rnx2rtkp position file"
+    help_txt = (
+        baseName + " Plot PPK (from ppk_rnx2rtkp.py) or RTK (from rtk_pvtgeod.py) data"
+    )
 
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=help_txt)
@@ -123,23 +127,46 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
         default=None,
         help="verbose level... repeat up to three times.",
     )
+
     parser.add_argument(
-        "--pos_fn",
-        help="input rnx2rtkp pos filename",
+        "--title",
+        help="title for plot",
         type=str,
-        required=True,
+        required=False,
+        default=None,
     )
     parser.add_argument(
         "--plot",
-        help="displays plots (default False)",
+        help="display plots (default False)",
         action="store_true",
         required=False,
         default=False,
     )
 
+    # Create a mutually exclusive group
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.description = "Specify either a POS file or an SBF file (required)"
+    # parser.add_argument(
+    #     "--mutually-exclusive",
+    #     action="store_true",
+    #     help="One of the following options is required:",
+    # )
+
+    group.add_argument(
+        "--pos_fn",
+        help="input rnx2rtkp pos filename",
+        type=str,
+    )
+    group.add_argument(
+        "--sbf_fn",
+        help="input SBF filename",
+        type=str,
+    )
+
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
+    print(f"Parsed arguments: {vars(args)}")
 
     return args
 

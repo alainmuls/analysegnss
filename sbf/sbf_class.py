@@ -8,12 +8,11 @@ from dataclasses import dataclass, field
 import numpy as np
 import polars as pl
 import utm
-import re
 
-import globalvars
 from sbf import sbf_constants as sbfc
 from gnss.gnss_dt import gpsms2dt
 from utils.utilities import locate, str_red, str_yellow
+from config import ERROR_CODES
 
 
 @dataclass
@@ -54,33 +53,41 @@ class SBF:
         print(f"self.start_time = {self.start_time}")
         if self.start_time is not None:
             if not isinstance(self.start_time, datetime.time):
-                self.logger.error(
-                    f"Invalid start_time {self.start_time}: not a valid datetime.time object."
-                )
+                if self.logger:
+                    self.logger.error(
+                        f"Invalid start_time {self.start_time}: not a valid datetime.time object."
+                    )
                 raise ValueError(
                     f"Invalid start_time {self.start_time}: not a valid datetime.time object."
                 )
             else:
-                self.logger.info(
-                    f"Start time {self.start_time} validated successfully."
-                )
+                if self.logger:
+                    self.logger.info(
+                        f"Start time {self.start_time} validated successfully."
+                    )
         else:
-            self.logger.info("No start time specified.")
+            if self.logger:
+                self.logger.info("No start time specified.")
 
     def validate_end_time(self):
         print(f"self.end_time = {self.end_time}")
         if self.end_time is not None:
             if not isinstance(self.end_time, datetime.time):
-                self.logger.error(
-                    f"Invalid end_time {self.end_time}: not a valid datetime.time object."
-                )
+                if self.logger:
+                    self.logger.error(
+                        f"Invalid end_time {self.end_time}: not a valid datetime.time object."
+                    )
                 raise ValueError(
                     f"Invalid end_time {self.end_time}: not a valid datetime.time object."
                 )
             else:
-                self.logger.info(f"end time {self.end_time} validated successfully.")
+                if self.logger:
+                    self.logger.info(
+                        f"end time {self.end_time} validated successfully."
+                    )
         else:
-            self.logger.info("No end time specified.")
+            if self.logger:
+                self.logger.info("No end time specified.")
 
     def bin2asc_dataframe(self, lst_sbfblocks: list) -> dict:
         """
@@ -99,10 +106,11 @@ class SBF:
         """
         # sbf to CSV conversion utility
         run_bin2asc = locate("bin2asc")
-        self.logger.info(
-            f"{str_yellow(run_bin2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files "
-            f"and importing into dataframes for SBF blocks\n{str_yellow(' '.join(lst_sbfblocks))}"
-        )
+        if self.logger:
+            self.logger.info(
+                f"{str_yellow(run_bin2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files "
+                f"and importing into dataframes for SBF blocks\n{str_yellow(' '.join(lst_sbfblocks))}"
+            )
 
         # create options for bin2asc
         cmd_bin2asc = [
@@ -126,17 +134,19 @@ class SBF:
             cmd_bin2asc.append(sbf_block)
 
         # Convert binary to text messages
-        self.logger.debug(f"... running: {str_yellow(' '.join(cmd_bin2asc))}")
+        if self.logger:
+            self.logger.debug(f"... running: {str_yellow(' '.join(cmd_bin2asc))}")
 
         try:
             process = subprocess.run(cmd_bin2asc)
         except Exception as e:
             print(f"{process} Error: {e}")
-            self.logger.error(
-                f"\t... subprocess {str_yellow(' '.join(cmd_bin2asc))} return exit code"
-                f"\t... {str_red(e)}. Program exits."
-            )
-            sys.exit(globalvars._ERROR_CODES["E_PROCESS"])
+            if self.logger:
+                self.logger.error(
+                    f"\t... subprocess {str_yellow(' '.join(cmd_bin2asc))} return exit code"
+                    f"\t... {str_red(e)}. Program exits."
+                )
+            sys.exit(ERROR_CODES["E_PROCESS"])
 
         # find created files
         bin2asc_fns = {}
@@ -148,9 +158,10 @@ class SBF:
 
         # iterate over the CVS files and convert them to dataframe
         for sbf_block, bin2asc_fn in bin2asc_fns.items():
-            self.logger.debug(
-                f"\t... converting {str_yellow(bin2asc_fn[0])} to dataframe"
-            )
+            if self.logger:
+                self.logger.debug(
+                    f"\t... converting {str_yellow(bin2asc_fn[0])} to dataframe"
+                )
 
             # remove unused columns
             keep_cols = self.used_columns(sbf_block)
@@ -202,6 +213,10 @@ class SBF:
             f"{str_yellow(run_sbf2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files "
             f"and importing into dataframes for SBF blocks\n{str_yellow(' '.join(lst_sbfblocks))}"
         )
+            self.logger.info(
+                f"{str_yellow(run_sbf2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files "
+                f"and importing into dataframes for SBF blocks\n{str_yellow(' '.join(lst_sbfblocks))}"
+            )
 
         # create options for bin2asc
         cmd_sbf2asc = [
@@ -221,7 +236,8 @@ class SBF:
             cmd_sbf2asc.append(sbf2asc_block)
 
         # Convert binary to text messages
-        self.logger.debug(f"... running: {str_yellow(' '.join(cmd_sbf2asc))}")
+        if self.logger:
+            self.logger.debug(f"... running: {str_yellow(' '.join(cmd_sbf2asc))}")
 
         try:
             process = subprocess.run(cmd_sbf2asc)
@@ -231,7 +247,7 @@ class SBF:
                 f"\t... subprocess {str_yellow(' '.join(cmd_sbf2asc))} return exit code"
                 f"\t... {str_red(e)}. Program exits."
             )
-            sys.exit(globalvars._ERROR_CODES["E_PROCESS"])
+            sys.exit(ERROR_CODES["E_PROCESS"])
 
         # find created files
         sbf2asc_fns = {}
@@ -245,14 +261,15 @@ class SBF:
 
         # iterate over the CVS files and convert them to dataframe
         for sbf_block, sbf2asc_fn in sbf2asc_fns.items():
-            self.logger.debug(
-                f"\t... converting {str_yellow(sbf2asc_fn[0])} to dataframe"
-            )
+            if self.logger:
+                self.logger.debug(
+                    f"\t... converting {str_yellow(sbf2asc_fn[0])} to dataframe"
+                )
 
             # REMOVING WHITESPACES from the file name
-            sed_cmd = r"sed 's/[[:blank:]]\{1,\}/,/g'"
+            sed_cmd = "sed 's/[[:blank:]]\{1,\}/,/g'"
             sed_cmd = sed_cmd + f" {sbf2asc_fn[0]}"
-            print(f"sed_cmd = {sed_cmd}")
+            # print(f"sed_cmd = {sed_cmd}")
             content = os.popen(sed_cmd).read()
             with open(sbf2asc_fn[0], "w") as fd:
                 fd.write(content)
@@ -267,9 +284,11 @@ class SBF:
                     new_columns=self.sb2asc_sbfblock_colnames(sbf_block=sbf_block),
                 )
             except Exception as e:
-                self.logger.error(f"Error reading file {sbf2asc_fn[0]}: {e}")
+                if self.logger:
+                    self.logger.error(f"Error reading file {sbf2asc_fn[0]}: {e}")
             except polars.exceptions.NoDataError as e:
-                self.logger.error(f"Empty file {sbf2asc_fn[0]}: {e}")
+                if self.logger:
+                    self.logger.error(f"Empty file {sbf2asc_fn[0]}: {e}")
 
             # TODO remove unused columns
 
@@ -283,8 +302,9 @@ class SBF:
 
             sbf_dfs[sbf_block] = sbf_df
 
-            self.logger.info(f"succesfully created  dataframe for {sbf_block}")
-            self.logger.info(sbf_dfs[sbf_block])
+            if self.logger:
+                self.logger.info(f"succesfully created  dataframe for {sbf_block}")
+                self.logger.info(sbf_dfs[sbf_block])
 
         return sbf_dfs
 
@@ -299,7 +319,8 @@ class SBF:
         """
         # print(f"block_df = \n{block_df}")
         # remove the rows where 'Type' equals 0 (no PVT available)
-        self.logger.info("\tremoving rows with no PVT solution")
+        if self.logger:
+            self.logger.info("\tremoving rows with no PVT solution")
 
         if "Type" in block_df.columns:
             block_df = block_df.filter(pl.col("Type") != 0).lazy()
@@ -307,7 +328,8 @@ class SBF:
 
         # add date-time and PRN (as str) to the dataframe
         if "WNc [w]" in block_df.columns and "TOW [0.001 s]" in block_df.columns:
-            self.logger.info("\tadding datetime column to the dataframe")
+            if self.logger:
+                self.logger.info("\tadding datetime column to the dataframe")
             block_df = block_df.with_columns(
                 pl.struct(["WNc [w]", "TOW [0.001 s]"])
                 .map_elements(
@@ -319,7 +341,8 @@ class SBF:
 
         # add date-time and PRN (as str) to the dataframe
         if "SVID" in block_df.columns:
-            self.logger.info("\tadding PRN column to the dataframe")
+            if self.logger:
+                self.logger.info("\tadding PRN column to the dataframe")
             block_df = block_df.with_columns(
                 pl.struct(["SVID"])
                 .map_elements(
@@ -333,7 +356,8 @@ class SBF:
             "Latitude [rad]" in block_df.columns
             and "Longitude [rad]" in block_df.columns
         ):
-            self.logger.info("\tadding UTM coordinates to the dataframe")
+            if self.logger:
+                self.logger.info("\tadding UTM coordinates to the dataframe")
 
             # Function to convert lat/lon in degrees to UTM
             def latlon_to_utm(lat, lon):
@@ -382,14 +406,17 @@ class SBF:
 
         # add orthometric height to the dataframe
         if "Height [m]" in block_df.columns and "Undulation [m]" in block_df.columns:
-            self.logger.info("\tadding orthometric height to the dataframe")
+            if self.logger:
+                self.logger.info("\tadding orthometric height to the dataframe")
             block_df = block_df.with_columns(
                 pl.struct(["Height [m]", "Undulation [m]"])
                 .apply(lambda x: x["Height [m]"] - x["Undulation [m]"])
                 .alias("orthoH")
             ).lazy()
 
-        self.logger.warning(f"\tcollecting the dataframe. {str_red('Be patient.')}")
+        if self.logger:
+            self.logger.warning(f"\tcollecting the dataframe. {str_red('Be patient.')}")
+
         return block_df.collect()
 
     def used_columns(self, sbf_block: str) -> list:
@@ -550,20 +577,20 @@ class SBF:
             "sbf2asc is chosen as sbf converter. Looking up corresponding sbf block arguments"
         )
         # TODO expand look up table for sbf2asc
-        lookup_sbfblk = {
+        lookup_sbf_block = {
             "PVTCartesian2": "-p",
             "PVTGeodetic2": "-g",
             "PosCovGeodetic1": "-c",
         }
 
         try:
-            sbf_block_sbf2asc = lookup_sbfblk[sbf_block]
+            sbf_block_sbf2asc = lookup_sbf_block[sbf_block]
             self.logger.info(
                 f"Returning sbf block {sbf_block} corresponding arguments {sbf_block_sbf2asc} for sbf2asc"
             )
         except KeyError as e:
             self.logger.error(f"Could not find sbf block {sbf_block} in lookup table")
-            sys.exit()
+            sys.exit(ERROR_CODES["E_NO_SBF_BLOCK"])
 
         return sbf_block_sbf2asc
 
@@ -601,11 +628,16 @@ class SBF:
 
         try:
             sbf_block_colnames = sbf_blocks_colnames[sbf_block]
-            self.logger.info(
-                f"Returning sbf block {sbf_block} corresponding column names {sbf_block_colnames} for sbf2asc"
-            )
+            if self.logger:
+                self.logger.info(
+                    f"Returning sbf block {sbf_block} corresponding column names {sbf_block_colnames} for sbf2asc"
+                )
         except KeyError as e:
-            self.logger.error(f"Could not find sbf block {sbf_block} in lookup table")
-            sys.exit()
+            if self.logger:
+                self.logger.error(
+                    f"Could not find sbf block {sbf_block} in lookup table"
+                )
+
+            sys.exit(ERROR_CODES["E_NO_SBF_BLOCK"])
 
         return sbf_block_colnames

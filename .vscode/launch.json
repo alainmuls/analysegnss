@@ -74,6 +74,23 @@
                 "--pos_fn",
                 "/home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos",
                 "-v",
+                "--title",
+                "SaltonSea rover",
+                "--plot",
+            ]
+        },
+        {
+            "name": "Python Debugger: rtkppk_plot Keiheuvel",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "rtkppk_plot.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--sbf_fn",
+                "/home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rovr_sbf/ROVR275Z.24_",
+                "-v",
+                "--title",
+                "Keiheuvel 1 Oct 2024",
                 "--plot",
             ]
         },

@@ -1,20 +1,16 @@
 #!/usr/bin/env python
 
-# Import the required modules
-import datetime
 import os
 import sys
 
-import matplotlib.pyplot as plt
-import plotly.graph_objects as go
 import polars as pl
 from tabulate import tabulate
 
-import globalvars
+# import globalvars
 from sbf import sbf_constants as sbfc
 from sbf.sbf_class import SBF
 from utils import argument_parser, init_logger
-from utils.utilities import bin_nibble
+from config import ERROR_CODES
 
 
 def quality_analysis(geod_df: pl.DataFrame, logger) -> None:
@@ -37,13 +33,15 @@ def quality_analysis(geod_df: pl.DataFrame, logger) -> None:
             ]
         )
 
-    logger.warning(
-        tabulate(
-            qual_analysis,
-            headers=["PNT Mode", "Count", "Percentage"],
-            tablefmt="fancy_outline",
-        )
+    qual_tabular = tabulate(
+        qual_analysis,
+        headers=["PNT Mode", "Count", "Percentage"],
+        tablefmt="fancy_outline",
     )
+    print(qual_tabular)
+
+    if logger is not None:
+        logger.warn(qual_tabular)
 
 
 def rtk_pvtgeod(argv: list) -> pl.DataFrame:
@@ -53,9 +51,6 @@ def rtk_pvtgeod(argv: list) -> pl.DataFrame:
     Returns:
         pl.DataFrame: PVT Geodetic2 dataframe
     """
-    # init the global variables
-    globalvars.initialize()
-
     # get the name of this script for naming the logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
@@ -73,25 +68,34 @@ def rtk_pvtgeod(argv: list) -> pl.DataFrame:
         )  # start_time=datetime.time(12, 30),
     except Exception as e:
         logger.error(f"Error creating SBF object: {e}")
-        sys.exit(1)
+        sys.exit(ERROR_CODES["ERROR_SBF_OBJECT"])
 
-    if args_parsed.sbf2asc:
-        df_poscov = sbf.sbf2asc_dataframe(lst_sbfblocks=["PosCovGeodetic1"])["PosCovGeodetic1"]
-        print(df_poscov)
-        sys.exit()
-    # extract the PVT Geodetic2 block from SBF file
-    df_geod = sbf.bin2asc_dataframe(lst_sbfblocks=["PVTGeodetic2"])["PVTGeodetic2"]
+    if not args_parsed.sbf2asc:
+        # extract the PVT Geodetic2 block from SBF file
+        df_geod = sbf.bin2asc_dataframe(lst_sbfblocks=["PVTGeodetic2"])["PVTGeodetic2"]
 
-    # analyse the quality of the solution
-    quality_analysis(geod_df=df_geod, logger=logger)
+        # analyse the quality of the solution
+        quality_analysis(geod_df=df_geod, logger=logger)
 
-    # with pl.Config(tbl_cols=-1):
-    #     print(f"df_geod: \n{df_geod}")
+        with pl.Config(tbl_cols=-1):
+            logger.debug(f"df_geod: \n{df_geod}")
 
-    return df_geod
+        return df_geod
+
+    else:
+        df_poscov = sbf.sbf2asc_dataframe(lst_sbfblocks=["PosCovGeodetic1"])[
+            "PosCovGeodetic1"
+        ]
+        with pl.Config(tbl_cols=-1):
+            print(f"df_poscov: \n{df_poscov}")
+            logger.debug(f"df_poscov: \n{df_poscov}")
+
+        return None
 
 
 if __name__ == "__main__":
     geod_df = rtk_pvtgeod(argv=sys.argv)
-    with pl.Config(tbl_cols=-1):
-        print(geod_df)
+
+    if geod_df is not None:
+        with pl.Config(tbl_cols=-1):
+            print(geod_df)

@@ -10,11 +10,10 @@ from math import atan2, degrees, sqrt, fabs
 import polars as pl
 from tabulate import tabulate
 
-import globalvars
+from config import ERROR_CODES
 import ppk_rnx2rtkp
 import rtk_pvtgeod
 from gnss.gnss_dt import gnss2dt
-from plots import plot_utm
 from rtkpos import rtk_constants as rtkc
 from rtkpos.rtkpos_class import Rtkpos
 from utils import argument_parser, init_logger
@@ -89,7 +88,7 @@ def read_ebh_line_timings(timings_fn: str, logger: Logger) -> dict:
     # check if the timings file is readable
     if not os.path.isfile(timings_fn) or not os.access(timings_fn, os.R_OK):
         print(f"File {timings_fn} is not readable")
-        sys.exit(globalvars._ERROR_CODES["E_FILE_NOT_EXIST"])
+        sys.exit(ERROR_CODES["E_FILE_NOT_EXIST"])
 
     # Regular expression pattern to match both integers and float values
     pattern = r"\d+\.\d+|\d+"
@@ -134,7 +133,9 @@ def read_ebh_line_timings(timings_fn: str, logger: Logger) -> dict:
 
 
 def ebh_lines_map_angle(
-    df_pos: pl.DataFrame, ebh_timings: dict, logger: Logger
+    df_pos: pl.DataFrame,
+    ebh_timings: dict,
+    logger: Logger = None,
 ) -> None:
     """calculate the map angle for each ebh line
 
@@ -148,17 +149,18 @@ def ebh_lines_map_angle(
         row_start = df_pos.filter(pl.col("DT") == timings[0])
         row_end = df_pos.filter(pl.col("DT") == timings[1])
 
-        # print(f"row_start = {row_start}")
-        # print(
-        # f"row_start.select(['UTM.E']) = {row_start.select(['UTM.E'])} |  {type(row_start.select(['UTM.E']))}"
-        # )
-        # print(
-        # f"row_start.select(['UTM.E']).to_numpy()[0] = {row_start.select(['UTM.E'])} |  {type(row_start.select(['UTM.E']))}"
-        # )
-        # print(
-        # f"row_start.select(['UTM.E', 'UTM.N']) = {row_start.select(['UTM.E', 'UTM.N'])}"
-        # )
-        # print(f"row_end = {row_end}")
+        if logger is not None:
+            logger.debug(f"row_start = {row_start}")
+            logger.debug(
+                f"row_start.select(['UTM.E']) = {row_start.select(['UTM.E'])} |  {type(row_start.select(['UTM.E']))}"
+            )
+            logger.debug(
+                f"row_start.select(['UTM.E']).to_numpy()[0] = {row_start.select(['UTM.E'])} |  {type(row_start.select(['UTM.E']))}"
+            )
+            logger.debug(
+                f"row_start.select(['UTM.E', 'UTM.N']) = {row_start.select(['UTM.E', 'UTM.N'])}"
+            )
+            logger.debug(f"row_end = {row_end}")
 
         # calculate the map_angle
         map_angle = atan2(
@@ -175,7 +177,7 @@ def ebh_lines_extract(
     df_pos: pl.DataFrame,
     ebh_timings: dict,
     parsed_args: argparse.Namespace,
-    logger: Logger,
+    logger: Logger = None,
 ):
     """extract the EBH lines from the dataframe and order them according to the same map_angle
 
@@ -224,7 +226,9 @@ def euclidean_distance(x1, y1, x2, y2):
 
 
 def ebh_lines_thin_out(
-    df_line: pl.DataFrame, parsed_args: argparse.Namespace, logger: Logger
+    df_line: pl.DataFrame,
+    parsed_args: argparse.Namespace,
+    logger: Logger = None,
 ) -> pl.DataFrame:
     """thin out the dataframe to keep positions every 0.5 meters
 
@@ -261,35 +265,32 @@ def ebh_lines_thin_out(
     elif parsed_args.rtk:
         df_line = df_line.filter(pl.col("Type") == 4).lazy()
     else:
-        logger.error("No processing type 'Q' or 'Type' found. Exiting...")
-        sys.exit(2)
+        if logger is not None:
+            logger.error("No processing type 'Q' or 'Type' found. Exiting...")
+        sys.exit(ERROR_CODES["E_NO_QUAL"])
 
     #  Thinning out the dataframe to keep positions every 0.5 meters
-    
+
     # This is done first by applying the modulo operator of 0.5 on dist0
     df_line = df_line.with_columns(
-        dist0_mod05=pl.col("dist0")
-        .map_elements(
-            lambda x: x % 0.5,
-            return_dtype=float
-        )
+        dist0_mod05=pl.col("dist0").map_elements(lambda x: x % 0.5, return_dtype=float)
     ).lazy()
-    
+
     # Then, we calculate the difference between the current value and the previous values
     df_line = df_line.with_columns(dist_mod05_diff=pl.col("dist0_mod05").diff()).lazy()
 
     # keep only the rows where the difference is lower than -0.25. This will produce df with the same length
     df_assur = df_line.filter(pl.col("dist_mod05_diff") < -0.25).lazy()
 
-    #pl.Config.set_tbl_rows(30)
-    #print(f"df_line = \n{df_line.collect()}")
-    # # print first 30 rows of the dataframe
-    #print(f"df_line.head(30) = \n{df_line.head(30)}")
-    # # thin out the df_line to keep positions every 0.5 meters
-    #print(f"df_assur = \n{df_assur.collect()}")
-    #print(f"df_assur.head(30) = \n{df_assur.head(30)}")
+    if logger is not None:
+        pl.Config.set_tbl_rows(30)
+        logger.debug(f"df_line = \n{df_line.collect()}")
+        # logger.debug first 30 rows of the dataframe
+        logger.debug(f"df_line.head(30) = \n{df_line.head(30)}")
+        # thin out the df_line to keep positions every 0.5 meters
+        logger.debug(f"df_assur = \n{df_assur.collect()}")
+        logger.debug(f"df_assur.head(30) = \n{df_assur.head(30)}")
 
-    
     return df_assur.collect()
 
 
@@ -299,9 +300,6 @@ def ebh_lines(argv: list):
     Args:
         argv (list): CLI arguments
     """
-    # init the global variables
-    globalvars.initialize()
-
     # parse the CLI arguments
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
@@ -341,14 +339,18 @@ def ebh_lines(argv: list):
         # call rtk_pvtgeod to get the position dataframe
         pos_df = get_rtk_dataframe(parsed_args=args_parsed, logger=logger)
 
-        logger.info(f"Dataframe obtained from RTK processing of {args_parsed.ebh_fn}")
+        logger.info(
+            f"Dataframe obtained from {str_yellow('RTK')} processing of "
+            f"{str_yellow(args_parsed.ebh_fn)}"
+        )
         print(
-            f"Dataframe obtained from {str_yellow('RTK')} processing of {str_yellow(args_parsed.ebh_fn)}"
+            f"Dataframe obtained from {str_yellow('RTK')} processing of "
+            f"{str_yellow(args_parsed.ebh_fn)}"
         )
         df_pos = pos_df.select(["DT", "Type", "NrSV", "UTM.E", "UTM.N", "orthoH"])
     else:
         logger.error("No processing type selected")
-        sys.exit(globalvars._ERROR_CODES["E_FILE_NOT_EXIST"])
+        sys.exit(ERROR_CODES["E_FILE_NOT_EXIST"])
 
     with pl.Config(tbl_cols=-1):
         logger.info(df_pos)
@@ -375,7 +377,8 @@ def ebh_lines(argv: list):
         # name the file according to the ebh line key
         ebh_line_fn = f"{args_parsed.desc}_{ebh_key}.csv"
         logger.info(
-            f"Writing CSV assurtool file for {str_yellow(ebh_key)} to {str_yellow(ebh_line_fn)}\n"
+            f"Writing CSV AssurTool file for {str_yellow(ebh_key)} to "
+            f"{str_yellow(ebh_line_fn)}\n"
             f"{ebh_assur_line.select(['UTM.E', 'UTM.N', 'orthoH'])}"
         )
 
@@ -383,16 +386,8 @@ def ebh_lines(argv: list):
         ebh_assur_line.select(["UTM.E", "UTM.N", "orthoH"]).write_csv(
             ebh_line_fn, separator=";", include_header=False, float_precision=3
         )
-        
-        if args_parsed.plot and args_parsed.ppk:
-            # plot the UTM and orthoH coordinates
-            plot_utm.plot_utm_coords(
-                utm_df=ebh_assur_line.select(["UTM.E", "UTM.N", "orthoH"]),
-                origin="PPK",
-                title=f"PPK_{args_parsed.desc}_{ebh_key}",
         pass
-    
-    
+
 
 if __name__ == "__main__":
     ebh_lines(argv=sys.argv)

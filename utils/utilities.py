@@ -9,8 +9,7 @@ from datetime import date, datetime, timedelta
 
 import numpy as np
 from termcolor import colored
-
-import globalvars
+from config import ERROR_CODES
 
 __author__ = "amuls"
 
@@ -30,19 +29,19 @@ def change_directory(mydir: str, name_logger: str = None) -> bool:
             sys.stderr.write(
                 f"Current working directory: {str_green(text=os.getcwd())}\n"
             )
-        return globalvars._ERROR_CODES["E_SUCCESS"]
+        return ERROR_CODES["E_SUCCESS"]
     except FileNotFoundError:
         if name_logger is not None:
             logger.warning(f"Directory: {str_red(mydir)} does not exist")
         else:
             sys.stderr.write(f"Directory: {str_red(mydir)} does not exist\n")
-        return globalvars._ERROR_CODES["E_DIR_NOT_EXIST"]
+        return ERROR_CODES["E_DIR_NOT_EXIST"]
     except NotADirectoryError:
         if name_logger is not None:
             logger.warning(f"{str_red(mydir)} is not a directory")
         else:
             sys.stderr.write(f"{str_red(mydir)} is not a directory\n")
-        return globalvars._ERROR_CODES["E_DIR_NOT_EXIST"]
+        return ERROR_CODES["E_DIR_NOT_EXIST"]
     except PermissionError:
         if name_logger is not None:
             logger.warning(f"You do not have permissions to change to {str_red(mydir)}")
@@ -50,7 +49,7 @@ def change_directory(mydir: str, name_logger: str = None) -> bool:
             sys.stderr.write(
                 f"You do not have permissions to change to {str_red(mydir)}\n"
             )
-        return globalvars._ERROR_CODES["E_DIR_NOT_EXIST"]
+        return ERROR_CODES["E_DIR_NOT_EXIST"]
 
 
 def merge_dictionaries(dict1: dict, dict2: dict) -> dict:
@@ -227,7 +226,7 @@ def locate(prog: str) -> str:
         full_prog = shutil.which(prog)
     except shutil.Error as e:
         sys.stderr.write(f"Call to shutil.which gave error {str_red(e)}.\n")
-        sys.exit(globalvars._ERROR_CODES["E_FAILURE"])
+        sys.exit(ERROR_CODES["E_FAILURE"])
 
     if full_prog is not None:
         return full_prog
@@ -237,7 +236,7 @@ def locate(prog: str) -> str:
             f"\n\tplease install {str_red(prog)}\n\tor adjust"
             f" your path:\n\t{str_red(os.environ['PATH'])}.\n"
         )
-        sys.exit(globalvars._ERROR_CODES["E_MISSING_BIN"])
+        sys.exit(ERROR_CODES["E_MISSING_BIN"])
 
 
 # def RMSE(ps: pd.Series) -> float:
