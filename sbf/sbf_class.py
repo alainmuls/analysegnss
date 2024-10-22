@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import polars as pl
 import utm
+import shutil
 
 from sbf import sbf_constants as sbfc
 from gnss.gnss_dt import gpsms2dt
@@ -89,7 +90,49 @@ class SBF:
             if self.logger:
                 self.logger.info("No end time specified.")
 
-    def bin2asc_dataframe(self, lst_sbfblocks: list) -> dict:
+    def archive_file(self, fn: str, dest_dir: str = "archive"):
+        """
+        archive_file archives the created ascii files.
+        
+        args: 
+        fn: file name to archive
+        dest_dir: name of archive directory
+        
+        """
+        #Getting directory of file to archive
+        dir_fn = os.path.dirname(fn)
+        dir_fnar = os.path.join(dir_fn,dest_dir)
+        self.logger.info(f"archive directory of file is {dir_fnar}")
+
+
+        # create directory if it does not exist
+        if not os.path.exists(dir_fnar):
+            try:
+                os.makedirs(dir_fnar, exist_ok=True)
+                self.logger.info(f"Directory {dir_fnar} created.")
+            except Exception as e:
+                self.logger.error(f"Error creating archive directory {dir_fnar}: {e}")
+
+        # exctact base name
+        fn_base = os.path.basename(fn)
+    
+        # Get timestamp
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+        fn_time = timestamp + "_" + fn_base
+        
+        # update destination
+        dest = os.path.join(dir_fnar, fn_time)
+        
+        # copy file to archive directory
+        try:
+            shutil.copy2(fn, dest)
+            self.logger.info(f"Succesfully archived file {fn} to {dest}")
+
+        except Exception as e:
+            self.logger.error(f"Error moving file {fn} to archive directory {dest}: {e}")
+        
+        
+    def bin2asc_dataframe(self, lst_sbfblocks: list, archive: str) -> dict:
         """
         bin2asc_dataframe converts binary SBF to CVS files for the sbfblocks in
         lst_sbfblocks and load these files in dataframes
@@ -183,9 +226,13 @@ class SBF:
 
             sbf_dfs[sbf_block] = sbf_df
 
+            # archiving the created files
+            if not archive == '':
+                self.archive_file(fn=bin2asc_fn[0], dest_dir=archive)
+                
         return sbf_dfs
 
-    def sbf2asc_dataframe(self, lst_sbfblocks: list) -> dict:
+    def sbf2asc_dataframe(self, lst_sbfblocks: list, archive: str) -> dict:
         """
         this definition is analogue to bin2asc and is used to convert the SBF files to dataframes.
         Sbf2asc can be installed on most platforms including OS running on ARM processors (e.g. Raspberry Pi).
@@ -209,10 +256,7 @@ class SBF:
             )
             sys.exit(globalvars._ERROR_CODES["E_PROCESS"])
             
-        self.logger.info(
-            f"{str_yellow(run_sbf2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files "
-            f"and importing into dataframes for SBF blocks\n{str_yellow(' '.join(lst_sbfblocks))}"
-        )
+        if self.logger:
             self.logger.info(
                 f"{str_yellow(run_sbf2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files "
                 f"and importing into dataframes for SBF blocks\n{str_yellow(' '.join(lst_sbfblocks))}"
@@ -306,6 +350,10 @@ class SBF:
                 self.logger.info(f"succesfully created  dataframe for {sbf_block}")
                 self.logger.info(sbf_dfs[sbf_block])
 
+            if not archive == '':
+                # Archive the created files
+                self.archive_file(fn=sbf2asc_fn[0], dest_dir=archive)
+            
         return sbf_dfs
 
     def add_columns(self, block_df: pl.DataFrame) -> pl.DataFrame:

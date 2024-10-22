@@ -22,7 +22,7 @@ def argument_parser_rtk(args: list) -> argparse.Namespace:
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=help_txt)
     parser.add_argument(
-        "--sbf_fn",
+        "--sbf_ifn",
         help="input SBF filename",
         type=str,
         required=True,
@@ -41,6 +41,13 @@ def argument_parser_rtk(args: list) -> argparse.Namespace:
         action="count",
         default=None,
         help="verbose level... repeat up to three times.",
+    )
+    parser.add_argument(
+        "--archive",
+        help="Specify archive's directory name",
+        required=False,
+        default='',
+        type=str
     )
 
     # allow argument completion
@@ -79,21 +86,13 @@ def argument_parser_ppk(args: list) -> argparse.Namespace:
         type=str,
         required=True,
     )
-    # parser.add_argument(
-    #     "--plot",
-    #     help="displays plots (default False)",
-    #     action="store_true",
-    #     required=False,
-    #     default=False,
-    # )
-    # parser.add_argument(
-    #     "--title",
-    #     help="title used for plots",
-    #     type=str,
-    #     required=False,
-    #     default="PPK results",
-    # )
-
+    parser.add_argument(
+        "--archive",
+        help="Specify archive's directory name",
+        required=False,
+        default='',
+        type=str
+    )
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
@@ -102,8 +101,7 @@ def argument_parser_ppk(args: list) -> argparse.Namespace:
 
 
 def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
-    """(Deprecated. Use ppk_rnx2rtkp instead.)
-    Parses the arguments and creates console/file logger
+    """parses the arguments and creates console/file logger
 
     Args:
         argv (list): list of arguments
@@ -113,9 +111,7 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
     """
     baseName = str_yellow(os.path.basename(__file__))
 
-    help_txt = (
-        baseName + " Plot PPK (from ppk_rnx2rtkp.py) or RTK (from rtk_pvtgeod.py) data"
-    )
+    help_txt = baseName + " analysis of rnx2rtkp position file"
 
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=help_txt)
@@ -127,17 +123,15 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
         default=None,
         help="verbose level... repeat up to three times.",
     )
-
     parser.add_argument(
-        "--title",
-        help="title for plot",
+        "--pos_fn",
+        help="input rnx2rtkp pos filename",
         type=str,
-        required=False,
-        default=None,
+        required=True,
     )
     parser.add_argument(
         "--plot",
-        help="display plots (default False)",
+        help="displays plots (default False)",
         action="store_true",
         required=False,
         default=False,
@@ -219,7 +213,7 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
 
     parser.add_argument(
         "--timing_fn",
-        help="input ebh lines timing filename. One of the keys needs to be called CL. The other keys of each track can be freely chosen. e.g. key: Wnc TOWstart, Wnc TOWend",
+        help="input ebh lines timing filename",
         type=str,
         required=True,
     )
@@ -232,6 +226,52 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
         default=False,
     )
 
+    # allow argument completion
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args(args)
+
+    return args
+
+def argument_parser_sbf_timestamps(args: list) -> argparse.Namespace:
+    """
+    
+    
+    """
+    baseName = str_yellow(os.path.basename(__file__))
+
+    help_txt = (
+        baseName
+        + """
+        Extracts the timestamps from the SBF file and saves them in a yaml/desc file.
+        The description file is used to calculate the EBH lines
+    """
+    )
+
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_txt)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+        required=False,
+    )
+    parser.add_argument(
+        "-i",
+        "--sbf_ifn",
+        help="input sbf file with sbf comments holding timestamp info",
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
+        "--archive",
+        help="Specify archive's directory name",
+        required=False,
+        default='',
+        type=str
+    )
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)

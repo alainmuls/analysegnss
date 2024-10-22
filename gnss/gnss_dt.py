@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, time
 import bisect
 from math import isnan
 
-__author__ = "amuls"
+__author__ = "amuls, pdemeulemeester"
 
 
 _LEAP_DATES = (
@@ -67,7 +67,23 @@ def gnss2dt(week: int, tow: float) -> datetime:
         date_before_leaps = _GPS_EPOCH + timedelta(seconds=week * _SECS_IN_WEEK + tow)
         return date_before_leaps
 
+def dt2gnss(dt: str, dt_format: str) -> tuple:
+    """
+    This converts a dateetime instance to GPS week number and time of week
+    
+    args:
+        dt (datetime): datetime object
+        dt_format (str): datetime format (e.g. "%Y-%m-%d %H:%M:%S")
+    returns:
+        tuple: GPS week number and time of week
+    """
 
+    dt_obj = datetime.strptime(dt, dt_format)
+    gps_seconds = (dt_obj - _GPS_EPOCH).total_seconds()
+    wn, tow = divmod(gps_seconds, _SECS_IN_WEEK)
+    
+    return wn, tow
+    
 def gpsms2dt(week: int, towms: float) -> datetime:
     """
     :param week: GPS week number, i.e. 1866
