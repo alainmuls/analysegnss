@@ -2,32 +2,32 @@ import logging as logging
 from logging.handlers import TimedRotatingFileHandler
 import os
 from utils.utilities import str_green
+from sys import stderr
 
 
-class CustomFormatter(logging.Formatter):
-    grey = "\x1b[38;20m"
+class ColorFormatter(logging.Formatter):
+    # color codes
+    cyan = "\x1b[36;20m"
+    green = "\x1b[32;20m"
     yellow = "\x1b[33;20m"
     red = "\x1b[31;20m"
-    bold_red = "\x1b[31;1m"
-    reset = "\x1b[0m"
-    format = (
-        # "%(asctime)s:%(name)s:%(levelname)s:%(message)s (%(filename)s:%(lineno)d)"
-        "%(asctime)s [%(levelname)s](%(name)s:%(filename)s%(funcName)s:%(lineno)d): %(message)s"
-    )
+    magenta = "\x1b[35;20m"
+    # grey = "\x1b[38;20m"
+    # bold_red = "\x1b[31;1m"
 
-    # TODO: test the color output for logger
-    FORMATS = {
-        logging.DEBUG: grey + format + reset,
-        logging.INFO: grey + format + reset,
-        logging.WARNING: yellow + format + reset,
-        logging.ERROR: red + format + reset,
-        logging.CRITICAL: bold_red + format + reset,
+    COLORS = {
+        logging.DEBUG: cyan,
+        logging.INFO: green,
+        logging.WARNING: yellow,
+        logging.ERROR: red,
+        logging.CRITICAL: magenta,
     }
 
     def format(self, record):
-        log_fmt = self.FORMATS.get(record.levelno)
-        formatter = logging.Formatter(log_fmt)
-        return formatter.format(record)
+        reset = "\x1b[0m"
+        color = self.COLORS.get(record.levelno)
+        record.levelname = f"{color}{record.levelname}{reset}"
+        return super().format(record)
 
 
 def logger_setup(args: list, base_name: str = "logger") -> logging.Logger:
@@ -52,7 +52,7 @@ def logger_setup(args: list, base_name: str = "logger") -> logging.Logger:
         encoding="utf-8",
     )
     log_file_handler.setFormatter(
-        logging.Formatter(
+        ColorFormatter(
             "%(asctime)s [%(levelname)s](%(name)s:%(funcName)s:%(lineno)d): %(message)s"
         )
     )
@@ -60,14 +60,16 @@ def logger_setup(args: list, base_name: str = "logger") -> logging.Logger:
     logger.addHandler(log_file_handler)
 
     # also log to the console at a level determined by the --verbose flag
-    console_handler = logging.StreamHandler()  # sys.stderr
-    # console_handler.setLevel(
-    #     logging.CRITICAL
-    # )  # set later by set_log_level_from_verbose() in interactive sessions
+    console_handler = logging.StreamHandler(stream=stderr)  # sys.stderr
+    console_handler.setLevel(
+        logging.ERROR
+    )  # set later by set_log_level_from_verbose() in interactive sessions
     console_handler.setFormatter(
-        # logging.Formatter("[%(levelname)s](%(funcName)s:%(lineno)d): %(message)s")
-        CustomFormatter()
+        ColorFormatter(
+            "%(asctime)s [%(levelname)s](%(name)s:%(funcName)s:%(lineno)d): %(message)s"
+        )
     )
+    # add the console handler to the logger
     logger.addHandler(console_handler)
 
     # also log to the console at a level determined by the --verbose flag
@@ -75,7 +77,7 @@ def logger_setup(args: list, base_name: str = "logger") -> logging.Logger:
         logger=logger, console_handler=console_handler, args=args
     )
 
-    logger.info(f"---------- {str_green('start')} {str_green(base_name)} -------------")
+    logger.warning(f"---------- START of {base_name} ----------")
 
     return logger
 
