@@ -21,7 +21,6 @@ def quality_analysis(geod_df: pl.DataFrame, logger) -> None:
         logger (_type_): logger object
     """
     # analysis of the quality of the position data
-    print(f"\nAnalysis of the quality of the position data")
     qual_analysis = []
     total_obs = geod_df.shape[0]
     for qual, qual_data in geod_df.group_by("Type"):
@@ -38,7 +37,7 @@ def quality_analysis(geod_df: pl.DataFrame, logger) -> None:
         headers=["PNT Mode", "Count", "Percentage"],
         tablefmt="fancy_outline",
     )
-    print(f"Quality analysis:\n{qual_tabular}")
+    print(f"\nAnalysis of the quality of the position data\n{qual_tabular}")
 
     if logger is not None:
         logger.warning(f"Quality analysis:\n{qual_tabular}")
