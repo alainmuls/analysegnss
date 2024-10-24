@@ -24,7 +24,7 @@ def quality_analysis(geod_df: pl.DataFrame, logger) -> None:
     print(f"\nAnalysis of the quality of the position data")
     qual_analysis = []
     total_obs = geod_df.shape[0]
-    for qual, qual_data in geod_df.groupby("Type"):
+    for qual, qual_data in geod_df.group_by("Type"):
         qual_analysis.append(
             [
                 sbfc.dict_sbf_pvtmode[qual]["desc"],
@@ -38,10 +38,10 @@ def quality_analysis(geod_df: pl.DataFrame, logger) -> None:
         headers=["PNT Mode", "Count", "Percentage"],
         tablefmt="fancy_outline",
     )
-    print(qual_tabular)
+    print(f"Quality analysis:\n{qual_tabular}")
 
     if logger is not None:
-        logger.warn(qual_tabular)
+        logger.warning(f"Quality analysis:\n{qual_tabular}")
 
 
 def rtk_pvtgeod(argv: list) -> pl.DataFrame:
@@ -78,7 +78,7 @@ def rtk_pvtgeod(argv: list) -> pl.DataFrame:
         quality_analysis(geod_df=df_geod, logger=logger)
 
         with pl.Config(tbl_cols=-1):
-            logger.debug(f"df_geod: \n{df_geod}")
+            logger.info(f"df_geod: \n{df_geod}")
 
         return df_geod
 
@@ -88,7 +88,7 @@ def rtk_pvtgeod(argv: list) -> pl.DataFrame:
         ]
         with pl.Config(tbl_cols=-1):
             print(f"df_poscov: \n{df_poscov}")
-            logger.debug(f"df_poscov: \n{df_poscov}")
+            logger.info(f"df_poscov: \n{df_poscov}")
 
         return None
 
