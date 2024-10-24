@@ -5,30 +5,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: rtk_pvtgeod Ocotillo rover hour 'q'",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "rtk_pvtgeod.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--sbf_fn",
-                "./data/1342172q.24_",
-                "-v"
-            ]
-        },
-        {
-            "name": "Python Debugger: rtk_pvtgeod Ocotillo rover hour 'o'",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "rtk_pvtgeod.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--sbf_fn",
-                "./data/1342172o.24_",
-                "-v"
-            ]
-        },
-        {
             "name": "Python Debugger: rtk_pvtgeod Ocotillo rover",
             "type": "debugpy",
             "request": "launch",
@@ -36,113 +12,8 @@
             "console": "integratedTerminal",
             "args": [
                 "--sbf_fn",
-                "./data/1342172Z.24_",
-                "-v"
-            ]
-        },
-        {
-            "name": "Python Debugger: ppk_rnx2rtkp SaltonSea rover",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "ppk_rnx2rtkp.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--pos_fn",
-                "/home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos",
-                "-v",
-            ]
-        },
-        {
-            "name": "Python Debugger: ppk_rnx2rtkp SaltonSea rover MKL",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "ppk_rnx2rtkp.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--pos_fn",
-                "/home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO-MKL.pos",
-                "-v",
-            ]
-        },
-        {
-            "name": "Python Debugger: rtkppk_plot SaltonSea rover",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "rtkppk_plot.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--pos_fn",
-                "/home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos",
-                "-v",
-                "--title",
-                "SaltonSea rover",
-                "--plot",
-            ]
-        },
-        {
-            "name": "Python Debugger: rtkppk_plot Keiheuvel",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "rtkppk_plot.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--sbf_fn",
-                "/home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rovr_sbf/ROVR275Z.24_",
-                "-v",
-                "--title",
-                "Keiheuvel 1 Oct 2024",
-                "--plot",
-            ]
-        },
-        {
-            "name": "Python Debugger: ebh_lines SaltonSea rover",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "ebh_lines.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--ppk",
-                "--ebh_fn",
-                "/home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos",
-                "--timing_fn",
-                "/home/amuls/GNSSData/USA_CA_2024/SaltonSea/salton_timings.txt",
-                "--desc",
-                "salton_sea",
-                "-vv",
-            ]
-        },
-        {
-            "name": "Python Debugger: ebh_lines SaltonSea rover MKL",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "ebh_lines.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--ppk",
-                "--ebh_fn",
-                "/home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO-MKL.pos",
-                "--timing_fn",
-                "/home/amuls/GNSSData/USA_CA_2024/SaltonSea/salton_timings.txt",
-                "--desc",
-                "salton_sea",
-                "-vv",
-            ]
-        },
-        {
-            "name": "Python Debugger: ebh_lines ocotillo rover",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "ebh_lines.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--rtk",
-                "--ebh_fn",
-                "./data/1342172Z.24_",
-                "--timing_fn",
-                "data/ocotillo_timings.txt",
-                "--desc",
-                "ocotillo",
-                "-vvv",
+                "/home/amuls/GNSSData/USA_CA_2024/Ocotillo/rover/1342172Z.24_",
+                "-vvv"
             ]
         },
     ]
