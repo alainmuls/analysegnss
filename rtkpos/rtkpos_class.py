@@ -24,11 +24,13 @@ class Rtkpos:
     end_time: datetime.time = field(default=None)
 
     logger: logging.Logger = field(default=None)
+    _console_loglevel: int = field(default=logging.ERROR)
 
     def __post_init__(self):
         self.validate_file()
         self.validate_start_time()
         self.validate_end_time()
+        self.validate_logger_level()
 
     def validate_file(self):
         """validate existence of the RTK position file
@@ -93,6 +95,22 @@ class Rtkpos:
         else:
             if self.logger is not None:
                 self.logger.info("No end time specified.")
+
+    def validate_logger_level(self):
+        if self.logger is not None:
+            # get the logging level for the console
+            for handler in self.logger.handlers:
+                if isinstance(handler, logging.StreamHandler) and handler.stream in (
+                    sys.stdout,
+                    sys.stderr,
+                ):
+                    # self._console_loglevel = logging.getLevelName(handler.level)
+                    self._console_loglevel = handler.level
+
+            self.logger.info(
+                "Console log level set to "
+                + f"{str_red(logging.getLevelName(self._console_loglevel))}"
+            )
 
     def read_pos_file(self) -> pl.DataFrame:
         """read the RTK position file
