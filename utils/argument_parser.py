@@ -232,7 +232,7 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
 
     return args
 
-def argument_parser_sbf_timestamps(args: list) -> argparse.Namespace:
+def argument_parser_ebh_timestamps(args: list) -> argparse.Namespace:
     """
     
     
@@ -264,6 +264,15 @@ def argument_parser_sbf_timestamps(args: list) -> argparse.Namespace:
         help="input sbf file with sbf comments holding timestamp info",
         type=str,
         required=True,
+    )
+    parser.add_argument(
+        "-o",
+        "--out_ebh_fn",
+        help="Creates EBH lines description file (use full path!). This description file \
+            is required by ebh_lines.py (default: ebh_timings_desc.txt)",
+        type=str,
+        required=False,
+        default="ebh_timings_desc.txt"
     )
     parser.add_argument(
         "--archive",
