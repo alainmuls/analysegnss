@@ -43,7 +43,7 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> None:
     print(qual_tabular)
 
     if logger is not None:
-        logger.warn(qual_tabular)
+        logger.warning(qual_tabular)
 
 
 def rtkp_pos(argv: list) -> pl.DataFrame:
