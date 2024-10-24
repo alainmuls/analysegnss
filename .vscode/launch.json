@@ -16,5 +16,17 @@
                 "-vvv"
             ]
         },
+        {
+            "name": "Python Debugger: ppk_rnx2rtkp Ocotillo rover",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "ppk_rnx2rtkp.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--pos_fn",
+                "/home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rtkp/134200BEL_R_20242751023_01H_10Z_MO.pos",
+                "-vvv"
+            ]
+        },
     ]
 }
