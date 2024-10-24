@@ -53,7 +53,6 @@ class SBF:
             self.logger.info(f"File validated successfully: {self.sbf_fn}")
 
     def validate_start_time(self):
-        print(f"self.start_time = {self.start_time}")
         if self.start_time is not None:
             if not isinstance(self.start_time, datetime.time):
                 if self.logger:
@@ -73,7 +72,6 @@ class SBF:
                 self.logger.info("No start time specified.")
 
     def validate_end_time(self):
-        print(f"self.end_time = {self.end_time}")
         if self.end_time is not None:
             if not isinstance(self.end_time, datetime.time):
                 if self.logger:
@@ -237,9 +235,12 @@ class SBF:
             "-f",
             self.sbf_fn,
             "-E",
-            "-v",
             "-o",
         ]
+
+        # add logging level to cmd_bin2asc when self._console_loglevel is DEBUG
+        if self._console_loglevel == logging.DEBUG:
+            cmd_sbf2asc.append("-v")
 
         for sbf_block in lst_sbfblocks:
             cmd_sbf2asc.append(
@@ -279,8 +280,8 @@ class SBF:
                     f"\t... converting {str_yellow(sbf2asc_fn[0])} to dataframe"
                 )
 
-            # REMOVING WHITESPACES from the file name
-            sed_cmd = "sed 's/[[:blank:]]\{1,\}/,/g'"
+            # REMOVING WHITESPACES from the file content
+            sed_cmd = r"sed 's/[[:blank:]]\{1,\}/,/g'"
             sed_cmd = sed_cmd + f" {sbf2asc_fn[0]}"
             # print(f"sed_cmd = {sed_cmd}")
             content = os.popen(sed_cmd).read()
