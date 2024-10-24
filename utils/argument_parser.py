@@ -272,6 +272,13 @@ def argument_parser_sbf_timestamps(args: list) -> argparse.Namespace:
         default='',
         type=str
     )
+    parser.add_argument(
+        "--log",
+        help="Specify log destination directory (full path). Default is /tmp/logs/",
+        type=str,
+        required=False,
+        default="/tmp/logs/"
+    )
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)

@@ -465,7 +465,10 @@ class SBF:
         if self.logger:
             self.logger.warning(f"\tcollecting the dataframe. {str_red('Be patient.')}")
 
-        return block_df.collect()
+        if getattr(block_df, "collect", None) is not None:
+            block_df = block_df.collect()
+
+        return block_df
 
     def used_columns(self, sbf_block: str) -> list:
         """returns the column names we use when extracting a SBF block from the SBF file
@@ -598,6 +601,21 @@ class SBF:
                 pl.UInt16: [
                     "WNc [w]",
                 ],
+            }
+        elif sbf_block == "Comment1":
+            col_types = {
+                pl.UInt32: [
+                    "TOW [0.001 s]",
+                ],
+                pl.UInt16: [
+                    "WNc [w]",
+                ],
+                pl.UInt16: [
+                    "CommentLn"
+                ],
+                pl.Utf8: [
+                    "Comment"
+                ]
             }
         keep_cols = {}
         for dtype, columns in col_types.items():

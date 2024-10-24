@@ -30,7 +30,7 @@ class CustomFormatter(logging.Formatter):
         return formatter.format(record)
 
 
-def logger_setup(args: list, base_name: str = "logger", log_dir: str = "logs") -> logging.Logger:
+def logger_setup(args: list, base_name: str = "logger", log_dest: str = "/tmp/logs/") -> logging.Logger:
     """creates console/time rotating file logger.
     Default logging levels are:
     - for file logging: logging.DEBUG
@@ -41,10 +41,10 @@ def logger_setup(args: list, base_name: str = "logger", log_dir: str = "logs") -
     logger.setLevel(logging.DEBUG)
 
     # always write everything to the rotating log files
-    if not os.path.exists(log_dir):
-        os.mkdir(log_dir)
+    if not os.path.exists(log_dest):
+        os.mkdir(log_dest)
     log_file_handler = TimedRotatingFileHandler(
-        f"{log_dir}/{base_name}.log",
+        f"{log_dest}/{base_name}.log",
         when="D",
         interval=1,
         backupCount=20,
@@ -75,7 +75,7 @@ def logger_setup(args: list, base_name: str = "logger", log_dir: str = "logs") -
         logger=logger, console_handler=console_handler, args=args
     )
 
-    logger.info(f"---------- {str_green('start')} {str_green(base_name)} -------------")
+    logger.info(f"---------- {str_green('start')} {str_green(base_name)} @ {str_green(log_dest)}-------------")
 
     return logger
 
