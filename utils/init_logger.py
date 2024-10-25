@@ -75,7 +75,7 @@ def logger_setup(args: list, base_name: str = "logger", log_dest: str = "/tmp/lo
         logger=logger, console_handler=console_handler, args=args
     )
 
-    logger.info(f"---------- {str_green('start')} {str_green(base_name)} @ {str_green(log_dest)}-------------")
+    logger.info(f"---------- {str_green('start')} {str_green(base_name)} {str_green(f"(logged @ {log_dest})")}-------------")
 
     return logger
 

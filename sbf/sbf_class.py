@@ -51,7 +51,7 @@ class SBF:
             self.logger.info(f"File validated successfully: {self.sbf_fn}")
 
     def validate_start_time(self):
-        print(f"self.start_time = {self.start_time}")
+        self.logger.info(f"self.start_time = {self.start_time}")
         if self.start_time is not None:
             if not isinstance(self.start_time, datetime.time):
                 if self.logger:
@@ -71,7 +71,7 @@ class SBF:
                 self.logger.info("No start time specified.")
 
     def validate_end_time(self):
-        print(f"self.end_time = {self.end_time}")
+        self.logger.info(f"self.end_time = {self.end_time}")
         if self.end_time is not None:
             if not isinstance(self.end_time, datetime.time):
                 if self.logger:
@@ -183,7 +183,7 @@ class SBF:
         try:
             process = subprocess.run(cmd_bin2asc)
         except Exception as e:
-            print(f"{process} Error: {e}")
+            self.logger.info(f"{process} Error: {e}")
             if self.logger:
                 self.logger.error(
                     f"\t... subprocess {str_yellow(' '.join(cmd_bin2asc))} return exit code"
@@ -208,7 +208,7 @@ class SBF:
 
             # remove unused columns
             keep_cols = self.used_columns(sbf_block)
-            # print(f"list(keep_cols.keys()) = \n{list(keep_cols.keys())}")
+            # self.logger.info(f"list(keep_cols.keys()) = \n{list(keep_cols.keys())}")
 
             sbf_df = pl.read_csv(
                 source=bin2asc_fn[0],
@@ -286,7 +286,7 @@ class SBF:
         try:
             process = subprocess.run(cmd_sbf2asc)
         except Exception as e:
-            print(f"{process} Error: {e}")
+            self.logger.info(f"{process} Error: {e}")
             self.logger.error(
                 f"\t... subprocess {str_yellow(' '.join(cmd_sbf2asc))} return exit code"
                 f"\t... {str_red(e)}. Program exits."
@@ -311,9 +311,9 @@ class SBF:
                 )
 
             # REMOVING WHITESPACES from the file name
-            sed_cmd = "sed 's/[[:blank:]]\{1,\}/,/g'"
+            sed_cmd = r"sed 's/[[:blank:]]\{1,\}/,/g'"
             sed_cmd = sed_cmd + f" {sbf2asc_fn[0]}"
-            # print(f"sed_cmd = {sed_cmd}")
+            # self.logger.info(f"sed_cmd = {sed_cmd}")
             content = os.popen(sed_cmd).read()
             with open(sbf2asc_fn[0], "w") as fd:
                 fd.write(content)
@@ -365,14 +365,14 @@ class SBF:
         Returns:
             pl.DataFrame: dataframe with datetime and PRN columns added if possible
         """
-        # print(f"block_df = \n{block_df}")
+        # self.logger.info(f"block_df = \n{block_df}")
         # remove the rows where 'Type' equals 0 (no PVT available)
         if self.logger:
             self.logger.info("\tremoving rows with no PVT solution")
 
         if "Type" in block_df.columns:
             block_df = block_df.filter(pl.col("Type") != 0).lazy()
-            # print(f"block_df = \n{block_df}")
+            # self.logger.info(f"block_df = \n{block_df}")
 
         # add date-time and PRN (as str) to the dataframe
         if "WNc [w]" in block_df.columns and "TOW [0.001 s]" in block_df.columns:
@@ -622,7 +622,7 @@ class SBF:
             for col in columns:
                 keep_cols[col] = dtype
 
-        print(keep_cols)
+        self.logger.info(keep_cols)
 
         return keep_cols
 
@@ -636,7 +636,7 @@ class SBF:
             str of correspond sbfblock argument for sbf2asc cli program
         """
 
-        print(
+        self.logger.info(
             "sbf2asc is chosen as sbf converter. Looking up corresponding sbf block arguments"
         )
         self.logger.info(
@@ -673,7 +673,7 @@ class SBF:
         Returns:
             list of correct column names for each sbfblocks
         """
-        print(
+        self.logger.info(
             "sbf2asc is chosen as sbf converter. Looking up corresponding column names for each sbf block"
         )
         self.logger.info(

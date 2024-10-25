@@ -7,9 +7,7 @@ from logging import Logger
 import polars as pl
 from datetime import datetime
 import re
-from collections import namedtuple
 
-import globalvars
 from gnss import gnss_dt
 from sbf.sbf_class import SBF
 from utils import argument_parser, init_logger, utilities
@@ -46,7 +44,7 @@ def get_SBFcomments(parsed_args: argparse.Namespace, logger: Logger) -> pl.DataF
     return df_sbfComments
 
 
-def get_ebh_timestamps(df_sbfComments: pl.DataFrame, logger: Logger) -> pl.DataFrame:
+def parseSBFComments(df_sbfComments: pl.DataFrame, logger: Logger) -> pl.DataFrame:
     """
     Extract EBH time stamps from SBF comments
 
@@ -80,7 +78,7 @@ def get_ebh_timestamps(df_sbfComments: pl.DataFrame, logger: Logger) -> pl.DataF
         pl.struct(["key", "EBH_timestamps"])
         .map_elements(
             lambda x: gnss_dt.dt2gnss(x["EBH_timestamps"], "%Y%m%d_%H-%M-%S"),
-            return_dtype=pl.List(pl.Float64)
+            return_dtype=pl.List(pl.Float64) #unable to define dtype for value in tuple seperately
         )
         .alias("wnc-tow")
     )
@@ -135,9 +133,8 @@ def ebh_timestamps_to_desc(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> d
     ebh_descriptions = {}
 
     # using regex to extract the index (last digit after '_l')
-    # Regex pattern to match 'Start_l' and 'End_l'
+    # Regex pattern to match 'Start_l' 
     start_pattern = r"Start_l(\d+)"
-    #end_pattern = r"End_l(\d+)"
 
     # Iterate over all keys to find matching pairs
     for start_key in df_ebh_timestamps["key"]:
@@ -157,9 +154,12 @@ def ebh_timestamps_to_desc(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> d
             logger.debug(f"start_data {start_data}, end_data {end_data}")
             
             # Collect data and store in dictionary
-            ebh_descriptions[f"l{index}"] = f"{start_data[0]} {start_data[1]}, {end_data[0]} {end_data[1]}"
+            if index == "1": # Special case for l1: Change the key name to CL for compatibility reasons with ebh_lines.py
+                ebh_descriptions[f"CL"] = f"{int(start_data[0])} {start_data[1]}, {int(end_data[0])} {int(end_data[1])}"
+            else:
+                ebh_descriptions[f"l{index}"] = f"{int(start_data[0])} {start_data[1]}, {int(end_data[0])} {end_data[1]}"
             
-
+    
     logger.info(f"ebh line timings:\n{ebh_descriptions}")
 
     return ebh_descriptions
@@ -184,7 +184,7 @@ def ebh_desc_to_file(ebh_desc: dict, desc_path: str, logger: Logger) -> None:
     logger.info(f"done writing description file to {desc_path}")
 
 
-def main(argv: list[str]) -> None:
+def get_ebh_timings(argv: list[str]) -> None:
     script_name = os.path.splitext(os.path.basename(__file__))[0]
     # Parse arguments
     parsed_args = argument_parser.argument_parser_ebh_timestamps(args=argv[1:])
@@ -194,11 +194,11 @@ def main(argv: list[str]) -> None:
     # Get SBF comments
     df_sbfComments = get_SBFcomments(parsed_args=parsed_args, logger=logger)
     # Get EBH timestamps
-    df_ebh_timestamps = get_ebh_timestamps(df_sbfComments=df_sbfComments, logger=logger)
+    df_ebh_timestamps = parseSBFComments(df_sbfComments=df_sbfComments, logger=logger)
     # Convert EBH timestamps to description dict
     ebh_desc = ebh_timestamps_to_desc(df_ebh_timestamps=df_ebh_timestamps, logger=logger)
     # Write EBH timestamps to description file
     ebh_desc_to_file(ebh_desc=ebh_desc, desc_path=parsed_args.out_ebh_fn, logger=logger)
 
 if __name__ == "__main__":
-    main(sys.argv)
+    get_ebh_timings(argv=sys.argv)
