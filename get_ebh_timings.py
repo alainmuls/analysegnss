@@ -7,6 +7,7 @@ from logging import Logger
 import polars as pl
 from datetime import datetime
 import re
+from collections import namedtuple
 
 import globalvars
 from gnss import gnss_dt
@@ -150,18 +151,16 @@ def ebh_timestamps_to_desc(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> d
             logger.debug(f"start_key {start_key}, end_key {end_key}")
              
             # Extract the timestamps for the matching start and end keys
-            start_data = df_ebh_timestamps.filter(pl.col("key") == start_key).select("wnc-tow").to_series()
-            end_data = df_ebh_timestamps.filter(pl.col("key") == end_key).select("wnc-tow").to_series()
-             
+            start_data = df_ebh_timestamps.filter(pl.col("key") == start_key).select("wnc-tow").to_series().item(0)
+            end_data = df_ebh_timestamps.filter(pl.col("key") == end_key).select("wnc-tow").to_series().item(0)
+
             logger.debug(f"start_data {start_data}, end_data {end_data}")
-            # Create the description dict
+            
+            # Collect data and store in dictionary
             ebh_descriptions[f"l{index}"] = f"{start_data[0]} {start_data[1]}, {end_data[0]} {end_data[1]}"
             
 
-    # Print all ebh timings
     logger.info(f"ebh line timings:\n{ebh_descriptions}")
-    for key, value in ebh_descriptions.items():
-        print(f"{key}: {value}")
 
     return ebh_descriptions
 
