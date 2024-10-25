@@ -268,21 +268,21 @@ def argument_parser_ebh_timestamps(args: list) -> argparse.Namespace:
     parser.add_argument(
         "-o",
         "--out_ebh_fn",
-        help="Creates EBH lines description file (use full path!). This description file \
-            is required by ebh_lines.py (default: ebh_timings_desc.txt)",
+        help="Specify a EBH lines description file name (use full path). This description file \
+            is required by ebh_lines.py (default: {sbf_ifn}_ebh_timings_desc.txt)",
         type=str,
         required=False,
-        default="ebh_timings_desc.txt"
     )
     parser.add_argument(
         "--archive",
-        help="Specify archive's directory name",
+        help="Specify archive's directory name. (full or relative (@sbf_ifn) path) \
+            Default is no archiving.",
         required=False,
         default='',
         type=str
     )
     parser.add_argument(
-        "--log",
+        "--log_dest",
         help="Specify log destination directory (full path). Default is /tmp/logs/",
         type=str,
         required=False,

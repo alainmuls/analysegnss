@@ -90,20 +90,20 @@ class SBF:
             if self.logger:
                 self.logger.info("No end time specified.")
 
-    def archive_file(self, fn: str, dest_dir: str = "archive"):
+    def archive_file(self, fn: str, dest_dir: str):
         """
         archive_file archives the created ascii files.
-        
-        args: 
+        It copies the source to the archiving destination and adds a timestamp.
+
+        args:
         fn: file name to archive
         dest_dir: name of archive directory
-        
-        """
-        #Getting directory of file to archive
-        dir_fn = os.path.dirname(fn)
-        dir_fnar = os.path.join(dir_fn,dest_dir)
-        self.logger.info(f"archive directory of file is {dir_fnar}")
 
+        """
+        # Getting directory of file to archive
+        dir_fn = os.path.dirname(fn)
+        dir_fnar = os.path.join(dir_fn, dest_dir)
+        self.logger.info(f"archive directory of file is {dir_fnar}")
 
         # create directory if it does not exist
         if not os.path.exists(dir_fnar):
@@ -113,25 +113,26 @@ class SBF:
             except Exception as e:
                 self.logger.error(f"Error creating archive directory {dir_fnar}: {e}")
 
-        # exctact base name
+        # extract base name
         fn_base = os.path.basename(fn)
-    
+
         # Get timestamp
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
         fn_time = timestamp + "_" + fn_base
-        
+
         # update destination
         dest = os.path.join(dir_fnar, fn_time)
-        
+
         # copy file to archive directory
         try:
             shutil.copy2(fn, dest)
             self.logger.info(f"Succesfully archived file {fn} to {dest}")
 
         except Exception as e:
-            self.logger.error(f"Error moving file {fn} to archive directory {dest}: {e}")
-        
-        
+            self.logger.error(
+                f"Error moving file {fn} to archive directory {dest}: {e}"
+            )
+
     def bin2asc_dataframe(self, lst_sbfblocks: list, archive: str) -> dict:
         """
         bin2asc_dataframe converts binary SBF to CVS files for the sbfblocks in
@@ -201,35 +202,50 @@ class SBF:
 
         # iterate over the CVS files and convert them to dataframe
         for sbf_block, bin2asc_fn in bin2asc_fns.items():
-            if self.logger:
-                self.logger.debug(
-                    f"\t... converting {str_yellow(bin2asc_fn[0])} to dataframe"
+
+            # check if bin2asc_fn of sbf block is empty
+            if len(bin2asc_fn) == 0:
+                if self.logger:
+                    self.logger.warning(
+                        f"\t... no file for {str_yellow({sbf_block})} sbf block found. Continuing to next sbf block."
+                    )
+            else:
+                if self.logger:
+                    self.logger.debug(
+                        f"\t... converting {str_yellow(bin2asc_fn[0])} to dataframe"
+                    )
+
+                # remove unused columns
+                keep_cols = self.used_columns(sbf_block)
+                # self.logger.info(f"list(keep_cols.keys()) = \n{list(keep_cols.keys())}")
+
+                sbf_df = pl.read_csv(
+                    source=bin2asc_fn[0],
+                    separator=",",
+                    columns=list(keep_cols.keys()),
+                    comment_prefix="#",
+                    has_header=True,
+                    skip_rows_after_header=1,  # Skip 1 row after the header
+                    dtypes=keep_cols,
+                    null_values="NaN",
                 )
 
-            # remove unused columns
-            keep_cols = self.used_columns(sbf_block)
-            # self.logger.info(f"list(keep_cols.keys()) = \n{list(keep_cols.keys())}")
+                # add columns to the dataframe
+                sbf_df = self.add_columns(block_df=sbf_df)
 
-            sbf_df = pl.read_csv(
-                source=bin2asc_fn[0],
-                separator=",",
-                columns=list(keep_cols.keys()),
-                comment_prefix="#",
-                has_header=True,
-                skip_rows_after_header=1,  # Skip 1 row after the header
-                dtypes=keep_cols,
-                null_values="NaN",
-            )
+                sbf_dfs[sbf_block] = sbf_df
 
-            # add columns to the dataframe
-            sbf_df = self.add_columns(block_df=sbf_df)
+                # archiving the converted sbf file
+                if not archive == "":
+                    self.archive_file(fn=bin2asc_fn[0], dest_dir=archive)
 
-            sbf_dfs[sbf_block] = sbf_df
+        if sbf_dfs == {}:
+            if self.logger:
+                self.logger.error(
+                    f"\t... Unable to create dataframes for the provided SBF blocks {str_yellow(lst_sbfblocks)} found. Exiting."
+                )
+            sys.exit(ERROR_CODES["E_PROCESS"])
 
-            # archiving the created files
-            if not archive == '':
-                self.archive_file(fn=bin2asc_fn[0], dest_dir=archive)
-                
         return sbf_dfs
 
     def sbf2asc_dataframe(self, lst_sbfblocks: list, archive: str) -> dict:
@@ -255,7 +271,7 @@ class SBF:
                 f"sbf2asc not found in PATH. Please install sbf2asc. Program exits."
             )
             sys.exit(globalvars._ERROR_CODES["E_PROCESS"])
-            
+
         if self.logger:
             self.logger.info(
                 f"{str_yellow(run_sbf2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files "
@@ -305,55 +321,70 @@ class SBF:
 
         # iterate over the CVS files and convert them to dataframe
         for sbf_block, sbf2asc_fn in sbf2asc_fns.items():
-            if self.logger:
-                self.logger.debug(
-                    f"\t... converting {str_yellow(sbf2asc_fn[0])} to dataframe"
-                )
-
-            # REMOVING WHITESPACES from the file name
-            sed_cmd = r"sed 's/[[:blank:]]\{1,\}/,/g'"
-            sed_cmd = sed_cmd + f" {sbf2asc_fn[0]}"
-            # self.logger.info(f"sed_cmd = {sed_cmd}")
-            content = os.popen(sed_cmd).read()
-            with open(sbf2asc_fn[0], "w") as fd:
-                fd.write(content)
-
-            sbf_df = pl.DataFrame()
-
-            try:
-                sbf_df = pl.read_csv(
-                    source=sbf2asc_fn[0],
-                    has_header=False,
-                    separator=",",
-                    new_columns=self.sb2asc_sbfblock_colnames(sbf_block=sbf_block),
-                )
-            except Exception as e:
-                if self.logger:
-                    self.logger.error(f"Error reading file {sbf2asc_fn[0]}: {e}")
-            except polars.exceptions.NoDataError as e:
-                if self.logger:
-                    self.logger.error(f"Empty file {sbf2asc_fn[0]}: {e}")
-
-            # TODO remove unused columns
-
-            # Drop columns with only zeroes
-            sbf_df = sbf_df.drop(
-                columns=[col for col in sbf_df.columns if sbf_df[col].sum() == 0]
-            )
-
-            # TODO add columns to the dataframe of sbf2asc e.g. time, ...etc
-            # sbf_df = self.add_columns(block_df=sbf_df)
-
-            sbf_dfs[sbf_block] = sbf_df
-
-            if self.logger:
-                self.logger.info(f"succesfully created  dataframe for {sbf_block}")
-                self.logger.info(sbf_dfs[sbf_block])
-
-            if not archive == '':
-                # Archive the created files
-                self.archive_file(fn=sbf2asc_fn[0], dest_dir=archive)
             
+            # check if bin2asc_fn of sbf block is empty
+            if len(sbf2asc_fn) == 0:
+                if self.logger:
+                    self.logger.warning(
+                        f"\t... no file for {str_yellow({sbf_block})} sbf block found. Continuing to next sbf block."
+                    )
+            else:
+                if self.logger:
+                    self.logger.debug(
+                        f"\t... converting {str_yellow(sbf2asc_fn[0])} to dataframe"
+                    )
+
+                # REMOVING WHITESPACES from the file name
+                sed_cmd = r"sed 's/[[:blank:]]\{1,\}/,/g'"
+                sed_cmd = sed_cmd + f" {sbf2asc_fn[0]}"
+                # self.logger.info(f"sed_cmd = {sed_cmd}")
+                content = os.popen(sed_cmd).read()
+                with open(sbf2asc_fn[0], "w") as fd:
+                    fd.write(content)
+
+                sbf_df = pl.DataFrame()
+
+                try:
+                    sbf_df = pl.read_csv(
+                        source=sbf2asc_fn[0],
+                        has_header=False,
+                        separator=",",
+                        new_columns=self.sb2asc_sbfblock_colnames(sbf_block=sbf_block),
+                    )
+                except Exception as e:
+                    if self.logger:
+                        self.logger.error(f"Error reading file {sbf2asc_fn[0]}: {e}")
+                except polars.exceptions.NoDataError as e:
+                    if self.logger:
+                        self.logger.error(f"Empty file {sbf2asc_fn[0]}: {e}")
+
+                # TODO remove unused columns
+
+                # Drop columns with only zeroes
+                sbf_df = sbf_df.drop(
+                    columns=[col for col in sbf_df.columns if sbf_df[col].sum() == 0]
+                )
+
+                # TODO add columns to the dataframe of sbf2asc e.g. time, ...etc
+                # sbf_df = self.add_columns(block_df=sbf_df)
+
+                sbf_dfs[sbf_block] = sbf_df
+
+                if self.logger:
+                    self.logger.info(f"succesfully created  dataframe for {sbf_block}")
+                    self.logger.info(sbf_dfs[sbf_block])
+
+                if not archive == "":
+                    # Archive the created files
+                    self.archive_file(fn=sbf2asc_fn[0], dest_dir=archive)
+
+        if sbf_dfs == {}:
+            if self.logger:
+                self.logger.error(
+                    f"\t... Unable to create dataframes for the provided SBF blocks {str_yellow(lst_sbfblocks)} found. Exiting."
+                )
+            sys.exit(ERROR_CODES["E_PROCESS"])
+
         return sbf_dfs
 
     def add_columns(self, block_df: pl.DataFrame) -> pl.DataFrame:
@@ -610,12 +641,8 @@ class SBF:
                 pl.UInt16: [
                     "WNc [w]",
                 ],
-                pl.UInt16: [
-                    "CommentLn"
-                ],
-                pl.Utf8: [
-                    "Comment"
-                ]
+                pl.UInt16: ["CommentLn"],
+                pl.Utf8: ["Comment"],
             }
         keep_cols = {}
         for dtype, columns in col_types.items():
