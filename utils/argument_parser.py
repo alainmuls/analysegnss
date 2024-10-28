@@ -111,7 +111,9 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
     """
     baseName = str_yellow(os.path.basename(__file__))
 
-    help_txt = baseName + " analysis of rnx2rtkp position file"
+    help_txt = (
+        baseName + " Plot PPK (from ppk_rnx2rtkp.py) or RTK (from rtk_pvtgeod.py) data"
+    )
 
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=help_txt)
@@ -123,6 +125,7 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
         default=None,
         help="verbose level... repeat up to three times.",
     )
+
     parser.add_argument(
         "--pos_fn",
         help="input rnx2rtkp pos filename",
@@ -131,7 +134,7 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
     )
     parser.add_argument(
         "--plot",
-        help="displays plots (default False)",
+        help="display plots (default False)",
         action="store_true",
         required=False,
         default=False,
@@ -213,7 +216,7 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
 
     parser.add_argument(
         "--timing_fn",
-        help="input ebh lines timing filename",
+        help="input ebh lines timing filename. One of the keys needs to be called CL. The other keys of each track can be freely chosen. e.g. key: Wnc TOWstart, Wnc TOWend",
         type=str,
         required=True,
     )

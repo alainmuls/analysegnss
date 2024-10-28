@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
-from logging import Logger
+import json
 import os
 import sys
+from logging import Logger
 
 import polars as pl
 from tabulate import tabulate
@@ -22,7 +23,6 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> None:
         logger (_type_): logger object
     """
     # analysis of the quality of the position data
-    print(f"\nAnalysis of the quality of the position data")
     qual_analysis = []
     total_obs = df_pos.shape[0]
     for qual, qual_data in df_pos.group_by(["Q"]):
@@ -40,10 +40,10 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> None:
         tablefmt="fancy_outline",
     )
 
-    print(qual_tabular)
+    print(f"\nAnalysis of the quality of the position data\n{qual_tabular}")
 
     if logger is not None:
-        logger.warn(qual_tabular)
+        logger.warning(f"\n{qual_tabular}")
 
 
 def rtkp_pos(argv: list) -> pl.DataFrame:
@@ -67,7 +67,7 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
 
     # create the file/console logger
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
-    logger.info(f"Parsed arguments: {args_parsed}")
+    logger.debug(f"Parsed arguments: {args_parsed}")
 
     # create a SBF class object
     try:
@@ -79,7 +79,8 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
         sys.exit(1)
 
     # read the CVS position file into polars dataframe
-    pos_df = rtkpos.read_pos_file()
+    info_processing, pos_df = rtkpos.read_pos_file()
+    print(f"Processing info:\n{json.dumps(info_processing, indent=4)}")
 
     # analyse the quality of the solution
     quality_analysis(df_pos=pos_df, logger=logger)

@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 import os
 import sys
@@ -7,12 +8,13 @@ from typing import Tuple
 
 import polars as pl
 import utm
+
+from config import ERROR_CODES, GEOID_PATH
 from gnss import geoid
 
 # import globalvars
 from gnss.gnss_dt import gpsms2dt
 from utils.utilities import str_red
-from config import GEOID_PATH, ERROR_CODES
 
 
 @dataclass
@@ -24,11 +26,13 @@ class Rtkpos:
     end_time: datetime.time = field(default=None)
 
     logger: logging.Logger = field(default=None)
+    _console_loglevel: int = field(default=logging.ERROR)
 
     def __post_init__(self):
         self.validate_file()
         self.validate_start_time()
         self.validate_end_time()
+        self.validate_logger_level()
 
     def validate_file(self):
         """validate existence of the RTK position file
@@ -94,23 +98,38 @@ class Rtkpos:
             if self.logger is not None:
                 self.logger.info("No end time specified.")
 
-    def read_pos_file(self) -> pl.DataFrame:
+    def validate_logger_level(self):
+        if self.logger is not None:
+            # get the logging level for the console
+            for handler in self.logger.handlers:
+                if isinstance(handler, logging.StreamHandler) and handler.stream in (
+                    sys.stdout,
+                    sys.stderr,
+                ):
+                    # self._console_loglevel = logging.getLevelName(handler.level)
+                    self._console_loglevel = handler.level
+
+            self.logger.info(
+                "Console log level set to "
+                + f"{str_red(logging.getLevelName(self._console_loglevel))}"
+            )
+
+    def read_pos_file(self) -> Tuple[dict, pl.DataFrame]:
         """read the RTK position file
 
         Returns:
             polars.DataFrame: RTK position data
+
         """
         # get the processing information
         processing_info, col_names = self.info_processing()
-        # print(f"processing_info = \n{processing_info}")
-        # print(f"col_names = \n{col_names}")
 
         # get the schema for the RTK position dataframe
         pos_schema = self.rtkpos_schema()
         # print(f"pos_schema = \n{pos_schema}")
 
         # change the multiple spaces in char comma
-        sed_cmd = "sed 's/[[:blank:]]\{1,\}/,/g'"
+        sed_cmd = r"sed 's/[[:blank:]]\{1,\}/,/g'"
         sed_cmd = sed_cmd + f" {self.pos_fn}"
         # print(f"sed_cmd = {sed_cmd}")
         content = os.popen(sed_cmd).read()
@@ -138,7 +157,7 @@ class Rtkpos:
         # with pl.Config(tbl_cols=-1):
         #     print(f"pos_df = \n{pos_df.collect()}")
 
-        return pos_df
+        return processing_info, pos_df
 
     def rtkpos_schema(self) -> dict:
         """determines header and dtypes to the dataframe
@@ -225,10 +244,12 @@ class Rtkpos:
 
         col_names = ["WNc", "TOW(s)"] + col_names[2:]
 
-        self.logger.info(f"column names = \n{col_names}")
-        self.logger.info(f"info_processing = \n{info_processing}")
-        # print(f"column names = \n{col_names}")
-        # print(f"info_processing = \n{info_processing}")
+        if self.logger is not None:
+            self.logger.debug(f"column names = \n{col_names}")
+            # self.logger.info(f"info_processing = \n{info_processing}")
+            self.logger.info(
+                f"Processing info:\n{json.dumps(info_processing, indent=4)}"
+            )
 
         return info_processing, col_names
 
