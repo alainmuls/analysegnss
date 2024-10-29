@@ -87,7 +87,7 @@ The `sbf_class` is a class that reads and parses SBF files. The class  has the f
 - `end_time`: the end time of the SBF file, optional
 - `logger`: the logger object, optional
 
-During initialization of the class, the fields (except `logger`) are validated.
+During initialization of the class, the fields are validated.
 
 The class has the following methods:
 - `def bin2asc_dataframe(self, lst_sbfblocks: list) -> dict:`
@@ -287,21 +287,23 @@ _Remark: currently only implemented for the RTK solution_
 The script calls one of the previous scripts to create the polars dataframe, extracts the columns needed for plotting and plots the data.
 
 ```bash
-± rtkppk_plot.py -h
-usage: rtkppk_plot.py [-h] [-V] [-v] --pos_fn POS_FN [--plot]
+± $ rtkppk_plot.py -h
+usage: rtkppk_plot.py [-h] [-V] [-v] [--title TITLE] [--plot] (--pos_fn POS_FN | --sbf_fn SBF_FN)
 
-argument_parser.py analysis of rnx2rtkp position file
+argument_parser.py Plot PPK (from ppk_rnx2rtkp.py) or RTK (from rtk_pvtgeod.py) data
 
 options:
   -h, --help       show this help message and exit
   -V, --version    show program's version number and exit
   -v, --verbose    verbose level... repeat up to three times.
+  --title TITLE    title for plot
+  --plot           display plots (default False)
   --pos_fn POS_FN  input rnx2rtkp pos filename
-  --plot           displays plots (default False)
+  --sbf_fn SBF_FN  input SBF filename
 ```
 
 ```bash
-± rtkppk_plot.py --pos_fn /home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos -vv --plot
+± rtkppk_plot.py --pos_fn /home/amuls/GNSSData/20241001-KEIHEUVEL/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos -vv --plot
 2024-08-05 14:34:30,771 [INFO](rtkppk_plot:init_logger.pylogger_setup:78): ---------- start rtkppk_plot -------------
 2024-08-05 14:34:30,772 [INFO](ppk_rnx2rtkp:init_logger.pylogger_setup:78): ---------- start ppk_rnx2rtkp -------------
 2024-08-05 14:34:30,772 [INFO](ppk_rnx2rtkp:ppk_rnx2rtkp.pyrtkp_pos:65): Parsed arguments: Namespace(verbose=2, pos_fn='/home/amuls/GNSSData/USA_CA_2024/SaltonSea/rtkp/ROVR00BEL_R_20241701647_05H_10Z_MO.pos')
@@ -314,7 +316,8 @@ options:
 2024-08-05 14:34:30,782 [WARNING](ppk_rnx2rtkp:rtkpos_class.pyadd_columns:298): 	collecting the dataframe. Be patient.
 
 Analysis of the quality of the position data
-2024-08-05 14:34:37,218 [WARNING](ppk_rnx2rtkp:ppk_rnx2rtkp.pyquality_analysis:35): ╒═══════════════════════════╤═════════╤══════════════╕
+2024-08-05 14:34:37,218 [WARNING](ppk_rnx2rtkp:ppk_rnx2rtkp.pyquality_analysis:35): 
+╒═══════════════════════════╤═════════╤══════════════╕
 │ PNT Mode                  │   Count │ Percentage   │
 ╞═══════════════════════════╪═════════╪══════════════╡
 │ Differential PVT          │       3 │ 0.00%        │
@@ -504,9 +507,6 @@ shape: (3_037, 3)
 └───────────────┴──────────┴────────────┘
 ```
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
 ## Contributing
 State if you are open to contributions and what your requirements are for accepting them.
 
@@ -517,9 +517,4 @@ You can also document commands to lint the code or run tests. These steps help t
 ## Authors and acknowledgment
 
 - Alain MULS
-- 
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+  
