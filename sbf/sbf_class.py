@@ -5,14 +5,15 @@ import os
 import subprocess
 import sys
 from dataclasses import dataclass, field
+
 import numpy as np
 import polars as pl
 import utm
 
-from sbf import sbf_constants as sbfc
-from gnss.gnss_dt import gpsms2dt
-from utils.utilities import locate, str_red, str_yellow
 from config import ERROR_CODES
+from gnss.gnss_dt import gpsms2dt
+from sbf import sbf_constants as sbfc
+from utils.utilities import locate, str_red, str_yellow
 
 
 @dataclass
@@ -22,11 +23,13 @@ class SBF:
     end_time: datetime.time = field(default=None)
 
     logger: logging.Logger = field(default=None)
+    _console_loglevel: int = field(default=logging.ERROR)
 
     def __post_init__(self):
         self.validate_file()
         self.validate_start_time()
         self.validate_end_time()
+        self.validate_logger_level()
 
     def validate_file(self):
         if not os.path.isfile(self.sbf_fn):
@@ -50,7 +53,6 @@ class SBF:
             self.logger.info(f"File validated successfully: {self.sbf_fn}")
 
     def validate_start_time(self):
-        print(f"self.start_time = {self.start_time}")
         if self.start_time is not None:
             if not isinstance(self.start_time, datetime.time):
                 if self.logger:
@@ -70,7 +72,6 @@ class SBF:
                 self.logger.info("No start time specified.")
 
     def validate_end_time(self):
-        print(f"self.end_time = {self.end_time}")
         if self.end_time is not None:
             if not isinstance(self.end_time, datetime.time):
                 if self.logger:
@@ -88,6 +89,22 @@ class SBF:
         else:
             if self.logger:
                 self.logger.info("No end time specified.")
+
+    def validate_logger_level(self):
+        if self.logger is not None:
+            # get the logging level for the console
+            for handler in self.logger.handlers:
+                if isinstance(handler, logging.StreamHandler) and handler.stream in (
+                    sys.stdout,
+                    sys.stderr,
+                ):
+                    # self._console_loglevel = logging.getLevelName(handler.level)
+                    self._console_loglevel = handler.level
+
+            self.logger.info(
+                "Console log level set to "
+                + f"{str_red(logging.getLevelName(self._console_loglevel))}"
+            )
 
     def bin2asc_dataframe(self, lst_sbfblocks: list) -> dict:
         """
@@ -122,12 +139,15 @@ class SBF:
             "-E",
             "-r",
             "-t",
-            "-v",
         ]
         # "-b",
         # self.epoch_start.strftime("%H:%M:%S"),
         # "-e",
         # self.epoch_end.strftime("%H:%M:%S"),
+
+        # add logging level to cmd_bin2asc when self._console_loglevel is DEBUG
+        if self._console_loglevel == logging.DEBUG:
+            cmd_bin2asc.append("-v")
 
         for sbf_block in lst_sbfblocks:
             cmd_bin2asc.append("-m")
@@ -215,9 +235,12 @@ class SBF:
             "-f",
             self.sbf_fn,
             "-E",
-            "-v",
             "-o",
         ]
+
+        # add logging level to cmd_bin2asc when self._console_loglevel is DEBUG
+        if self._console_loglevel == logging.DEBUG:
+            cmd_sbf2asc.append("-v")
 
         for sbf_block in lst_sbfblocks:
             cmd_sbf2asc.append(
@@ -257,8 +280,8 @@ class SBF:
                     f"\t... converting {str_yellow(sbf2asc_fn[0])} to dataframe"
                 )
 
-            # REMOVING WHITESPACES from the file name
-            sed_cmd = "sed 's/[[:blank:]]\{1,\}/,/g'"
+            # REMOVING WHITESPACES from the file content
+            sed_cmd = r"sed 's/[[:blank:]]\{1,\}/,/g'"
             sed_cmd = sed_cmd + f" {sbf2asc_fn[0]}"
             # print(f"sed_cmd = {sed_cmd}")
             content = os.popen(sed_cmd).read()
@@ -277,7 +300,7 @@ class SBF:
             except Exception as e:
                 if self.logger:
                     self.logger.error(f"Error reading file {sbf2asc_fn[0]}: {e}")
-            except polars.exceptions.NoDataError as e:
+            except pl.exceptions.NoDataError as e:
                 if self.logger:
                     self.logger.error(f"Empty file {sbf2asc_fn[0]}: {e}")
 
@@ -294,7 +317,7 @@ class SBF:
             sbf_dfs[sbf_block] = sbf_df
 
             if self.logger:
-                self.logger.info(f"succesfully created  dataframe for {sbf_block}")
+                self.logger.info(f"successfully created  dataframe for {sbf_block}")
                 self.logger.info(sbf_dfs[sbf_block])
 
         return sbf_dfs
@@ -325,7 +348,7 @@ class SBF:
                 pl.struct(["WNc [w]", "TOW [0.001 s]"])
                 .map_elements(
                     lambda x: gpsms2dt(week=x["WNc [w]"], towms=x["TOW [0.001 s]"]),
-                    return_dtype=datetime.datetime,
+                    return_dtype=pl.Datetime,
                 )
                 .alias("DT")
             ).lazy()
@@ -337,7 +360,7 @@ class SBF:
             block_df = block_df.with_columns(
                 pl.struct(["SVID"])
                 .map_elements(
-                    lambda x: sbfc.ssnerr_prn2str(prn=x["SVID"]), return_dtype=str
+                    lambda x: sbfc.ssnerr_prn2str(prn=x["SVID"]), return_dtype=pl.Utf8
                 )
                 .alias("PRN")
             ).lazy()
@@ -401,7 +424,10 @@ class SBF:
                 self.logger.info("\tadding orthometric height to the dataframe")
             block_df = block_df.with_columns(
                 pl.struct(["Height [m]", "Undulation [m]"])
-                .apply(lambda x: x["Height [m]"] - x["Undulation [m]"])
+                .apply(
+                    lambda x: x["Height [m]"] - x["Undulation [m]"],
+                    return_dtype=pl.Float64,
+                )
                 .alias("orthoH")
             ).lazy()
 
@@ -547,7 +573,8 @@ class SBF:
             for col in columns:
                 keep_cols[col] = dtype
 
-        print(keep_cols)
+        if self.logger is not None:
+            self.logger.info(f"Keeping columns: \n{keep_cols}")
 
         return keep_cols
 
@@ -561,12 +588,11 @@ class SBF:
             str of correspond sbfblock argument for sbf2asc cli program
         """
 
-        print(
-            "sbf2asc is chosen as sbf converter. Looking up corresponding sbf block arguments"
-        )
-        self.logger.info(
-            "sbf2asc is chosen as sbf converter. Looking up corresponding sbf block arguments"
-        )
+        if self.logger is not None:
+            self.logger.info(
+                "sbf2asc is chosen as sbf converter. Looking up corresponding sbf block arguments"
+            )
+
         # TODO expand look up table for sbf2asc
         lookup_sbf_block = {
             "PVTCartesian2": "-p",
