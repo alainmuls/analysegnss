@@ -294,34 +294,24 @@ def ebh_lines_thin_out(
     return df_assur.collect()
 
 
-def ebh_lines(argv: list):
+def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
     """get the ebh_lines from RTK or PPK processing
 
     Args:
-        argv (list): CLI arguments
+        parsed_args: parsed CLI arguments executed by argparse
     """
-    # parse the CLI arguments
-    script_name = os.path.splitext(os.path.basename(__file__))[0]
 
-    # parse the CLI arguments
-    args_parsed = argument_parser.argument_parser_ebh_lines(args=argv[1:])
-    # print(f"\nParsed arguments: {type(args_parsed)}")
 
-    # create the file/console logger
-    logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
-    # # test logger
-    logger.info(f"Parsed arguments: {args_parsed}")
-
-    # logger.debug(f"program arguments: {args_parsed}")
+    # logger.debug(f"program arguments: {parsed_args}")
 
     # get the dataframe according to the processing type (RTK or PPK)
-    if args_parsed.ppk:
+    if parsed_args.ppk:
         # call ppp_rnx2rtkp to get the position dataframe
-        pos_df = get_ppk_dataframe(parsed_args=args_parsed, logger=logger)
+        pos_df = get_ppk_dataframe(parsed_args=parsed_args, logger=logger)
 
-        logger.info(f"Dataframe obtained from PPK processing of {args_parsed.ebh_fn}")
+        logger.info(f"Dataframe obtained from PPK processing of {parsed_args.ebh_fn}")
         print(
-            f"Dataframe obtained from {str_yellow('PPK')} processing of {str_yellow(args_parsed.ebh_fn)}"
+            f"Dataframe obtained from {str_yellow('PPK')} processing of {str_yellow(parsed_args.ebh_fn)}"
         )
         df_pos = pos_df.select(
             [
@@ -335,17 +325,17 @@ def ebh_lines(argv: list):
                 # "longitude(deg)",
             ]
         )
-    elif args_parsed.rtk:
+    elif parsed_args.rtk:
         # call rtk_pvtgeod to get the position dataframe
-        pos_df = get_rtk_dataframe(parsed_args=args_parsed, logger=logger)
+        pos_df = get_rtk_dataframe(parsed_args=parsed_args, logger=logger)
 
         logger.info(
             f"Dataframe obtained from {str_yellow('RTK')} processing of "
-            f"{str_yellow(args_parsed.ebh_fn)}"
+            f"{str_yellow(parsed_args.ebh_fn)}"
         )
         print(
             f"Dataframe obtained from {str_yellow('RTK')} processing of "
-            f"{str_yellow(args_parsed.ebh_fn)}"
+            f"{str_yellow(parsed_args.ebh_fn)}"
         )
         df_pos = pos_df.select(["DT", "Type", "NrSV", "UTM.E", "UTM.N", "orthoH"])
     else:
@@ -357,7 +347,7 @@ def ebh_lines(argv: list):
         print(df_pos)
 
     # read the timings for the ebh_lines
-    ebh_timings = read_ebh_line_timings(timings_fn=args_parsed.timing_fn, logger=logger)
+    ebh_timings = read_ebh_line_timings(timings_fn=parsed_args.timing_fn, logger=logger)
 
     # calculate the map_angle for each ebh_line
     ebh_lines_map_angle(df_pos=df_pos, ebh_timings=ebh_timings, logger=logger)
@@ -369,14 +359,14 @@ def ebh_lines(argv: list):
 
     # extract the lines from the dataframe
     ebh_assur_lines = ebh_lines_extract(
-        df_pos=df_pos, ebh_timings=ebh_timings, parsed_args=args_parsed, logger=logger
+        df_pos=df_pos, ebh_timings=ebh_timings, parsed_args=parsed_args, logger=logger
     )
 
     qual_ebh_line = {}  # dict to store the quality of the ebh lines
     # save in CSV files using ";" as separator and check quality of each ebh line
     for ebh_key, ebh_assur_line in ebh_assur_lines.items():
         # name the file according to the ebh line key
-        ebh_line_fn = f"{args_parsed.desc}_{ebh_key}.csv"
+        ebh_line_fn = f"{parsed_args.desc}_{ebh_key}.csv"
         logger.info(
             f"Writing CSV AssurTool file for {str_yellow(ebh_key)} to "
             f"{str_yellow(ebh_line_fn)}\n"
@@ -390,7 +380,7 @@ def ebh_lines(argv: list):
 
         # Checking quality of each ebh line for ppk and rtk result.
         # This info is needed to decide whether rtk or ppk quality is sufficient for ASSUR        
-        if args_parsed.rtk:
+        if parsed_args.rtk:
             qual_ebh_line[ebh_key] = rtk_pvtgeod.quality_analysis(ebh_assur_line)
             logger.info(f"The rtk quality of the line {ebh_key} is {qual_ebh_line[ebh_key]}")
         else:
@@ -401,4 +391,16 @@ def ebh_lines(argv: list):
     return qual_ebh_line
 
 if __name__ == "__main__":
-    ebh_lines(argv=sys.argv)
+    
+    # fetch script name for logger
+    script_name = os.path.splitext(os.path.basename(__file__))[0]
+
+    # parse the CLI arguments
+    parsed_args = argument_parser.argument_parser_ebh_lines(args=sys.argv[1:])
+
+    # create the file/console logger
+    logger = init_logger.logger_setup(args=parsed_args, base_name=script_name)
+    # # test logger
+    logger.info(f"Parsed arguments: {parsed_args}")
+    
+    ebh_lines(parsed_args=parsed_args, logger=logger)

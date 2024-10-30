@@ -207,14 +207,7 @@ def ebh_desc_to_file(ebh_desc: dict, desc_path: str, logger: Logger) -> None:
     logger.info(f"Done writing description file to {desc_path}")
 
 
-def get_ebh_timings(argv: list[str]) -> None:
-    script_name = os.path.splitext(os.path.basename(__file__))[0]
-    # Parse arguments
-    parsed_args = argument_parser.argument_parser_ebh_timestamps(args=argv[1:])
-    # Initialize logger
-    logger = init_logger.logger_setup(
-        args=parsed_args, base_name=script_name, log_dest=parsed_args.log_dest
-    )
+def get_ebh_timings(parsed_args: argparse.Namespace, logger:Logger) -> None:
 
     # Get SBF comments
     df_sbfComments = get_SBFcomments(parsed_args=parsed_args, logger=logger)
@@ -238,4 +231,14 @@ def get_ebh_timings(argv: list[str]) -> None:
 
 
 if __name__ == "__main__":
-    get_ebh_timings(argv=sys.argv)
+    
+    # fetch script name for logger
+    script_name = os.path.splitext(os.path.basename(__file__))[0]
+    # Parse arguments
+    parsed_args = argument_parser.argument_parser_ebh_timestamps(args=sys.argv[1:])
+    # Initialize logger
+    logger = init_logger.logger_setup(
+        args=parsed_args, base_name=script_name, log_dest=parsed_args.log_dest
+    )
+    
+    get_ebh_timings(parsed_args=parsed_args, logger=logger)
