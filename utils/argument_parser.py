@@ -7,7 +7,7 @@ from utils.utilities import str_yellow
 
 
 def argument_parser_rtk(args: list) -> argparse.Namespace:
-    """parses the arguments and creates console/file logger
+    """parses the arguments
 
     Args:
         argv (list): list of arguments
@@ -51,7 +51,7 @@ def argument_parser_rtk(args: list) -> argparse.Namespace:
 
 
 def argument_parser_ppk(args: list) -> argparse.Namespace:
-    """parses the arguments and creates console/file logger
+    """parses the arguments
 
     Args:
         argv (list): list of arguments
@@ -79,20 +79,6 @@ def argument_parser_ppk(args: list) -> argparse.Namespace:
         type=str,
         required=True,
     )
-    # parser.add_argument(
-    #     "--plot",
-    #     help="displays plots (default False)",
-    #     action="store_true",
-    #     required=False,
-    #     default=False,
-    # )
-    # parser.add_argument(
-    #     "--title",
-    #     help="title used for plots",
-    #     type=str,
-    #     required=False,
-    #     default="PPK results",
-    # )
 
     # allow argument completion
     argcomplete.autocomplete(parser)
@@ -103,7 +89,7 @@ def argument_parser_ppk(args: list) -> argparse.Namespace:
 
 def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
     """(Deprecated. Use ppk_rnx2rtkp instead.)
-    Parses the arguments and creates console/file logger
+    Parses the arguments
 
     Args:
         argv (list): list of arguments
@@ -135,6 +121,7 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
         required=False,
         default=None,
     )
+
     parser.add_argument(
         "--plot",
         help="display plots (default False)",
@@ -172,7 +159,7 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
 
 
 def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
-    """parses the arguments and creates console/file logger
+    """parses the arguments
 
     Args:
         argv (list): list of arguments
@@ -219,7 +206,8 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
 
     parser.add_argument(
         "--timing_fn",
-        help="input ebh lines timing filename. One of the keys needs to be called CL. The other keys of each track can be freely chosen. e.g. key: Wnc TOWstart, Wnc TOWend",
+        help="input ebh lines timing filename. One of the keys needs to be called CL.\n"
+        " The other keys of each track can be freely chosen. e.g. key: Wnc TOWstart, Wnc TOWend",
         type=str,
         required=True,
     )
@@ -230,6 +218,64 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
         action="store_true",
         required=False,
         default=False,
+    )
+
+    # allow argument completion
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args(args)
+
+    return args
+
+
+def argument_parser_rnxobs_csv(args: list) -> argparse.Namespace:
+    """parses the arguments
+
+    Args:
+        argv (list): list of arguments
+
+    Returns:
+        argparse.Namespace: parsed arguments
+    """
+    baseName = str_yellow(os.path.basename(__file__))
+
+    help_txt = (
+        baseName
+        + " Convert RINEX observation file to CSV file similar to those created by rtcm3_parser.py"
+    )
+
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_txt)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+    )
+
+    parser.add_argument(
+        "--rnx_fn",
+        help="RINEX observation filename",
+        type=str,
+        required=True,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--csv_fn",
+        help="CSV observation filename (defaults to extension csv instead of rnx)",
+        type=str,
+        required=False,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--gnss",
+        help="GNSS systems to convert (default: GE, select between G, R, E, C)",
+        type=str,
+        required=False,
+        default="GE",
     )
 
     # allow argument completion
