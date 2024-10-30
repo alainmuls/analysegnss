@@ -281,13 +281,23 @@ class SBF:
                 )
 
             # REMOVING WHITESPACES from the file content
-            sed_cmd = r"sed 's/[[:blank:]]\{1,\}/,/g'"
-            sed_cmd = sed_cmd + f" {sbf2asc_fn[0]}"
-            # print(f"sed_cmd = {sed_cmd}")
-            content = os.popen(sed_cmd).read()
+            # sed_cmd = r"sed 's/[[:blank:]]\{1,\}/,/g'"
+            # sed_cmd = sed_cmd + f" {sbf2asc_fn[0]}"
+            # # print(f"sed_cmd = {sed_cmd}")
+            # content = os.popen(sed_cmd).read()
+            # with open(sbf2asc_fn[0], "w") as fd:
+            #     fd.write(content)
+
+            with open(sbf2asc_fn[0], "r") as f:
+                lines = []
+                for line in f:
+                    processed_line = ",".join(line.split())
+                    lines.append(processed_line)
+                content = "\n".join(lines)
+
             with open(sbf2asc_fn[0], "w") as fd:
                 fd.write(content)
-
+            # remove unused columns
             sbf_df = pl.DataFrame()
 
             try:

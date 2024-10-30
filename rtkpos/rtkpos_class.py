@@ -128,13 +128,17 @@ class Rtkpos:
         pos_schema = self.rtkpos_schema()
         # print(f"pos_schema = \n{pos_schema}")
 
-        # change the multiple spaces in char comma
-        sed_cmd = r"sed 's/[[:blank:]]\{1,\}/,/g'"
-        sed_cmd = sed_cmd + f" {self.pos_fn}"
-        # print(f"sed_cmd = {sed_cmd}")
-        content = os.popen(sed_cmd).read()
+        # REMOVING WHITESPACES from the file content
+        with open(self.pos_fn, "r") as f:
+            lines = []
+            for line in f:
+                processed_line = ",".join(line.split())
+                lines.append(processed_line)
+            content = "\n".join(lines)
+
         with open(self._csv_fn, "w") as fd:
             fd.write(content)
+
         # read the position file skipping the lines with '%'
         try:
             pos_df = pl.scan_csv(
