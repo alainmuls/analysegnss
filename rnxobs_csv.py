@@ -20,6 +20,10 @@ def rnxobs_csv(argv: list):
     args_parsed = argument_parser.argument_parser_rnxobs_csv(args=argv[1:])
     print(f"\nParsed arguments: {args_parsed}")
 
+    # create the file/console logger
+    logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
+    logger.debug(f"Parsed arguments: {args_parsed}")
+
 
 if __name__ == "__main__":
     rnxobs_csv(argv=sys.argv)
