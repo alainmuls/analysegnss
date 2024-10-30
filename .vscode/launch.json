@@ -17,7 +17,7 @@
             ]
         },
         {
-            "name": "Python Debugger: ppk_rnx2rtkp Ocotillo rover",
+            "name": "Python Debugger: ppk_rnx2rtkp Keiheuvel 2024/20/01",
             "type": "debugpy",
             "request": "launch",
             "program": "ppk_rnx2rtkp.py",
@@ -26,6 +26,19 @@
                 "--pos_fn",
                 "/home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rtkp/134200BEL_R_20242751023_01H_10Z_MO.pos",
                 "-vvv"
+            ]
+        },
+        {
+            "name": "Python Debugger: rtkppk_plot Keiheuvel 2024/20/01",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "rtkppk_plot.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--pos_fn",
+                "/home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rtkp/134200BEL_R_20242751023_01H_10Z_MO.pos",
+                "-vvv",
+                "--plot"
             ]
         },
     ]
