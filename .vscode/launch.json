@@ -41,5 +41,17 @@
                 "--plot"
             ]
         },
+        {
+            "name": "Python Debugger: rnxobs_csv Keiheuvel 2024/20/01 (base station)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "rnxobs_csv.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--rnx_fn",
+                "/home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rnx/base00BEL_R_20242751022_01H_05S_MO.rnx",
+                "-vvv",
+            ]
+        },
     ]
 }
