@@ -13,7 +13,7 @@ from utils import argument_parser, init_logger
 from config import ERROR_CODES
 
 
-def quality_analysis(geod_df: pl.DataFrame, logger) -> None:
+def quality_analysis(geod_df: pl.DataFrame, logger) -> list:
     """display the quality analysis
 
     Args:
@@ -42,6 +42,7 @@ def quality_analysis(geod_df: pl.DataFrame, logger) -> None:
     if logger is not None:
         logger.warning(f"Quality analysis:\n{qual_tabular}")
 
+    return qual_analysis
 
 def rtk_pvtgeod(argv: list) -> pl.DataFrame:
     """
@@ -82,14 +83,14 @@ def rtk_pvtgeod(argv: list) -> pl.DataFrame:
         return df_geod
 
     else:
-        df_poscov = sbf.sbf2asc_dataframe(lst_sbfblocks=["PosCovGeodetic1"])[
-            "PosCovGeodetic1"
+        df_geod = sbf.sbf2asc_dataframe(lst_sbfblocks=["PVTGeodetic2"])[
+            "PVTGeodetic2"
         ]
         with pl.Config(tbl_cols=-1):
-            print(f"df_poscov: \n{df_poscov}")
-            logger.info(f"df_poscov: \n{df_poscov}")
+            print(f"df_geod: \n{df_geod}")
+            logger.info(f"df_geod: \n{df_geod}")
 
-        return None
+    return df_geod
 
 
 if __name__ == "__main__":

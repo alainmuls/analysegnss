@@ -105,7 +105,7 @@ class SBF:
                 "Console log level set to "
                 + f"{str_red(logging.getLevelName(self._console_loglevel))}"
             )
-            
+
     def archive_file(self, fn: str, dest_dir: str):
         """
         archive_file archives the created ascii files.
@@ -148,7 +148,6 @@ class SBF:
             self.logger.error(
                 f"Error moving file {fn} to archive directory {dest}: {e}"
             )
-        
 
     def bin2asc_dataframe(self, lst_sbfblocks: list) -> dict:
         """
@@ -344,7 +343,7 @@ class SBF:
 
         # iterate over the CVS files and convert them to dataframe
         for sbf_block, sbf2asc_fn in sbf2asc_fns.items():
-            
+
             # check if bin2asc_fn of sbf block is empty
             if len(sbf2asc_fn) == 0:
                 if self.logger:
@@ -396,7 +395,7 @@ class SBF:
                 if self.logger:
                     self.logger.info(f"succesfully created  dataframe for {sbf_block}")
                     self.logger.info(sbf_dfs[sbf_block])
-                    
+
                 if not archive == "":
                     # Archive the created files
                     self.archive_file(fn=sbf2asc_fn[0], dest_dir=archive)
@@ -520,8 +519,12 @@ class SBF:
 
         if self.logger:
             self.logger.warning(f"\tcollecting the dataframe. {str_red('Be patient.')}")
-        if getattr(block_df, "collect", None) is not None: # If an SBF block doesn't contain a column used in this func, the collect() will throw an error. 
+
+        if (
+            getattr(block_df, "collect", None) is not None
+        ):  # If an SBF block doesn't contain a column used in this func, the collect() will throw an error.
             block_df = block_df.collect()
+
         return block_df.collect()
 
     def used_columns(self, sbf_block: str) -> list:
@@ -723,9 +726,6 @@ class SBF:
         Returns:
             list of correct column names for each sbfblocks
         """
-        print(
-            "sbf2asc is chosen as sbf converter. Looking up corresponding column names for each sbf block"
-        )
         self.logger.info(
             "sbf2asc is chosen as sbf converter. Looking up corresponding column names for each sbf block"
         )

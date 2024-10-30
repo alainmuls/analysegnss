@@ -372,7 +372,8 @@ def ebh_lines(argv: list):
         df_pos=df_pos, ebh_timings=ebh_timings, parsed_args=args_parsed, logger=logger
     )
 
-    # save in CSV files using ";" as separator
+    qual_ebh_line = {}  # dict to store the quality of the ebh lines
+    # save in CSV files using ";" as separator and check quality of each ebh line
     for ebh_key, ebh_assur_line in ebh_assur_lines.items():
         # name the file according to the ebh line key
         ebh_line_fn = f"{args_parsed.desc}_{ebh_key}.csv"
@@ -386,8 +387,18 @@ def ebh_lines(argv: list):
         ebh_assur_line.select(["UTM.E", "UTM.N", "orthoH"]).write_csv(
             ebh_line_fn, separator=";", include_header=False, float_precision=3
         )
+
+        # Checking quality of each ebh line for ppk and rtk result.
+        # This info is needed to decide whether rtk or ppk quality is sufficient for ASSUR        
+        if args_parsed.rtk:
+            qual_ebh_line[ebh_key] = rtk_pvtgeod.quality_analysis(ebh_assur_line)
+            logger.info(f"The rtk quality of the line {ebh_key} is {qual_ebh_line[ebh_key]}")
+        else:
+            qual_ebh_line[ebh_key] = ppk_rnx2rtkp.quality_analysis(ebh_assur_line)
+            logger.info(f"The ppk quality of the line {ebh_key} is {qual_ebh_line[ebh_key]}")
         pass
 
+    return qual_ebh_line
 
 if __name__ == "__main__":
     ebh_lines(argv=sys.argv)
