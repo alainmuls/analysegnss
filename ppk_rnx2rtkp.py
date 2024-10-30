@@ -9,7 +9,6 @@ import polars as pl
 from tabulate import tabulate
 
 # import globalvars
-from plots import plot_utm
 from rtkpos import rtk_constants as rtkc
 from rtkpos.rtkpos_class import Rtkpos
 from utils import argument_parser, init_logger
@@ -55,9 +54,6 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
     Returns:
         pl.DataFrame: RTK position dataframe
     """
-    # init the global variables
-    # globalvars.initialize()
-
     # get the name of this script for naming the logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
