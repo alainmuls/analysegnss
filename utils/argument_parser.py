@@ -204,11 +204,11 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
         "--desc",
         help="description of EBH lines project",
         type=str,
-        required=True,
+        required=False,
     )
 
     parser.add_argument(
-        "--ebh_fn",
+        "--ebh_ifn",
         help="input RTK/PPK filename",
         type=str,
         required=True,
@@ -221,21 +221,13 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
         required=True,
     )
 
-    parser.add_argument(
-        "--plot",
-        help="displays plots (default False)",
-        action="store_true",
-        required=False,
-        default=False,
-    )
-
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
 
     return args
 
-def argument_parser_ebh_timestamps(args: list) -> argparse.Namespace:
+def argument_parser_get_ebh_timings(args: list) -> argparse.Namespace:
     """
     
     
@@ -245,8 +237,8 @@ def argument_parser_ebh_timestamps(args: list) -> argparse.Namespace:
     help_txt = (
         baseName
         + """
-        Extracts the timestamps from the SBF file and saves them in a yaml/desc file.
-        The description file is used to calculate the EBH lines
+        Extracts the timestamps from the SBF file and saves them to a file.
+        This file is formatted for ebh_lines.py
     """
     )
 
@@ -271,10 +263,67 @@ def argument_parser_ebh_timestamps(args: list) -> argparse.Namespace:
     parser.add_argument(
         "-o",
         "--out_ebh_fn",
-        help="Specify a EBH lines description file name (use full path). This description file \
+        help="Specify a EBH line timings file name (use full path). This file \
             is required by ebh_lines.py (default: {sbf_ifn}_ebh_timings_desc.txt)",
         type=str,
         required=False,
+    )
+    parser.add_argument(
+        "--archive",
+        help="Specify archive's directory name. (full or relative (@sbf_ifn) path) \
+            Default is no archiving.",
+        required=False,
+        default='',
+        type=str
+    )
+    parser.add_argument(
+        "--log_dest",
+        help="Specify log destination directory (full path). Default is /tmp/logs/",
+        type=str,
+        required=False,
+        default="/tmp/logs/"
+    )
+    # allow argument completion
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args(args)
+
+    return args
+
+def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
+    """Launches the appropiate functions to calculate the ebh_lines from the sbf_ifn file
+    from which it retrievers the correct timings, 
+    decides whether the RTK or PPK solution has a sufficient quality, 
+    and finally outputs correct ASSUR formatted files for each ebh line.
+    """
+    baseName = str_yellow(os.path.basename(__file__))
+    
+    help_text = (
+        baseName
+        + """
+        Launches the appropiate functions to calculate the ebh_lines from the sbf_ifn file
+        from which it retrievers the correct timings, 
+        decides whether the RTK or PPK solution has a sufficient quality, 
+        and finally outputs correct ASSUR formatted files for each ebh line.
+        """
+    )
+    
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_text)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+        required=False,
+    )
+    parser.add_argument(
+        "-i",
+        "--sbf_ifn",
+        help="input sbf file",
+        type=str,
+        required=True,
     )
     parser.add_argument(
         "--archive",

@@ -69,11 +69,11 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
     logger.debug(f"Parsed arguments: {args_parsed}")
 
-    # create a SBF class object
+    # create a RTKlib pos class object
     try:
         rtkpos = Rtkpos(
             pos_fn=args_parsed.pos_fn, logger=logger
-        )  # start_time=datetime.time(12, 30),
+        ) 
     except Exception as e:
         logger.error(f"Error creating RTKPos object: {e}")
         sys.exit(1)

@@ -2,9 +2,11 @@ import datetime
 import glob
 import logging
 import os
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
+
 
 import numpy as np
 import polars as pl
@@ -149,7 +151,7 @@ class SBF:
                 f"Error moving file {fn} to archive directory {dest}: {e}"
             )
 
-    def bin2asc_dataframe(self, lst_sbfblocks: list) -> dict:
+    def bin2asc_dataframe(self, lst_sbfblocks: list, archive: str) -> dict:
         """
         bin2asc_dataframe converts binary SBF to CVS files for the sbfblocks in
         lst_sbfblocks and load these files in dataframes
@@ -267,7 +269,7 @@ class SBF:
 
         return sbf_dfs
 
-    def sbf2asc_dataframe(self, lst_sbfblocks: list) -> dict:
+    def sbf2asc_dataframe(self, lst_sbfblocks: list, archive: str) -> dict:
         """
         this definition is analogue to bin2asc and is used to convert the SBF files to dataframes.
         Sbf2asc can be installed on most platforms including OS running on ARM processors (e.g. Raspberry Pi).
@@ -289,7 +291,7 @@ class SBF:
             self.logger.error(
                 f"sbf2asc not found in PATH. Please install sbf2asc. Program exits."
             )
-            sys.exit(globalvars._ERROR_CODES["E_PROCESS"])
+            sys.exit(ERROR_CODES["E_PROCESS"])
 
         if self.logger:
             self.logger.info(
@@ -525,7 +527,7 @@ class SBF:
         ):  # If an SBF block doesn't contain a column used in this func, the collect() will throw an error.
             block_df = block_df.collect()
 
-        return block_df.collect()
+        return block_df
 
     def used_columns(self, sbf_block: str) -> list:
         """returns the column names we use when extracting a SBF block from the SBF file
