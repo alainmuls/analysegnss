@@ -125,13 +125,6 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
         default=None,
         help="verbose level... repeat up to three times.",
     )
-
-    parser.add_argument(
-        "--pos_fn",
-        help="input rnx2rtkp pos filename",
-        type=str,
-        required=True,
-    )
     parser.add_argument(
         "--plot",
         help="display plots (default False)",
@@ -143,19 +136,14 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
     # Create a mutually exclusive group
     group = parser.add_mutually_exclusive_group(required=True)
     group.description = "Specify either a POS file or an SBF file (required)"
-    # parser.add_argument(
-    #     "--mutually-exclusive",
-    #     action="store_true",
-    #     help="One of the following options is required:",
-    # )
 
     group.add_argument(
-        "--pos_fn",
+        "--pos_ifn",
         help="input rnx2rtkp pos filename",
         type=str,
     )
     group.add_argument(
-        "--sbf_fn",
+        "--sbf_ifn",
         help="input SBF filename",
         type=str,
     )
@@ -191,13 +179,18 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
         default=None,
         help="verbose level... repeat up to three times.",
     )
-    # Create the first mutually exclusive group
+    # Create mutually exclusive group for pos_ifn and sbf_ifn (PPK and RTK respectively)
     group_rtkppk = parser.add_mutually_exclusive_group(required=True)
+    group_rtkppk.description = "Specify either a POS file (PPK) or an SBF file (RTK) [required]"
     group_rtkppk.add_argument(
-        "--rtk", action="store_true", help="extract lines from RTK solution"
+        "--pos_ifn",
+        help="input rnx2rtkp pos (PPK) filename",
+        type=str,
     )
     group_rtkppk.add_argument(
-        "--ppk", action="store_true", help="extract lines from PPK solution"
+        "--sbf_ifn",
+        help="input SBF (RTK) filename",
+        type=str,
     )
 
     parser.add_argument(
@@ -206,16 +199,9 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
         type=str,
         required=False,
     )
-
+    
     parser.add_argument(
-        "--ebh_ifn",
-        help="input RTK/PPK filename",
-        type=str,
-        required=True,
-    )
-
-    parser.add_argument(
-        "--timing_fn",
+        "--timing_ifn",
         help="input ebh lines timing filename. One of the keys needs to be called CL. The other keys of each track can be freely chosen. e.g. key: Wnc TOWstart, Wnc TOWend",
         type=str,
         required=True,
@@ -256,15 +242,15 @@ def argument_parser_get_ebh_timings(args: list) -> argparse.Namespace:
     parser.add_argument(
         "-i",
         "--sbf_ifn",
-        help="input sbf file with sbf comments holding timestamp info",
+        help="input sbf filename with sbf comments holding timestamp info",
         type=str,
         required=True,
     )
     parser.add_argument(
         "-o",
-        "--out_ebh_fn",
-        help="Specify a EBH line timings file name (use full path). This file \
-            is required by ebh_lines.py (default: {sbf_ifn}_ebh_timings_desc.txt)",
+        "--timing_ofn",
+        help="output EBH line timings filename (use full path). This file \
+            is required by ebh_lines.py (default: {sbf_ifn}_ebh_timings.txt)",
         type=str,
         required=False,
     )
@@ -319,11 +305,16 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
         required=False,
     )
     parser.add_argument(
-        "-i",
         "--sbf_ifn",
-        help="input sbf file",
+        help="input sbf file. This sbf file not only contains the RTK/obs/nav data but also the timestamps",
         type=str,
         required=True,
+    )
+    parser.add_argument(
+        "--rtcm_ifn",
+        help="input RTCM filename. RTCM data obtained from GNSS base station. If provided, a PPK solution is calculated",
+        type=str,
+        required=False
     )
     parser.add_argument(
         "--archive",

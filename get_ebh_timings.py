@@ -228,6 +228,8 @@ def get_ebh_timings(parsed_args: argparse.Namespace, logger:Logger) -> None:
             dest_path=f"{parsed_args.sbf_ifn}_ebh_timings.txt",
             logger=logger,
         )
+    
+    return ebh_timings
 
 
 if __name__ == "__main__":

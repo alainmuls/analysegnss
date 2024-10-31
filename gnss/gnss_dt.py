@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, time
 import bisect
 from math import isnan
 
-__author__ = "amuls, pdemeulemeester"
+__author__ = "amuls"
 
 
 _LEAP_DATES = (
