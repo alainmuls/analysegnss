@@ -30,7 +30,7 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> None:
             [
                 rtkc.dict_rtk_pvtmode[qual[0]]["desc"],
                 qual_data.shape[0],
-                f"{qual_data.shape[0]/total_obs*100:.2f}%",
+                round(qual_data.shape[0]/total_obs*100,2),
             ]
         )
 
@@ -72,7 +72,7 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
     # create a RTKlib pos class object
     try:
         rtkpos = Rtkpos(
-            pos_fn=args_parsed.pos_fn, logger=logger
+            pos_fn=args_parsed.pos_ifn, logger=logger
         ) 
     except Exception as e:
         logger.error(f"Error creating RTKPos object: {e}")

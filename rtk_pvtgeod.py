@@ -28,7 +28,7 @@ def quality_analysis(geod_df: pl.DataFrame, logger) -> list:
             [
                 sbfc.dict_sbf_pvtmode[qual]["desc"],
                 qual_data.shape[0],
-                f"{qual_data.shape[0]/total_obs*100:.2f}%",
+                round(qual_data.shape[0]/total_obs*100,2)
             ]
         )
 
@@ -37,7 +37,7 @@ def quality_analysis(geod_df: pl.DataFrame, logger) -> list:
         headers=["PNT Mode", "Count", "Percentage"],
         tablefmt="fancy_outline",
     )
-    print(f"\nAnalysis of the quality of the position data\n{qual_tabular}")
+    #print(f"\nAnalysis of the quality of the position data\n{qual_tabular}")
 
     if logger is not None:
         logger.warning(f"Quality analysis:\n{qual_tabular}")
@@ -64,15 +64,15 @@ def rtk_pvtgeod(argv: list) -> pl.DataFrame:
     # create a SBF class object
     try:
         sbf = SBF(
-            sbf_fn=args_parsed.sbf_fn, logger=logger
-        )  # start_time=datetime.time(12, 30),
+            sbf_fn=args_parsed.sbf_ifn, logger=logger
+        )
     except Exception as e:
         logger.error(f"Error creating SBF object: {e}")
         sys.exit(ERROR_CODES["ERROR_SBF_OBJECT"])
 
     if not args_parsed.sbf2asc:
         # extract the PVT Geodetic2 block from SBF file
-        df_geod = sbf.bin2asc_dataframe(lst_sbfblocks=["PVTGeodetic2"])["PVTGeodetic2"]
+        df_geod = sbf.bin2asc_dataframe(lst_sbfblocks=["PVTGeodetic2"], archive=args_parsed.archive)["PVTGeodetic2"]
 
         # analyse the quality of the solution
         quality_analysis(geod_df=df_geod, logger=logger)
@@ -83,7 +83,7 @@ def rtk_pvtgeod(argv: list) -> pl.DataFrame:
         return df_geod
 
     else:
-        df_geod = sbf.sbf2asc_dataframe(lst_sbfblocks=["PVTGeodetic2"])[
+        df_geod = sbf.sbf2asc_dataframe(lst_sbfblocks=["PVTGeodetic2"], archive=args_parsed.archive)[
             "PVTGeodetic2"
         ]
         with pl.Config(tbl_cols=-1):

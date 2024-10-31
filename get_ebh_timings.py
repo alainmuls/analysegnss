@@ -218,9 +218,10 @@ def get_ebh_timings(parsed_args: argparse.Namespace, logger:Logger) -> None:
         df_ebh_timestamps=df_ebh_timestamps, logger=logger
     )
     # Write EBH timings to file
-    if parsed_args.out_ebh_fn:
+    # Using hasattr here to check if the argument exists (this fixes argparse.namespace errors across different python scripts)
+    if hasattr(parsed_args, "timing_ofn") and parsed_args.timing_ofn:
         ebh_timings_to_file(
-            ebh_timings=ebh_timings, dest_path=parsed_args.out_ebh_fn, logger=logger
+            ebh_timings=ebh_timings, dest_path=parsed_args.timing_ofn, logger=logger
         )
     else:  # if no output file is provided, write to default file name
         ebh_timings_to_file(

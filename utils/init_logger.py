@@ -77,7 +77,7 @@ def logger_setup(args: list, base_name: str = "logger", log_dest: str = "/tmp/lo
         logger=logger, console_handler=console_handler, args=args
     )
 
-    logger.warning(f"---------- START of {base_name} (proc logged @ {log_dest} ----------")
+    logger.warning(f"---------- START of {base_name} (process logged @ {log_dest}) ----------")
 
     return logger
 

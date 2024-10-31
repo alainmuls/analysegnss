@@ -81,7 +81,7 @@ def argument_parser_ppk(args: list) -> argparse.Namespace:
         help="verbose level... repeat up to three times.",
     )
     parser.add_argument(
-        "--pos_fn",
+        "--pos_ifn",
         help="input rnx2rtkp pos filename",
         type=str,
         required=True,
@@ -312,9 +312,17 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
     )
     parser.add_argument(
         "--rtcm_ifn",
-        help="input RTCM filename. RTCM data obtained from GNSS base station. If provided, a PPK solution is calculated",
+        help="input RTCM filename. RTCM data obtained from GNSS base station. If provided, a PPK solution is calculated \
+            for each RTK solution that is not of sufficient quality.",
         type=str,
         required=False
+    )
+    parser.add_argument(
+        "--desc",
+        help="description of EBH lines project",
+        type=str,
+        required=False,
+        default="ebh_line"
     )
     parser.add_argument(
         "--archive",

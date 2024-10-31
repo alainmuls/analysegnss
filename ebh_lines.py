@@ -30,8 +30,8 @@ def get_ppk_dataframe(parsed_args: argparse.Namespace, logger: Logger) -> pl.Dat
         pl.DataFrame: dataframe with PPK solution
     """
     ppk_rnx2rtkp_args = ["ppk_rnx2rtkp.py"]
-    ppk_rnx2rtkp_args.append("--pos_fn")
-    ppk_rnx2rtkp_args.append(parsed_args.ebh_fn)
+    ppk_rnx2rtkp_args.append("--pos_ifn")
+    ppk_rnx2rtkp_args.append(parsed_args.pos_ifn)
     if parsed_args.verbose:
         match parsed_args.verbose:
             case 1:
@@ -58,8 +58,8 @@ def get_rtk_dataframe(parsed_args: argparse.Namespace, logger: Logger) -> pl.Dat
         pl.DataFrame: dataframe with RTK solution
     """
     rtk_pvtgeod_args = ["rtk_pvtgeod.py"]
-    rtk_pvtgeod_args.append("--sbf_fn")
-    rtk_pvtgeod_args.append(parsed_args.ebh_fn)
+    rtk_pvtgeod_args.append("--sbf_ifn")
+    rtk_pvtgeod_args.append(parsed_args.sbf_ifn)
     if parsed_args.verbose:
         match parsed_args.verbose:
             case 1:
@@ -87,7 +87,8 @@ def read_ebh_line_timings(timings_fn: str, logger: Logger) -> dict:
     """
     # check if the timings file is readable
     if not os.path.isfile(timings_fn) or not os.access(timings_fn, os.R_OK):
-        print(f"File {timings_fn} is not readable")
+        #print(f"File {timings_fn} is not readable")
+        logger.critical(f"File {timings_fn} is not readable. Exiting")
         sys.exit(ERROR_CODES["E_FILE_NOT_EXIST"])
 
     # Regular expression pattern to match both integers and float values
@@ -197,26 +198,23 @@ def ebh_lines_extract(
         # print(f"ebh_key = {ebh_key}, timings = {timings}")
 
         # filter the dataframe for the ebh line
-        ebh_df = df_pos.filter(pl.col("DT") >= timings[0]).filter(
-            pl.col("DT") <= timings[1]
-        )
+        #ebh_df = df_pos.filter(pl.col("DT") >= timings[0]).filter(
+        #    pl.col("DT") <= timings[1]
+        #)
 
         # check orientation of the current line
         if cl_map_angle - 10 < timings[2] < cl_map_angle + 10:
-            df_line = df_pos.filter(
+            ebh_lines_assur[ebh_key] = df_pos.filter(
                 pl.col("DT").is_between((timings[0]), (timings[1])),
             )
         else:
-            df_line = df_pos.filter(
+            ebh_lines_assur[ebh_key] = df_pos.filter(
                 pl.col("DT").is_between((timings[0]), (timings[1])),
             ).reverse()
 
-        print(f"df_line = {df_line}")
-
-        # thin out the df_line to keep positions every 0.5 meters
-        ebh_lines_assur[ebh_key] = ebh_lines_thin_out(
-            df_line=df_line, parsed_args=parsed_args, logger=logger
-        )
+        #print(f"df_line = {df_line}")
+        logger.info(f"Obtained ebh line {ebh_key} between {timings}")
+        
 
     return ebh_lines_assur
 
@@ -225,12 +223,12 @@ def euclidean_distance(x1, y1, x2, y2):
     return sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
 
-def ebh_lines_thin_out(
+def ebh_line_thin_out(
     df_line: pl.DataFrame,
     parsed_args: argparse.Namespace,
     logger: Logger = None,
 ) -> pl.DataFrame:
-    """thin out the dataframe to keep positions every 0.5 meters
+    """thin out the dataframe to keep positions every 0.5 meters and only keeps RTK/PPK fixed results
 
     Args:
         df_line (pl.DataFrame): dataframe with positions of the ebh line
@@ -238,8 +236,10 @@ def ebh_lines_thin_out(
         logger (Logger): logger object
 
     Returns:
-        pl.DataFrame: thinned out dataframe
+        pl.DataFrame: thinned out dataframe + only RTK/PPK fixed
     """
+    
+    logger.info(f"Starting thinning out of ebh line. And only keeping RTK/PPK fixed values")
     # get the UTM coordinates of the first point of the line
     utm_start = df_line.select(["UTM.E", "UTM.N"]).row(index=0)
     # print(f"utm_start = {utm_start}")
@@ -260,9 +260,9 @@ def ebh_lines_thin_out(
     ).lazy()
 
     # keep only the rows where the quality is 1 (FIX)
-    if parsed_args.ppk:
+    if hasattr(parsed_args,"pos_ifn") and parsed_args.pos_ifn:
         df_line = df_line.filter(pl.col("Q") == 1).lazy()
-    elif parsed_args.rtk:
+    elif hasattr(parsed_args,"sbf_ifn") and parsed_args.sbf_ifn:
         df_line = df_line.filter(pl.col("Type") == 4).lazy()
     else:
         if logger is not None:
@@ -299,20 +299,25 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
 
     Args:
         parsed_args: parsed CLI arguments executed by argparse
+        
+    return:
+    qual_ebh_lines (dict):  dictionary containing the quality of the ebh lines
     """
 
 
     # logger.debug(f"program arguments: {parsed_args}")
 
     # get the dataframe according to the processing type (RTK or PPK)
-    if parsed_args.ppk:
+    # Using hasattr here to check if the argument exists (this fixes argparse.namespace errors across different python scripts)
+    if hasattr(parsed_args,"pos_ifn") and parsed_args.pos_ifn:
         # call ppp_rnx2rtkp to get the position dataframe
         pos_df = get_ppk_dataframe(parsed_args=parsed_args, logger=logger)
 
-        logger.info(f"Dataframe obtained from PPK processing of {parsed_args.ebh_fn}")
-        print(
-            f"Dataframe obtained from {str_yellow('PPK')} processing of {str_yellow(parsed_args.ebh_fn)}"
-        )
+        logger.info(f"Dataframe obtained from PPK processing of {parsed_args.pos_ifn}")
+        #print(
+        #    f"Dataframe obtained from {str_yellow('PPK')} processing of {str_yellow(parsed_args.pos_ifn)}"
+        #)
+        
         df_pos = pos_df.select(
             [
                 "DT",
@@ -325,18 +330,18 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
                 # "longitude(deg)",
             ]
         )
-    elif parsed_args.rtk:
+    elif hasattr(parsed_args, "sbf_ifn") and parsed_args.sbf_ifn:
         # call rtk_pvtgeod to get the position dataframe
         pos_df = get_rtk_dataframe(parsed_args=parsed_args, logger=logger)
 
         logger.info(
             f"Dataframe obtained from {str_yellow('RTK')} processing of "
-            f"{str_yellow(parsed_args.ebh_fn)}"
+            f"{str_yellow(parsed_args.sbf_ifn)}"
         )
-        print(
-            f"Dataframe obtained from {str_yellow('RTK')} processing of "
-            f"{str_yellow(parsed_args.ebh_fn)}"
-        )
+        #print(
+        #    f"Dataframe obtained from {str_yellow('RTK')} processing of "
+        #    f"{str_yellow(parsed_args.sbf_ifn)}"
+        #)
         df_pos = pos_df.select(["DT", "Type", "NrSV", "UTM.E", "UTM.N", "orthoH"])
     else:
         logger.error("No processing type selected")
@@ -344,10 +349,10 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
 
     with pl.Config(tbl_cols=-1):
         logger.info(df_pos)
-        print(df_pos)
+        #print(df_pos)
 
     # read the timings for the ebh_lines
-    ebh_timings = read_ebh_line_timings(timings_fn=parsed_args.timing_fn, logger=logger)
+    ebh_timings = read_ebh_line_timings(timings_fn=parsed_args.timing_ifn, logger=logger)
 
     # calculate the map_angle for each ebh_line
     ebh_lines_map_angle(df_pos=df_pos, ebh_timings=ebh_timings, logger=logger)
@@ -362,9 +367,27 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
         df_pos=df_pos, ebh_timings=ebh_timings, parsed_args=parsed_args, logger=logger
     )
 
-    qual_ebh_line = {}  # dict to store the quality of the ebh lines
-    # save in CSV files using ";" as separator and check quality of each ebh line
+
+    qual_ebh_lines = {}  # dict to store the quality of the ebh lines
+    # check quality of each ebh line
+    # Thin out line, keep RTK/PPK fixed results
+    # save in CSV files using ";" as separator
     for ebh_key, ebh_assur_line in ebh_assur_lines.items():
+        
+        # Checking quality of each ebh line for ppk and rtk result.
+        # This info is needed to decide whether rtk or ppk quality is sufficient for ASSUR    
+        if hasattr(parsed_args, "pos_ifn")  and parsed_args.pos_ifn:
+            qual_ebh_lines[ebh_key] = ppk_rnx2rtkp.quality_analysis(ebh_assur_line, logger=logger)
+            logger.info(f"The ppk quality of the line {ebh_key} is {qual_ebh_lines[ebh_key]}")        
+        else:
+            qual_ebh_lines[ebh_key] = rtk_pvtgeod.quality_analysis(ebh_assur_line, logger=logger)
+            logger.info(f"The rtk quality of the line {ebh_key} is {qual_ebh_lines[ebh_key]}")
+
+        # thin out the df_line to keep positions every 0.5 meters and keep only RTK/PPK fixed results
+        ebh_assur_line = ebh_line_thin_out(
+            df_line=ebh_assur_line, parsed_args=parsed_args, logger=logger
+        )
+                
         # name the file according to the ebh line key
         ebh_line_fn = f"{parsed_args.desc}_{ebh_key}.csv"
         logger.info(
@@ -378,17 +401,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
             ebh_line_fn, separator=";", include_header=False, float_precision=3
         )
 
-        # Checking quality of each ebh line for ppk and rtk result.
-        # This info is needed to decide whether rtk or ppk quality is sufficient for ASSUR        
-        if parsed_args.rtk:
-            qual_ebh_line[ebh_key] = rtk_pvtgeod.quality_analysis(ebh_assur_line)
-            logger.info(f"The rtk quality of the line {ebh_key} is {qual_ebh_line[ebh_key]}")
-        else:
-            qual_ebh_line[ebh_key] = ppk_rnx2rtkp.quality_analysis(ebh_assur_line)
-            logger.info(f"The ppk quality of the line {ebh_key} is {qual_ebh_line[ebh_key]}")
-        pass
-
-    return qual_ebh_line
+    return qual_ebh_lines
 
 if __name__ == "__main__":
     

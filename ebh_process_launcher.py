@@ -31,7 +31,7 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
     )
     ebh_qual_rtk = ebh_lines.ebh_lines(parsed_args=parsed_args, logger=logger)
     # Checking RTK quality and rejecting lines that are not of sufficient quality
-    rejected_rtk_lines = rkt_ppk_decider(
+    rejected_rtk_lines = rkt_ppk_screener(
         qual_analysis=ebh_qual_rtk, RTK_mode=True, rejection_level=99, logger=logger
     )
 
@@ -45,9 +45,9 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
         )
     elif len(rejected_rtk_lines) == 1:
         logger.warning(
-            "RTK solution for one ebh lines is not of sufficient quality. Calculating this single line in PPK mode."
+            f"RTK solution for the ebh line {rejected_rtk_lines}  is not of sufficient quality. Calculating this single line in PPK mode."
         )
-        print(f"CALCULATING SINGLE LINE {rejected_rtk_lines} IN PPK MODE with timing {ebh_timings[rejected_rtk_lines]}")
+        print(f"CALCULATING SINGLE LINE {rejected_rtk_lines} IN PPK MODE with timing {ebh_timings[rejected_rtk_lines[0]]}")
     else:
         logger.warning(
             "RTK solution for one or more ebh lines is not of sufficient quality. Calculating all ebh lines in PPK mode."
@@ -69,11 +69,11 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
             )
 
 
-def rkt_ppk_decider(
+def rkt_ppk_screener(
     qual_analysis: dict, RTK_mode: bool, rejection_level: float, logger: Logger
 ) -> list:
-    """Decides whether the RTK or PPK solution has a sufficient quality
-    to be used for the ebh_lines calculation and ASSURtool.
+    """Screens the RTK or PPK solutions and checks if the line is of sufficient quality
+    to be used for the ebh_lines calculation and ASSURtool. It returns the rejected lines.
 
     Args:
     qual_analysis (dict):       dictionary with the quality analysis of the RTK/PPK solution
@@ -87,40 +87,28 @@ def rkt_ppk_decider(
     """
 
     logger.info(
-        f"rkt_ppk decider launched for {qual_analysis} in RTK mode {RTK_mode} with a rejection level of {rejection_level}"
+        f"rkt_ppk screener launched for {qual_analysis} in RTK mode {RTK_mode} with a rejection level of {rejection_level}"
     )
 
     rejected_ebh_lines = [] # list to store the decision for each ebh line
-    #rejection_counter = 0 # counter to count the number of rejected ebh lines
     for ebh_key, ebh_qual_value in qual_analysis.items():
         if RTK_mode:
-            if ebh_qual_value[2] >= rejection_level:
+            if ebh_qual_value[0][2] >= rejection_level:
                 logger.info(f"ebh line {ebh_key} has passed")
             else:
                 rejected_ebh_lines.append(ebh_key)
                 logger.warning(
-                    f"ebh line {ebh_key} is rejected with the quality of {ebh_qual_value[2]}"
+                    f"ebh line {ebh_key} is rejected with the quality of {ebh_qual_value[0][2]}"
                 )
-                #rejection_counter += 1
 
         else: # PPK MODE
-            if ebh_qual_value[2] >= rejection_level:
+            if ebh_qual_value[0][2] >= rejection_level:
                 logger.info(f"ebh line {ebh_key} has passed")
             else:
                 rejected_ebh_lines.append(ebh_key)
                 logger.info(
-                    f"ebh line {ebh_key} does not meet the quality of {ebh_qual_value[2]}"
+                    f"ebh line {ebh_key} does not meet the quality of {ebh_qual_value[0][2]}"
                 )
-                #rejection_counter += 1
-    
-    """
-    if rejection_counter == 0:
-        logger.info(f"All ebh lines have passed the quality check")
-    elif rejection_counter == 1:
-        logger.warning(f"only ebh line {rejected_ebh_lines} has not passed the quality check")
-    else:
-        logger.warning(f"The ebh lines {rejected_ebh_lines} have not passed the quality check")
-    """
      
     return rejected_ebh_lines
 
