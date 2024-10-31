@@ -234,7 +234,7 @@ def locate(prog: str) -> str:
         sys.stderr.write(
             f"Executable {str_red(prog)} not found in path."
             f"\n\tplease install {str_red(prog)}\n\tor adjust"
-            f" your path:\n\t{str_red(os.environ['PATH'])}.\n"
+            f" your path:\n\t{os.environ['PATH']}.\n"
         )
         sys.exit(ERROR_CODES["E_MISSING_BIN"])
 
