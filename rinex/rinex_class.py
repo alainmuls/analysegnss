@@ -9,7 +9,7 @@ from io import StringIO
 import polars as pl
 
 from config import GNSS_DICT
-from utils.utilities import locate, str_red, str_yellow
+from utils.utilities import locate, str_red, str_green
 
 
 @dataclass
@@ -156,8 +156,6 @@ class RINEX:
         """
         # locate gfzrnx
         gfzrnx_exe = locate("gfzrnx")
-        if self.logger is not None:
-            self.logger.info(f"gfzrnx executable: {gfzrnx_exe}")
 
         # create the tabobs name by changing the extension of the rinex_fn
         tabobs_fn = os.path.splitext(self.rnx_fn)[0] + ".tabobs"
@@ -187,7 +185,9 @@ class RINEX:
             gfzrnx_args.extend(["-ts", self.start_time.strftime("%H:%M:%S")])
         if self.end_time:
             gfzrnx_args.extend(["-te", self.end_time.strftime("%H:%M:%S")])
-        print(f"gfzrnx args: {' '.join(gfzrnx_args)}")
+
+        if self.logger is not None:
+            self.logger.debug(f"gfzrnx args: {' '.join(gfzrnx_args)}")
 
         # Run gfzrnx and capture output
         try:
@@ -223,17 +223,10 @@ class RINEX:
             result_dfs = {}
             for sys in self.gnss:
                 if sys in headers and data[sys]:
-                    print(f"headers for {sys}: {headers[sys]}")
-                    # df = pl.DataFrame(data[sys], schema=headers[sys], orient="row")
-                    # result_dfs[sys] = df
+                    if self.logger is not None:
+                        self.logger.debug(f"headers for {sys}: {headers[sys]}")
 
-                    # if self.logger:
-                    #     self.logger.info(
-                    #         f"Created dataframe for system {sys} with {len(df)} observations"
-                    #     )
-                    # Create lazy DataFrame and apply type casting in one go
-
-                    # Strip quotes from header names
+                    # Strip quotes from header names and clean the data
                     clean_headers = [h.strip("'") for h in headers[sys]]
                     clean_data = [
                         [val.strip("'") if val.strip("'") else None for val in row]
@@ -267,7 +260,7 @@ class RINEX:
 
                     if self.logger:
                         self.logger.info(
-                            f"Created dataframe for system {sys} with {len(df)} observations"
+                            f"Created dataframe for system {str_green(sys)} with {str_green(len(df))} observations"
                         )
 
             return result_dfs
