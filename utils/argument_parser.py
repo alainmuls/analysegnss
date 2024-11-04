@@ -345,7 +345,7 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
 
     return args
 
-def argument_parser_rnx2rtkp(args: list) -> argparse.Namespace:
+def argument_parser_rnx2rtkp_launcher(args: list) -> argparse.Namespace:
     """
     Parses the arguments and creates console/file logger for launch_ppk_rnx2rtkp.py
     """
@@ -355,14 +355,22 @@ def argument_parser_rnx2rtkp(args: list) -> argparse.Namespace:
     help_text = (
         baseName
         + """
-        Launches launch_rnx2rtkp.py to calculate to do post-processing of RINEX observations and navigation files 
-        and RTCM data obtained from GNSS base stations.
+        Launches launch_rnx2rtkp.py to do post-processing of RINEX observations and navigation files 
+        and base correction data (RTCM or RNX obs) obtained from GNSS base stations.
         At the moment it only supports PPK calculations.
         """
     )
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=help_text)
     parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+        required=False,
+    )
     parser.add_argument(
         "--obs",
         help="input RINEX observation filename",
@@ -410,3 +418,7 @@ def argument_parser_rnx2rtkp(args: list) -> argparse.Namespace:
         required=False,
         default="/tmp/logs/"
     )
+   
+    args = parser.parse_args(args)
+    
+    return args
