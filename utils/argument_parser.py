@@ -344,3 +344,69 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
     args = parser.parse_args(args)
 
     return args
+
+def argument_parser_rnx2rtkp(args: list) -> argparse.Namespace:
+    """
+    Parses the arguments and creates console/file logger for launch_ppk_rnx2rtkp.py
+    """
+    
+    baseName = str_yellow(os.path.basename(__file__))
+    
+    help_text = (
+        baseName
+        + """
+        Launches launch_rnx2rtkp.py to calculate to do post-processing of RINEX observations and navigation files 
+        and RTCM data obtained from GNSS base stations.
+        At the moment it only supports PPK calculations.
+        """
+    )
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_text)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "--obs",
+        help="input RINEX observation filename",
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
+        "--nav",
+        help="input RINEX navigation filename",
+        type=str,
+        required=True
+    )
+    parser.add_argument(
+        "--base_corr",
+        help="input RINEX observation filename or RTCM filename obtained from GNSS base station.",
+        required=True
+    )
+    parser.add_argument(
+        "--config_file",
+        help="RTKlib configuration file",
+        type=str,
+        required=True
+    )
+    parser.add_argument(
+        "-ts",
+        "--time_start",
+        help="obs start time in the format YYYY/MM/DD_HH:MM:SS",
+        required=False
+    )
+    parser.add_argument(
+        "-te",
+        "--time_end",
+        help="obs end time in the format YYYY/MM/DD_HH:MM:SS",
+        required=False
+    )
+    parser.add_argument(
+        "--pos_ofn",
+        help="output filename of position file (default is obs filename + _PPK.pos)",
+        required=False,
+    )
+    parser.add_argument(
+        "--log_dest",
+        help="Specify log destination directory (full path). Default is /tmp/logs/",
+        type=str,
+        required=False,
+        default="/tmp/logs/"
+    )

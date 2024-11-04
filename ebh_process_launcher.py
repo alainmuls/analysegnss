@@ -54,7 +54,6 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
         )
         print(f"Calculating all ebh lines in PPK mode. Timings {ebh_timings}")
         
-    sys.exit(1)    
         
     # launching ebh_lines in PPK mode to get ebh lines. It returns a quality analysis of each line in dict
     ebh_qual_ppk = ebh_lines.ebh_lines(parsed_args=parsed_args, logger=logger)
