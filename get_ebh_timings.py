@@ -99,6 +99,7 @@ def reformat_ebh_timestamps(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> 
     returns:
         ebh_timings (dict): dict with ebh keys and timestamps correctly formatted
     """
+    #TODO make the following lazy
 
     logger.info("Reformatting EBH timestamps")
 

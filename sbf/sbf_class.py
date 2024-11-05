@@ -672,6 +672,24 @@ class SBF:
                 pl.UInt16: ["CommentLn"],
                 pl.Utf8: ["Comment"],
             }
+        elif sbf_block == "BaseStation1":
+            col_types = {
+                pl.UInt32: [
+                    "TOW [0.001 s]",
+                ],
+                pl.UInt16: [
+                    "WNc [w]",
+                ],
+                pl.UInt16: ["BaseStationID"],
+                pl.UInt8: ["BaseType"],
+                pl.UInt8: ["Source"],
+                pl.UInt8: ["Datum"],
+                pl.Float64: [
+                    "X [m]",
+                    "Y [m]",
+                    "Z [m]",
+                ],
+            }
         keep_cols = {}
         for dtype, columns in col_types.items():
             for col in columns:

@@ -3,37 +3,34 @@
 import argparse
 import datetime
 import os
+import polars as pl
 import sys
 import subprocess
-from dataclasses import field
 
 from config import ERROR_CODES
+from gnss import gnss_dt
 import logging
+from sbf.sbf_class import SBF
 from utils import argument_parser, init_logger, utilities
 
 
 def rnx2rtkp_ppk(
-    obs: str,
-    nav: str,
-    base_corr: str,
-    ppk_config_file: str,
-    start_time: str,
-    end_time: str,
-    out_fn: str,
+    parsed_args: argparse.Namespace,
     logger: logging.Logger,
 ):
     """
     This function launches the rnx2rtkp program to process the RINEX observation and navigation files.
     The resulting RTKLIB PPP solution is stored in the output directory.
 
-    args:
+    (parsed) args:
     obs (str): RINEX observation file
     nav (str): RINEX navigation file
     base_corr (str): base correction file. Corrections can be formatted in RTCM3 or RNX obs
+    base_coord (tuple): base station coordinates (X, Y, Z)
     out_fn: output directory
 
     """
-
+    
     # check if rnx2rtkp is installed
     rnx2rtkp_path = utilities.locate("rnx2rtkp")
     if rnx2rtkp_path is None:
@@ -45,19 +42,23 @@ def rnx2rtkp_ppk(
     cmd_rnx2rtkp = [
         rnx2rtkp_path,
         "-k",
-        ppk_config_file,
+        parsed_args.ppk_config_file,
         "-o",
-        out_fn,
-        obs,
-        nav,
-        base_corr,
+        parsed_args.out_fn,
+        parsed_args.obs,
+        parsed_args.nav,
+        parsed_args.base_corr,
+        "-r",
+        parsed_args.base_coord[0],
+        parsed_args.base_coord[1],
+        parsed_args.base_coord[2],
         "-x",
         "2",
     ]
 
-    if start_time and end_time:
-        start_time = datetime.datetime.strptime(start_time, "%Y/%m/%d_%H:%M:%S")
-        end_time = datetime.datetime.strptime(end_time, "%Y/%m/%d_%H:%M:%S")
+    if parsed_args.start_time and parsed_args.end_time:
+        start_time = datetime.datetime.strptime(parsed_args.start_time, "%Y/%m/%d_%H:%M:%S")
+        end_time = datetime.datetime.strptime(parsed_args.end_time, "%Y/%m/%d_%H:%M:%S")
         cmd_rnx2rtkp.extend(
             [
                 "-ts",
@@ -86,6 +87,9 @@ def rnx2rtkp_ppk(
         sys.exit(ERROR_CODES["E_PROCESS"])
 
 
+
+
+
 if __name__ == "__main__":
 
     # get the name of this script for naming the logger
@@ -99,13 +103,4 @@ if __name__ == "__main__":
     )
     logger.debug(f"Parsed arguments: {parsed_args}")
     
-    rnx2rtkp_ppk(
-        obs=parsed_args.obs,
-        nav=parsed_args.nav,
-        base_corr=parsed_args.base_corr,
-        ppk_config_file=parsed_args.config_file,
-        start_time=parsed_args.time_start,
-        end_time=parsed_args.time_end,
-        out_fn=parsed_args.pos_ofn,
-        logger=logger,
-    )
+    rnx2rtkp_ppk(parsed_args=parsed_args, logger=logger)
