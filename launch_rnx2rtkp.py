@@ -5,6 +5,7 @@ import datetime
 import os
 import sys
 import subprocess
+from dataclasses import field
 
 from config import ERROR_CODES
 import logging
@@ -51,7 +52,7 @@ def rnx2rtkp_ppk(
         nav,
         base_corr,
         "-x",
-        2,
+        "2",
     ]
 
     if start_time and end_time:
@@ -60,13 +61,22 @@ def rnx2rtkp_ppk(
         cmd_rnx2rtkp.extend(
             [
                 "-ts",
-                start_time.strftime("%Y/%m/%d %H:%M:%S"),
+                start_time.strftime("%Y/%m/%d"),
+                start_time.strftime("%H:%M:%S"),
                 "-te",
-                end_time.strftime("%Y/%m/%d %H:%M:%S"),
+                end_time.strftime("%Y/%m/%d"),
+                end_time.strftime("%H:%M:%S"),
             ]
         )
-
-    logger.info(f"Running rnx2rtkp for PPK solution with command: {cmd_rnx2rtkp}")
+    
+    #TODO Get effective log level 
+    """
+    if logger.getEffectiveLevel(....) == "DEBUG":
+        print('rnx2rtkp in logging mode')
+        cmd_rnx2rtkp.extend(["-x", "2"])
+    """
+    
+    logger.debug(f"Running rnx2rtkp for PPK solution with command: {cmd_rnx2rtkp}")
 
     # run rnx2rtkp
     try:
@@ -87,8 +97,8 @@ if __name__ == "__main__":
     logger = init_logger.logger_setup(
         args=parsed_args, base_name=script_name, log_dest=parsed_args.log_dest
     )
-    logger.info(f"Parsed arguments: {parsed_args}")
-
+    logger.debug(f"Parsed arguments: {parsed_args}")
+    
     rnx2rtkp_ppk(
         obs=parsed_args.obs,
         nav=parsed_args.nav,
