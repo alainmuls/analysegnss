@@ -668,8 +668,8 @@ class SBF:
                 ],
                 pl.UInt16: [
                     "WNc [w]",
+                    "CommentLn",
                 ],
-                pl.UInt16: ["CommentLn"],
                 pl.Utf8: ["Comment"],
             }
         elif sbf_block == "BaseStation1":
@@ -679,11 +679,13 @@ class SBF:
                 ],
                 pl.UInt16: [
                     "WNc [w]",
+                    "BaseStationID"
                 ],
-                pl.UInt16: ["BaseStationID"],
-                pl.UInt8: ["BaseType"],
-                pl.UInt8: ["Source"],
-                pl.UInt8: ["Datum"],
+                pl.UInt8: [
+                    "BaseType",
+                    "Source",
+                    "Datum",
+                ],
                 pl.Float64: [
                     "X [m]",
                     "Y [m]",

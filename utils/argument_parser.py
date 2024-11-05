@@ -46,8 +46,8 @@ def argument_parser_rtk(args: list) -> argparse.Namespace:
         "--archive",
         help="Specify archive's directory name",
         required=False,
-        default='',
-        type=str
+        default="",
+        type=str,
     )
 
     # allow argument completion
@@ -90,8 +90,8 @@ def argument_parser_ppk(args: list) -> argparse.Namespace:
         "--archive",
         help="Specify archive's directory name",
         required=False,
-        default='',
-        type=str
+        default="",
+        type=str,
     )
     # allow argument completion
     argcomplete.autocomplete(parser)
@@ -181,7 +181,9 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
     )
     # Create mutually exclusive group for pos_ifn and sbf_ifn (PPK and RTK respectively)
     group_rtkppk = parser.add_mutually_exclusive_group(required=True)
-    group_rtkppk.description = "Specify either a POS file (PPK) or an SBF file (RTK) [required]"
+    group_rtkppk.description = (
+        "Specify either a POS file (PPK) or an SBF file (RTK) [required]"
+    )
     group_rtkppk.add_argument(
         "--pos_ifn",
         help="input rnx2rtkp pos (PPK) filename",
@@ -199,7 +201,7 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
         type=str,
         required=False,
     )
-    
+
     parser.add_argument(
         "--timing_ifn",
         help="input ebh lines timing filename. One of the keys needs to be called CL. The other keys of each track can be freely chosen. e.g. key: Wnc TOWstart, Wnc TOWend",
@@ -213,10 +215,11 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
 
     return args
 
+
 def argument_parser_get_ebh_timings(args: list) -> argparse.Namespace:
     """
-    
-    
+    Extracts the timestamps from the SBF file and saves them to a file.
+    This file is formatted for ebh_lines.py
     """
     baseName = str_yellow(os.path.basename(__file__))
 
@@ -259,15 +262,15 @@ def argument_parser_get_ebh_timings(args: list) -> argparse.Namespace:
         help="Specify archive's directory name. (full or relative (@sbf_ifn) path) \
             Default is no archiving.",
         required=False,
-        default='',
-        type=str
+        default="",
+        type=str,
     )
     parser.add_argument(
         "--log_dest",
         help="Specify log destination directory (full path). Default is /tmp/logs/",
         type=str,
         required=False,
-        default="/tmp/logs/"
+        default="/tmp/logs/",
     )
     # allow argument completion
     argcomplete.autocomplete(parser)
@@ -275,14 +278,68 @@ def argument_parser_get_ebh_timings(args: list) -> argparse.Namespace:
 
     return args
 
+
+def argument_parser_get_base_coord(args: list) -> argparse.Namespace:
+    "Gets the base coordinates from a SBF file using the sbf_class"
+    baseName = str_yellow(os.path.basename(__file__))
+    help_text = (
+        baseName
+        + """
+        Gets the base coordinates from a SBF file in XYZ using the sbf_class
+    """
+    )
+
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_text)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+        required=False,
+    )
+    parser.add_argument(
+        "--sbf_ifn",
+        help="input sbf filename with sbf BaseStation1 block.",
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
+        "--date",
+        help="Date of the base station coordinates in YYYY-MM-DD format. (iso-format)",
+        type=str,
+        required=False,
+    )
+    parser.add_argument(
+        "--time",
+        help="Time instant of the base station coordinates. Format:HH:MM:SS or HH:MM:SS.f (isoformat)\
+            Default is the last row of the sbf_ifn file",
+        type=str,
+        required=False,
+    )
+    parser.add_argument(
+        "--log_dest",
+        help="Specify log destination directory (full path). Default is /tmp/logs/",
+        type=str,
+        required=False,
+        default="/tmp/logs/",
+    )
+
+    args = parser.parse_args(args)
+
+    return args
+
+
 def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
     """Launches the appropiate functions to calculate the ebh_lines from the sbf_ifn file
-    from which it retrievers the correct timings, 
-    decides whether the RTK or PPK solution has a sufficient quality, 
+    from which it retrievers the correct timings,
+    decides whether the RTK or PPK solution has a sufficient quality,
     and finally outputs correct ASSUR formatted files for each ebh line.
     """
     baseName = str_yellow(os.path.basename(__file__))
-    
+
     help_text = (
         baseName
         + """
@@ -292,7 +349,7 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
         and finally outputs correct ASSUR formatted files for each ebh line.
         """
     )
-    
+
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=help_text)
     parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
@@ -315,29 +372,29 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
         help="input RTCM filename. RTCM data obtained from GNSS base station. If provided, a PPK solution is calculated \
             for each RTK solution that is not of sufficient quality.",
         type=str,
-        required=False
+        required=False,
     )
     parser.add_argument(
         "--desc",
         help="description of EBH lines project",
         type=str,
         required=False,
-        default="ebh_line"
+        default="ebh_line",
     )
     parser.add_argument(
         "--archive",
         help="Specify archive's directory name. (full or relative (@sbf_ifn) path) \
             Default is no archiving.",
         required=False,
-        default='',
-        type=str
+        default="",
+        type=str,
     )
     parser.add_argument(
         "--log_dest",
         help="Specify log destination directory (full path). Default is /tmp/logs/",
         type=str,
         required=False,
-        default="/tmp/logs/"
+        default="/tmp/logs/",
     )
     # allow argument completion
     argcomplete.autocomplete(parser)
@@ -345,13 +402,14 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
 
     return args
 
+
 def argument_parser_rnx2rtkp_launcher(args: list) -> argparse.Namespace:
     """
     Parses the arguments and creates console/file logger for launch_ppk_rnx2rtkp.py
     """
-    
+
     baseName = str_yellow(os.path.basename(__file__))
-    
+
     help_text = (
         baseName
         + """
@@ -378,33 +436,45 @@ def argument_parser_rnx2rtkp_launcher(args: list) -> argparse.Namespace:
         required=True,
     )
     parser.add_argument(
-        "--nav",
-        help="input RINEX navigation filename",
-        type=str,
-        required=True
+        "--nav", help="input RINEX navigation filename", type=str, required=True
     )
     parser.add_argument(
         "--base_corr",
         help="input RINEX observation filename or RTCM filename obtained from GNSS base station.",
-        required=True
+        required=True,
     )
     parser.add_argument(
-        "--config_file",
-        help="RTKlib configuration file",
-        type=str,
-        required=True
+        "--base_coord_X",
+        help="Reference coordinates of base station in ECEF XYZ format.",
+        type=float,
+        required=True,
+    )
+    parser.add_argument(
+        "--base_coord_Y",
+        help="Reference coordinates of base station in ECEF XYZ format.",
+        type=float,
+        required=True,
+    )
+    parser.add_argument(
+        "--base_coord_Z",
+        help="Reference coordinates of base station in ECEF XYZ format",
+        type=float,
+        required=True,
+    )
+    parser.add_argument(
+        "--config_file", help="RTKlib configuration file", type=str, required=True
     )
     parser.add_argument(
         "-ts",
         "--time_start",
         help="obs start time in the format YYYY/MM/DD_HH:MM:SS",
-        required=False
+        required=False,
     )
     parser.add_argument(
         "-te",
         "--time_end",
         help="obs end time in the format YYYY/MM/DD_HH:MM:SS",
-        required=False
+        required=False,
     )
     parser.add_argument(
         "--pos_ofn",
@@ -416,9 +486,9 @@ def argument_parser_rnx2rtkp_launcher(args: list) -> argparse.Namespace:
         help="Specify log destination directory (full path). Default is /tmp/logs/",
         type=str,
         required=False,
-        default="/tmp/logs/"
+        default="/tmp/logs/",
     )
-   
+
     args = parser.parse_args(args)
-    
+
     return args
