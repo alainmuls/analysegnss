@@ -19,8 +19,7 @@ def get_base_coord_from_sbf(parsed_args: argparse.Namespace, logger: Logger) -> 
 
     args:
     sbf_ifn (str): SBF input filename
-    date (str): date of the base station coordinates [YYYY-MM-DD] (isoformat)
-    time (str): time of the base station coordinates [HH:MM:SS] (isoformat)
+    datetime (str): date time instance of the base station coordinates [YYYY-MM-DD_HH:MM:SS.s]
 
     return:
     base_coord (tuple): base station coordinates (X, Y, Z)
