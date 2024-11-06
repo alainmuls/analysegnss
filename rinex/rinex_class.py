@@ -5,7 +5,7 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from io import StringIO
-
+from icecream import ic
 import polars as pl
 
 from config import GNSS_DICT
@@ -269,3 +269,57 @@ class RINEX:
             if self.logger:
                 self.logger.error(f"gfzrnx conversion failed: {e.stderr}")
             raise RuntimeError(f"gfzrnx conversion failed: {e.stderr}")
+
+    def tabobs_to_csv(self, result_dfs: dict) -> pl.DataFrame:
+        """Convert the gfzrnx dataframes to desired CSV format
+
+        Args:
+            result_dfs (dict): polars dataframes per GNSS system
+
+        Returns:
+            csv_df (str): combined output CSV dataframe
+        """
+
+        csv_rows = []
+        for gnss_type, df in result_dfs.items():
+            # Get unique frequency/signal combinations
+            freq_sigs = set()
+            for col in df.columns:
+                if len(col) == 3 and col[0] in ["C", "L", "D", "S"]:
+                    freq_sigs.add((col[1], col[2]))  # (freq, sigt)
+
+            # Process each frequency/signal combination
+            for freq, sigt in freq_sigs:
+                # Create new rows for this frequency
+                new_df = pl.DataFrame(
+                    {
+                        "GNSS": gnss_type,
+                        "WKNR": df["WKNR"],
+                        "TOW": df["TOW"] * 1000,  # Convert to milliseconds
+                        "PRN": df["PRN"].str.extract(
+                            r"(\d+)"
+                        ),  # Extract number from PRN
+                        "cfreq": f"L{freq}",
+                        "sigt": f"{freq}{sigt}",
+                        "C": df[f"C{freq}{sigt}"],
+                        "L": df[f"L{freq}{sigt}"],
+                        "D": df[f"D{freq}{sigt}"],
+                        "S": df[f"S{freq}{sigt}"],
+                    }
+                )
+                with pl.Config(tbl_cols=-1):
+                    ic(new_df)
+
+                csv_rows.append(new_df)
+
+        # Combine all dataframes
+        final_df = pl.concat(csv_rows).sort(
+            ["GNSS", "WKNR", "TOW", "PRN", "cfreq", "sigt"]
+        )
+
+        # sort the final dataframe by WKNR and TOW
+        final_df = final_df.sort(["WKNR", "TOW"])
+        with pl.Config(tbl_cols=-1):
+            ic(final_df)
+
+        return final_df

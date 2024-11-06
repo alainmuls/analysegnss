@@ -39,7 +39,7 @@ def rnxobs_csv(argv: list):
         logger.error(f"Error creating SBF object: {e}")
         sys.exit(ERROR_CODES["E_NO_RINEX_OBS"])
 
-    # convert RINEX observation file to CSV file using gfzrnx
+    # convert RINEX observation file to CSV file using gfzrnx to tabular observations
     tabobs_dfs = rnxobs.gfzrnx_tabobs()
     with pl.Config(tbl_cols=-1):
         for gnss, tabobs_df in tabobs_dfs.items():
@@ -47,9 +47,16 @@ def rnxobs_csv(argv: list):
                 f"Converted RINEX observation file for {gnss} to tabular observation file: \n{tabobs_df}"
             )
 
-    # create the file/console logger
-    logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
-    logger.debug(f"Parsed arguments: {args_parsed}")
+    # convert the tabular observations to csv format
+    csv_df = rnxobs.tabobs_to_csv(result_dfs=tabobs_dfs)
+
+    # save the CSV file
+    if args_parsed.csv_fn is not None:
+        csv_fn = args_parsed.csv_fn
+    else:
+        csv_fn = os.path.splitext(rnxobs.rnx_fn)[0] + ".csv"
+    csv_df.write_csv(csv_fn)
+    logger.info(f"Saved CSV file: {str_green(csv_fn)}")
 
 
 if __name__ == "__main__":
