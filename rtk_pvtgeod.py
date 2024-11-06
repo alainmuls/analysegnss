@@ -67,7 +67,7 @@ def rtk_pvtgeod(argv: list) -> pl.DataFrame:
         )  # start_time=datetime.time(12, 30),
     except Exception as e:
         logger.error(f"Error creating SBF object: {e}")
-        sys.exit(ERROR_CODES["ERROR_SBF_OBJECT"])
+        sys.exit(ERROR_CODES["E_SBF_OBJECT"])
 
     if not args_parsed.sbf2asc:
         # extract the PVT Geodetic2 block from SBF file
