@@ -30,7 +30,7 @@ def rnx2rtkp_ppk(
     out_fn: output directory
 
     """
-    
+
     # check if rnx2rtkp is installed
     rnx2rtkp_path = utilities.locate("rnx2rtkp")
     if rnx2rtkp_path is None:
@@ -57,8 +57,11 @@ def rnx2rtkp_ppk(
     ]
 
     if parsed_args.start_time and parsed_args.end_time:
-        start_time = datetime.datetime.strptime(parsed_args.start_time, "%Y/%m/%d_%H:%M:%S")
-        end_time = datetime.datetime.strptime(parsed_args.end_time, "%Y/%m/%d_%H:%M:%S")
+        # remove underscore from datetime format to get isoformat %Y-%m-%d %H:%M:%S
+        start_time = parsed_args.start_time.replace("_", " ")
+        end_time = parsed_args.end_time.replace("_", " ")
+        start_time = datetime.datetime.fromisoformat(start_time)
+        end_time = datetime.datetime.fromisoformat(end_time)
         cmd_rnx2rtkp.extend(
             [
                 "-ts",
@@ -69,14 +72,14 @@ def rnx2rtkp_ppk(
                 end_time.strftime("%H:%M:%S"),
             ]
         )
-    
-    #TODO Get effective log level 
+
+    # TODO Get effective log level
     """
     if logger.getEffectiveLevel(....) == "DEBUG":
         print('rnx2rtkp in logging mode')
         cmd_rnx2rtkp.extend(["-x", "2"])
     """
-    
+
     logger.debug(f"Running rnx2rtkp for PPK solution with command: {cmd_rnx2rtkp}")
 
     # run rnx2rtkp
@@ -85,9 +88,6 @@ def rnx2rtkp_ppk(
     except subprocess.CalledProcessError as e:
         logger.error(f"rnx2rtkp failed with error code {e.returncode}")
         sys.exit(ERROR_CODES["E_PROCESS"])
-
-
-
 
 
 if __name__ == "__main__":
@@ -102,5 +102,5 @@ if __name__ == "__main__":
         args=parsed_args, base_name=script_name, log_dest=parsed_args.log_dest
     )
     logger.debug(f"Parsed arguments: {parsed_args}")
-    
+
     rnx2rtkp_ppk(parsed_args=parsed_args, logger=logger)

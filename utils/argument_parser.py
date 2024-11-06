@@ -307,15 +307,8 @@ def argument_parser_get_base_coord(args: list) -> argparse.Namespace:
         required=True,
     )
     parser.add_argument(
-        "--date",
-        help="Date of the base station coordinates in YYYY-MM-DD format. (iso-format)",
-        type=str,
-        required=False,
-    )
-    parser.add_argument(
-        "--time",
-        help="Time instant of the base station coordinates. Format:HH:MM:SS or HH:MM:SS.f (isoformat)\
-            Default is the last row of the sbf_ifn file",
+        "--datetime",
+        help="Date time instance of the base station coordinates in YYYY-MM-DD_HH:MM:SS(.%f)",
         type=str,
         required=False,
     )
@@ -467,13 +460,13 @@ def argument_parser_rnx2rtkp_launcher(args: list) -> argparse.Namespace:
     parser.add_argument(
         "-ts",
         "--time_start",
-        help="obs start time in the format YYYY/MM/DD_HH:MM:SS",
+        help="obs start time in the format YYYY-MM-DD_HH:MM:SS(.%f)",
         required=False,
     )
     parser.add_argument(
         "-te",
         "--time_end",
-        help="obs end time in the format YYYY/MM/DD_HH:MM:SS",
+        help="obs end time in the format YYYY-MM-DD_HH:MM:SS(.%f)",
         required=False,
     )
     parser.add_argument(

@@ -12,9 +12,7 @@ from sbf.sbf_class import SBF
 from utils import argument_parser, init_logger, utilities
 
 
-def get_base_coord_from_sbf(
-    parsed_args: argparse.Namespace, logger: Logger
-) -> tuple:
+def get_base_coord_from_sbf(parsed_args: argparse.Namespace, logger: Logger) -> tuple:
     """
     This function extracts the base station coordinates from the BaseStation1 SBF block.
     Which is logged on the rover which received diffcorr from the basestation.
@@ -45,32 +43,43 @@ def get_base_coord_from_sbf(
 
     logger.info(f"Extracted sbf block from SBF file.\n{df_sbfBaseStation}")
 
-    if parsed_args.time:
+    if parsed_args.datetime:
         logger.info(
-            f"Extracting basestation coordinates from sbf dataframe at time {parsed_args.time}"
+            f"Extracting basestation coordinates from sbf dataframe at date time {parsed_args.datetime}"
         )
 
-        #start_wnc_tow = gnss_dt.dt2gnss(parsed_args.time, "%Y/%m/%d_%H:%M:%S")
-        dt = parsed_args.date + " " + parsed_args.time
-        dt_obj = datetime.datetime.fromisoformat(dt)
-        logger.info(f"Converted time to datetime object to compare with DT column (sbf_class): {dt_obj}")
-        # Select columns X, Y, Z from the dataframe at DT = start_wnc_tow
+        # remove underscore from datetime format to get isoformat %Y-%m-%d %H:%M:%S
+        dt = parsed_args.datetime.replace("_", " ")
+        dt_obj = datetime.datetime.fromisoformat(
+            dt
+        )  # isoformat has a looser format conversion requirements. Definitely with milliseconds, microsec, ...
+        logger.info(
+            f"Converted time to datetime object to compare with DT column (sbf_class): {dt_obj}"
+        )
+
+        # Select columns X, Y, Z at date time instance
         base_coord = df_sbfBaseStation.filter(pl.col("DT") == dt_obj).select(
-                ["X [m]", "Y [m]", "Z [m]"]
-            )
+            ["X [m]", "Y [m]", "Z [m]"]
+        )
         # Convert the dataframe to a tuple
         if base_coord.height > 0:
             base_coord = tuple(base_coord.row(0))
         else:
-            logger.warning(f"Time instant not found in SBF file. Using last row of dataframe")
-            base_coord = tuple(df_sbfBaseStation.select(["X [m]", "Y [m]", "Z [m]"]).row(-1))
-            
+            logger.warning(
+                f"Time instant not found in SBF file. Using last row of dataframe"
+            )
+            base_coord = tuple(
+                df_sbfBaseStation.select(["X [m]", "Y [m]", "Z [m]"]).row(-1)
+            )
+
     else:
         logger.info(f"Extracted basestation coordinates from sbf dataframe last row")
 
         # extract the last row of the dataframe
-        base_coord = tuple(df_sbfBaseStation.select(["X [m]", "Y [m]", "Z [m]"]).row(-1))
-    
+        base_coord = tuple(
+            df_sbfBaseStation.select(["X [m]", "Y [m]", "Z [m]"]).row(-1)
+        )
+
     logger.info(f"Base station coordinates: {base_coord}")
 
     return base_coord
