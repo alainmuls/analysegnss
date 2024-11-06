@@ -31,6 +31,14 @@ def rnx2rtkp_ppk(
 
     """
 
+    # configure output filename
+    if not parsed_args.pos_ofn:
+        pos_ofn, _ = os.path.splitext(parsed_args.obs)
+        pos_ofn = pos_ofn + "_PPK.pos"
+    else:
+        pos_ofn = parsed_args.pos_ofn
+
+
     # check if rnx2rtkp is installed
     rnx2rtkp_path = utilities.locate("rnx2rtkp")
     if rnx2rtkp_path is None:
@@ -42,37 +50,49 @@ def rnx2rtkp_ppk(
     cmd_rnx2rtkp = [
         rnx2rtkp_path,
         "-k",
-        parsed_args.ppk_config_file,
-        "-o",
-        parsed_args.out_fn,
+        parsed_args.config_file,
         parsed_args.obs,
         parsed_args.nav,
         parsed_args.base_corr,
         "-r",
-        parsed_args.base_coord[0],
-        parsed_args.base_coord[1],
-        parsed_args.base_coord[2],
-        "-x",
-        "2",
+        parsed_args.base_coord_X,
+        parsed_args.base_coord_Y,
+        parsed_args.base_coord_Z,
     ]
 
-    if parsed_args.start_time and parsed_args.end_time:
+    # adding timings to the command line arguments
+    if parsed_args.datetime_start and parsed_args.datetime_end:
         # remove underscore from datetime format to get isoformat %Y-%m-%d %H:%M:%S
-        start_time = parsed_args.start_time.replace("_", " ")
-        end_time = parsed_args.end_time.replace("_", " ")
-        start_time = datetime.datetime.fromisoformat(start_time)
-        end_time = datetime.datetime.fromisoformat(end_time)
+        s_dt = parsed_args.datetime_start.replace("_", " ")
+        e_dt = parsed_args.datetime_end.replace("_", " ")
+        s_dt_obj = datetime.datetime.fromisoformat(s_dt)
+        e_dt_obj = datetime.datetime.fromisoformat(e_dt)
         cmd_rnx2rtkp.extend(
             [
                 "-ts",
-                start_time.strftime("%Y/%m/%d"),
-                start_time.strftime("%H:%M:%S"),
+                s_dt_obj.strftime("%Y/%m/%d"),
+                s_dt_obj.strftime("%H:%M:%S"),
                 "-te",
-                end_time.strftime("%Y/%m/%d"),
-                end_time.strftime("%H:%M:%S"),
+                e_dt_obj.strftime("%Y/%m/%d"),
+                e_dt_obj.strftime("%H:%M:%S"),
             ]
         )
-
+    
+    # configure output filename
+    if not parsed_args.pos_ofn:
+        pos_ofn, _ = os.path.splitext(parsed_args.obs)
+        if s_dt_obj and e_dt_obj:
+            s_time = s_dt_obj.strftime("%H%M%S")
+            tdiff = e_dt_obj - s_dt_obj
+            tdiff_s = tdiff.total_seconds() 
+            pos_ofn = pos_ofn + "_PPK_" + s_time + "_" + str(tdiff_s) + "S.pos"
+        else:
+            pos_ofn = pos_ofn + "_PPK.pos"
+    else:
+        pos_ofn = parsed_args.pos_ofn
+        
+    cmd_rnx2rtkp.extend(["-o", pos_ofn])
+    
     # TODO Get effective log level
     """
     if logger.getEffectiveLevel(....) == "DEBUG":
@@ -88,7 +108,8 @@ def rnx2rtkp_ppk(
     except subprocess.CalledProcessError as e:
         logger.error(f"rnx2rtkp failed with error code {e.returncode}")
         sys.exit(ERROR_CODES["E_PROCESS"])
-
+    
+    logger.info(f"Finished calculating PPK solution. Written file to {pos_ofn}")
 
 if __name__ == "__main__":
 

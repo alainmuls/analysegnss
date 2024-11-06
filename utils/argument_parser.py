@@ -406,8 +406,8 @@ def argument_parser_rnx2rtkp_launcher(args: list) -> argparse.Namespace:
     help_text = (
         baseName
         + """
-        Launches launch_rnx2rtkp.py to do post-processing of RINEX observations and navigation files 
-        and base correction data (RTCM or RNX obs) obtained from GNSS base stations.
+        This program post-processes RINEX observations and navigation files 
+        and base correction data (RTCM or RNX obs) to obtain PPK, PPP, and SPP solutions using RTKLib.
         At the moment it only supports PPK calculations.
         """
     )
@@ -434,44 +434,51 @@ def argument_parser_rnx2rtkp_launcher(args: list) -> argparse.Namespace:
     parser.add_argument(
         "--base_corr",
         help="input RINEX observation filename or RTCM filename obtained from GNSS base station.",
+        type=str,
         required=True,
     )
     parser.add_argument(
+        "-X",
         "--base_coord_X",
         help="Reference coordinates of base station in ECEF XYZ format.",
-        type=float,
+        type=str,
         required=True,
     )
     parser.add_argument(
+        "-Y",
         "--base_coord_Y",
         help="Reference coordinates of base station in ECEF XYZ format.",
-        type=float,
+        type=str,
         required=True,
     )
     parser.add_argument(
+        "-Z",
         "--base_coord_Z",
         help="Reference coordinates of base station in ECEF XYZ format",
-        type=float,
+        type=str,
         required=True,
     )
     parser.add_argument(
         "--config_file", help="RTKlib configuration file", type=str, required=True
     )
     parser.add_argument(
-        "-ts",
-        "--time_start",
-        help="obs start time in the format YYYY-MM-DD_HH:MM:SS(.%f)",
+        "-dts",
+        "--datetime_start",
+        help="obs start time in the format YYYY-MM-DD_HH:MM:SS(.s)",
+        type=str,
         required=False,
     )
     parser.add_argument(
-        "-te",
-        "--time_end",
-        help="obs end time in the format YYYY-MM-DD_HH:MM:SS(.%f)",
+        "-dte",
+        "--datetime_end",
+        help="obs end time in the format YYYY-MM-DD_HH:MM:SS(.s)",
+        type=str,
         required=False,
     )
     parser.add_argument(
         "--pos_ofn",
         help="output filename of position file (default is obs filename + _PPK.pos)",
+        type=str,
         required=False,
     )
     parser.add_argument(
