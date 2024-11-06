@@ -8,6 +8,7 @@ from typing import Tuple
 
 import polars as pl
 import utm
+from icecream import ic
 
 from config import ERROR_CODES, GEOID_PATH
 from gnss import geoid
@@ -361,7 +362,7 @@ class Rtkpos:
         try:
             df_pos = df_pos.collect()
         except pl.exceptions.ComputeError as e:
-            print(
+            ic(
                 f"""{str_red("""
                 \r[ERROR] Probably a dtype error.
                 \rCheck if RTKlib date time is set to WkNr/TOW and not HMS.

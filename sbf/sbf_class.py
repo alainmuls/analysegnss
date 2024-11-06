@@ -160,7 +160,7 @@ class SBF:
         try:
             process = subprocess.run(cmd_bin2asc)
         except Exception as e:
-            print(f"{process} Error: {e}")
+            sys.stderr.write(f"{process} Error: {e}\n")
             if self.logger:
                 self.logger.error(
                     f"\t... subprocess {str_yellow(' '.join(cmd_bin2asc))} return exit code"
@@ -256,7 +256,7 @@ class SBF:
         try:
             process = subprocess.run(cmd_sbf2asc)
         except Exception as e:
-            print(f"{process} Error: {e}")
+            sys.stderr.write(f"{process} Error: {e}\n")
             self.logger.error(
                 f"\t... subprocess {str_yellow(' '.join(cmd_sbf2asc))} return exit code"
                 f"\t... {str_red(e)}. Program exits."
@@ -634,7 +634,7 @@ class SBF:
         Returns:
             list of correct column names for each sbfblocks
         """
-        print(
+        ic(
             "sbf2asc is chosen as sbf converter. Looking up corresponding column names for each sbf block"
         )
         self.logger.info(

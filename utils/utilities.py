@@ -1,5 +1,4 @@
 #!/usr/bin:env python
-
 import logging
 import os
 import shutil
@@ -8,7 +7,9 @@ import sys
 from datetime import date, datetime, timedelta
 
 import numpy as np
+from icecream import ic
 from termcolor import colored
+
 from config import ERROR_CODES
 
 __author__ = "amuls"
@@ -255,8 +256,8 @@ def main(argv: list):
     """
     main function starts here (only for testing), call like ``location.py sbf2rin``
     """
-    print("test of locate of a program (should work on all systems)")
-    print(f"\tlocate = {str_green(locate(prog='sbf2stf'))}")
+    ic("test of locate of a program (should work on all systems)")
+    ic(f"\tlocate = {str_green(locate(prog='sbf2stf'))}")
 
 
 # main starts here
