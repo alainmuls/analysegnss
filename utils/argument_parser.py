@@ -361,8 +361,8 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
         required=True,
     )
     parser.add_argument(
-        "--rtcm_ifn",
-        help="input RTCM filename. RTCM data obtained from GNSS base station. If provided, a PPK solution is calculated \
+        "--base_corr",
+        help="base correction filename. RNX OBS or RTCM file obtained from GNSS base station. If provided, a PPK solution is calculated \
             for each RTK solution that is not of sufficient quality.",
         type=str,
         required=False,

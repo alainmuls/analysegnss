@@ -85,6 +85,7 @@ def rnx2rtkp_ppk(
             s_time = s_dt_obj.strftime("%H%M%S")
             tdiff = e_dt_obj - s_dt_obj
             tdiff_s = tdiff.total_seconds() 
+            # file name resembles RNX naming fmt: obs_PPK_000000_100S.pos
             pos_ofn = pos_ofn + "_PPK_" + s_time + "_" + str(tdiff_s) + "S.pos"
         else:
             pos_ofn = pos_ofn + "_PPK.pos"
