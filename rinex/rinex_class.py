@@ -279,6 +279,8 @@ class RINEX:
         Returns:
             csv_df (str): combined output CSV dataframe
         """
+        # disable printing with icecream
+        # ic.disable()
 
         csv_rows = []
         for gnss_type, df in result_dfs.items():
@@ -291,22 +293,33 @@ class RINEX:
             # Process each frequency/signal combination
             for freq, sigt in freq_sigs:
                 # Create new rows for this frequency
-                new_df = pl.DataFrame(
-                    {
-                        "GNSS": gnss_type,
-                        "WKNR": df["WKNR"],
-                        "TOW": df["TOW"] * 1000,  # Convert to milliseconds
-                        "PRN": df["PRN"].str.extract(
-                            r"(\d+)"
-                        ),  # Extract number from PRN
-                        "cfreq": f"L{freq}",
-                        "sigt": f"{freq}{sigt}",
-                        "C": df[f"C{freq}{sigt}"],
-                        "L": df[f"L{freq}{sigt}"],
-                        "D": df[f"D{freq}{sigt}"],
-                        "S": df[f"S{freq}{sigt}"],
-                    }
+                new_df = (
+                    pl.DataFrame(
+                        {
+                            "GNSS": gnss_type,
+                            "WKNR": df["WKNR"],
+                            "TOW": df["TOW"] * 1000,  # Convert to milliseconds
+                            "PRN": df["PRN"].str.extract(
+                                r"(\d+)"
+                            ),  # Extract number from PRN
+                            "cfreq": f"L{freq}",
+                            "sigt": f"{freq}{sigt}",
+                            "C": df[f"C{freq}{sigt}"],
+                            "L": df[f"L{freq}{sigt}"],
+                            "D": df[f"D{freq}{sigt}"],
+                            "S": df[f"S{freq}{sigt}"],
+                        }
+                    )
+                    .lazy()
+                    .filter(
+                        pl.col("C").is_not_null()
+                        & pl.col("L").is_not_null()
+                        & pl.col("D").is_not_null()
+                        & pl.col("S").is_not_null()
+                    )
+                    .collect()
                 )
+
                 with pl.Config(tbl_cols=-1):
                     ic(new_df)
 
@@ -319,6 +332,9 @@ class RINEX:
 
         # sort the final dataframe by WKNR and TOW
         final_df = final_df.sort(["WKNR", "TOW"])
+
+        # enable printing with icecream
+        ic.enable()
         with pl.Config(tbl_cols=-1):
             ic(final_df)
 
