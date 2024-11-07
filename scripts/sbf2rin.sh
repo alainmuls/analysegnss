@@ -61,9 +61,9 @@ NAV_OPTS=" -x "${EXCL_GNSS}" -v -R3 -l -O BEL -n P"
 # switch to the RINEX directory
 cd ${RNX_DIR}
 
-echo -e "\e[1;34mCreating RINEX observation file \e[1;32m${RNX_DIR}/${RNX_OBS}\e[0m"
+echo -e "\e[1;34mCreating RINEX observation file in \e[1;32m${RNX_DIR}\e[0m"
 ${SBF2RIN} ${OBS_OPTS} -f ${SBF_FN} 
 # fi
 
-echo -e "\e[1;34mCreating RINEX navigation file \e[1;32m${RNX_DIR}/${RNX_NAV}\e[0m"
+echo -e "\e[1;34mCreating RINEX navigation file in \e[1;32m${RNX_DIR}\e[0m"
 ${SBF2RIN} ${NAV_OPTS} -f ${SBF_FN}
