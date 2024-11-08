@@ -194,47 +194,42 @@ class RINEX:
             result = subprocess.run(
                 gfzrnx_args, capture_output=True, text=True, check=True
             )
+            output_buffer = StringIO(result.stdout)
 
-            if self.logger:
-                self.logger.info("gfzrnx conversion successful")
-
-            # Split output into lines
-            lines = result.stdout.split("\n")
-
-            # Initialize storage for headers and data
+            # Store just the headers initially
             headers = {}
-            data = {sys: [] for sys in self.gnss}
 
-            # Process each line
-            for line in lines:
-                if not line.strip():
-                    continue
+            # First pass to get headers
+            for line in output_buffer:
+                if line.startswith("#HD"):
+                    parts = line.strip().split(",")
+                    sys = parts[1].strip("'")
+                    headers[sys] = [h.strip("'") for h in parts[2:]]
 
-                parts = line.strip().split(",")
-                line_type = parts[0].strip("'")
-                sys = parts[1].strip("'")
+            # Reset buffer position
+            output_buffer.seek(0)
 
-                if line_type == "#HD":
-                    headers[sys] = parts[2:]  # Store header for this system
-                elif line_type == "OBS":
-                    data[sys].append(parts[2:])  # Store data for this system
-
-            # Create dataframe for each system
+            # Create streaming dataframes for each system
             result_dfs = {}
             for sys in self.gnss:
-                if sys in headers and data[sys]:
-                    if self.logger is not None:
-                        self.logger.debug(f"headers for {sys}: {headers[sys]}")
+                if sys in headers:
+                    # Create a generator for the data
+                    def data_generator():
+                        for line in output_buffer:
+                            if line.startswith("OBS"):
+                                parts = line.strip().split(",")
+                                if parts[1].strip("'") == sys:
+                                    yield [
+                                        val.strip("'") if val.strip("'") else None
+                                        for val in parts[2:]
+                                    ]
+                        output_buffer.seek(0)
 
-                    # Strip quotes from header names and clean the data
-                    clean_headers = [h.strip("'") for h in headers[sys]]
-                    clean_data = [
-                        [val.strip("'") if val.strip("'") else None for val in row]
-                        for row in data[sys]
-                    ]
-
+                    # Create DataFrame using streaming
                     df = (
-                        pl.DataFrame(clean_data, schema=clean_headers, orient="row")
+                        pl.DataFrame(
+                            data_generator(), schema=headers[sys], orient="row"
+                        )
                         .lazy()
                         .with_columns(
                             [
@@ -263,6 +258,7 @@ class RINEX:
                             f"Created dataframe for system {str_green(sys)} with {str_green(len(df))} observations"
                         )
 
+            output_buffer.close()
             return result_dfs
 
         except subprocess.CalledProcessError as e:
