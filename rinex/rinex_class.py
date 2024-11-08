@@ -34,6 +34,12 @@ class RINEX:
         self.validate_logger_level()
 
     def validate_file(self):
+        """Validates that the RINEX file specified in `self.rnx_fn` exists
+        and is a valid RINEX observation file.
+        If the file does not exist or is not a valid RINEX observation file,
+        it raises a `ValueError` with an appropriate error message,
+        and logs the error using the provided `self.logger` object if it is not `None`.
+        """
         if not os.path.isfile(self.rnx_fn):
             if self.logger:
                 self.logger.error(f"File does not exist: {self.rnx_fn}")
@@ -63,6 +69,18 @@ class RINEX:
             raise ValueError(f"Error reading file: {e}")
 
     def validate_gnss(self):
+        """
+        Validates the GNSS systems specified in `self.gnss`.
+
+        If `self.gnss` is `None`, logs an informational message and returns.
+
+        Otherwise, converts the input string to uppercase and checks if each character
+        is a valid GNSS system code (as defined in `GNSS_DICT`). If any invalid systems
+        are found, logs an error message and raises a `ValueError`.
+
+        If all systems are valid, stores the validated list of GNSS systems in `self.gnss`
+        and logs an informational message.
+        """
         if self.gnss is None:
             if self.logger:
                 self.logger.info("No GNSS systems specified.")
@@ -90,6 +108,15 @@ class RINEX:
             )
 
     def validate_start_time(self):
+        """
+        Validates the start time of the RINEX data.
+
+        If `self.start_time` is not `None`, checks if it is a valid `datetime.time` object.
+            If not, logs an error message and raises a `ValueError`.
+        If `self.start_time` is `None`, logs an informational message.
+        If `self.start_time` is a valid `datetime.time` object, logs an informational message.
+        """
+
         if self.start_time is not None:
             if not isinstance(self.start_time, datetime.time):
                 if self.logger:
@@ -109,6 +136,15 @@ class RINEX:
                 self.logger.info("No start time specified.")
 
     def validate_end_time(self):
+        """
+        Validates the end time of the RINEX data.
+
+        If `self.end_time` is not `None`, checks if it is a valid `datetime.time` object.
+            If not, logs an error message and raises a `ValueError`.
+        If `self.end_time` is `None`, logs an informational message.
+        If `self.end_time` is a valid `datetime.time` object, logs an informational message.
+        """
+
         if self.end_time is not None:
             if not isinstance(self.end_time, datetime.time):
                 if self.logger:
@@ -128,6 +164,16 @@ class RINEX:
                 self.logger.info("No end time specified.")
 
     def validate_logger_level(self):
+        """
+        Validates the logging level for the console handler in the logger.
+
+        If a logger is provided, this method retrieves the logging level for the
+        console handler (i.e. the handler that writes to stdout or stderr) and
+        stores it in the `_console_loglevel` attribute.
+
+        It then logs an informational message with the console log level.
+        """
+
         if self.logger is not None:
             # get the logging level for the console
             for handler in self.logger.handlers:
@@ -281,6 +327,14 @@ class RINEX:
             raise PermissionError(f"Permission error running gfzrnx: {str(e)}")
 
     def tabobs_to_csv(self, result_dfs: dict) -> pl.DataFrame:
+        """converts the tabular observation file to polars dataframe with 1 observation per row
+
+        Args:
+            result_dfs (dict): contains the tabular observation dataframes per GNSS system
+
+        Returns:
+            pl.DataFrame: dataframe containing the tabular observation data in CSV format
+        """
         # Process all frequency/signal combinations in one pass
         csv_rows = []
         for gnss_type, df in result_dfs.items():
