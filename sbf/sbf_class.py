@@ -634,7 +634,7 @@ class SBF:
         Returns:
             list of correct column names for each sbfblocks
         """
-        ic(
+        print(
             "sbf2asc is chosen as sbf converter. Looking up corresponding column names for each sbf block"
         )
         self.logger.info(

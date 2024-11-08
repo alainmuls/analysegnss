@@ -1,6 +1,5 @@
 import argparse
 import os
-from icecream import ic
 import argcomplete
 
 from utils.utilities import str_yellow
@@ -153,7 +152,7 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
-    ic(f"Parsed arguments: {vars(args)}")
+    print(f"Parsed arguments: {vars(args)}")
 
     return args
 
