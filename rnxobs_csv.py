@@ -7,7 +7,7 @@ from logging import Logger
 import polars as pl
 
 from config import ERROR_CODES
-from rinex.rinex_class import RINEX
+from rinex.rinex_obs_class import RINEX_OBS
 from utils import argument_parser, init_logger
 from utils.utilities import str_green
 
@@ -30,7 +30,7 @@ def rnxobs_csv(argv: list):
 
     # create the RINEX object
     try:
-        rnxobs = RINEX(
+        rnxobs = RINEX_OBS(
             rnxobs_fn=args_parsed.rnx_fn,
             gnss=args_parsed.gnss,
             logger=logger,
