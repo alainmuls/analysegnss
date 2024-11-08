@@ -91,6 +91,7 @@ def parseSBFComments(df_sbfComments: pl.DataFrame, logger: Logger) -> pl.DataFra
 def reformat_ebh_timestamps(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> dict:
     """
     Reformat EBH timestamps for ebh_lines.py
+    ebh_line_key: wnc tow, wnc tow
 
     args:
         df_ebh_timestamps (pl.DataFrame): EBH timestamps
@@ -138,8 +139,8 @@ def reformat_ebh_timestamps(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> 
         )
 
     # Search for patterns "Start_l" and "End_l", and group them by index
+    ebh_timings_ebhlinefmt = {}
     ebh_timings = {}
-
     # using regex to extract the index (last digit after '_l')
     # Regex pattern to match 'Start_l'
     start_pattern = r"Start_l(\d+)"
@@ -172,21 +173,34 @@ def reformat_ebh_timestamps(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> 
 
             logger.debug(f"start_data {start_data}, end_data {end_data}")
 
-            # Collect data and store in dictionary
+            # Collect data and store in dictionary [ebh_line_key: wnc tow, wnc tow)
+            # the following block stores the timings data using a dict in ebh_lines.py format and in another dict using a more general format
+            # The latter uses tuples instead strings which facilitates easier conversion between wnc tow and time date formats using gnss_dt.py
             if (
                 index == "1"
             ):  # Special case for l1: Change the key name to CL for compatibility reasons with ebh_lines.py
-                ebh_timings[f"CL"] = (
-                    f"{int(start_data[0])} {start_data[1]}, {int(end_data[0])} {int(end_data[1])}"
+                
+                # ebh_lines.py format
+                ebh_timings_ebhlinefmt["CL"] = (
+                    f"{int(start_data[0])} {start_data[1]}, {int(end_data[0])} {(end_data[1])}"
                 )
+                
+                # genal format using tuples
+                ebh_timings[f"CL"] = [(start_data[0],start_data[1]),(end_data[0],end_data[1])]
             else:
-                ebh_timings[f"l{index}"] = (
+                
+                # ebh_lines.py format
+                ebh_timings_ebhlinefmt[f"l{index}"] = (
                     f"{int(start_data[0])} {start_data[1]}, {int(end_data[0])} {end_data[1]}"
                 )
+                
+                # general format using tuples
+                ebh_timings[f"l{index}"] = [(start_data[0],start_data[1]),(end_data[0],end_data[1])]
+            
 
-    logger.info(f"ebh line timings:\n{ebh_timings}")
+    logger.info(f"ebh line timings using ebh_lines format:\n{ebh_timings_ebhlinefmt}")
 
-    return ebh_timings
+    return ebh_timings_ebhlinefmt, ebh_timings
 
 
 def ebh_timings_to_file(ebh_timings: dict, dest_path: str, logger: Logger) -> None:
@@ -209,24 +223,32 @@ def ebh_timings_to_file(ebh_timings: dict, dest_path: str, logger: Logger) -> No
 
 
 def get_ebh_timings(parsed_args: argparse.Namespace, logger:Logger) -> None:
-
+    """Getting ebh timings from sbf Comment block. 
+        The timings are formatted for each ebh line with the following format 
+        ebh_line_key: wnc tow, wnc tow 
+        which corresponds to format used by ebh_lines.py
+        
+        returns:
+        ebh_timings(dict): dict with ebh keys and timestamps (week number and t of week) correctly formatted for ebh_lines.py 
+        """
+    
     # Get SBF comments
     df_sbfComments = get_SBFcomments(parsed_args=parsed_args, logger=logger)
     # Get EBH timestamps
     df_ebh_timestamps = parseSBFComments(df_sbfComments=df_sbfComments, logger=logger)
     # reformat EBH timestamps
-    ebh_timings = reformat_ebh_timestamps(
+    ebh_timings_ebhlinefmt, ebh_timings = reformat_ebh_timestamps(
         df_ebh_timestamps=df_ebh_timestamps, logger=logger
     )
-    # Write EBH timings to file
+    # Write EBH timings to file for ebh_lines.py usage
     # Using hasattr here to check if the argument exists (this fixes argparse.namespace errors across different python scripts)
     if hasattr(parsed_args, "timing_ofn") and parsed_args.timing_ofn:
         ebh_timings_to_file(
-            ebh_timings=ebh_timings, dest_path=parsed_args.timing_ofn, logger=logger
+            ebh_timings=ebh_timings_ebhlinefmt, dest_path=parsed_args.timing_ofn, logger=logger
         )
     else:  # if no output file is provided, write to default file name
         ebh_timings_to_file(
-            ebh_timings=ebh_timings,
+            ebh_timings=ebh_timings_ebhlinefmt,
             dest_path=f"{parsed_args.sbf_ifn}_ebh_timings.txt",
             logger=logger,
         )

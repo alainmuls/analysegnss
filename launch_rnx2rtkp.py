@@ -27,6 +27,8 @@ def rnx2rtkp_ppk(
     nav (str): RINEX navigation file
     base_corr (str): base correction file. Corrections can be formatted in RTCM3 or RNX obs
     base_coord (tuple): base station coordinates (X, Y, Z)
+    datetime_start (str): start time of calculation. format: YYYY-MM-DD_HH:MM:SS.f
+    datetime_end (str): end time of calculation YYYY-MM-DD_HH:MM:SS.f
     out_fn: output directory
 
     """
