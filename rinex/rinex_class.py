@@ -15,7 +15,7 @@ from utils.utilities import locate, str_red, str_green
 class RINEX:
     """class for RINEX files"""
 
-    rnx_fn: str = field(default=None, metadata={"help": "RINEX file name"})
+    rnxobs_fn: str = field(default=None, metadata={"help": "RINEX file name"})
     gnss: str = field(default=None, metadata={"help": "select multiple from GREC"})
 
     start_time: datetime.time = field(default=None, metadata={"help": "start time"})
@@ -27,27 +27,38 @@ class RINEX:
     )
 
     def __post_init__(self):
-        self.validate_file()
+        self.validate_rnxobs_fn()
         self.validate_gnss()
         self.validate_start_time()
         self.validate_end_time()
         self.validate_logger_level()
+        self.validate_permissions()
 
-    def validate_file(self):
+    def validate_rnxobs_fn(self):
         """Validates that the RINEX file specified in `self.rnx_fn` exists
         and is a valid RINEX observation file.
         If the file does not exist or is not a valid RINEX observation file,
         it raises a `ValueError` with an appropriate error message,
         and logs the error using the provided `self.logger` object if it is not `None`.
         """
-        if not os.path.isfile(self.rnx_fn):
+        if not os.path.isfile(self.rnxobs_fn):
             if self.logger:
-                self.logger.error(f"File does not exist: {self.rnx_fn}")
-            raise ValueError(f"File does not exist: {self.rnx_fn}")
+                self.logger.error(f"File does not exist: {self.rnxobs_fn}")
+            raise ValueError(f"File does not exist: {self.rnxobs_fn}")
+
+        # Validate RINEX file permissions
+        if not os.access(self.rnxobs_fn, os.R_OK):
+            if self.logger:
+                self.logger.error(
+                    f"No read permission for RINEX file: {self.rnxobs_fn}"
+                )
+            raise PermissionError(
+                f"No read permission for RINEX file: {self.rnxobs_fn}"
+            )
 
         # check if it is a RINEX observation file
         try:
-            with open(self.rnx_fn, "r") as file:
+            with open(self.rnxobs_fn, "r") as file:
                 # Read the first line of the file
                 first_line = file.readline().strip()
 
@@ -58,10 +69,10 @@ class RINEX:
                 ):
                     if self.logger is not None:
                         self.logger.error(
-                            f"File is not a RINEX observation file: {self.rnx_fn}"
+                            f"File is not a RINEX observation file: {self.rnxobs_fn}"
                         )
                     raise ValueError(
-                        f"File is not a RINEX observation file: {self.rnx_fn}"
+                        f"File is not a RINEX observation file: {self.rnxobs_fn}"
                     )
         except Exception as e:
             if self.logger is not None:
@@ -189,6 +200,18 @@ class RINEX:
                 + f"{str_red(logging.getLevelName(self._console_loglevel))}"
             )
 
+    def validate_permissions(self):
+        # Locate and validate gfzrnx executable
+        self.gfzrnx_exe = locate("gfzrnx")
+        if not os.access(self.gfzrnx_exe, os.X_OK):
+            if self.logger:
+                self.logger.error(
+                    f"No execute permission for gfzrnx at: {self.gfzrnx_exe}"
+                )
+            raise PermissionError(
+                f"No execute permission for gfzrnx at: {self.gfzrnx_exe}"
+            )
+
     def gfzrnx_tabobs(self) -> dict:
         """Convert RINEX observation file to tab_obs file using gfzrnx
 
@@ -198,29 +221,33 @@ class RINEX:
         Returns:
             dict: dict of dataframes per GNSS containing the tab_obs view of the RINEX observation file
         """
-        # locate gfzrnx
-        gfzrnx_exe = locate("gfzrnx")
+        # # locate gfzrnx
+        # gfzrnx_exe = locate("gfzrnx")
 
-        # Check executable permissions for gfzrnx
-        if not os.access(gfzrnx_exe, os.X_OK):
-            if self.logger:
-                self.logger.error(f"No execute permission for gfzrnx at: {gfzrnx_exe}")
-            raise PermissionError(f"No execute permission for gfzrnx at: {gfzrnx_exe}")
+        # # Check executable permissions for gfzrnx
+        # if not os.access(gfzrnx_exe, os.X_OK):
+        #     if self.logger:
+        #         self.logger.error(f"No execute permission for gfzrnx at: {gfzrnx_exe}")
+        #     raise PermissionError(f"No execute permission for gfzrnx at: {gfzrnx_exe}")
 
-        # Check read permissions for input RINEX file
-        if not os.access(self.rnx_fn, os.R_OK):
-            if self.logger:
-                self.logger.error(f"No read permission for RINEX file: {self.rnx_fn}")
-            raise PermissionError(f"No read permission for RINEX file: {self.rnx_fn}")
+        # # Check read permissions for input RINEX file
+        # if not os.access(self.rnxobs_fn, os.R_OK):
+        #     if self.logger:
+        #         self.logger.error(
+        #             f"No read permission for RINEX file: {self.rnxobs_fn}"
+        #         )
+        #     raise PermissionError(
+        #         f"No read permission for RINEX file: {self.rnxobs_fn}"
+        #     )
 
         # create the tabobs name by changing the extension of the rinex_fn
-        tabobs_fn = os.path.splitext(self.rnx_fn)[0] + ".tabobs"
+        tabobs_fn = os.path.splitext(self.rnxobs_fn)[0] + ".tabobs"
 
         gfzrnx_args = [
-            gfzrnx_exe,
+            self.gfzrnx_exe,
             "-f",  # overwrite previous version of the output file
             "-finp",
-            self.rnx_fn,
+            self.rnxobs_fn,
             "-tab",
             "-tab_sep",
             "','",
@@ -378,3 +405,15 @@ class RINEX:
 
         # Combine and sort in one operation
         return pl.concat(csv_rows).sort(["WKNR", "TOW", "GNSS", "PRN", "cfreq", "sigt"])
+
+    def gfzrnx_tabnav(self) -> dict:
+        """Convert RINEX navigation file to tab_obs file using gfzrnx
+
+        Args:
+            logger (Logger): logger utility
+
+        Returns:
+            dict: dict of dataframes per GNSS containing the tab_obs view of the
+            RINEX navigation file
+        """
+        pass

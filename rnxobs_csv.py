@@ -31,7 +31,7 @@ def rnxobs_csv(argv: list):
     # create the RINEX object
     try:
         rnxobs = RINEX(
-            rnx_fn=args_parsed.rnx_fn,
+            rnxobs_fn=args_parsed.rnx_fn,
             gnss=args_parsed.gnss,
             logger=logger,
         )
@@ -54,7 +54,7 @@ def rnxobs_csv(argv: list):
     if args_parsed.csv_fn is not None:
         csv_fn = args_parsed.csv_fn
     else:
-        csv_fn = os.path.splitext(rnxobs.rnx_fn)[0] + ".csv"
+        csv_fn = os.path.splitext(rnxobs.rnxobs_fn)[0] + ".csv"
     csv_df.write_csv(csv_fn)
     logger.warning(f"Saved CSV file: {str_green(csv_fn)}")
 
