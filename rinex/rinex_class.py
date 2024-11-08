@@ -5,7 +5,6 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from io import StringIO
-from icecream import ic
 import polars as pl
 
 from config import GNSS_DICT
@@ -148,7 +147,6 @@ class RINEX:
         """Convert RINEX observation file to tab_obs file using gfzrnx
 
         Args:
-            rinex_fn (str): RINEX observation file name
             logger (Logger): logger utility
 
         Returns:
@@ -156,6 +154,18 @@ class RINEX:
         """
         # locate gfzrnx
         gfzrnx_exe = locate("gfzrnx")
+
+        # Check executable permissions for gfzrnx
+        if not os.access(gfzrnx_exe, os.X_OK):
+            if self.logger:
+                self.logger.error(f"No execute permission for gfzrnx at: {gfzrnx_exe}")
+            raise PermissionError(f"No execute permission for gfzrnx at: {gfzrnx_exe}")
+
+        # Check read permissions for input RINEX file
+        if not os.access(self.rnx_fn, os.R_OK):
+            if self.logger:
+                self.logger.error(f"No read permission for RINEX file: {self.rnx_fn}")
+            raise PermissionError(f"No read permission for RINEX file: {self.rnx_fn}")
 
         # create the tabobs name by changing the extension of the rinex_fn
         tabobs_fn = os.path.splitext(self.rnx_fn)[0] + ".tabobs"
@@ -265,39 +275,34 @@ class RINEX:
             if self.logger:
                 self.logger.error(f"gfzrnx conversion failed: {e.stderr}")
             raise RuntimeError(f"gfzrnx conversion failed: {e.stderr}")
+        except PermissionError as e:
+            if self.logger:
+                self.logger.error(f"Permission error running gfzrnx: {str(e)}")
+            raise PermissionError(f"Permission error running gfzrnx: {str(e)}")
 
     def tabobs_to_csv(self, result_dfs: dict) -> pl.DataFrame:
-        """Convert the gfzrnx dataframes to desired CSV format
-
-        Args:
-            result_dfs (dict): polars dataframes per GNSS system
-
-        Returns:
-            csv_df (str): combined output CSV dataframe
-        """
-        # disable printing with icecream
-        # ic.disable()
-
+        # Process all frequency/signal combinations in one pass
         csv_rows = []
         for gnss_type, df in result_dfs.items():
-            # Get unique frequency/signal combinations
-            freq_sigs = set()
-            for col in df.columns:
-                if len(col) == 3 and col[0] in ["C", "L", "D", "S"]:
-                    freq_sigs.add((col[1], col[2]))  # (freq, sigt)
+            # Get frequency/signal combinations
+            freq_sigs = {
+                (col[1], col[2])
+                for col in df.columns
+                if len(col) == 3 and col[0] in ["C", "L", "D", "S"]
+            }
 
-            # Process each frequency/signal combination
+            # Create a single transformation for all freq/sigs
+            transforms = []
             for freq, sigt in freq_sigs:
-                # Create new rows for this frequency
-                new_df = (
+                transforms.append(
                     pl.DataFrame(
                         {
                             "GNSS": gnss_type,
                             "WKNR": df["WKNR"],
-                            "TOW": df["TOW"] * 1000,  # Convert to milliseconds
-                            "PRN": df["PRN"].str.extract(
-                                r"(\d+)"
-                            ),  # Extract number from PRN
+                            "TOW": (df["TOW"] * 1000)
+                            .round()
+                            .cast(pl.Int64),  # Explicit casting to Int64
+                            "PRN": df["PRN"].str.extract(r"(\d+)"),
                             "cfreq": f"L{freq}",
                             "sigt": f"{freq}{sigt}",
                             "C": df[f"C{freq}{sigt}"],
@@ -308,30 +313,14 @@ class RINEX:
                     )
                     .lazy()
                     .filter(
-                        pl.col("C").is_not_null()
-                        & pl.col("L").is_not_null()
-                        & pl.col("D").is_not_null()
-                        & pl.col("S").is_not_null()
+                        pl.all_horizontal(
+                            [pl.col(col).is_not_null() for col in ["C", "L", "D", "S"]]
+                        )
                     )
                     .collect()
                 )
 
-                with pl.Config(tbl_cols=-1):
-                    ic(new_df)
+            csv_rows.extend(transforms)
 
-                csv_rows.append(new_df)
-
-        # Combine all dataframes
-        final_df = pl.concat(csv_rows).sort(
-            ["GNSS", "WKNR", "TOW", "PRN", "cfreq", "sigt"]
-        )
-
-        # sort the final dataframe by WKNR and TOW
-        final_df = final_df.sort(["WKNR", "TOW"])
-
-        # enable printing with icecream
-        ic.enable()
-        with pl.Config(tbl_cols=-1):
-            ic(final_df)
-
-        return final_df
+        # Combine and sort in one operation
+        return pl.concat(csv_rows).sort(["WKNR", "TOW", "GNSS", "PRN", "cfreq", "sigt"])

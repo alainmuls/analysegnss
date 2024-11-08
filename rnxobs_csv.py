@@ -56,7 +56,7 @@ def rnxobs_csv(argv: list):
     else:
         csv_fn = os.path.splitext(rnxobs.rnx_fn)[0] + ".csv"
     csv_df.write_csv(csv_fn)
-    logger.info(f"Saved CSV file: {str_green(csv_fn)}")
+    logger.warning(f"Saved CSV file: {str_green(csv_fn)}")
 
 
 if __name__ == "__main__":
