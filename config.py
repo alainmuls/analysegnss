@@ -46,6 +46,7 @@ ERROR_CODES = {
     "E_NO_SBF_BLOCK": 44,
     "E_SBF_OBJECT": 45,
     "E_NO_RINEX_OBS": 46,
+    "E_NO_RINEX_NAV": 47,
     "E_PROCESS": 90,
     "E_FAILURE": 99,
 }
