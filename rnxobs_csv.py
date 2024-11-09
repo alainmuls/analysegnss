@@ -13,7 +13,8 @@ from utils.utilities import str_green
 
 
 def rnxobs_csv(argv: list):
-    """reads RINEX observation file and converts it to CSV file similar to those created by rtcm3_parser.py
+    """reads RINEX observation file and converts it to CSV file similar
+    to those created by rtcm3_parser.py
 
     Args:
         argv (list): CLI arguments
