@@ -161,15 +161,3 @@ class RINEX:
             raise PermissionError(
                 f"No execute permission for gfzrnx at: {self.gfzrnx_exe}"
             )
-
-    def gfzrnx_tabnav(self) -> dict:
-        """Convert RINEX navigation file to tab_obs file using gfzrnx
-
-        Args:
-            logger (Logger): logger utility
-
-        Returns:
-            dict: dict of dataframes per GNSS containing the tab_obs view of the
-            RINEX navigation file
-        """
-        pass
