@@ -80,9 +80,7 @@ class RINEX_OBS(RINEX):
         Returns:
             dict: dict of dataframes per GNSS containing the tab_obs view of the RINEX observation file
         """
-        # # create the tabobs name by changing the extension of the rinex_fn
-        # tabobs_fn = os.path.splitext(self.rnxobs_fn)[0] + ".tabobs"
-
+        # arguments for converting rinex observation file to tab_obs
         gfzrnx_args = [
             self.gfzrnx_exe,
             "-f",  # overwrite previous version of the output file
@@ -90,7 +88,7 @@ class RINEX_OBS(RINEX):
             self.rnxobs_fn,
             "-tab",
             "-tab_sep",
-            "','",
+            ",",
             "-tab_date",
             "wwwwd",
             "-tab_time",
@@ -110,7 +108,7 @@ class RINEX_OBS(RINEX):
             gfzrnx_args.extend(["-te", self.end_time.strftime("%H:%M:%S")])
 
         if self.logger is not None:
-            self.logger.debug(f"gfzrnx args: {' '.join(gfzrnx_args)}")
+            self.logger.debug(f"running: {' '.join(gfzrnx_args)}")
 
         # Run gfzrnx and capture output
         try:
