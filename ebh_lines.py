@@ -150,28 +150,37 @@ def ebh_lines_map_angle(
         row_start = df_pos.filter(pl.col("DT") == timings[0])
         row_end = df_pos.filter(pl.col("DT") == timings[1])
 
-        if logger is not None:
-            logger.debug(f"row_start = {row_start}")
-            logger.debug(
-                f"row_start.select(['UTM.E']) = {row_start.select(['UTM.E'])} |  {type(row_start.select(['UTM.E']))}"
+        # Checking if dataframe is not empty
+        if row_start.is_empty():
+            logger.warning(
+                f"No data found for {timings[0].strftime('%Y/%m/%d %H:%M:%S')}. Breaking."
             )
-            logger.debug(
-                f"row_start.select(['UTM.E']).to_numpy()[0] = {row_start.select(['UTM.E'])} |  {type(row_start.select(['UTM.E']))}"
-            )
-            logger.debug(
-                f"row_start.select(['UTM.E', 'UTM.N']) = {row_start.select(['UTM.E', 'UTM.N'])}"
-            )
-            logger.debug(f"row_end = {row_end}")
 
-        # calculate the map_angle
-        map_angle = atan2(
-            row_end["UTM.E"].to_numpy()[0] - row_start["UTM.E"].to_numpy()[0],
-            row_end["UTM.N"].to_numpy()[0] - row_start["UTM.N"].to_numpy()[0],
-        )
-        # print(f"map_angle = {map_angle} | {degrees(map_angle)}")
+        else: 
+            
+            if logger is not None:
+                logger.debug(f"row_start = {row_start}")
+                logger.debug(
+                    f"row_start.select(['UTM.E']) = {row_start.select(['UTM.E'])} |  {type(row_start.select(['UTM.E']))}"
+                )
+                logger.debug(
+                    f"row_start.select(['UTM.E']).to_numpy()[0] = {row_start.select(['UTM.E'])} |  {type(row_start.select(['UTM.E']))}"
+                )
+                logger.debug(
+                    f"row_start.select(['UTM.E', 'UTM.N']) = {row_start.select(['UTM.E', 'UTM.N'])}"
+                )
+                logger.debug(f"row_end = {row_end}")
 
-        # add the map_angle to the ebh_timings dictionary
-        ebh_timings[ebh_key].append(degrees(map_angle))
+
+            # calculate the map_angle
+            map_angle = atan2(
+                row_end["UTM.E"].to_numpy()[0] - row_start["UTM.E"].to_numpy()[0],
+                row_end["UTM.N"].to_numpy()[0] - row_start["UTM.N"].to_numpy()[0],
+            )
+            # print(f"map_angle = {map_angle} | {degrees(map_angle)}")
+
+            # add the map_angle to the ebh_timings dictionary
+            ebh_timings[ebh_key].append(degrees(map_angle))
 
 
 def ebh_lines_extract(
@@ -356,7 +365,12 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
 
     # calculate the map_angle for each ebh_line
     ebh_lines_map_angle(df_pos=df_pos, ebh_timings=ebh_timings, logger=logger)
+    
+    # only keep the ebh_timings rows that have the calculated angle timings[2]
+    ebh_timings = {key: value for key, value in ebh_timings.items() if len(value) == 3}
+    
     for ebh_key, timings in ebh_timings.items():
+        
         logger.info(
             f"{ebh_key:9s}: {timings[0].strftime('%Y/%m/%d %H:%M:%S')}"
             f" - {timings[1].strftime('%Y/%m/%d %H:%M:%S')} | {timings[2]:6.1f}"
