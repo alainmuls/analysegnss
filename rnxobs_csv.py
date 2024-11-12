@@ -6,7 +6,8 @@ from logging import Logger
 
 import polars as pl
 
-from config import ERROR_CODES
+from config import ERROR_CODES, GNSS_DICT
+
 from rinex.rinex_obs_class import RINEX_OBS
 from utils import argument_parser, init_logger
 from utils.utilities import str_green
@@ -45,11 +46,13 @@ def rnxobs_csv(argv: list):
     with pl.Config(tbl_cols=-1):
         for gnss, tabobs_df in tabobs_dfs.items():
             logger.debug(
-                f"Converted RINEX observation file for {gnss} to tabular observation file: \n{tabobs_df}"
+                f"Converted RINEX observation file for {str_green(GNSS_DICT[gnss])} to tabular observation file: \n{tabobs_df}"
             )
 
-    # convert the tabular observations to csv format
+    # convert the tabular observations to csv format like rtcm3_parser MSM5/7 does
     csv_df = rnxobs.tabobs_to_csv(result_dfs=tabobs_dfs)
+    with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
+        logger.warning(f"Converted tabular observation file to CSV file: \n{csv_df}")
 
     # save the CSV file
     if args_parsed.csv_fn is not None:
