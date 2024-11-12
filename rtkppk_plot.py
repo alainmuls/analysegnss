@@ -41,7 +41,9 @@ def rtkppk_plot(argv: list):
         # select the columns needed for the plot
         df_utm = df_pos.select(["DT", "Q", "ns", "UTM.E", "UTM.N", "orthoH"])
 
-        with pl.Config(tbl_cols=-1):
+        with pl.Config(
+            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+        ):
             if logger is not None:
                 logger.info(f"df_pos = \n{df_pos}")
                 logger.info(f"df_utm = \n{df_utm}")
@@ -64,7 +66,9 @@ def rtkppk_plot(argv: list):
         # select the columns needed for the plot
         df_utm = df_rtk.select(["DT", "Type", "NrSV", "UTM.E", "UTM.N", "orthoH"])
 
-        with pl.Config(tbl_cols=-1):
+        with pl.Config(
+            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+        ):
             if logger is not None:
                 logger.info(f"df_rtk = \n{df_rtk}")
                 logger.info(f"df_utm = \n{df_utm}")

@@ -81,7 +81,7 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
     # analyse the quality of the solution
     quality_analysis(df_pos=pos_df, logger=logger)
 
-    with pl.Config(tbl_cols=-1):
+    with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
         logger.debug(f"df_pos = \n{pos_df}")
 
     return pos_df
@@ -89,5 +89,5 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
 
 if __name__ == "__main__":
     df_rtkpos = rtkp_pos(argv=sys.argv)
-    with pl.Config(tbl_cols=-1):
+    with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
         print(df_rtkpos)

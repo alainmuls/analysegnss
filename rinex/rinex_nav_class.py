@@ -174,7 +174,9 @@ class RINEX_NAV(RINEX):
             df_all_nav = pl.read_csv(
                 StringIO(nav_data), has_header=False, separator=",", skip_rows=1
             )
-            with pl.Config(tbl_cols=-1):
+            with pl.Config(
+                tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+            ):
                 self.logger.debug(
                     f"Converted RINEX navigation file to tabular navigation file: \n{df_all_nav}"
                 )
@@ -184,7 +186,9 @@ class RINEX_NAV(RINEX):
                 gnss_type: group_df
                 for gnss_type, group_df in df_all_nav.group_by("S", maintain_order=True)
             }
-            with pl.Config(tbl_cols=-1):
+            with pl.Config(
+                tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+            ):
                 for gnss, tabnav_df in nav_dict.items():
                     self.logger.debug(
                         f"Converted RINEX navigation file for {gnss} to tabular navigation file: \n{tabnav_df}"

@@ -76,7 +76,9 @@ def rtk_pvtgeod(argv: list) -> pl.DataFrame:
         # analyse the quality of the solution
         quality_analysis(geod_df=df_geod, logger=logger)
 
-        with pl.Config(tbl_cols=-1):
+        with pl.Config(
+            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+        ):
             logger.info(f"df_geod: \n{df_geod}")
 
         return df_geod
@@ -85,7 +87,9 @@ def rtk_pvtgeod(argv: list) -> pl.DataFrame:
         df_poscov = sbf.sbf2asc_dataframe(lst_sbfblocks=["PosCovGeodetic1"])[
             "PosCovGeodetic1"
         ]
-        with pl.Config(tbl_cols=-1):
+        with pl.Config(
+            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+        ):
             print(f"df_poscov: \n{df_poscov}")
             logger.info(f"df_poscov: \n{df_poscov}")
 
@@ -96,5 +100,7 @@ if __name__ == "__main__":
     geod_df = rtk_pvtgeod(argv=sys.argv)
 
     if geod_df is not None:
-        with pl.Config(tbl_cols=-1):
+        with pl.Config(
+            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+        ):
             print(geod_df)

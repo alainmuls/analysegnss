@@ -43,7 +43,7 @@ def rnxobs_csv(argv: list):
 
     # convert RINEX observation file to CSV file using gfzrnx to tabular observations
     tabobs_dfs = rnxobs.gfzrnx_tabobs()
-    with pl.Config(tbl_cols=-1):
+    with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
         for gnss, tabobs_df in tabobs_dfs.items():
             logger.debug(
                 f"Converted RINEX observation file for {str_green(GNSS_DICT[gnss])} to tabular observation file: \n{tabobs_df}"

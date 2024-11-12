@@ -352,7 +352,7 @@ def ebh_lines(argv: list):
         logger.error("No processing type selected")
         sys.exit(ERROR_CODES["E_FILE_NOT_EXIST"])
 
-    with pl.Config(tbl_cols=-1):
+    with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
         logger.info(df_pos)
         print(df_pos)
 
