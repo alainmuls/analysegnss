@@ -5,6 +5,7 @@ import sys
 
 import polars as pl
 from tabulate import tabulate
+from logging import Logger
 
 # import globalvars
 from sbf import sbf_constants as sbfc
@@ -13,7 +14,7 @@ from utils import argument_parser, init_logger
 from config import ERROR_CODES
 
 
-def quality_analysis(geod_df: pl.DataFrame, logger) -> list:
+def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:
     """display the quality analysis
 
     Args:
@@ -40,7 +41,7 @@ def quality_analysis(geod_df: pl.DataFrame, logger) -> list:
     #print(f"\nAnalysis of the quality of the position data\n{qual_tabular}")
 
     if logger is not None:
-        logger.warning(f"Quality analysis:\n{qual_tabular}")
+        logger.info(f"Quality analysis:\n{qual_tabular}")
 
     return qual_analysis
 

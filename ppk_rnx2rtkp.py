@@ -15,7 +15,7 @@ from rtkpos.rtkpos_class import Rtkpos
 from utils import argument_parser, init_logger
 
 
-def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> None:
+def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> list:
     """display the quality analysis
 
     Args:
@@ -40,11 +40,11 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> None:
         tablefmt="fancy_outline",
     )
 
-    print(f"\nAnalysis of the quality of the position data\n{qual_tabular}")
 
     if logger is not None:
-        logger.warning(f"\n{qual_tabular}")
+        logger.info(f"Analysis of the quality of the position data.\n{qual_tabular}")
 
+    return qual_analysis
 
 def rtkp_pos(argv: list) -> pl.DataFrame:
     """analyses the rnx2rtkp output file and extracts the position information

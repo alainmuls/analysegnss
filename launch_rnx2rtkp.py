@@ -30,15 +30,18 @@ def rnx2rtkp_ppk(
     datetime_start (str): start time of calculation. format: YYYY-MM-DD_HH:MM:SS.f
     datetime_end (str): end time of calculation YYYY-MM-DD_HH:MM:SS.f
     out_fn: output directory
+    
+    returns: 
+    pos_ofn (str): output filename of PPK solution
 
     """
 
     # configure output filename
-    if not parsed_args.pos_ofn:
+    if hasattr(parsed_args, "pos_ofn") and parsed_args.pos_ofn:
+        pos_ofn = parsed_args.pos_ofn
+    else:
         pos_ofn, _ = os.path.splitext(parsed_args.obs)
         pos_ofn = pos_ofn + "_PPK.pos"
-    else:
-        pos_ofn = parsed_args.pos_ofn
 
 
     # check if rnx2rtkp is installed
@@ -113,6 +116,8 @@ def rnx2rtkp_ppk(
         sys.exit(ERROR_CODES["E_PROCESS"])
     
     logger.info(f"Finished calculating PPK solution. Written file to {pos_ofn}")
+    
+    return pos_ofn
 
 if __name__ == "__main__":
 
