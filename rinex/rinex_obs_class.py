@@ -116,6 +116,8 @@ class RINEX_OBS(RINEX):
                 gfzrnx_args, capture_output=True, text=True, check=True
             )
             output_buffer = StringIO(result.stdout)
+            self.logger.debug(f"gfzrnx output: \n{result.stdout[:1500]}")
+            self.logger.debug(f"gfzrnx output: \n{StringIO(result.stdout[:1500])}")
 
             # Store just the headers initially
             headers = {}
@@ -124,8 +126,11 @@ class RINEX_OBS(RINEX):
             for line in output_buffer:
                 if line.startswith("#HD"):
                     parts = line.strip().split(",")
-                    sys = parts[1].strip("'")
-                    headers[sys] = [h.strip("'") for h in parts[2:]]
+                    sys = parts[1]
+                    headers[sys] = parts[2:]
+                    print(f"headers for {sys}: {headers[sys]}")
+                else:
+                    break
 
             # Reset buffer position
             output_buffer.seek(0)
@@ -139,11 +144,8 @@ class RINEX_OBS(RINEX):
                         for line in output_buffer:
                             if line.startswith("OBS"):
                                 parts = line.strip().split(",")
-                                if parts[1].strip("'") == sys:
-                                    yield [
-                                        val.strip("'") if val.strip("'") else None
-                                        for val in parts[2:]
-                                    ]
+                                if parts[1] == sys:
+                                    yield [val if val else None for val in parts[2:]]
                         output_buffer.seek(0)
 
                     # Create DataFrame using streaming
@@ -176,7 +178,7 @@ class RINEX_OBS(RINEX):
 
                     if self.logger:
                         self.logger.info(
-                            f"Created dataframe for system {str_green(sys)} with {str_green(len(df))} observations"
+                            f"Created dataframe for system {str_green(GNSS_DICT[sys])} with {str_green(len(df))} observations"
                         )
 
             output_buffer.close()
@@ -221,13 +223,13 @@ class RINEX_OBS(RINEX):
                             "TOW": (df["TOW"] * 1000)
                             .round()
                             .cast(pl.Int64),  # Explicit casting to Int64
-                            "PRN": df["PRN"].str.extract(r"(\d+)"),
+                            "PRN": df["PRN"].str.extract(r"(\d+)").cast(pl.Int16),
                             "cfreq": f"L{freq}",
                             "sigt": f"{freq}{sigt}",
                             "C": df[f"C{freq}{sigt}"],
                             "L": df[f"L{freq}{sigt}"],
                             "D": df[f"D{freq}{sigt}"],
-                            "S": df[f"S{freq}{sigt}"],
+                            "S": df[f"S{freq}{sigt}"].cast(pl.Float32),
                         }
                     )
                     .lazy()
