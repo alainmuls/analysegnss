@@ -368,6 +368,13 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
         required=False,
     )
     parser.add_argument(
+        "-cfg",
+        "--rnx2rtkp_config_fn",
+        help="file name of config file used for RTKLib rnx2rtkp calculation.",
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
         "--desc",
         help="description of EBH lines project",
         type=str,

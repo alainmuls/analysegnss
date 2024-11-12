@@ -64,11 +64,11 @@ def get_base_coord_from_sbf(parsed_args: argparse.Namespace, logger: Logger) -> 
         if base_coord.height > 0:
             base_coord = tuple(base_coord.row(0))
         else:
-            logger.warning(
-                f"Time instant not found in SBF file. Using last row of dataframe"
-            )
             base_coord = tuple(
                 df_sbfBaseStation.select(["X [m]", "Y [m]", "Z [m]"]).row(-1)
+            )
+            logger.warning(
+                f"Time instant not found in SBF file. Using last row of dataframe. {base_coord}"
             )
 
     else:

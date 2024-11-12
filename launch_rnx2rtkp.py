@@ -27,11 +27,12 @@ def rnx2rtkp_ppk(
     nav (str): RINEX navigation file
     base_corr (str): base correction file. Corrections can be formatted in RTCM3 or RNX obs
     base_coord (tuple): base station coordinates (X, Y, Z)
+    rnx2rtkp_config_fn (str): rnx2rtkp configuration file
     datetime_start (str): start time of calculation. format: YYYY-MM-DD_HH:MM:SS.f
     datetime_end (str): end time of calculation YYYY-MM-DD_HH:MM:SS.f
     out_fn: output directory
-    
-    returns: 
+
+    returns:
     pos_ofn (str): output filename of PPK solution
 
     """
@@ -42,7 +43,6 @@ def rnx2rtkp_ppk(
     else:
         pos_ofn, _ = os.path.splitext(parsed_args.obs)
         pos_ofn = pos_ofn + "_PPK.pos"
-
 
     # check if rnx2rtkp is installed
     rnx2rtkp_path = utilities.locate("rnx2rtkp")
@@ -55,10 +55,10 @@ def rnx2rtkp_ppk(
     cmd_rnx2rtkp = [
         rnx2rtkp_path,
         "-k",
-        parsed_args.config_file,
+        parsed_args.rnx2rtkp_config_fn,
         parsed_args.obs,
-        parsed_args.nav,
         parsed_args.base_corr,
+        parsed_args.nav,
         "-r",
         parsed_args.base_coord_X,
         parsed_args.base_coord_Y,
@@ -82,23 +82,25 @@ def rnx2rtkp_ppk(
                 e_dt_obj.strftime("%H:%M:%S"),
             ]
         )
-    
+
     # configure output filename
-    if not parsed_args.pos_ofn:
+    if hasattr(parsed_args,"pos_ofn") and parsed_args.pos_ofn:
+        pos_ofn = parsed_args.pos_ofn
+        logger.info(f"Using {pos_ofn} as output file name for rnx2rtkp process")
+    else:
         pos_ofn, _ = os.path.splitext(parsed_args.obs)
         if s_dt_obj and e_dt_obj:
             s_time = s_dt_obj.strftime("%H%M%S")
             tdiff = e_dt_obj - s_dt_obj
-            tdiff_s = tdiff.total_seconds() 
+            tdiff_s = round(tdiff.total_seconds(),0)
             # file name resembles RNX naming fmt: obs_PPK_000000_100S.pos
             pos_ofn = pos_ofn + "_PPK_" + s_time + "_" + str(tdiff_s) + "S.pos"
         else:
             pos_ofn = pos_ofn + "_PPK.pos"
-    else:
-        pos_ofn = parsed_args.pos_ofn
-        
+        logger.info(f"Using {pos_ofn} as output file name for rnx2rtkp process")
+
     cmd_rnx2rtkp.extend(["-o", pos_ofn])
-    
+
     # TODO Get effective log level
     """
     if logger.getEffectiveLevel(....) == "DEBUG":
@@ -106,6 +108,11 @@ def rnx2rtkp_ppk(
         cmd_rnx2rtkp.extend(["-x", "2"])
     """
 
+    logger.info(
+        f"Running rnx2rtkp with config file {parsed_args.rnx2rtkp_config_fn}, \
+    base station XYZ {parsed_args.base_coord_X}, {parsed_args.base_coord_Y}, {parsed_args.base_coord_Z}, \
+    the start time {parsed_args.datetime_start}, the end time {parsed_args.datetime_end}"
+    )
     logger.debug(f"Running rnx2rtkp for PPK solution with command: {cmd_rnx2rtkp}")
 
     # run rnx2rtkp
@@ -114,10 +121,11 @@ def rnx2rtkp_ppk(
     except subprocess.CalledProcessError as e:
         logger.error(f"rnx2rtkp failed with error code {e.returncode}")
         sys.exit(ERROR_CODES["E_PROCESS"])
-    
+
     logger.info(f"Finished calculating PPK solution. Written file to {pos_ofn}")
-    
+
     return pos_ofn
+
 
 if __name__ == "__main__":
 
