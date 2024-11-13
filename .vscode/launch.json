@@ -78,7 +78,7 @@
                 "/home/amuls/cylab/TESTDATA/data2test/data/BRUX00BEL0_GREC.nav",
                 "-vvv",
                 "--gnss",
-                "GREC",
+                "R",
             ]
         },
     ]

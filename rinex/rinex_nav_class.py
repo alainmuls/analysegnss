@@ -156,7 +156,7 @@ class RINEX_NAV(RINEX):
 
         # obtained tabular navigation files for selected GNSS systems, process each GNSS sub-DataFrame
         for (gnss, nav_type), tabnav_df in nav_dict.items():
-            self.logger.debug("\n\n" + "=" * 25)
+            print("\n\n" + "=" * 25)
             if self.logger is not None:
                 with pl.Config(
                     tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
@@ -195,7 +195,7 @@ class RINEX_NAV(RINEX):
             for i, value in enumerate(first_row):
                 self.logger.debug(f"Column {i+1}: {value} | {new_columns[i]}")
                 if (i + 1) % 4 == 0:
-                    self.logger.debug()
+                    self.logger.debug("\n")
 
             # rename the columns of the DataFrame
             tabnav_df.columns = new_columns
