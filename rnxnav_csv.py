@@ -40,7 +40,7 @@ def rnxnav_csv(argv: list):
         logger.error(f"Error creating SBF object: {e}")
         sys.exit(ERROR_CODES["E_NO_RINEX_NAV"])
 
-    rnxnav.gfzrnx_tabnav()
+    rnxnav_dict = rnxnav.gfzrnx_tabnav()
 
 
 if __name__ == "__main__":

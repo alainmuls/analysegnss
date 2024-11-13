@@ -6,7 +6,8 @@ import polars as pl
 from rinex.rinex_class import RINEX
 
 from config import GNSS_DICT
-from utils.utilities import str_green
+import rinex.rinex_column_names as rcn
+from utils.utilities import str_green, str_red
 
 
 @dataclass
@@ -19,41 +20,6 @@ class RINEX_NAV(RINEX):
 
     rnxnav_fn: str = field(
         default=None, metadata={"help": "RINEX navigation file name"}
-    )
-
-    # Define column names for different GNSS systems
-    _gnav_col_names = (
-        "af0",
-        "af1",
-        "af2",
-        "IODE",
-        "Crs",
-        "deltaN",
-        "M0",
-        "Cuc",
-        "eccen",
-        "Cus",
-        "sqrtA",
-        "toe",
-        "Cic",
-        "Omega0",
-        "Cis",
-        "Io",
-        "Crc",
-        "omega",
-        "omegaDot",
-        "IDOT",
-        "CodesL2",
-        "WN",
-        "L2Pflag",
-        "SVacc",
-        "health",
-        "TGD",
-        "IODC",
-        "toc",
-        "Fit",
-        "Reserved1",
-        "Reserved2",
     )
 
     def __post_init__(self):
@@ -113,7 +79,7 @@ class RINEX_NAV(RINEX):
             logger (Logger): logger utility
 
         Returns:
-            dict: dict of dataframes per GNSS containing the tab_obs view of the
+            dict: dict of dataframes per tuple GNSS/NavType containing the tab_obs view of the
             RINEX navigation file
         """
         # arguments for converting rinex observation file to tab_obs
@@ -129,8 +95,6 @@ class RINEX_NAV(RINEX):
             "wwwwd",
             "-tab_time",
             "sod",
-            # "-fout",
-            # tabobs_fn,
         ]
 
         # Add GNSS system filter if specified
@@ -150,55 +114,103 @@ class RINEX_NAV(RINEX):
             result = subprocess.run(
                 gfzrnx_args, capture_output=True, text=True, check=True
             )
-            print(f"reulst.stdout = {result.stdout}")
-            # Filter only NAV lines from result.stdout
-            nav_lines = [
-                line for line in result.stdout.splitlines() if line.startswith("NAV")
-            ]
-            # cleaned_lines = []
-            # for line in nav_lines:
-            #     # Remove extra quotes and commas at the end
-            #     line = line.rstrip(",'")
-            #     # Add quote at the start of NAV
-            #     if not line.startswith("'"):
-            #         line = "'" + line
-            #     cleaned_lines.append(line)
-
-            # for line in cleaned_lines[:5]:
-            #     print(line)
-
-            nav_data = "\n".join(nav_lines)
-            print(f"nav_data = \n{nav_data[:5]}")
-
-            # Read into DataFrame
-            df_all_nav = pl.read_csv(
-                StringIO(nav_data), has_header=False, separator=",", skip_rows=1
-            )
-            with pl.Config(
-                tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-            ):
-                self.logger.debug(
-                    f"Converted RINEX navigation file to tabular navigation file: \n{df_all_nav}"
-                )
-
-            # Group by GNSS type (column 'S') and create dictionary of DataFrames
-            nav_dict = {
-                gnss_type: group_df
-                for gnss_type, group_df in df_all_nav.group_by("S", maintain_order=True)
-            }
-            with pl.Config(
-                tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-            ):
-                for gnss, tabnav_df in nav_dict.items():
-                    self.logger.debug(
-                        f"Converted RINEX navigation file for {gnss} to tabular navigation file: \n{tabnav_df}"
-                    )
+            # print(f"result.stdout = {result.stdout[:1500]}")
 
         except subprocess.CalledProcessError as e:
             if self.logger:
-                self.logger.error(f"gfzrnx conversion failed: {e.stderr}")
-            raise RuntimeError(f"gfzrnx conversion failed: {e.stderr}")
+                self.logger.error(f"{str_red('gfzrnx conversion failed')}: {e.stderr}")
+            raise RuntimeError(f"{str_red('gfzrnx conversion failed')}: {e.stderr}")
         except PermissionError as e:
             if self.logger:
-                self.logger.error(f"Permission error running gfzrnx: {str(e)}")
-            raise PermissionError(f"Permission error running gfzrnx: {str(e)}")
+                self.logger.error(
+                    f"{str_red('Permission error running gfzrnx')}: {str(e)}"
+                )
+            raise PermissionError(
+                f"{str_red('Permission error running gfzrnx')}: {str(e)}"
+            )
+
+        # read the first line of the output to get initial part of column names
+        hdr_line = result.stdout.split("\n")[0]
+
+        # Read into DataFrame skipping the first line
+        df_all_nav = pl.read_csv(
+            StringIO(result.stdout), has_header=False, separator=",", skip_rows=1
+        )
+        with pl.Config(
+            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+        ):
+            self.logger.debug(
+                f"Converted RINEX navigation file to tabular navigation file for "
+                f"{str_green(', '.join([GNSS_DICT[gnss] for gnss in self.gnss]))}: \n"
+                f"{df_all_nav}"
+            )
+
+        # Group by GNSS type (column_2) and navigation type (column_7) and create
+        # dictionary of DataFrames, key of dataframe is the tuple (gnss_type, nav_type)
+        nav_dict = {
+            (gnss_type, nav_type): group_df
+            for (gnss_type, nav_type), group_df in df_all_nav.group_by(
+                ["column_2", "column_7"], maintain_order=True
+            )
+        }
+
+        # obtained tabular navigation files for selected GNSS systems, process each GNSS sub-DataFrame
+        for (gnss, nav_type), tabnav_df in nav_dict.items():
+            self.logger.debug("\n\n" + "=" * 25)
+            if self.logger is not None:
+                with pl.Config(
+                    tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+                ):
+                    self.logger.debug(
+                        f"Correcting headers of navigation dataframe for "
+                        f"{str_green(GNSS_DICT[gnss])} - {str_green(nav_type)}: \n"
+                        f"{tabnav_df}"
+                    )
+            # # set correct columns names to each DataFrame
+            # for (gnss, nav_type), tabnav_df in nav_dict.items():
+            self.logger.debug(
+                f"hdr_line.split(',DATA')[0] = {hdr_line.split(',DATA')[0]} |"
+                f" {len(hdr_line.split(',DATA')[0].split(','))}"
+            )
+            self.logger.debug(
+                f"get_nav_param_names = {rcn.get_nav_param_names(gnss, nav_type)} |"
+                f" {len(rcn.get_nav_param_names(gnss, nav_type).split(','))}"
+            )
+
+            colnames_hdr = hdr_line.split(",DATA")[0].split(",")
+            self.logger.debug(f"colnames_hdr = {colnames_hdr} | {len(colnames_hdr)}")
+            colnames_nav = rcn.get_nav_param_names(gnss, nav_type).split(",")
+            self.logger.debug(f"colnames_nav = {colnames_nav} | {len(colnames_nav)}")
+            new_columns = colnames_hdr + colnames_nav
+            self.logger.debug(f"new_columns = {new_columns} | {len(new_columns)}")
+            # get index number of  column named "IDOT"
+            # idot_index = new_columns.index("IDOT")
+            # self.logger.debug(f"idot_index = {idot_index}")
+            self.logger.debug(
+                f"tabnav_df.columns = {tabnav_df.columns} | {len(tabnav_df.columns)}"
+            )
+
+            # self.logger.debug the first row of the DataFrame element by element
+            first_row = tabnav_df.row(0)
+            for i, value in enumerate(first_row):
+                self.logger.debug(f"Column {i+1}: {value} | {new_columns[i]}")
+                if (i + 1) % 4 == 0:
+                    self.logger.debug()
+
+            # rename the columns of the DataFrame
+            tabnav_df.columns = new_columns
+
+            # sent to logger
+            if self.logger is not None:
+                with pl.Config(
+                    tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+                ):
+                    self.logger.debug(
+                        f"tabnav_df[{str_green(GNSS_DICT[gnss])}, {str_green(nav_type)}] = \n{tabnav_df}"
+                    )
+
+            # replace the tabnav_df on nav_dict after having renamed the columns
+            nav_dict[(gnss, nav_type)] = tabnav_df
+
+        # return the dictionary of DataFrames with keys of tuples (gnss, nav_type)
+        return nav_dict
