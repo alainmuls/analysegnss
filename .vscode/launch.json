@@ -63,6 +63,22 @@
                 "--rnx_fn",
                 "/home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rnx/base00BEL_R_20242751021_01H_MN.rnx",
                 "-vvv",
+                "--gnss",
+                "R",
+            ]
+        },
+        {
+            "name": "Python Debugger: rnxnav_csv BRUX RTCM 2024/06/14 (?) (rnx converted)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "rnxnav_csv.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--rnx_fn",
+                "/home/amuls/cylab/TESTDATA/data2test/data/BRUX00BEL0_GREC.nav",
+                "-vvv",
+                "--gnss",
+                "GREC",
             ]
         },
     ]
