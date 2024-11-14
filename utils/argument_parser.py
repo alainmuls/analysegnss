@@ -377,13 +377,13 @@ def argument_parser_rnxnav_csv(args: list) -> argparse.Namespace:
         default=None,
     )
 
-    parser.add_argument(
-        "--csv_fn",
-        help="CSV navigation filename (defaults to extension csv instead of rnx)",
-        type=str,
-        required=False,
-        default=None,
-    )
+    # parser.add_argument(
+    #     "--csv_fn",
+    #     help="CSV navigation filename (defaults to extension csv instead of rnx)",
+    #     type=str,
+    #     required=False,
+    #     default=None,
+    # )
 
     parser.add_argument(
         "--gnss",
