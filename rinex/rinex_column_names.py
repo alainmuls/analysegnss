@@ -25,7 +25,7 @@ gps_nav_col_descriptions = (
     ("Io", "Inclination Angle at Reference Time"),
     ("Crc", "Amplitude of Cosine Harmonic Correction Term to Orbit Radius"),
     ("omega", "Argument of Perigee"),
-    ("omegaDot", "Rate of Right Ascension"),
+    ("OMEGA_DOT", "Rate of Right Ascension"),
     ("IDOT", "Rate of Inclination Angle"),
     ("CodesL2", "Codes on L2 Channel"),
     ("WN", "GPS Week Number"),
