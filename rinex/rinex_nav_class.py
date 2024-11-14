@@ -204,7 +204,7 @@ class RINEX_NAV(RINEX):
                         (
                             pl.col("PRN")
                             .str.extract(r"(\d+)")
-                            .cast(pl.Int32)
+                            .cast(pl.Int16)
                             .alias("PRN")
                         ),
                     ]
