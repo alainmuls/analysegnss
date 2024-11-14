@@ -97,10 +97,6 @@ class RINEX_NAV(RINEX):
             "sod",
         ]
 
-        # Add GNSS system filter if specified
-        if self.gnss:
-            gfzrnx_args.extend(["-satsys", "".join(self.gnss)])
-
         # Add time window if specified
         if self.start_time:
             gfzrnx_args.extend(["-ts", self.start_time.strftime("%H:%M:%S")])
@@ -110,9 +106,32 @@ class RINEX_NAV(RINEX):
         if self.logger is not None:
             self.logger.debug(f"running: {' '.join(gfzrnx_args)}")
 
+        # we have to process GLONASS apart from any other GNSS
+        gnss_nav_dict = {}
+
+        # Separate GLONASS from other GNSS systems
+        other_gnss = [g for g in self.gnss if g != "R"]
+        has_glonass = "R" in self.gnss
+
+        # Add other GNSS systems first if present
+        if other_gnss:
+            gfzrnx_args.extend(["-satsys", "".join(other_gnss)])
+            # process GEC systems without Glonass
+            gec_nav_dict = self._gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
+            gnss_nav_dict.update(gec_nav_dict)
+        # Add GLONASS separately if present
+        if has_glonass:
+            gfzrnx_args.extend(["-satsys", "R"])
+            # Process GLONASS separately
+            r_nav_dict = self._gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
+            gnss_nav_dict.update(r_nav_dict)
+
+        return gnss_nav_dict
+
+    def _gnss_nav_to_tabnav(self, gfzrnx_opts: list) -> dict:
         try:
             result = subprocess.run(
-                gfzrnx_args, capture_output=True, text=True, check=True
+                gfzrnx_opts, capture_output=True, text=True, check=True
             )
             # print(f"result.stdout = {result.stdout[:1500]}")
 
@@ -136,14 +155,14 @@ class RINEX_NAV(RINEX):
         df_all_nav = pl.read_csv(
             StringIO(result.stdout), has_header=False, separator=",", skip_rows=1
         )
-        with pl.Config(
-            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-        ):
-            self.logger.debug(
-                f"Converted RINEX navigation file to tabular navigation file for "
-                f"{str_green(', '.join([GNSS_DICT[gnss] for gnss in self.gnss]))}: \n"
-                f"{df_all_nav}"
-            )
+        # with pl.Config(
+        #     tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+        # ):
+        #     self.logger.debug(
+        #         f"Converted RINEX navigation file to tabular navigation file for "
+        #         f"{str_green(', '.join([GNSS_DICT[gnss] for gnss in self.gnss]))}: \n"
+        #         f"{df_all_nav}"
+        #     )
 
         # Group by GNSS type (column_2) and navigation type (column_7) and create
         # dictionary of DataFrames, key of dataframe is the tuple (gnss_type, nav_type)
@@ -156,49 +175,43 @@ class RINEX_NAV(RINEX):
 
         # obtained tabular navigation files for selected GNSS systems, process each GNSS sub-DataFrame
         for (gnss, nav_type), tabnav_df in nav_dict.items():
-            print("\n\n" + "=" * 25)
-            if self.logger is not None:
-                with pl.Config(
-                    tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-                ):
-                    self.logger.debug(
-                        f"Correcting headers of navigation dataframe for "
-                        f"{str_green(GNSS_DICT[gnss])} - {str_green(nav_type)}: \n"
-                        f"{tabnav_df}"
-                    )
-            # # set correct columns names to each DataFrame
-            # for (gnss, nav_type), tabnav_df in nav_dict.items():
-            self.logger.debug(
-                f"hdr_line.split(',DATA')[0] = {hdr_line.split(',DATA')[0]} |"
-                f" {len(hdr_line.split(',DATA')[0].split(','))}"
-            )
-            self.logger.debug(
-                f"get_nav_param_names = {rcn.get_nav_param_names(gnss, nav_type)} |"
-                f" {len(rcn.get_nav_param_names(gnss, nav_type).split(','))}"
-            )
-
+            # if self.logger is not None:
+            #     with pl.Config(
+            #         tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+            #     ):
+            #         self.logger.debug(
+            #             f"Correcting headers of navigation dataframe for "
+            #             f"{str_green(GNSS_DICT[gnss])} - {str_green(nav_type)}: \n"
+            #             f"{tabnav_df}"
+            #         )
+            # set correct columns names to each DataFrame
             colnames_hdr = hdr_line.split(",DATA")[0].split(",")
-            self.logger.debug(f"colnames_hdr = {colnames_hdr} | {len(colnames_hdr)}")
             colnames_nav = rcn.get_nav_param_names(gnss, nav_type).split(",")
-            self.logger.debug(f"colnames_nav = {colnames_nav} | {len(colnames_nav)}")
             new_columns = colnames_hdr + colnames_nav
-            self.logger.debug(f"new_columns = {new_columns} | {len(new_columns)}")
-            # get index number of  column named "IDOT"
-            # idot_index = new_columns.index("IDOT")
-            # self.logger.debug(f"idot_index = {idot_index}")
-            self.logger.debug(
-                f"tabnav_df.columns = {tabnav_df.columns} | {len(tabnav_df.columns)}"
-            )
-
-            # self.logger.debug the first row of the DataFrame element by element
-            first_row = tabnav_df.row(0)
-            for i, value in enumerate(first_row):
-                self.logger.debug(f"Column {i+1}: {value} | {new_columns[i]}")
-                if (i + 1) % 4 == 0:
-                    self.logger.debug("\n")
 
             # rename the columns of the DataFrame
             tabnav_df.columns = new_columns
+
+            # remove duplicate rows from tabnav_df
+            tabnav_df = tabnav_df.unique()
+
+            # adjust the DATE/TIME to get WKNR and TOW columns
+            tabnav_df = (
+                tabnav_df.with_columns(
+                    [
+                        (pl.col("DATE") // 10).alias("WKNR"),
+                        (pl.col("DATE") % 10 * 86400 + pl.col("TIME")).alias("TOW"),
+                        (
+                            pl.col("PRN")
+                            .str.extract(r"(\d+)")
+                            .cast(pl.Int32)
+                            .alias("PRN")
+                        ),
+                    ]
+                )
+                .drop(["DATE", "TIME", "#HD", "NAV"])
+                .select(["WKNR", "TOW", pl.all().exclude(["WKNR", "TOW"])])
+            )
 
             # sent to logger
             if self.logger is not None:

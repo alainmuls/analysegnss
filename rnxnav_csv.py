@@ -6,10 +6,10 @@ from logging import Logger
 
 import polars as pl
 
-from config import ERROR_CODES
+from config import ERROR_CODES, GNSS_DICT
 from rinex.rinex_nav_class import RINEX_NAV
 from utils import argument_parser, init_logger
-from utils.utilities import str_green
+from utils.utilities import str_green, str_yellow
 
 
 def rnxnav_csv(argv: list):
@@ -40,7 +40,31 @@ def rnxnav_csv(argv: list):
         logger.error(f"Error creating SBF object: {e}")
         sys.exit(ERROR_CODES["E_NO_RINEX_NAV"])
 
-    rnxnav_dict = rnxnav.gfzrnx_tabnav()
+    # convert RINEX navigation file to tabular format for selected GNSS
+    gnss_nav_dict = rnxnav.gfzrnx_tabnav()
+
+    # get directory part and filename without extension part of the RINEX navigation file
+    rnxnav_dir, rnxnav_fn = os.path.split(args_parsed.rnx_fn)
+    # change to the directory part of the RINEX navigation file in try block
+    # so that the CSV file is created in the same directory as the RINEX navigation file
+    os.chdir(rnxnav_dir)
+
+    # convert each GNSS / Navigation type dataframe to CSV file
+    for (gnss, nav_type), nav_df in gnss_nav_dict.items():
+        csv_fn = f"{rnxnav_dir}/{os.path.basename(rnxnav_fn).split('.')[0]}_{GNSS_DICT[gnss]}_{nav_type}.csv"
+        if logger:
+            logger.warning(
+                f"Creating for {str_green(GNSS_DICT[gnss])}-{str_green(nav_type)}: {str_yellow(csv_fn)}"
+            )
+            print(
+                f"Creating for {str_green(GNSS_DICT[gnss])}-{str_green(nav_type)}: {str_yellow(csv_fn)}"
+            )
+
+        nav_df.write_csv(
+            csv_fn,
+            separator=",",
+            include_header=True,
+        )
 
 
 if __name__ == "__main__":
