@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
+import logging
 import os
 import sys
-from logging import Logger
 
 import polars as pl
 
@@ -56,6 +56,8 @@ def rnxnav_csv(argv: list):
             logger.warning(
                 f"Creating for {str_green(GNSS_DICT[gnss])}-{str_green(nav_type)}: {str_yellow(csv_fn)}"
             )
+
+        if rnxnav._console_loglevel > logging.WARNING:
             print(
                 f"Creating for {str_green(GNSS_DICT[gnss])}-{str_green(nav_type)}: {str_yellow(csv_fn)}"
             )
