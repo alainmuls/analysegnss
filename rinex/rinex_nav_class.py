@@ -7,7 +7,7 @@ from rinex.rinex_class import RINEX
 
 from config import GNSS_DICT
 import rinex.rinex_column_names as rcn
-from utils.utilities import str_green, str_red
+from utils.utilities import str_green, str_red, str_yellow
 
 
 @dataclass
@@ -137,8 +137,15 @@ class RINEX_NAV(RINEX):
 
         except subprocess.CalledProcessError as e:
             if self.logger:
-                self.logger.error(f"{str_red('gfzrnx conversion failed')}: {e.stderr}")
-            raise RuntimeError(f"{str_red('gfzrnx conversion failed')}: {e.stderr}")
+                gnss_list = "".join(self.gnss)
+                self.logger.error(
+                    f"{str_red('gfzrnx conversion failed, check availability')} of {str_yellow(gnss_list)} "
+                    f"in {str_yellow(self.rnxnav_fn)}\ngfzrnx error message:\n{e.stderr}"
+                )
+            raise RuntimeError(
+                f"{str_red('gfzrnx conversion failed, check availability')} of {str_yellow(gnss_list)} "
+                f"in {str_yellow(self.rnxnav_fn)}\ngfzrnx error message:\n{e.stderr}"
+            )
         except PermissionError as e:
             if self.logger:
                 self.logger.error(
