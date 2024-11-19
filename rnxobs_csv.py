@@ -33,7 +33,7 @@ def rnxobs_csv(argv: list):
     # create the RINEX object
     try:
         rnxobs = RINEX_OBS(
-            rnxobs_fn=args_parsed.rnx_fn,
+            rnxobs_fn=args_parsed.obs_fn,
             gnss=args_parsed.gnss,
             logger=logger,
         )

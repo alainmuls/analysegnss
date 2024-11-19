@@ -32,7 +32,7 @@ def rnxnav_csv(argv: list):
     # create the RINEX object
     try:
         rnxnav = RINEX_NAV(
-            rnxnav_fn=args_parsed.rnx_fn,
+            rnxnav_fn=args_parsed.nav_fn,
             gnss=args_parsed.gnss,
             logger=logger,
         )

@@ -312,7 +312,7 @@ def argument_parser_rnxobs_csv(args: list) -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--rnx_fn",
+        "--obs_fn",
         help="RINEX observation filename",
         type=str,
         required=True,
@@ -321,7 +321,7 @@ def argument_parser_rnxobs_csv(args: list) -> argparse.Namespace:
 
     parser.add_argument(
         "--csv_fn",
-        help="CSV observation filename (defaults to extension csv instead of rnx)",
+        help="CSV observation filename (defaults to filename with extension csv)",
         type=str,
         required=False,
         default=None,
@@ -370,20 +370,70 @@ def argument_parser_rnxnav_csv(args: list) -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--rnx_fn",
+        "--nav_fn",
         help="RINEX navigation filename",
         type=str,
         required=True,
         default=None,
     )
 
-    # parser.add_argument(
-    #     "--csv_fn",
-    #     help="CSV navigation filename (defaults to extension csv instead of rnx)",
-    #     type=str,
-    #     required=False,
-    #     default=None,
-    # )
+    parser.add_argument(
+        "--gnss",
+        help="GNSS systems to convert (default: GE, select between G, R, E, C)",
+        type=str,
+        required=False,
+        default="GE",
+    )
+
+    # allow argument completion
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args(args)
+
+    return args
+
+
+def argument_parser_rnx_csv(args: list) -> argparse.Namespace:
+    """parses the arguments
+
+    Args:
+        argv (list): list of arguments
+
+    Returns:
+        argparse.Namespace: parsed arguments
+    """
+    baseName = str_yellow(os.path.basename(__file__))
+
+    help_txt = (
+        baseName
+        + " Convert RINEX Obs & Nav file to CSV file similar to those created by rtcm3_parser.py"
+    )
+
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_txt)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+    )
+
+    parser.add_argument(
+        "--obs_fn",
+        help="RINEX observation filename",
+        type=str,
+        required=True,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--nav_fn",
+        help="RINEX navigation filename",
+        type=str,
+        required=True,
+        default=None,
+    )
 
     parser.add_argument(
         "--gnss",
