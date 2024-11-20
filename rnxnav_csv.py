@@ -37,14 +37,16 @@ def rnxnav_csv(argv: list):
             logger=logger,
         )
     except Exception as e:
-        logger.error(f"Error creating SBF object: {e}")
+        if logger is not None:
+            logger.error(f"Error creating SBF object: {e}")
+        sys.stderr.write(f"Error creating SBF object: {e}\n")
         sys.exit(ERROR_CODES["E_NO_RINEX_NAV"])
 
     # convert RINEX navigation file to tabular format for selected GNSS
     gnss_nav_dict = rnxnav.gfzrnx_tabnav()
 
     # get directory part and filename without extension part of the RINEX navigation file
-    rnxnav_dir, rnxnav_fn = os.path.split(args_parsed.rnx_fn)
+    rnxnav_dir, rnxnav_fn = os.path.split(args_parsed.nav_fn)
     # change to the directory part of the RINEX navigation file in try block
     # so that the CSV file is created in the same directory as the RINEX navigation file
     os.chdir(rnxnav_dir)
@@ -54,12 +56,12 @@ def rnxnav_csv(argv: list):
         csv_fn = f"{rnxnav_dir}/{os.path.basename(rnxnav_fn).split('.')[0]}_{GNSS_DICT[gnss]}_{nav_type}.csv"
         if logger:
             logger.warning(
-                f"Creating for {str_green(GNSS_DICT[gnss])}-{str_green(nav_type)}: {str_yellow(csv_fn)}"
+                f"Created for {str_green(GNSS_DICT[gnss])}-{str_green(nav_type)}: {str_yellow(csv_fn)}"
             )
 
         if rnxnav._console_loglevel > logging.WARNING:
             print(
-                f"Creating for {str_green(GNSS_DICT[gnss])}-{str_green(nav_type)}: {str_yellow(csv_fn)}"
+                f"Created for {str_green(GNSS_DICT[gnss])}-{str_green(nav_type)}: {str_yellow(csv_fn)}"
             )
 
         nav_df.write_csv(
