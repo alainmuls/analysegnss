@@ -113,6 +113,11 @@ if [ -n "${END_EPOCH}" ]; then
     fi
 fi
 
+# if the SBF block is Meas3Ranges add option  --extractGenMeas to cmd_bin2asc
+if [ "${MSG_BLOCK}" = "Meas3Ranges" ]; then
+    cmd_bin2asc="${cmd_bin2asc} --extractGenMeas"
+fi
+
 # add output directory to cmd_bin2asc
 cmd_bin2asc="${cmd_bin2asc} -p ${OUT_DIR}"
 
