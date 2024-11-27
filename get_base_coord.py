@@ -68,7 +68,7 @@ def get_base_coord_from_sbf(parsed_args: argparse.Namespace, logger: Logger) -> 
                 df_sbfBaseStation.select(["X [m]", "Y [m]", "Z [m]"]).row(-1)
             )
             logger.warning(
-                f"Time instant not found in SBF file. Using last row of dataframe. {base_coord}"
+                f"Time instant not found in SBF file. Using last row of dataframe with the XYZ coordinates: {base_coord}"
             )
 
     else:

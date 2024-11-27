@@ -281,9 +281,7 @@ def ebh_line_thin_out(
     #  Thinning out the dataframe to keep positions every 0.5 meters
 
     # This is done first by applying the modulo operator of 0.5 on dist0
-    df_line = df_line.with_columns(
-        dist0_mod05=pl.col("dist0").map_elements(lambda x: x % 0.5, return_dtype=float)
-    ).lazy()
+    df_line = df_line.with_columns(dist0_mod05=pl.col("dist0") % 0.5).lazy()
 
     # Then, we calculate the difference between the current value and the previous values
     df_line = df_line.with_columns(dist_mod05_diff=pl.col("dist0_mod05").diff()).lazy()
@@ -353,7 +351,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
         #)
         df_pos = pos_df.select(["DT", "Type", "NrSV", "UTM.E", "UTM.N", "orthoH"])
     else:
-        logger.error("No processing type selected")
+        logger.error("No processing type selected or no input file provided. EXITING.")
         sys.exit(ERROR_CODES["E_FILE_NOT_EXIST"])
 
     with pl.Config(tbl_cols=-1):
@@ -404,6 +402,10 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
                 
         # name the file according to the ebh line key
         ebh_line_fn = f"{parsed_args.desc}_{ebh_key}.csv"
+        print(
+            f"Writing CSV AssurTool file for {str_yellow(ebh_key)} to "
+            f"{str_yellow(ebh_line_fn)}\n"
+        )
         logger.info(
             f"Writing CSV AssurTool file for {str_yellow(ebh_key)} to "
             f"{str_yellow(ebh_line_fn)}\n"

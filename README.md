@@ -547,7 +547,8 @@ options:
 This script extracts base station coordinates from the BaseStation1 SBF block, which contains the coordinates of the base station used for differential corrections.
 
 Key functions:
-- `get_base_coord_from_sbf(parsed_args, logger)`: Main function that:
+- `get_base_coord_from_sbf(parsed_args, logger)`: 
+    Main function that:
   - Creates SBF object from input file
   - Extracts BaseStation1 block
   - Retrieves base coordinates at specified datetime
@@ -566,30 +567,119 @@ options:
   -v, --verbose         verbose level... repeat up to three times.
   --sbf_ifn SBF_IFN     input SBF filename
   --base_corr BASE_CORR base station corrections (RTCM or RINEX)
-  --conf CONF           PPK configuration file
-  --desc DESC          description of EBH lines project
+  --rnx2rtkp_config_fn  PPK configuration file
+  --desc DESC           description of EBH lines project
   --log_dest LOG_DEST   directory for logging output
 ```
 
-This script serves as a main launcher for the EBH processing workflow. It:
-1. Extracts EBH timings from SBF files
-2. Analyzes RTK solution quality
-3. Decides whether to use RTK or PPK solution based on quality metrics
-4. Launches PPK processing if needed
-5. Creates ASSUR-formatted output files for each EBH line
+This script orchestrates the complete EBH (Equivalent Bump Height) processing workflow. It implements a quality-based decision system for processing GNSS data:
 
-The script implements a quality-based decision system:
-- If RTK quality is sufficient (>99% fixed solutions), it uses RTK results
-- For single line failures, it calculates PPK only for the failed line
-- For multiple line failures, it recalculates all lines using PPK
 
-Key functions:
+__Key features:__
+
+- Automated RTK/PPK processing selection based on quality metrics
+- Handling of single vs multiple line failures
+- Integration with RTKLIB for PPK processing
+- ASSUR-formatted output generation
+
+The workflow consists of several stages:
+
+- EBH timing extraction from SBF files
+- RTK solution quality analysis
+- Processing mode decision (RTK vs PPK)
+- PPK processing when needed
+- ASSUR-compatible output generation
+ 
+Quality-based decision criteria:
+
+- RTK acceptance threshold: >99% fixed solutions
+- Single line failure: PPK only for failed line
+- Multiple line failures: Full PPK reprocessing
+
+__Key functions:__
+
 - `ebh_process_launcher(parsed_args, logger)`: Main orchestrator function that coordinates the entire EBH workflow
 - `rtk_ppk_qual_check(qual_analysis, RTK_mode, rejection_level, logger)`: Analyzes solution quality and determines processing strategy
 - `do_ppk_by_decision(rejected_rtk_lines, rtk_qual_decision, ebh_timings, parsed_args, logger)`: Handles PPK processing based on quality analysis
 - `get_rnx_files(parsed_args, logger)`: Creates RINEX observation and navigation files from SBF data
 
+__Example Usage__
 
+```bash
+launch_ebh_process.py --sbf_ifn data.sbf --base_corr base_MO.rnx \
+--conf ppk.conf --desc "Project A" -vv
+```
+The script returns:
+
+- Quality analysis statistics
+- Processing decisions for each line
+- ASSUR-formatted output files
+- Comprehensive logging information
+
+```bash
+(py-gnss) pj@pj-Book:~/Documents/GNSS4Def/gitlab/analysegnss$ ./launch_ebh_process.py --sbf_ifn /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-10-01-Keiheuvel_Demo/rover/2024-10-01-Keiheuvel-5lijnen.24_ -cfg rtkpos/rnx2rtkp_config/rnx2rtkp_PPK_el10_nomask_GE_tow.conf --base_corr /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-10-01-Keiheuvel_Demo/base/base00BEL_R_20242751022_01H_05S_MO.rnx -v
+---------- START of launch_ebh_process (process logged @ /tmp/logs/) ----------
+2024-11-27 18:37:33,040 [WARNING](launch_ebh_process:logger_setup:81): ---------- START of launch_ebh_process (process logged @ /tmp/logs/) ----------
+2024-11-27 18:37:35,647 [WARNING](launch_ebh_process:add_columns:523): 	collecting the dataframe. Be patient.
+---------- START of rtk_pvtgeod (process logged @ /tmp/logs/) ----------
+2024-11-27 18:37:35,655 [WARNING](rtk_pvtgeod:logger_setup:81): ---------- START of rtk_pvtgeod (process logged @ /tmp/logs/) ----------
+2024-11-27 18:37:38,705 [WARNING](rtk_pvtgeod:add_columns:523): 	collecting the dataframe. Be patient.
+Writing CSV AssurTool file for CL to ebh_line_CL.csv
+
+Writing CSV AssurTool file for l2 to ebh_line_l2.csv
+
+Writing CSV AssurTool file for l3 to ebh_line_l3.csv
+
+Writing CSV AssurTool file for l4 to ebh_line_l4.csv
+
+Writing CSV AssurTool file for l5 to ebh_line_l5.csv
+
+2024-11-27 18:37:40,692 [WARNING](launch_ebh_process:rtk_ppk_qual_check:111): ebh line CL is rejected with the quality of 98.36
+
+1-EBH-NOK
+The ebh quality check decides that the line CL does not comply according to the rejection value of 99.
+
+2024-11-27 18:37:40,693 [WARNING](launch_ebh_process:rtk_ppk_qual_check:143): The ebh quality check decides that the line CL does not comply according to the rejection value of 99.
+Starting PPK process for rejected EBH line
+2024-11-27 18:37:40,693 [WARNING](launch_ebh_process:do_ppk_by_decision:200): Solution for the ebh line ['CL'] is not of sufficient quality.Calculating this single line in PPK mode with timings [(2334.0, 210891.0), (2334.0, 211208.0)]
+2024-11-27 18:37:40,693 [WARNING](launch_ebh_process:get_rnx_files:387): RNX obs and nav files already exist in /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-10-01-Keiheuvel_Demo/rover/2024-10-01-Keiheuvel-5lijnen_RNX. Skipping running sbf2rin.sh
+2024-11-27 18:37:43,289 [WARNING](launch_ebh_process:add_columns:523): 	collecting the dataframe. Be patient.
+2024-11-27 18:37:43,290 [WARNING](launch_ebh_process:get_base_coord_from_sbf:70): Time instant not found in SBF file. Using last row of dataframe with the XYZ coordinates: (3990013.004, 364269.583, 4946101.954)
+---------- START of ppk_rnx2rtkp (process logged @ /tmp/logs/) ----------
+2024-11-27 18:38:14,392 [WARNING](ppk_rnx2rtkp:logger_setup:81): ---------- START of ppk_rnx2rtkp (process logged @ /tmp/logs/) ----------
+Processing info:
+{
+    "program": "RTKLIB ver.demo5 b34i",
+    "obs start": "2024/10/01 10:34:51.0 GPST (week2334 210891.0s)",
+    "obs end": "2024/10/01 10:40:08.0 GPST (week2334 211208.0s)",
+    "pos mode": "Kinematic",
+    "freqs": "L1+L2/E5b+L5",
+    "solution": "Combined-Phase Reset",
+    "elev mask": "10.0 deg",
+    "dynamics": "on",
+    "tidecorr": "off",
+    "ionos opt": "Broadcast",
+    "tropo opt": "Saastamoinen",
+    "ephemeris": "Broadcast",
+    "navi sys": "GPS Galileo",
+    "amb res": "Fix and Hold",
+    "val thres": "2.0",
+    "antenna1": "( 0.0000  0.0000  0.0000)",
+    "antenna2": "( 0.0000  0.0000  0.0000)",
+    "ref pos": "51.178778806   5.216377034   83.2076",
+    "rover_obs": "/home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-10-01-Keiheuvel_Demo/rover/2024-10-01-Keiheuvel-5lijnen_RNX/134200BEL_R_20242751023_01H_10Z_MO.rnx",
+    "base_obs": "/home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-10-01-Keiheuvel_Demo/base/base00BEL_R_20242751022_01H_05S_MO.rnx",
+    "brdc_nav": "/home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-10-01-Keiheuvel_Demo/rover/2024-10-01-Keiheuvel-5lijnen_RNX/134200BEL_R_20242751023_01H_MN.rnx"
+}
+2024-11-27 18:38:14,554 [WARNING](launch_ebh_process:ebh_lines_map_angle:155): No data found for 2024/10/01 10:43:24. Breaking.
+2024-11-27 18:38:14,554 [WARNING](launch_ebh_process:ebh_lines_map_angle:155): No data found for 2024/10/01 10:49:44. Breaking.
+2024-11-27 18:38:14,554 [WARNING](launch_ebh_process:ebh_lines_map_angle:155): No data found for 2024/10/01 10:56:19. Breaking.
+2024-11-27 18:38:14,555 [WARNING](launch_ebh_process:ebh_lines_map_angle:155): No data found for 2024/10/01 11:02:10. Breaking.
+Writing CSV AssurTool file for CL to ebh_line_CL.csv
+
+Solution for all ebh lines is of sufficient quality.
+ASSUR EBH files -> OK.
+```
 
 ### The script `launch_rnx2rtkp.py`
 
@@ -606,7 +696,7 @@ options:
   --obs OBS            RINEX observation file
   --nav NAV            RINEX navigation file
   --base_corr BASE_CORR
-                       base correction file (RTCM3 or RNX obs)
+                       base correction file (rinex obs)
   --base_coord_X BASE_COORD_X
                        base station X coordinate
   --base_coord_Y BASE_COORD_Y
