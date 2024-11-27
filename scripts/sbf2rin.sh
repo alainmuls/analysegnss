@@ -60,6 +60,17 @@ if [ -z "${SBF2RIN}" ]; then
     exit 3
 fi
 
+# Check if required options are provided and file exists
+if [ -z "${SBF_FN}" ]; then
+    echo -e "\e[1;31mError: Option -f (SBF_fn) is required\e[0m"
+    usage
+fi
+
+if [ ! -f "${SBF_FN}" ]; then
+    echo -e "\e[1;31mError: Input file '${SBF_FN}' does not exist\e[0m"
+    exit 5
+fi
+
 # create the RNX_DIR if it does not exist
 if [ ! -d ${RNX_DIR} ]; then
     mkdir -p ${RNX_DIR}

@@ -55,12 +55,16 @@ if [ $# -ne 0 ]; then
   exit 2
 fi
 
-# Check if required options are provided
+# Check if required options are provided and file exists
 if [ -z "${SBF_FN}" ] || [ -z "${MSG_BLOCK}" ]; then
     echo -e "\e[1;31mError: Both -f (SBF_fn) and -m (MSG_BLOCK) are required options\e[0m"
     usage
 fi
 
+if [ ! -f "${SBF_FN}" ]; then
+    echo -e "\e[1;31mError: Input file '${SBF_FN}' does not exist\e[0m"
+    exit 5
+fi
 
 # locate sbf2rin and gfzrnx executables
 BIN2ASC=`which bin2asc`
@@ -89,7 +93,7 @@ if [ ! -d ${OUT_DIR} ]; then
 fi
 
 # create the command line for bin2asc conversion
-cmd_bin2asc="${BIN2ASC} -f ${SBF_FN} -n NaN -E -r -t -A"
+cmd_bin2asc="${BIN2ASC} -f ${SBF_FN} -n NaN -E -r -t"  # -A"
 
 # check if verbose mode was specified
 if [ "${VERBOSE}" = true ]; then
