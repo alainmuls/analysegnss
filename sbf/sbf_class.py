@@ -126,7 +126,7 @@ class SBF:
         if self.logger:
             self.logger.info(
                 f"{str_yellow(run_bin2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files "
-                f"and importing into dataframes for SBF blocks\n{str_yellow(' '.join(lst_sbfblocks))}"
+                f"and importing into dataframes for SBF blocks: {str_yellow(' '.join(lst_sbfblocks))}"
             )
 
         # create options for bin2asc
@@ -140,10 +140,13 @@ class SBF:
             "-r",
             "-t",
         ]
-        # "-b",
-        # self.epoch_start.strftime("%H:%M:%S"),
-        # "-e",
-        # self.epoch_end.strftime("%H:%M:%S"),
+
+        if self.start_time is not None:
+            cmd_bin2asc.append("-b")
+            cmd_bin2asc.append(self.start_time.strftime("%H:%M:%S"))
+        if self.end_time is not None:
+            cmd_bin2asc.append("-e")
+            cmd_bin2asc.append(self.end_time.strftime("%H:%M:%S"))
 
         # add logging level to cmd_bin2asc when self._console_loglevel is DEBUG
         if self._console_loglevel == logging.DEBUG:
