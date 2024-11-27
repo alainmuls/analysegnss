@@ -28,7 +28,7 @@ def quality_analysis(geod_df: pl.DataFrame, logger) -> None:
             [
                 sbfc.dict_sbf_pvtmode[qual]["desc"],
                 qual_data.shape[0],
-                f"{qual_data.shape[0]/total_obs*100:.2f}%",
+                f"{qual_data.shape[0]/total_obs*100:.2f}",
             ]
         )
 
