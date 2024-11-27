@@ -170,6 +170,7 @@ class Rtkpos:
             dict: schema for the RTK position dataframe
         """
         col_types = {
+            pl.Int16: ["WNc"],
             pl.Float64: [
                 "TOW(s)",
                 "latitude(deg)",

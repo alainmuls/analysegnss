@@ -29,7 +29,7 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> None:
             [
                 rtkc.dict_rtk_pvtmode[qual[0]]["desc"],
                 qual_data.shape[0],
-                f"{qual_data.shape[0]/total_obs*100:.2f}%",
+                f"{qual_data.shape[0]/total_obs*100:.2f}",
             ]
         )
 
