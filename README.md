@@ -112,7 +112,7 @@ In the `sbf` directory the file `sbf_constants.py` contains the constants used f
 ## RTKPos related classes and functions
 
 A similar setup is used for the `RTKPos` class. The class has the following fields:
-- `pos_fn`: the SBF filename, mandatory
+- `pos_fn`: the rtklib pos filename, mandatory
 - `start_time`: the start time of the SBF file, optional
 - `end_time`: the end time of the SBF file, optional
 - `logger`: the logger object, optional
@@ -504,6 +504,149 @@ shape: (3_037, 3)
 └───────────────┴──────────┴────────────┘
 ```
 
+### The script `get_ebh_timings.py`
+
+```bash
+± get_ebh_timings.py -h
+usage: get_ebh_timings.py [-h] [-V] [-v] --sbf_ifn SBF_IFN [--timing_ofn TIMING_OFN] [--archive ARCHIVE]
+
+options:
+  -h, --help            show this help message and exit
+  -V, --version         show program's version number and exit
+  -v, --verbose         verbose level... repeat up to three times.
+  --sbf_ifn SBF_IFN     input SBF filename
+  --timing_ofn TIMING_OFN
+                        output timing filename
+  --archive ARCHIVE     Specify archive's directory name
+```
+
+This script extracts EBH timing information from SBF comment blocks and formats them for use in EBH line calculations. It outputs timing information in a format compatible with `ebh_lines.py`.
+
+Key functions:
+- `get_SBFcomments(parsed_args, logger)`: Extracts SBF comment blocks from SBF file using the SBF class
+- `parseSBFComments(df_sbfComments, logger)`: Processes comment blocks to extract EBH timestamps and converts them to GPS week and TOW format
+- `reformat_ebh_timestamps(df_ebh_timestamps, logger)`: Reformats timestamps into a format compatible with ebh_lines.py
+- `ebh_timings_to_file(ebh_timings, dest_path, logger)`: Writes formatted timestamps to output file
+
+
+### The script `get_base_coord.py`
+
+```bash
+± get_base_coord.py -h
+usage: get_base_coord.py [-h] [-V] [-v] --sbf_ifn SBF_IFN [--datetime DATETIME] [--log_dest LOG_DEST]
+
+options:
+  -h, --help            show this help message and exit
+  -V, --version         show program's version number and exit
+  -v, --verbose         verbose level... repeat up to three times.
+  --sbf_ifn SBF_IFN     input SBF filename
+  --datetime DATETIME   datetime of base station coordinates [YYYY-MM-DD_HH:MM:SS.s]
+  --log_dest LOG_DEST   directory for logging output
+```
+
+This script extracts base station coordinates from the BaseStation1 SBF block, which contains the coordinates of the base station used for differential corrections.
+
+Key functions:
+- `get_base_coord_from_sbf(parsed_args, logger)`: Main function that:
+  - Creates SBF object from input file
+  - Extracts BaseStation1 block
+  - Retrieves base coordinates at specified datetime
+  - Returns coordinates as tuple (X, Y, Z)
+
+
+### The script `launch_ebh_process.py`
+
+```bash
+± launch_ebh_process.py -h
+usage: launch_ebh_process.py [-h] [-V] [-v] --sbf_ifn SBF_IFN --base_corr BASE_CORR --conf CONF --desc DESC [--log_dest LOG_DEST]
+
+options:
+  -h, --help            show this help message and exit
+  -V, --version         show program's version number and exit
+  -v, --verbose         verbose level... repeat up to three times.
+  --sbf_ifn SBF_IFN     input SBF filename
+  --base_corr BASE_CORR base station corrections (RTCM or RINEX)
+  --conf CONF           PPK configuration file
+  --desc DESC          description of EBH lines project
+  --log_dest LOG_DEST   directory for logging output
+```
+
+This script serves as a main launcher for the EBH processing workflow. It:
+1. Extracts EBH timings from SBF files
+2. Analyzes RTK solution quality
+3. Decides whether to use RTK or PPK solution based on quality metrics
+4. Launches PPK processing if needed
+5. Creates ASSUR-formatted output files for each EBH line
+
+The script implements a quality-based decision system:
+- If RTK quality is sufficient (>99% fixed solutions), it uses RTK results
+- For single line failures, it calculates PPK only for the failed line
+- For multiple line failures, it recalculates all lines using PPK
+
+Key functions:
+- `ebh_process_launcher(parsed_args, logger)`: Main orchestrator function that coordinates the entire EBH workflow
+- `rtk_ppk_qual_check(qual_analysis, RTK_mode, rejection_level, logger)`: Analyzes solution quality and determines processing strategy
+- `do_ppk_by_decision(rejected_rtk_lines, rtk_qual_decision, ebh_timings, parsed_args, logger)`: Handles PPK processing based on quality analysis
+- `get_rnx_files(parsed_args, logger)`: Creates RINEX observation and navigation files from SBF data
+
+
+
+### The script `launch_rnx2rtkp.py`
+
+```bash
+± launch_rnx2rtkp.py -h
+usage: launch_rnx2rtkp.py [-h] [-V] [-v] --obs OBS --nav NAV --base_corr BASE_CORR --base_coord_X BASE_COORD_X --base_coord_Y BASE_COORD_Y --base_coord_Z BASE_COORD_Z --rnx2rtkp_config_fn RNX2RTKP_CONFIG_FN [--datetime_start DATETIME_START] [--datetime_end DATETIME_END] [--pos_ofn POS_OFN] [--log_dest LOG_DEST]
+
+argument_parser.py launches rnx2rtkp for PPK processing
+
+options:
+  -h, --help            show this help message and exit
+  -V, --version         show program's version number and exit
+  -v, --verbose         verbose level... repeat up to three times.
+  --obs OBS            RINEX observation file
+  --nav NAV            RINEX navigation file
+  --base_corr BASE_CORR
+                       base correction file (RTCM3 or RNX obs)
+  --base_coord_X BASE_COORD_X
+                       base station X coordinate
+  --base_coord_Y BASE_COORD_Y
+                       base station Y coordinate
+  --base_coord_Z BASE_COORD_Z
+                       base station Z coordinate
+  --rnx2rtkp_config_fn RNX2RTKP_CONFIG_FN
+                       rnx2rtkp configuration file
+  --datetime_start DATETIME_START
+                       start time of calculation [YYYY-MM-DD_HH:MM:SS.f]
+  --datetime_end DATETIME_END
+                       end time of calculation [YYYY-MM-DD_HH:MM:SS.f]
+  --pos_ofn POS_OFN   output filename for PPK solution
+  --log_dest LOG_DEST  directory for logging output
+  ```
+
+This script automates the execution of RTKLIB's rnx2rtkp program for post-processing kinematic (PPK) GNSS data. It processes RINEX observation and navigation files along with base station corrections to generate precise positioning solutions.
+
+The script has the following key functions:
+
+- `rnx2rtkp_ppk(parsed_args, logger)`: Main function that:
+  - Validates input files and parameters
+  - Configures output filename based on input parameters
+  - Constructs and executes rnx2rtkp command with appropriate options
+  - Returns the path to the generated position solution file
+- `create_rnx2rtkp_args(parsed_args)`: Builds command line arguments for rnx2rtkp
+- `check_base_coord(parsed_args)`: Validates base station coordinates
+
+
+__Example usage__
+
+```bash
+launch_rnx2rtkp.py --obs rover.rnx --nav base.nav --base_corr base.rnx \
+--base_coord_X 4023741.2365 --base_coord_Y 309110.4418 --base_coord_Z 4922723.1945 \
+--rnx2rtkp_config_fn ppk.conf --datetime_start 2024-01-17_16:47:43 \
+--datetime_end 2024-01-17_21:03:43 -vv
+```
+
+
+
 ## Roadmap
 If you have ideas for releases in the future, it is a good idea to list them in the README.
 
@@ -517,7 +660,7 @@ You can also document commands to lint the code or run tests. These steps help t
 ## Authors and acknowledgment
 
 - Alain MULS
-- 
+- Pieterjan DE MEULEMEESTER 
 ## License
 For open source projects, say how it is licensed.
 

@@ -54,7 +54,7 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
  
     else:
         
-        # LAUNCHING rnx2rtkp_ppk: to get PPK solution if needed (this function exits if no PPK solution is needed)
+        # LAUNCHING ppk_by_decision: runs rnx2rtkp in PPK mode for the ebh lines that have been rejected. It returns a rtklib pos_file
         parsed_args.pos_ifn = do_ppk_by_decision(
             rejected_rtk_lines=rejected_rtk_lines,
             rtk_qual_decision=rtk_qual_decision,
