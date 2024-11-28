@@ -606,7 +606,7 @@ __Key functions:__
 __Example Usage__
 
 ```bash
-launch_ebh_process.py --sbf_ifn data.sbf --base_corr base_MO.rnx \
+launch_ebh_process.py --sbf_ifn ebh_measurements.sbf --base_corr base_MO.rnx \
 --conf ppk.conf --desc "Project A" -vv
 ```
 The script returns:
