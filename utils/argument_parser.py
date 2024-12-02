@@ -499,3 +499,51 @@ def argument_parser_rnx2rtkp_launcher(args: list) -> argparse.Namespace:
     args = parser.parse_args(args)
 
     return args
+
+
+def argument_parser_get_rnx_files(args: list) -> argparse.Namespace:
+    """
+    Extracts rinex files from binary files such as Septentrio SBF files 
+    (Future work: extend this to other file formats such as rtcm3, ubx, etc.)
+    """
+
+    baseName = str_yellow(os.path.basename(__file__))
+
+    help_text = (
+        baseName
+        + """
+            Extracts rinex files from Septentrio SBF files 
+            (Future work: extend this to other file formats such as rtcm3, ubx, etc.)
+        """
+    )
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_text)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+        required=False,
+    )
+    parser.add_argument(
+        "-ifn",
+        "--input_file_name,
+        help="input filename of binary file (e.g. SBF file)",
+        type=str,
+        required=True
+    )
+    parser.add_argument(
+        "--log_dest",
+        help="Specify log destination directory (full path). Default is /tmp/logs/",
+        type=str,
+        required=False,
+        default="/tmp/logs/",
+    )
+
+    args = parser.parse_args(args)
+
+    return args
+
+

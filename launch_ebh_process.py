@@ -16,7 +16,7 @@ from utils import argument_parser, init_logger, utilities
 import get_ebh_timings
 from get_base_coord import get_base_coord_from_sbf
 import ebh_lines
-
+import get_rnx_files
 
 """
 This script orchestrates the complete EBH (Equivalent Bump Height) processing workflow.
@@ -211,7 +211,7 @@ def do_ppk_by_decision(
             )
 
             # created and get the rinex files from the sbf input filename
-            rnx_odir = get_rnx_files(parsed_args=parsed_args, logger=logger)
+            rnx_odir = get_rinex_files(parsed_args=parsed_args, logger=logger)
 
             # get the path of the rinex files and add them them to parsed_args namespace
             parsed_args.obs = glob.glob(os.path.join(rnx_odir, "*MO.rnx"))[0]
@@ -299,7 +299,7 @@ def do_ppk_by_decision(
             )
 
             # created and get the rinex files from the sbf input filename
-            rnx_odir = get_rnx_files(parsed_args=parsed_args, logger=logger)
+            rnx_odir = get_rnx_files.get_rnx_frm_sbf(parsed_args=parsed_args, logger=logger)
 
             # get the path of the rinex files and add them them to parsed_args namespace
             parsed_args.obs = glob.glob(

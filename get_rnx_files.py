@@ -80,5 +80,18 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> str:
 
     return rnx_odir
 
+if __name__ == "__main__":
 
+    # make script standalone
+
+    # fetch script name for logger
+    script_name = os.path.splitext(os.path.basename(__file__))[0]
+    # Parse arguments
+    parsed_args = argument_parser.argument_parser_get_rnx_files(args=sys.argv[1:])
+    # Initialize logger
+    logger = init_logger.logger_setup(
+        args=parsed_args, base_name=script_name, log_dest=parsed_args.log_dest
+    )
+
+    get_rnx_frm_sbf(parsed_args=parsed_args, logger=logger)
 
