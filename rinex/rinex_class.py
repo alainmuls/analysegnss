@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 from config import GNSS_DICT
 from utils.utilities import locate, str_red
+from rich.console import Console
 
 
 @dataclass
@@ -21,8 +22,13 @@ class RINEX:
     _console_loglevel: int = field(
         default=logging.ERROR, metadata={"help": "console log level"}
     )
+    console: Console = field(default=None, metadata={"help": "console object"})
 
     def __post_init__(self):
+        # Add this at the start of post_init
+        if self.console is None:
+            self.console = Console()
+
         self.validate_gnss()
         self.validate_start_time()
         self.validate_end_time()

@@ -5,6 +5,8 @@ import os
 import sys
 
 import polars as pl
+from rich.console import Console
+from rich import print
 
 from config import ERROR_CODES, GNSS_DICT
 from rinex.rinex_obs_class import RINEX_OBS
@@ -29,12 +31,16 @@ def rnxobs_csv(argv: list):
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
     logger.info(f"Parsed arguments: {args_parsed}")
 
+    # create a console logger
+    console = Console()
+
     # create the RINEX object
     try:
         rnxobs = RINEX_OBS(
             rnxobs_fn=args_parsed.obs_fn,
             gnss=args_parsed.gnss,
             logger=logger,
+            console=console,
         )
     except Exception as e:
         if logger is not None:
@@ -71,8 +77,8 @@ def rnxobs_csv(argv: list):
         logger.warning(f"Saved CSV file: {str_green(csv_fn)}")
 
     if rnxobs._console_loglevel > logging.WARNING:
-        gnss_list = ", ".join([GNSS_DICT[gnss] for gnss in args_parsed.gnss])
-        print(f"Created for {str_green(gnss_list)}: {str_yellow(csv_fn)}")
+        gnss_list = [GNSS_DICT[gnss] for gnss in args_parsed.gnss]
+        print(f"Created for {gnss_list}: {csv_fn}")
 
 
 if __name__ == "__main__":

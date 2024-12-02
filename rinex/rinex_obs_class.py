@@ -2,10 +2,12 @@ import os
 import subprocess
 from dataclasses import dataclass, field
 from io import StringIO
+
 import polars as pl
-from rinex.rinex_class import RINEX
+from rich import print
 
 from config import GNSS_DICT
+from rinex.rinex_class import RINEX
 from utils.utilities import str_green
 
 
@@ -112,76 +114,86 @@ class RINEX_OBS(RINEX):
 
         # Run gfzrnx and capture output
         try:
-            result = subprocess.run(
-                gfzrnx_args, capture_output=True, text=True, check=True
-            )
-            output_buffer = StringIO(result.stdout)
-            self.logger.debug(f"gfzrnx output: \n{result.stdout[:1500]}")
-            self.logger.debug(f"gfzrnx output: \n{StringIO(result.stdout[:1500])}")
+            # add a spinner while waiting for the conversion to complete
+            with self.console.status(
+                "Please wait - Loading observations...", spinner="point"
+            ):
 
-            # Store just the headers initially
-            headers = {}
+                result = subprocess.run(
+                    gfzrnx_args, capture_output=True, text=True, check=True
+                )
+                output_buffer = StringIO(result.stdout)
+                self.logger.debug(f"gfzrnx output: \n{result.stdout[:1500]}")
+                self.logger.debug(f"gfzrnx output: \n{StringIO(result.stdout[:1500])}")
 
-            # First pass to get headers
-            for line in output_buffer:
-                if line.startswith("#HD"):
-                    parts = line.strip().split(",")
-                    sys = parts[1]
-                    headers[sys] = parts[2:]
-                    print(f"headers for {sys}: {headers[sys]}")
-                else:
-                    break
+                # Store just the headers initially
+                headers = {}
 
-            # Reset buffer position
-            output_buffer.seek(0)
+                # First pass to get headers
+                for line in output_buffer:
+                    if line.startswith("#HD"):
+                        parts = line.strip().split(",")
+                        sys = parts[1]
+                        headers[sys] = parts[2:]
+                        # print(f"headers for {sys}: {headers[sys]}")
+                    else:
+                        break
 
-            # Create streaming dataframes for each system
-            result_dfs = {}
-            for sys in self.gnss:
-                if sys in headers:
-                    # Create a generator for the data
-                    def data_generator():
-                        for line in output_buffer:
-                            if line.startswith("OBS"):
-                                parts = line.strip().split(",")
-                                if parts[1] == sys:
-                                    yield [val if val else None for val in parts[2:]]
-                        output_buffer.seek(0)
+                # Reset buffer position
+                output_buffer.seek(0)
 
-                    # Create DataFrame using streaming
-                    df = (
-                        pl.DataFrame(
-                            data_generator(), schema=headers[sys], orient="row"
+                # Create streaming dataframes for each system
+                result_dfs = {}
+                for sys in self.gnss:
+                    if sys in headers:
+                        # Create a generator for the data
+                        def data_generator():
+                            for line in output_buffer:
+                                if line.startswith("OBS"):
+                                    parts = line.strip().split(",")
+                                    if parts[1] == sys:
+                                        yield [
+                                            val if val else None for val in parts[2:]
+                                        ]
+                            output_buffer.seek(0)
+
+                        # Create DataFrame using streaming
+                        df = (
+                            pl.DataFrame(
+                                data_generator(), schema=headers[sys], orient="row"
+                            )
+                            .lazy()
+                            .with_columns(
+                                [
+                                    pl.col("DATE").cast(pl.Int16),
+                                    pl.col("PRN").cast(str),
+                                    pl.exclude(["DATE", "PRN"]).cast(pl.Float64),
+                                ]
+                            )
+                            .with_columns(
+                                [
+                                    (pl.col("DATE") // 10).alias("WKNR"),
+                                    (
+                                        pl.col("DATE") % 10 * 86400 + pl.col("TIME")
+                                    ).alias("TOW"),
+                                ]
+                            )
+                            .drop(["DATE", "TIME"])
+                            .select(["WKNR", "TOW", pl.all().exclude(["WKNR", "TOW"])])
+                            .collect()
                         )
-                        .lazy()
-                        .with_columns(
-                            [
-                                pl.col("DATE").cast(pl.Int16),
-                                pl.col("PRN").cast(str),
-                                pl.exclude(["DATE", "PRN"]).cast(pl.Float64),
-                            ]
-                        )
-                        .with_columns(
-                            [
-                                (pl.col("DATE") // 10).alias("WKNR"),
-                                (pl.col("DATE") % 10 * 86400 + pl.col("TIME")).alias(
-                                    "TOW"
-                                ),
-                            ]
-                        )
-                        .drop(["DATE", "TIME"])
-                        .select(["WKNR", "TOW", pl.all().exclude(["WKNR", "TOW"])])
-                        .collect()
-                    )
 
-                    result_dfs[sys] = df
+                        result_dfs[sys] = df
 
-                    if self.logger:
-                        self.logger.info(
-                            f"Created dataframe for system {str_green(GNSS_DICT[sys])} with {str_green(len(df))} observations"
-                        )
+                        if self.logger:
+                            self.logger.info(
+                                f"Created dataframe for system {str_green(GNSS_DICT[sys])} with {str_green(len(df))} observations"
+                            )
 
-            output_buffer.close()
+                output_buffer.close()
+
+            self.console.print("\n")
+
             return result_dfs
 
         except subprocess.CalledProcessError as e:
@@ -204,44 +216,52 @@ class RINEX_OBS(RINEX):
         """
         # Process all frequency/signal combinations in one pass
         csv_rows = []
-        for gnss_type, df in result_dfs.items():
-            # Get frequency/signal combinations
-            freq_sigs = {
-                (col[1], col[2])
-                for col in df.columns
-                if len(col) == 3 and col[0] in ["C", "L", "D", "S"]
-            }
 
-            # Create a single transformation for all freq/sigs
-            transforms = []
-            for freq, sigt in freq_sigs:
-                transforms.append(
-                    pl.DataFrame(
-                        {
-                            "GNSS": gnss_type,
-                            "WKNR": df["WKNR"],
-                            "TOW": (df["TOW"] * 1000)
-                            .round()
-                            .cast(pl.Int64),  # Explicit casting to Int64
-                            "PRN": df["PRN"].str.extract(r"(\d+)").cast(pl.Int16),
-                            "cfreq": f"L{freq}",
-                            "sigt": f"{freq}{sigt}",
-                            "C": df[f"C{freq}{sigt}"],
-                            "L": df[f"L{freq}{sigt}"],
-                            "D": df[f"D{freq}{sigt}"],
-                            "S": df[f"S{freq}{sigt}"].cast(pl.Float32),
-                        }
-                    )
-                    .lazy()
-                    .filter(
-                        pl.all_horizontal(
-                            [pl.col(col).is_not_null() for col in ["C", "L", "D", "S"]]
+        # add a spinner while waiting for the conversion to complete
+        with self.console.status(
+            "Please wait - converting to dataframe...", spinner="point"
+        ):
+            for gnss_type, df in result_dfs.items():
+                # Get frequency/signal combinations
+                freq_sigs = {
+                    (col[1], col[2])
+                    for col in df.columns
+                    if len(col) == 3 and col[0] in ["C", "L", "D", "S"]
+                }
+
+                # Create a single transformation for all freq/sigs
+                transforms = []
+                for freq, sigt in freq_sigs:
+                    transforms.append(
+                        pl.DataFrame(
+                            {
+                                "GNSS": gnss_type,
+                                "WKNR": df["WKNR"],
+                                "TOW": (df["TOW"] * 1000)
+                                .round()
+                                .cast(pl.Int64),  # Explicit casting to Int64
+                                "PRN": df["PRN"].str.extract(r"(\d+)").cast(pl.Int16),
+                                "cfreq": f"L{freq}",
+                                "sigt": f"{freq}{sigt}",
+                                "C": df[f"C{freq}{sigt}"],
+                                "L": df[f"L{freq}{sigt}"],
+                                "D": df[f"D{freq}{sigt}"],
+                                "S": df[f"S{freq}{sigt}"].cast(pl.Float32),
+                            }
                         )
+                        .lazy()
+                        .filter(
+                            pl.all_horizontal(
+                                [
+                                    pl.col(col).is_not_null()
+                                    for col in ["C", "L", "D", "S"]
+                                ]
+                            )
+                        )
+                        .collect()
                     )
-                    .collect()
-                )
 
-            csv_rows.extend(transforms)
+                csv_rows.extend(transforms)
 
         # Combine and sort in one operation
         return pl.concat(csv_rows).sort(["WKNR", "TOW", "GNSS", "PRN", "cfreq", "sigt"])
