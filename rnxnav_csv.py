@@ -5,6 +5,8 @@ import os
 import sys
 
 import polars as pl
+from rich.console import Console
+from rich import print
 
 from config import ERROR_CODES, GNSS_DICT
 from rinex.rinex_nav_class import RINEX_NAV
@@ -29,12 +31,16 @@ def rnxnav_csv(argv: list):
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
     logger.info(f"Parsed arguments: {args_parsed}")
 
+    # create a console logger
+    console = Console()
+
     # create the RINEX object
     try:
         rnxnav = RINEX_NAV(
             rnxnav_fn=args_parsed.nav_fn,
             gnss=args_parsed.gnss,
             logger=logger,
+            console=console,
         )
     except Exception as e:
         if logger is not None:
@@ -60,9 +66,7 @@ def rnxnav_csv(argv: list):
             )
 
         if rnxnav._console_loglevel > logging.WARNING:
-            print(
-                f"Created for {str_green(GNSS_DICT[gnss])}-{str_green(nav_type)}: {str_yellow(csv_fn)}"
-            )
+            print(f"Created for {GNSS_DICT[gnss]}-{nav_type}: {csv_fn}")
 
         nav_df.write_csv(
             csv_fn,

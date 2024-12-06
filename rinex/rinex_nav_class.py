@@ -111,20 +111,38 @@ class RINEX_NAV(RINEX):
 
         # Separate GLONASS from other GNSS systems
         other_gnss = [g for g in self.gnss if g != "R"]
-        has_glonass = "R" in self.gnss
+        has_glonass = [g for g in self.gnss if g == "R"]
 
         # Add other GNSS systems first if present
         if other_gnss:
-            gfzrnx_args.extend(["-satsys", "".join(other_gnss)])
-            # process GEC systems without Glonass
-            gec_nav_dict = self._gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
-            gnss_nav_dict.update(gec_nav_dict)
+            if self.logger is not None:
+                self.logger.debug(f"Processing GNSS: {other_gnss}")
+            # add a spinner while waiting for the conversion to complete
+            with self.console.status(
+                "Please wait - Processing GNSS:...", spinner="point"
+            ):
+                # process GEC systems without Glonass
+                gfzrnx_args.extend(["-satsys", "".join(other_gnss)])
+
+                # process GEC systems without Glonass
+                gec_nav_dict = self._gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
+                gnss_nav_dict.update(gec_nav_dict)
+
+            self.console.print(f"GNSS {other_gnss} processed successfully.")
+
         # Add GLONASS separately if present
         if has_glonass:
-            gfzrnx_args.extend(["-satsys", "R"])
-            # Process GLONASS separately
-            r_nav_dict = self._gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
-            gnss_nav_dict.update(r_nav_dict)
+            if self.logger is not None:
+                self.logger.debug(f"Processing GNSS: {other_gnss}")
+            # add a spinner while waiting for the conversion to complete
+            with self.console.status(
+                "Please wait - Processing GNSS:...", spinner="point"
+            ):
+                gfzrnx_args.extend(["-satsys", "R"])
+                # Process GLONASS separately
+                r_nav_dict = self._gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
+                gnss_nav_dict.update(r_nav_dict)
+            self.console.print(f"GNSS {has_glonass} processed successfully.")
 
         return gnss_nav_dict
 

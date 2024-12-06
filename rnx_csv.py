@@ -12,6 +12,7 @@ from rinex.rinex_obs_class import RINEX_OBS
 from utils import argument_parser, init_logger
 import rnxobs_csv
 import rnxnav_csv
+from rich import print
 
 
 def rnx_csv(argv: list):
@@ -43,6 +44,8 @@ def rnx_csv(argv: list):
         "--gnss",
         args_parsed.gnss,
     ]
+    print(f"rnxobs_argv: {rnxobs_argv}")
+
     # Add verbosity arg only if it's not empty
     if verbosity_arg:
         rnxobs_argv.append(verbosity_arg)
@@ -58,6 +61,8 @@ def rnx_csv(argv: list):
         "--gnss",
         args_parsed.gnss,
     ]
+    print(f"rnxnav_args: {rnxnav_args}")
+
     # Add verbosity arg only if it's not empty
     if verbosity_arg:
         rnxnav_args.append(verbosity_arg)
