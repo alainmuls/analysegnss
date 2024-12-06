@@ -1,5 +1,7 @@
 #!/bin/bash 
 
+# Add proper error handling
+set -e  # Exit on error
 
 OPTIONS=$(getopt -o hvf:r:x:b:e: -l help,sbf_fn,rnx_dir,excl_GNSS,begin_epoch,end_epoch -- "$@")
 
@@ -27,7 +29,26 @@ if [ $? -ne 0 ]; then
   exit 2
 fi
 
-eval set -- $OPTIONS
+eval set -- "${OPTIONS}"
+
+# Store original directory
+ORIG_DIR=$(pwd)
+# Add after storing ORIG_DIR
+trap 'cd "${ORIG_DIR}"' EXIT
+
+# Add at start of script
+LOG_FILE="${ORIG_DIR}/sbf2rin_$(date +%Y%m%d_%H%M%S).log"
+exec 1> >(tee -a "$LOG_FILE") 2>&1
+
+cleanup() {
+    cd "${ORIG_DIR}"
+    # Remove log file only if both conversions succeeded
+    if [ "${CONVERSION_SUCCESS:-false}" = true ] && [ -f "${LOG_FILE}" ]; then
+        rm -f "${LOG_FILE}"
+    fi
+}
+trap cleanup EXIT INT TERM
+
 
 # set the default options
 RNX_DIR="."
@@ -71,10 +92,12 @@ if [ ! -f "${SBF_FN}" ]; then
     exit 5
 fi
 
-# create the RNX_DIR if it does not exist
-if [ ! -d ${RNX_DIR} ]; then
-    mkdir -p ${RNX_DIR}
+# Add validation for EXCL_GNSS parameter to ensure only valid GNSS letters are used
+if ! [[ "$EXCL_GNSS" =~ ^[RSCJIG]+$ ]]; then
+    echo -e "\e[1;31mError: Invalid GNSS exclusion characters. Use only R,S,C,J,I,G\e[0m"
+    exit 1
 fi
+
 
 opts_timing=""
 # check for existence of BEGIN_TIME, if specified in correct format, than add to opts_timing
@@ -100,21 +123,50 @@ if [ "${VERBOSE}" = true ]; then
 fi
 
 
+
 # create the OUT_DIR if it does not exist
-SBF_DIR=$(dirname "${SBF_FN}")  # Get the directory of the input SBF file
-RNX_DIR="${SBF_DIR}/${RNX_DIR}"  # Combine paths to get absolute output directory
-if [ ! -d ${RNX_DIR} ]; then
-    mkdir -p ${RNX_DIR}
+# SBF_DIR=$(dirname "${SBF_FN}")  # Get the directory of the input SBF file
+readonly RNX_DIR=$(readlink -f "${ORIG_DIR}/${RNX_DIR}")  # Combine paths to get absolute output directory
+if [ ! -d "${RNX_DIR}" ]; then
+    mkdir -p "${RNX_DIR}"
 fi
 
 OBS_OPTS=" -x "${EXCL_GNSS}" -s -D -v -R3 -l -O BEL -c "${opts_timing}
 NAV_OPTS=" -x "${EXCL_GNSS}" -v -R3 -l -O BEL -n P "${opts_timing}
 
 # switch to the RINEX directory
-cd ${RNX_DIR}
+# cd "${RNX_DIR}" || exit 4
 
-echo -e "\e[1;34mCreating RINEX observation file in \e[1;32m${RNX_DIR}\e[0m"
-${SBF2RIN} ${OBS_OPTS} -f ${SBF_FN} 
+# Add error checking for conversions
+if ${SBF2RIN} ${OBS_OPTS} -f "${SBF_FN}"; then
+    # move the output files to the RINEX directory
+    CONVERSION_SUCCESS=true
+    RNX_OBS_FILE=`ls -t | grep -v "sbf2rin.*\.log" | head -n 1`
+    /bin/mv "${RNX_OBS_FILE}" "${RNX_DIR}"
+    echo -e "Created \e[1;34m${RNX_OBS_FILE}\e[0m file in \e[1;32m${RNX_DIR}\e[0m"
+else
+    CONVERSION_SUCCESS=false
+    echo -e "\e[1;31mError: Failed to create observation file\e[0m"
+    exit 6
+fi
 
-echo -e "\e[1;34mCreating RINEX navigation file in \e[1;32m${RNX_DIR}\e[0m"
-${SBF2RIN} ${NAV_OPTS} -f ${SBF_FN}
+if ${SBF2RIN} ${NAV_OPTS} -f "${SBF_FN}"; then
+    # move the output files to the RINEX directory
+    CONVERSION_SUCCESS=true
+    RNX_NAV_FILE=`ls -t | grep -v "sbf2rin.*\.log" | head -n 1`
+    /bin/mv "${RNX_NAV_FILE}" "${RNX_DIR}"
+    echo -e "Created \e[1;34m${RNX_NAV_FILE}\e[0m file in \e[1;32m${RNX_DIR}\e[0m"
+else
+    CONVERSION_SUCCESS=false
+    echo -e "\e[1;31mError: Failed to create navigation file\e[0m"
+    exit 7
+fi
+
+# cleanup() {
+#     echo "DEBUG: Cleanup function called" >&2
+#     cd "${ORIG_DIR}"
+#     if [ "${CONVERSION_SUCCESS:-false}" = true ] && [ -f "${LOG_FILE}" ]; then
+#         echo "DEBUG: Removing log file ${LOG_FILE}" >&2
+#         rm -f "${LOG_FILE}"
+#     fi
+# }
