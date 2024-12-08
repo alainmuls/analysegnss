@@ -120,3 +120,22 @@ D9A,D9B,D9C,D9X
 
 The default constellation order to use for reference clock is:
 GPS, Galileo, GLONASS, BDS, QZSS, IRNSS, GEO
+
+
+
+Processing mode indicator in field 6 may have the following values:
+VALUES - MESSAGE VALUES
+0 - SPP
+1 - PPP
+2 - Reserved
+3 - Reserved
+4 - Reserved
+5 - SBAS 1 Frequency
+6 - SBAS DFMC
+7 - DGNSS
+
+
+Processing direction indicator in field 7 may have the following values:
+VALUES - MESSAGE VALUES
+0 - Forward processing
+1 - Backwards processing (not possible in SBAS and DGNSS modes)
