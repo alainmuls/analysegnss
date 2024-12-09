@@ -252,6 +252,7 @@ def do_ppk_by_decision(
                 f"Starting PPK calculation for ebh line {rejected_rtk_lines[0]} with timings {ebh_timings[rejected_rtk_lines[0]]}"
             )
 
+            # getting base corrections (from imported base sbf file)
             logger.info(f"The correction file is: {parsed_args.base_corr}")
 
             # Converting timings to RTKlib fmt. gnss_dt.gnss2dt returns a datetime object however rnx2rtkp expects a string in the format of YYYY-MM-DD_HH:MM:SS

@@ -368,8 +368,8 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
         required=False,
     )
     parser.add_argument(
-        "-cfg",
-        "--rnx2rtkp_config_fn",
+        "-cfg_ppk",
+        "--config_ppk",
         help="file name of config file used for RTKLib rnx2rtkp calculation.",
         type=str,
         required=True,
@@ -466,7 +466,11 @@ def argument_parser_rnx2rtkp_launcher(args: list) -> argparse.Namespace:
         required=True,
     )
     parser.add_argument(
-        "--config_file", help="RTKlib configuration file", type=str, required=True
+        "-cfg_ppk",
+        "--config_ppk",
+        help="RTKlib configuration file",
+        type=str,
+        required=True
     )
     parser.add_argument(
         "-dts",
@@ -528,8 +532,7 @@ def argument_parser_get_rnx_files(args: list) -> argparse.Namespace:
         required=False,
     )
     parser.add_argument(
-        "-ifn",
-        "--input_file_name,
+        "--sbf_ifn",
         help="input filename of binary file (e.g. SBF file)",
         type=str,
         required=True

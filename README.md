@@ -559,7 +559,7 @@ Key functions:
 
 ```bash
 ± launch_ebh_process.py -h
-usage: launch_ebh_process.py [-h] [-V] [-v] --sbf_ifn SBF_IFN --base_corr BASE_CORR --conf CONF --desc DESC [--log_dest LOG_DEST]
+usage: launch_ebh_process.py [-h] [-V] [-v] --sbf_ifn SBF_IFN --base_corr BASE_CORR --config_ppk CONF --desc DESC [--log_dest LOG_DEST]
 
 options:
   -h, --help            show this help message and exit
@@ -567,7 +567,7 @@ options:
   -v, --verbose         verbose level... repeat up to three times.
   --sbf_ifn SBF_IFN     input SBF filename
   --base_corr BASE_CORR base station corrections (RTCM or RINEX)
-  --rnx2rtkp_config_fn  PPK configuration file
+  --config_ppk          PPK configuration file
   --desc DESC           description of EBH lines project
   --log_dest LOG_DEST   directory for logging output
 ```
@@ -607,7 +607,7 @@ __Example Usage__
 
 ```bash
 launch_ebh_process.py --sbf_ifn ebh_measurements.sbf --base_corr base_MO.rnx \
---conf ppk.conf --desc "Project A" -vv
+--conf_ppk ppk.conf --desc "Project A" -vv
 ```
 The script returns:
 
@@ -617,7 +617,7 @@ The script returns:
 - Comprehensive logging information
 
 ```bash
-(py-gnss) pj@pj-Book:~/Documents/GNSS4Def/gitlab/analysegnss$ ./launch_ebh_process.py --sbf_ifn /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-10-01-Keiheuvel_Demo/rover/2024-10-01-Keiheuvel-5lijnen.24_ -cfg rtkpos/rnx2rtkp_config/rnx2rtkp_PPK_el10_nomask_GE_tow.conf --base_corr /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-10-01-Keiheuvel_Demo/base/base00BEL_R_20242751022_01H_05S_MO.rnx -v
+(py-gnss) pj@pj-Book:~/Documents/GNSS4Def/gitlab/analysegnss$ ./launch_ebh_process.py --sbf_ifn /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-10-01-Keiheuvel_Demo/rover/2024-10-01-Keiheuvel-5lijnen.24_ -cfg_ppk rtkpos/rnx2rtkp_config/rnx2rtkp_PPK_el10_nomask_GE_tow.conf --base_corr /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-10-01-Keiheuvel_Demo/base/base00BEL_R_20242751022_01H_05S_MO.rnx -v
 ---------- START of launch_ebh_process (process logged @ /tmp/logs/) ----------
 2024-11-27 18:37:33,040 [WARNING](launch_ebh_process:logger_setup:81): ---------- START of launch_ebh_process (process logged @ /tmp/logs/) ----------
 2024-11-27 18:37:35,647 [WARNING](launch_ebh_process:add_columns:523): 	collecting the dataframe. Be patient.

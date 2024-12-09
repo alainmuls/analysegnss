@@ -55,7 +55,7 @@ def rnx2rtkp_ppk(
     cmd_rnx2rtkp = [
         rnx2rtkp_path,
         "-k",
-        parsed_args.rnx2rtkp_config_fn,
+        parsed_args.config_ppk,
         parsed_args.obs,
         parsed_args.base_corr,
         parsed_args.nav,
@@ -102,14 +102,12 @@ def rnx2rtkp_ppk(
     cmd_rnx2rtkp.extend(["-o", pos_ofn])
 
     # TODO Get effective log level
-    """
-    if logger.getEffectiveLevel(....) == "DEBUG":
-        print('rnx2rtkp in logging mode')
-        cmd_rnx2rtkp.extend(["-x", "2"])
-    """
+    logger.info("Putting rnx2rtkp in debugging mode")
+    print('rnx2rtkp in debugging mode')
+    cmd_rnx2rtkp.extend(["-x", "2"])
 
     logger.info(
-        f"Running rnx2rtkp with config file {parsed_args.rnx2rtkp_config_fn}, \
+        f"Running rnx2rtkp with config file {parsed_args.config_ppk}, \
     base station XYZ {parsed_args.base_coord_X}, {parsed_args.base_coord_Y}, {parsed_args.base_coord_Z}, \
     the start time {parsed_args.datetime_start}, the end time {parsed_args.datetime_end}"
     )
