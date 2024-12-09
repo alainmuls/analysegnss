@@ -20,7 +20,7 @@
             "name": "Python Debugger: ppk_rnx2rtkp Keiheuvel 2024/20/01",
             "type": "debugpy",
             "request": "launch",
-            "program": "ppk_rnx2rtkp.py",
+            "program": "src/analysegnss/rtkpos/ppk_rnx2rtkp.py",
             "console": "integratedTerminal",
             "args": [
                 "--pos_fn",
@@ -32,7 +32,7 @@
             "name": "Python Debugger: rtkppk_plot Keiheuvel 2024/20/01",
             "type": "debugpy",
             "request": "launch",
-            "program": "rtkppk_plot.py",
+            "program": "src/analysegnss/plots/rtkppk_plot.py",
             "console": "integratedTerminal",
             "args": [
                 "--pos_fn",

@@ -1,10 +1,10 @@
+import logging as logging
+
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import polars as pl
-
-from sbf import sbf_constants as sbfc
-from rtkpos import rtk_constants as rtkc
-import logging as logging
+from analysegnss.rtkpos import rtk_constants as rtkc
+from analysegnss.sbf import sbf_constants as sbfc
 
 
 def plot_utm_coords(
@@ -50,11 +50,11 @@ def plot_utm_coords(
                 )
             )
 
-    title = f"{title} (origin: {origin})"
+    title = f"{title} ({origin})"
     fig.update_layout(
         plot_bgcolor="white",
         font=dict(color="#909497", size=18),
-        title=dict(text=title, font=dict(size=26)),
+        title=dict(text=title, font=dict(size=22)),
         xaxis=dict(title="UTM.E", linecolor="#909497"),
         yaxis=dict(title="UTM.N", tickformat=",", linecolor="#909497"),
         margin=dict(t=100, r=80, b=80, l=120),

@@ -9,9 +9,9 @@ import polars as pl
 from tabulate import tabulate
 
 # import globalvars
-from rtkpos import rtk_constants as rtkc
-from rtkpos.rtkpos_class import Rtkpos
-from utils import argument_parser, init_logger
+from analysegnss.rtkpos import rtk_constants as rtkc
+from analysegnss.rtkpos.rtkpos_class import Rtkpos
+from analysegnss.utils import argument_parser, init_logger
 
 
 def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> None:
@@ -87,7 +87,11 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
     return pos_df
 
 
-if __name__ == "__main__":
+def main():
     df_rtkpos = rtkp_pos(argv=sys.argv)
     with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
         print(df_rtkpos)
+
+
+if __name__ == "__main__":
+    main()

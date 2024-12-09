@@ -5,10 +5,10 @@ import sys
 
 import polars as pl
 
-import ppk_rnx2rtkp
-import rtk_pvtgeod
+import analysegnss.rtkpos.ppk_rnx2rtkp as ppk_rnx2rtkp
+import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
 from analysegnss.config import ERROR_CODES
-from plots import plot_utm
+from analysegnss.plots import plot_utm
 from analysegnss.utils import argument_parser, init_logger
 
 
@@ -48,12 +48,6 @@ def rtkppk_plot(argv: list):
                 logger.info(f"df_pos = \n{df_pos}")
                 logger.info(f"df_utm = \n{df_utm}")
 
-        origin = "PPK"
-        if args_parsed.title is not None:
-            title = args_parsed.title
-        else:
-            title = args_parsed.pos_fn + " (" + origin + ")"
-
     elif args_parsed.sbf_fn is not None:
         # create the RTK position dataframe by calling rtk_pvtgeod.py
         # create the PPK position dataframe by calling ppk_rnx2rtkp.py
@@ -73,17 +67,22 @@ def rtkppk_plot(argv: list):
                 logger.info(f"df_rtk = \n{df_rtk}")
                 logger.info(f"df_utm = \n{df_utm}")
 
-        origin = "RTK"
-        if args_parsed.title is not None:
-            title = args_parsed.title
-        else:
-            title = args_parsed.sbf_fn + " (" + origin + ")"
-
     else:
         if logger is not None:
             logger.error("No position file specified")
         print("No position file specified")
         sys.exit(ERROR_CODES["E_INVALID_ARGS"])
+
+    # create a title for the plot
+    if args_parsed.title is not None:
+        title = args_parsed.title
+    else:
+        filename = args_parsed.pos_fn if args_parsed.pos_fn else args_parsed.sbf_fn
+        # Take last 30 chars of filename
+        truncated_filename = filename[-50:] if len(filename) > 50 else filename
+        title = f"...{truncated_filename}"
+
+    origin = "PPK" if args_parsed.pos_fn else "RTK"
 
     # plot the UTM and orthoH coordinates
     if args_parsed.plot:
@@ -95,5 +94,9 @@ def rtkppk_plot(argv: list):
         )
 
 
-if __name__ == "__main__":
+def main():
     df_rtkpos = rtkppk_plot(argv=sys.argv)  # type: ignore
+
+
+if __name__ == "__main__":
+    main()

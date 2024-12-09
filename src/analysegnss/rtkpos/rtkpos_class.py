@@ -9,12 +9,10 @@ from typing import Tuple
 import polars as pl
 import utm
 
-from config import ERROR_CODES, GEOID_PATH
-from gnss import geoid
-
-# import globalvars
-from gnss.gnss_dt import gpsms2dt
-from utils.utilities import str_red
+from analysegnss.config import ERROR_CODES, GEOID_PATH
+from analysegnss.gnss import geoid
+from analysegnss.gnss.gnss_dt import gpsms2dt
+from analysegnss.utils.utilities import str_red
 
 
 @dataclass
