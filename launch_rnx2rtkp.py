@@ -56,9 +56,6 @@ def rnx2rtkp_ppk(
         rnx2rtkp_path,
         "-k",
         parsed_args.config_ppk,
-        parsed_args.obs,
-        parsed_args.base_corr,
-        parsed_args.nav,
         "-r",
         parsed_args.base_coord_X,
         parsed_args.base_coord_Y,
@@ -101,10 +98,19 @@ def rnx2rtkp_ppk(
 
     cmd_rnx2rtkp.extend(["-o", pos_ofn])
 
-    # TODO Get effective log level
+    # TODO Get effective log leveli
     logger.info("Putting rnx2rtkp in debugging mode")
     print('rnx2rtkp in debugging mode')
     cmd_rnx2rtkp.extend(["-x", "2"])
+
+    # add obs and nav rnx filenames to cli 
+    cmd_rnx2rtkp.extend(
+        [
+        parsed_args.obs,
+        parsed_args.base_corr
+        ]
+        )
+    cmd_rnx2rtkp.extend(parsed_args.nav)# parsed_args.nav is a list of multiple nav files 
 
     logger.info(
         f"Running rnx2rtkp with config file {parsed_args.config_ppk}, \

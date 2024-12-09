@@ -436,7 +436,11 @@ def argument_parser_rnx2rtkp_launcher(args: list) -> argparse.Namespace:
         required=True,
     )
     parser.add_argument(
-        "--nav", help="input RINEX navigation filename", type=str, required=True
+        "--nav",
+        nargs="+",
+        help="input (multiple) RINEX navigation filename. If more than one leave space between the different filenames",
+        type=str, 
+        required=True
     )
     parser.add_argument(
         "--base_corr",
