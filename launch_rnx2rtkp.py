@@ -63,6 +63,7 @@ def rnx2rtkp_ppk(
     ]
 
     # adding timings to the command line arguments
+
     if parsed_args.datetime_start and parsed_args.datetime_end:
         # remove underscore from datetime format to get isoformat %Y-%m-%d %H:%M:%S
         s_dt = parsed_args.datetime_start.replace("_", " ")
@@ -79,6 +80,9 @@ def rnx2rtkp_ppk(
                 e_dt_obj.strftime("%H:%M:%S"),
             ]
         )
+    else:
+        s_dt_obj = None
+        e_dt_obj = None
 
     # configure output filename
     if hasattr(parsed_args,"pos_ofn") and parsed_args.pos_ofn:
