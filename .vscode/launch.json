@@ -8,11 +8,11 @@
             "name": "Python Debugger: rtk_pvtgeod Ocotillo rover",
             "type": "debugpy",
             "request": "launch",
-            "program": "rtk_pvtgeod.py",
+            "program": "src/analysegnss/sbf/rtk_pvtgeod.py",
             "console": "integratedTerminal",
             "args": [
                 "--sbf_fn",
-                "/home/amuls/GNSSData/USA_CA_2024/Ocotillo/rover/1342172Z.24_",
+                "/home/amuls/GNSSData/20241001-KEIHEUVEL/USA_CA_2024/Ocotillo/rover/1342172Z.24_",
                 "-vvv"
             ]
         },
