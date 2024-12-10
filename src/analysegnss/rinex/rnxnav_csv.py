@@ -8,10 +8,10 @@ import polars as pl
 from rich.console import Console
 from rich import print
 
-from config import ERROR_CODES, GNSS_DICT
-from rinex.rinex_nav_class import RINEX_NAV
-from utils import argument_parser, init_logger
-from utils.utilities import str_green, str_yellow
+from analysegnss.config import ERROR_CODES, GNSS_DICT
+from analysegnss.rinex.rinex_nav_class import RINEX_NAV
+from analysegnss.utils import argument_parser, init_logger
+from analysegnss.utils.utilities import str_green, str_yellow
 
 
 def rnxnav_csv(argv: list):
@@ -49,7 +49,11 @@ def rnxnav_csv(argv: list):
         sys.exit(ERROR_CODES["E_NO_RINEX_NAV"])
 
     # convert RINEX navigation file to tabular format for selected GNSS
-    gnss_nav_dict = rnxnav.gfzrnx_tabnav()
+    try:
+        gnss_nav_dict = rnxnav.gfzrnx_tabnav()
+    except RuntimeError:
+        print("No data available for selected GNSS")
+        return 1
 
     # get directory part and filename without extension part of the RINEX navigation file
     rnxnav_dir, rnxnav_fn = os.path.split(args_parsed.nav_fn)
@@ -75,5 +79,9 @@ def rnxnav_csv(argv: list):
         )
 
 
-if __name__ == "__main__":
+def main():
     rnxnav_csv(argv=sys.argv)
+
+
+if __name__ == "__main__":
+    main()

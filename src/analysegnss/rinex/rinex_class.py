@@ -4,9 +4,10 @@ import os
 import sys
 from dataclasses import dataclass, field
 
-from config import GNSS_DICT
-from utils.utilities import locate, str_red
 from rich.console import Console
+
+from analysegnss.config import GNSS_DICT
+from analysegnss.utils.utilities import locate, str_red
 
 
 @dataclass

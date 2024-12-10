@@ -8,10 +8,10 @@ import polars as pl
 from rich.console import Console
 from rich import print
 
-from config import ERROR_CODES, GNSS_DICT
-from rinex.rinex_obs_class import RINEX_OBS
-from utils import argument_parser, init_logger
-from utils.utilities import str_green, str_yellow
+from analysegnss.config import ERROR_CODES, GNSS_DICT
+from analysegnss.rinex.rinex_obs_class import RINEX_OBS
+from analysegnss.utils import argument_parser, init_logger
+from analysegnss.utils.utilities import str_green, str_yellow
 
 
 def rnxobs_csv(argv: list):
@@ -81,5 +81,9 @@ def rnxobs_csv(argv: list):
         print(f"Created for {gnss_list}: {csv_fn}")
 
 
-if __name__ == "__main__":
+def main():
     rnxobs_csv(argv=sys.argv)
+
+
+if __name__ == "__main__":
+    main()

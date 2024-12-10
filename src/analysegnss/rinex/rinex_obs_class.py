@@ -6,9 +6,9 @@ from io import StringIO
 import polars as pl
 from rich import print
 
-from config import GNSS_DICT
-from rinex.rinex_class import RINEX
-from utils.utilities import str_green
+from analysegnss.config import GNSS_DICT
+from analysegnss.rinex.rinex_class import RINEX
+from analysegnss.utils.utilities import str_green
 
 
 @dataclass
