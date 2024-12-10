@@ -30,12 +30,12 @@ def rtkppk_plot(argv: list):
     # # test logger
     logger.info(f"Parsed arguments: {args_parsed}")
 
-    if args_parsed.pos_fn is not None:
+    if args_parsed.pos_ifn is not None:
         # create the PPK position dataframe by calling ppk_rnx2rtkp.py
-        pos_fn_index = argv.index("--pos_fn")
+        pos_fn_index = argv.index("--pos_ifn")
         pos_fn_value = argv[pos_fn_index + 1]
 
-        ppk_rnx2rtkp_args = ["ppk_rnx2rtkp.py", "--pos_fn", pos_fn_value]
+        ppk_rnx2rtkp_args = ["ppk_rnx2rtkp.py", "--pos_ifn", pos_fn_value]
         df_pos = ppk_rnx2rtkp.rtkp_pos(argv=ppk_rnx2rtkp_args)
 
         # select the columns needed for the plot
@@ -52,13 +52,13 @@ def rtkppk_plot(argv: list):
         else:
             title = args_parsed.pos_fn + " (" + origin + ")"
 
-    elif args_parsed.sbf_fn is not None:
+    elif args_parsed.sbf_ifn is not None:
         # create the RTK position dataframe by calling rtk_pvtgeod.py
         # create the PPK position dataframe by calling ppk_rnx2rtkp.py
-        sbf_fn_index = argv.index("--sbf_fn")
+        sbf_fn_index = argv.index("--sbf_ifn")
         sbf_fn_value = argv[sbf_fn_index + 1]
 
-        rtk_pvtgeod_args = ["rtk_pvtgeod.py", "--sbf_fn", sbf_fn_value]
+        rtk_pvtgeod_args = ["rtk_pvtgeod.py", "--sbf_ifn", sbf_fn_value]
         df_rtk = rtk_pvtgeod.rtk_pvtgeod(argv=rtk_pvtgeod_args)
 
         # select the columns needed for the plot

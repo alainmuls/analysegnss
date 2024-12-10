@@ -95,7 +95,7 @@ def rnx2rtkp_ppk(
             tdiff = e_dt_obj - s_dt_obj
             tdiff_s = round(tdiff.total_seconds())
             # file name resembles RNX naming fmt: obs_PPK_000000_100S.pos
-            pos_ofn = pos_ofn + "_PPK_" + s_time + "_" + str(tdiff_s) + "S.pos"
+            pos_ofn = pos_ofn + "_PPK_" + s_time + "_" + str(tdiff_s) + "S.pos" #TODO this naively trusts the cli timings, better would be to check first epoch of observation
         else:
             pos_ofn = pos_ofn + "_PPK.pos"
         logger.info(f"Using {pos_ofn} as output file name for rnx2rtkp process")
@@ -117,7 +117,7 @@ def rnx2rtkp_ppk(
     cmd_rnx2rtkp.extend(parsed_args.nav)# parsed_args.nav is a list of multiple nav files 
 
     logger.info(
-        f"Running rnx2rtkp with config file {parsed_args.config_ppk}, \
+        f"Running rnx2rtkp using input files {parsed_args.obs}, {parsed_args.base_corr} and {parsed_args.nav} \
     base station XYZ {parsed_args.base_coord_X}, {parsed_args.base_coord_Y}, {parsed_args.base_coord_Z}, \
     the start time {parsed_args.datetime_start}, the end time {parsed_args.datetime_end}"
     )
@@ -125,7 +125,14 @@ def rnx2rtkp_ppk(
 
     # run rnx2rtkp
     try:
-        subprocess.run(cmd_rnx2rtkp, check=True)
+        proc_rnx2rtkp = subprocess.run(cmd_rnx2rtkp, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        #subprocess.run(cmd_rnx2rtkp,check=True)
+
+        stdout = proc_rnx2rtkp.stdout.decode()
+        stderr = proc_rnx2rtkp.stderr.decode()
+        print(f"rnx2rtkp output: {stdout}") # TODO: this still doesnt print out the stdout of the rnx2rtkp process ...
+        print(f"rnx2rtkp error: {stderr}")
+
     except subprocess.CalledProcessError as e:
         logger.error(f"rnx2rtkp failed with error code {e.returncode}")
         sys.exit(ERROR_CODES["E_PROCESS"])

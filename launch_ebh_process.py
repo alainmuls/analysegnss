@@ -24,7 +24,6 @@ It implements a quality-based decision system for processing GNSS data.
 """
 
 
-
 EBH_REJECTION_LEVEL = 99  # if the number of fixed RTK/PPK points is below this level, the ebh line is rejected
 
 
@@ -211,11 +210,20 @@ def do_ppk_by_decision(
             )
 
             # created and get the rinex files from the sbf input filename
-            rnx_odir = get_rinex_files(parsed_args=parsed_args, logger=logger)
+            rnx_odir = get_rnx_files.get_rnx_frm_sbf(
+                parsed_args=parsed_args, logger=logger
+            )
 
             # get the path of the rinex files and add them them to parsed_args namespace
-            parsed_args.obs = glob.glob(os.path.join(rnx_odir, "*MO.rnx"))[0]
-            parsed_args.nav = glob.glob(os.path.join(rnx_odir, "*MN.rnx"))[0]
+            rnx_obs_fn = glob.glob(
+                os.path.join(rnx_odir, "*MO.rnx")
+            )  # TODO check if there are no more than one MO rinex files
+            parsed_args.obs = rnx_obs_fn[0]
+            rnx_nav_fn = glob.glob(
+                os.path.join(rnx_odir, "*MN.rnx")
+            )  # TODO check if there are no more than one MN rinex files
+            parsed_args.nav = rnx_nav_fn # rnx_nav_fn is kept as a list because argpase.add_argument --nav uses the nargs=+ option. This option requires the argument to be a list of strings.
+
             logger.info(
                 f"Using RINEX files for PPK calculation: {parsed_args.obs} and {parsed_args.nav}"
             )
@@ -276,6 +284,30 @@ def do_ppk_by_decision(
                 logger.info(
                     f"Base corrections are imported correctly. Proceeding with PPK process"
                 )
+                # check format of base correction file
+                if parsed_args.base_corr.endswith(
+                    ".sbf"
+                ) or parsed_args.base_corr.endswith("_"):
+                    logger.info("base correction file is in sbf format")
+
+                    # get obs rnx format from base correction file
+                    # get_rnx_frm_sbf expects parsed_args.sbf_ifn as input. So , we need to update parsed_args.sbf_ifn wth base corr sbf fn
+                    sbf_ifn_rover = (
+                        parsed_args.sbf_ifn
+                    )  # storing original sbf file name
+                    parsed_args.sbf_ifn = parsed_args.base_corr
+
+                    base_rnx_odir = get_rnx_files.get_rnx_frm_sbf(
+                        parsed_args=parsed_args, logger=logger
+                    )
+                    # get the path of the rinex files and add them them to parsed_args namespace
+                    rnx_obs_fn = glob.glob(os.path.join(base_rnx_odir, "*MO.rnx"))
+                    parsed_args.base_corr = rnx_obs_fn[0]
+                    parsed_args.sbf_ifn = (
+                        sbf_ifn_rover  # restore original sbf file name
+                    )
+
+                logger.info(f"using base correction file {parsed_args.base_corr}")
 
                 # RUN rnx2rtkp
                 logger.debug(
@@ -300,15 +332,20 @@ def do_ppk_by_decision(
             )
 
             # created and get the rinex files from the sbf input filename
-            rnx_odir = get_rnx_files.get_rnx_frm_sbf(parsed_args=parsed_args, logger=logger)
+            rnx_odir = get_rnx_files.get_rnx_frm_sbf(
+                parsed_args=parsed_args, logger=logger
+            )
 
             # get the path of the rinex files and add them them to parsed_args namespace
-            parsed_args.obs = glob.glob(
+            rnx_obs_fn = glob.glob(
                 os.path.join(rnx_odir, "*MO.rnx")
             )  # TODO check if there are no more than one MO rinex files
-            parsed_args.nav = glob.glob(
+            parsed_args.obs = rnx_obs_fn[0]
+            rnx_nav_fn = glob.glob(
                 os.path.join(rnx_odir, "*MN.rnx")
             )  # TODO check if there are no more than one MN rinex files
+            parsed_args.nav = rnx_nav_fn # rnx_nav_fn is kept as a list because argpase.add_argument --nav uses the nargs=+ option. This option requires the argument to be a list of strings.
+
             logger.info(
                 f"Using RINEX files for PPK calculation: {parsed_args.obs} and {parsed_args.nav}"
             )
@@ -341,9 +378,32 @@ def do_ppk_by_decision(
                 return ppk_pos_ofn
 
             else:
-                logger.info(
-                    f"base correction file is imported correctly"
-                )
+                logger.info(f"base correction file is imported correctly")
+
+                # check format of base correction file
+                if parsed_args.base_corr.endswith(
+                    ".sbf"
+                ) or parsed_args.base_corr.endswith("_"):
+                    logger.info("base correction file is in sbf format")
+
+                    # get obs rnx format from base correction file
+                    # get_rnx_frm_sbf expects parsed_args.sbf_ifn as input. So , we need to update parsed_args.sbf_ifn wth base corr sbf fn
+                    sbf_ifn_rover = (
+                        parsed_args.sbf_ifn
+                    )  # storing original sbf file name
+                    parsed_args.sbf_ifn = parsed_args.base_corr
+
+                    base_rnx_odir = get_rnx_files.get_rnx_frm_sbf(
+                        parsed_args=parsed_args, logger=logger
+                    )
+                    # get the path of the rinex files and add them them to parsed_args namespace
+                    rnx_obs_fn = glob.glob(os.path.join(base_rnx_odir, "*MO.rnx"))
+                    parsed_args.base_corr = rnx_obs_fn[0]
+                    parsed_args.sbf_ifn = (
+                        sbf_ifn_rover  # restore original sbf file name
+                    )
+
+                logger.info(f"using base correction file {parsed_args.base_corr}")
 
                 # CALCULATING PPK: calling rnx2rtkp_ppk function
                 logger.info(

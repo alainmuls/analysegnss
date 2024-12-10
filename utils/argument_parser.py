@@ -147,6 +147,12 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
         help="input SBF filename",
         type=str,
     )
+    parser.add_argument(
+        "--title",
+        help="Plot title",
+        default=None,
+        type=str,
+    )
 
     # allow argument completion
     argcomplete.autocomplete(parser)
@@ -362,7 +368,7 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
     )
     parser.add_argument(
         "--base_corr",
-        help="base correction filename. RNX OBS or RTCM file obtained from GNSS base station. If provided, a PPK solution is calculated \
+        help="base correction filename. RNX OBS or SBF file obtained from GNSS base station. If provided, a PPK solution is calculated \
             for each RTK solution that is not of sufficient quality.",
         type=str,
         required=False,
@@ -444,7 +450,7 @@ def argument_parser_rnx2rtkp_launcher(args: list) -> argparse.Namespace:
     )
     parser.add_argument(
         "--base_corr",
-        help="input RINEX observation filename or RTCM filename obtained from GNSS base station.",
+        help="input RINEX observation filename or sbf filename obtained from GNSS base station (working on RTCM3).",
         type=str,
         required=True,
     )
