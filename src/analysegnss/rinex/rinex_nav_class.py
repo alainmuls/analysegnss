@@ -139,15 +139,15 @@ class RINEX_NAV(RINEX):
                 gfzrnx_args.remove("-satsys")
                 gfzrnx_args.remove("".join(other_gnss))
 
-            print(f"GLONASS gfzrnx_args = {' '.join(gfzrnx_args)}")
+            # print(f"GLONASS gfzrnx_args = {' '.join(gfzrnx_args)}")
             if self.logger is not None:
                 self.logger.debug("Processing GNSS: R")
             # add a spinner while waiting for the conversion to complete
             with self.console.status(
-                "Please wait - Processing GNSS:...", spinner="point"
+                "Please wait - Processing GNSS R:...", spinner="point"
             ):
                 gfzrnx_args.extend(["-satsys", "R"])
-                print(f"GLONASS gfzrnx_args = {' '.join(gfzrnx_args)}")
+                # print(f"GLONASS gfzrnx_args = {' '.join(gfzrnx_args)}")
                 # Process GLONASS separately
                 r_nav_dict = self._gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
                 gnss_nav_dict.update(r_nav_dict)
