@@ -2,7 +2,6 @@
 
 import os
 import sys
-from logging import Logger
 
 import polars as pl
 from rich import print

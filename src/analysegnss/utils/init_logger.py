@@ -3,8 +3,6 @@ import os
 from logging.handlers import TimedRotatingFileHandler
 from sys import stderr
 
-from analysegnss.utils.utilities import str_green
-
 
 class ColorFormatter(logging.Formatter):
     # color codes
