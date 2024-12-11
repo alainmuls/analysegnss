@@ -5,19 +5,17 @@ import os
 import re
 import sys
 from logging import Logger
-from math import atan2, degrees, sqrt, fabs
+from math import atan2, degrees, fabs, sqrt
 
 import polars as pl
 from tabulate import tabulate
 
-from config import ERROR_CODES
-import ppk_rnx2rtkp
-import rtk_pvtgeod
-from gnss.gnss_dt import gnss2dt
-from rtkpos import rtk_constants as rtkc
-from rtkpos.rtkpos_class import Rtkpos
-from utils import argument_parser, init_logger
-from utils.utilities import str_yellow
+import analysegnss.rtkpos.ppk_rnx2rtkp as ppk_rnx2rtkp
+import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
+from analysegnss.config import ERROR_CODES
+from analysegnss.gnss.gnss_dt import gnss2dt
+from analysegnss.utils import argument_parser, init_logger
+from analysegnss.utils.utilities import str_yellow
 
 
 def get_ppk_dataframe(parsed_args: argparse.Namespace, logger: Logger) -> pl.DataFrame:
@@ -389,5 +387,9 @@ def ebh_lines(argv: list):
         pass
 
 
-if __name__ == "__main__":
+def main():
     ebh_lines(argv=sys.argv)
+
+
+if __name__ == "__main__":
+    main()

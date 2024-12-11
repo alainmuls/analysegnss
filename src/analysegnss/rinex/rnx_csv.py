@@ -69,5 +69,9 @@ def rnx_csv(argv: list):
     rnxnav_csv.rnxnav_csv(argv=rnxnav_args)
 
 
-if __name__ == "__main__":
+def main():
     rnx_csv(argv=sys.argv)
+
+
+if __name__ == "__main__":
+    main()
