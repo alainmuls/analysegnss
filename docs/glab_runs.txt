@@ -19,3 +19,7 @@ glabng -input:obs rnx/KMS000BEL_R_20240890943_03H_01S_MO.rnx -input:nav rnx/KMS0
 
 # GPS+GAL, code NO phase smoothing on L1/E1, all satellites used
 glabng -input:obs rnx/KMS000BEL_R_20240890943_03H_01S_MO.rnx -input:nav rnx/KMS000BEL_R_20240890943_03H_MN.rnx -pre:sat 0,+GE0 -filter:select GE0-code-1  -output:refpos:gpsweek -output:refpos:geodetic -output:refpos glab/KMS000BEL_R_20240890943_03H_01S_MO_GE2.pos -print:meas -print:meas:snr -print:meas:doppler -print:filter  -print:satsel > glab/KMS000BEL_R_20240890943_03H_01S_MO_GE2.glab
+
+
+
+## SMOOTHING cfr page 67
