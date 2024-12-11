@@ -1,9 +1,11 @@
 import datetime
 import logging
 import os
+import sys
 from dataclasses import dataclass, field
 
-from config import ERROR_CODES
+from analysegnss.config import ERROR_CODES
+from analysegnss.utils.utilities import str_red, str_yellow
 
 
 @dataclass
@@ -31,9 +33,26 @@ class GLABNG:
         if not os.path.isfile(self.glab_fn) or not os.access(self.glab_fn, os.R_OK):
             if self.logger:
                 self.logger.error(
-                    f"File does not exist or is not readable: {self.glab_fn}"
+                    f"File does not exist or is not readable: {str_red(self.glab_fn)}"
                 )
-            raise ValueError(f"File does not exist or is not readable: {self.glab_fn}")
+            raise ValueError(
+                f"File does not exist or is not readable: {str_red(self.glab_fn)}"
+            )
+
+        # Check for OUTPUT lines
+        has_output_lines = False
+        with open(self.glab_fn, "r") as f:
+            for line in f:
+                if line.startswith("OUTPUT"):
+                    has_output_lines = True
+                    break
+
+        if not has_output_lines:
+            if self.logger:
+                self.logger.error(
+                    f"File contains no OUTPUT lines: {str_red(self.glab_fn)}"
+                )
+            raise ValueError(f"File contains no OUTPUT lines: {str_red(self.glab_fn)}")
 
     def validate_start_time(self):
         """
@@ -102,3 +121,38 @@ class GLABNG:
                 "Console log level set to "
                 + f"{str_red(logging.getLevelName(self._console_loglevel))}"
             )
+
+    def glab_dataframe(self, lst_sections: list[str] = ["OUTPUT"]) -> dict:
+        """parses specified sections from gLAB file and returns a dictionary of dataframes
+        where the section name is the key and the dataframe is the value
+
+        Args:
+            lst_sections (list[str], optional): list of sections to parse. Defaults to ["OUTPUT"].
+
+        Returns:
+            dict: key is section name and value is dataframe
+        """
+        if not lst_sections:
+            lst_sections = ["OUTPUT"]  # Set default if empty list provided
+
+        # Check which sections exist in file
+        valid_sections = []
+        with open(self.glab_fn, "r") as f:
+            content = f.read()
+            for section in lst_sections:
+                if section in content:
+                    valid_sections.append(section)
+                else:
+                    if self.logger:
+                        self.logger.warning(
+                            f"Section '{str_red(section)}' not found in {str_yellow(self.glab_fn)}, skipping"
+                        )
+
+        for glab_section in valid_sections:
+            # read the glab_fn file and just use the lines that start with glab_section
+            section_data = []
+            with open(self.glab_fn, "r") as f:
+                lines = f.readlines()
+                for line in lines:
+                    if line.startswith(glab_section):
+                        section_data.append(line)

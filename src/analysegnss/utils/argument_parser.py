@@ -448,3 +448,50 @@ def argument_parser_rnx_csv(args: list) -> argparse.Namespace:
     args = parser.parse_args(args)
 
     return args
+
+
+def argument_parser_glab_parser(args: list) -> argparse.Namespace:
+    """parses the arguments
+
+    Args:
+        argv (list): list of arguments
+
+    Returns:
+        argparse.Namespace: parsed arguments
+    """
+    baseName = str_yellow(os.path.basename(__file__))
+
+    help_txt = baseName + " parses the gLAB file."
+
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_txt)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+    )
+
+    parser.add_argument(
+        "--glab_fn",
+        help="gLAB produced file",
+        type=str,
+        required=True,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--section",
+        type=lambda x: [str(item).strip() for item in x.split(",")],
+        help='Comma-separated gLAB sections to parse (default: OUTPUT) (e.g. "OUTPUT,SATSEL,INFO")',
+        required=False,
+        default="OUTPUT",
+    )
+
+    # allow argument completion
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args(args)
+
+    return args

@@ -13,6 +13,7 @@ setup(
             "rnxobs_csv=analysegnss.rinex.rnxobs_csv:main",
             "rnxnav_csv=analysegnss.rinex.rnxnav_csv:main",
             "ebh_lines=analysegnss.scripts.ebh.ebh_lines:main",
+            "glab_parser=analysegnss.glabng.glab_parser:main",
         ]
     },
 )
