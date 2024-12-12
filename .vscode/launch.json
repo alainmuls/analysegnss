@@ -121,7 +121,7 @@
                 "--glab_fn",
                 "/home/amuls/GNSSData/2024-03-29-schaffen/20240329/glab/KMS000BEL_R_20240890943_03H_01S_MO_gal.glab",
                 "--section",
-                "OUTPUT,PROT,SATSEL",
+                "OUTPUT,SATSEL",
                 "-vvv"
             ]
         },
