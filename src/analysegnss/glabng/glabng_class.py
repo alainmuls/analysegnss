@@ -4,7 +4,12 @@ import os
 import sys
 from dataclasses import dataclass, field
 
+import polars as pl
+from rich import print
+import re
+
 from analysegnss.config import ERROR_CODES
+from analysegnss.glabng.glab_msg_headers import GLAB_OUTPUTS
 from analysegnss.utils.utilities import str_red, str_yellow
 
 
@@ -155,4 +160,41 @@ class GLABNG:
                 lines = f.readlines()
                 for line in lines:
                     if line.startswith(glab_section):
-                        section_data.append(line)
+                        # Match quoted strings and split rest on spaces
+                        parts = []
+                        quote_match = re.search(r'"([^"]*)"', line)
+                        if quote_match:
+                            # Split everything before the quote
+                            pre_quote = line[: quote_match.start()].split()
+                            parts.extend(pre_quote)
+                            # Add the quoted part as a single field
+                            parts.append(quote_match.group(1))
+                        else:
+                            # If no quotes, just split normally
+                            parts = line.split()
+                        section_data.append(parts)
+            # print the section_data
+            print(section_data[:3])
+            print(len(section_data[0]))
+
+            df = self.load_section_data(section=glab_section, section_data=section_data)
+
+    def load_section_data(self, section: str, section_data: list[str]) -> pl.DataFrame:
+        # Create schema dictionary excluding X,Y,Z columns
+        schema = {}
+        # columns_to_exclude = ["X", "Y", "Z"]
+
+        for k, v in GLAB_OUTPUTS[section].items():
+            schema[k] = v["dtype"]
+
+        # Load data into polars DataFrame with filtered schema
+        df = pl.DataFrame(section_data, schema=schema)
+
+        # Convert time string to datetime
+        df = df.with_columns(pl.col("DT").str.strptime(pl.Time, format="%H:%M:%S.%f"))
+        with pl.Config(
+            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+        ):
+            print(df)
+
+        return df
