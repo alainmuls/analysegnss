@@ -49,7 +49,7 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
     ebh_qual_rtk = ebh_lines.ebh_lines(parsed_args=parsed_args, logger=logger)
 
     # Checking RTK quality and rejecting lines that are not of sufficient quality
-    rejected_rtk_lines, rtk_qual_decision = rtk_ppk_qual_check(
+    rejected_lines, qual_decision = rtk_ppk_qual_check(
         qual_analysis=ebh_qual_rtk,
         RTK_mode=True,
         rejection_level=EBH_REJECTION_LEVEL,
@@ -57,20 +57,22 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
     )
 
     # checking if ALL ebh lines are meet the criteria. If yes exit with code 0 (success) else it start PPK process
-    if rtk_qual_decision == "ALL-EBH-OK":
+    if qual_decision == "ALL-EBH-OK":
         logger.info(
             "Solution for all ebh lines meet the quality criteria. ASSUR EBH files -> OK."
         )
-        print(f"{utilities.str_green(rtk_qual_decision)}")
+        print(f"{utilities.str_green(qual_decision)}")
 
         sys.exit(0)
 
-    else:
+    elif parsed_args.base_corr:
+        
+        #### STARTING PPK PROCESS ####
 
         # LAUNCHING ppk_by_decision: runs rnx2rtkp in PPK mode for the ebh lines that have been rejected. It returns a rtklib pos_file
         parsed_args.pos_ifn = do_ppk_by_decision(
-            rejected_rtk_lines=rejected_rtk_lines,
-            rtk_qual_decision=rtk_qual_decision,
+            rejected_rtk_lines=rejected_lines,
+            rtk_qual_decision=qual_decision,
             ebh_timings=ebh_timings,
             parsed_args=parsed_args,
             logger=logger,
@@ -80,19 +82,25 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
         del parsed_args.sbf_ifn  # delete sbf_ifn to have ebh_lines run in PPK mode
         ebh_qual_ppk = ebh_lines.ebh_lines(parsed_args=parsed_args, logger=logger)
 
-        rejected_ppk_lines, ppk_qual_decision = rtk_ppk_qual_check(
+        rejected_lines, qual_decision = rtk_ppk_qual_check(
             qual_analysis=ebh_qual_ppk,
             RTK_mode=False,
             rejection_level=EBH_REJECTION_LEVEL,
             logger=logger,
         )
 
-    if ppk_qual_decision == "ALL-EBH-OK":
+    else:
+        logger.warning("Base correction are not available. Not possible to calculate PPK. EBH ONLY BASED ON RTK")
+        print(f"{utilities.str_yellow('Base correction are not available. Not possible to calculate PPK. EBH result only based on RTK')}")
+
+
+
+    if qual_decision == "ALL-EBH-OK":
 
         logger.info(
             "Solution for all ebh lines meet the quality criteria. ASSUR EBH files -> OK."
         )
-        print(f"{utilities.str_green(ppk_qual_decision)}")
+        print(f"{utilities.str_green(qual_decision)}")
 
         sys.exit(0)
 
@@ -100,11 +108,11 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
         logger.warning("Solution for all ebh lines DO NOT meet the quality criteria.")
 
         logger.warning(
-            f"EBH files {utilities.str_red(rejected_ppk_lines)} DO NOT meet the quality criteria"
+            f"EBH files {utilities.str_red(rejected_lines)} DO NOT meet the quality criteria"
         )
 
         print(
-            f"{utilities.str_red(ppk_qual_decision)} -> EBH files {utilities.str_red(rejected_ppk_lines)} DO NOT meet the quality criteria."
+            f"{utilities.str_red(qual_decision)} -> EBH files {utilities.str_red(rejected_lines)} DO NOT meet the quality criteria."
         )
 
         sys.exit(1)
