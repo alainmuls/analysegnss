@@ -143,9 +143,9 @@ class GLABNG:
         # Check which sections exist in file
         valid_sections = []
         with open(self.glab_fn, "r") as f:
-            content = f.read()
+            lines = f.readlines()
             for section in lst_sections:
-                if section in content:
+                if any(line.startswith(section) for line in lines):
                     valid_sections.append(section)
                 else:
                     if self.logger:
@@ -173,9 +173,10 @@ class GLABNG:
                             # If no quotes, just split normally
                             parts = line.split()
                         section_data.append(parts)
+
             # print the section_data
             print(section_data[:3])
-            print(len(section_data[0]))
+            # print(len(section_data[0]))
 
             df = self.load_section_data(section=glab_section, section_data=section_data)
 
@@ -190,8 +191,15 @@ class GLABNG:
         # Load data into polars DataFrame with filtered schema
         df = pl.DataFrame(section_data, schema=schema)
 
+        # Filter columns based on 'keep' field
+        columns_to_keep = [
+            col for col, props in GLAB_OUTPUTS[section].items() if props["keep"]
+        ]
+        df = df.select(columns_to_keep)
+
         # Convert time string to datetime
         df = df.with_columns(pl.col("DT").str.strptime(pl.Time, format="%H:%M:%S.%f"))
+
         with pl.Config(
             tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
         ):
