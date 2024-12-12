@@ -80,7 +80,7 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
 
     # read the CVS position file into polars dataframe
     info_processing, pos_df = rtkpos.read_pos_file()
-    print(f"Processing info:\n{json.dumps(info_processing, indent=4)}")
+    logger.info(f"Processing info:\n{json.dumps(info_processing, indent=4)}")
 
     # analyse the quality of the solution
     quality_analysis(df_pos=pos_df, logger=logger)

@@ -87,7 +87,7 @@ def read_ebh_line_timings(timings_fn: str, logger: Logger) -> dict:
     """
     # check if the timings file is readable
     if not os.path.isfile(timings_fn) or not os.access(timings_fn, os.R_OK):
-        #print(f"File {timings_fn} is not readable")
+        # print(f"File {timings_fn} is not readable")
         logger.critical(f"File {timings_fn} is not readable. Exiting")
         sys.exit(ERROR_CODES["E_FILE_NOT_EXIST"])
 
@@ -156,8 +156,8 @@ def ebh_lines_map_angle(
                 f"No data found for {timings[0].strftime('%Y/%m/%d %H:%M:%S')}. Breaking."
             )
 
-        else: 
-            
+        else:
+
             if logger is not None:
                 logger.debug(f"row_start = {row_start}")
                 logger.debug(
@@ -170,7 +170,6 @@ def ebh_lines_map_angle(
                     f"row_start.select(['UTM.E', 'UTM.N']) = {row_start.select(['UTM.E', 'UTM.N'])}"
                 )
                 logger.debug(f"row_end = {row_end}")
-
 
             # calculate the map_angle
             map_angle = atan2(
@@ -207,9 +206,9 @@ def ebh_lines_extract(
         # print(f"ebh_key = {ebh_key}, timings = {timings}")
 
         # filter the dataframe for the ebh line
-        #ebh_df = df_pos.filter(pl.col("DT") >= timings[0]).filter(
+        # ebh_df = df_pos.filter(pl.col("DT") >= timings[0]).filter(
         #    pl.col("DT") <= timings[1]
-        #)
+        # )
 
         # check orientation of the current line
         if cl_map_angle - 10 < timings[2] < cl_map_angle + 10:
@@ -221,9 +220,8 @@ def ebh_lines_extract(
                 pl.col("DT").is_between((timings[0]), (timings[1])),
             ).reverse()
 
-        #print(f"df_line = {df_line}")
+        # print(f"df_line = {df_line}")
         logger.info(f"Obtained ebh line {ebh_key} between {timings}")
-        
 
     return ebh_lines_assur
 
@@ -247,8 +245,10 @@ def ebh_line_thin_out(
     Returns:
         pl.DataFrame: thinned out dataframe + only RTK/PPK fixed
     """
-    
-    logger.info(f"Starting thinning out of ebh line. And only keeping RTK/PPK fixed values")
+
+    logger.info(
+        f"Starting thinning out of ebh line. And only keeping RTK/PPK fixed values"
+    )
     # get the UTM coordinates of the first point of the line
     utm_start = df_line.select(["UTM.E", "UTM.N"]).row(index=0)
     # print(f"utm_start = {utm_start}")
@@ -269,9 +269,9 @@ def ebh_line_thin_out(
     ).lazy()
 
     # keep only the rows where the quality is 1 (FIX)
-    if hasattr(parsed_args,"pos_ifn") and parsed_args.pos_ifn:
+    if hasattr(parsed_args, "pos_ifn") and parsed_args.pos_ifn:
         df_line = df_line.filter(pl.col("Q") == 1).lazy()
-    elif hasattr(parsed_args,"sbf_ifn") and parsed_args.sbf_ifn:
+    elif hasattr(parsed_args, "sbf_ifn") and parsed_args.sbf_ifn:
         df_line = df_line.filter(pl.col("Type") == 4).lazy()
     else:
         if logger is not None:
@@ -306,25 +306,24 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
 
     Args:
         parsed_args: parsed CLI arguments executed by argparse
-        
+
     return:
     qual_ebh_lines (dict):  dictionary containing the quality of the ebh lines
     """
-
 
     # logger.debug(f"program arguments: {parsed_args}")
 
     # get the dataframe according to the processing type (RTK or PPK)
     # Using hasattr here to check if the argument exists (this fixes argparse.namespace errors across different python scripts)
-    if hasattr(parsed_args,"pos_ifn") and parsed_args.pos_ifn:
+    if hasattr(parsed_args, "pos_ifn") and parsed_args.pos_ifn:
         # call ppp_rnx2rtkp to get the position dataframe
         pos_df = get_ppk_dataframe(parsed_args=parsed_args, logger=logger)
 
         logger.info(f"Dataframe obtained from PPK processing of {parsed_args.pos_ifn}")
-        #print(
+        # print(
         #    f"Dataframe obtained from {str_yellow('PPK')} processing of {str_yellow(parsed_args.pos_ifn)}"
-        #)
-        
+        # )
+
         df_pos = pos_df.select(
             [
                 "DT",
@@ -345,10 +344,10 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
             f"Dataframe obtained from {str_yellow('RTK')} processing of "
             f"{str_yellow(parsed_args.sbf_ifn)}"
         )
-        #print(
+        # print(
         #    f"Dataframe obtained from {str_yellow('RTK')} processing of "
         #    f"{str_yellow(parsed_args.sbf_ifn)}"
-        #)
+        # )
         df_pos = pos_df.select(["DT", "Type", "NrSV", "UTM.E", "UTM.N", "orthoH"])
     else:
         logger.error("No processing type selected or no input file provided. EXITING.")
@@ -356,19 +355,21 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
 
     with pl.Config(tbl_cols=-1):
         logger.info(df_pos)
-        #print(df_pos)
+        # print(df_pos)
 
     # read the timings for the ebh_lines
-    ebh_timings = read_ebh_line_timings(timings_fn=parsed_args.timing_ifn, logger=logger)
+    ebh_timings = read_ebh_line_timings(
+        timings_fn=parsed_args.timing_ifn, logger=logger
+    )
 
     # calculate the map_angle for each ebh_line
     ebh_lines_map_angle(df_pos=df_pos, ebh_timings=ebh_timings, logger=logger)
-    
+
     # only keep the ebh_timings rows that have the calculated angle timings[2]
     ebh_timings = {key: value for key, value in ebh_timings.items() if len(value) == 3}
-    
+
     for ebh_key, timings in ebh_timings.items():
-        
+
         logger.info(
             f"{ebh_key:9s}: {timings[0].strftime('%Y/%m/%d %H:%M:%S')}"
             f" - {timings[1].strftime('%Y/%m/%d %H:%M:%S')} | {timings[2]:6.1f}"
@@ -379,27 +380,34 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
         df_pos=df_pos, ebh_timings=ebh_timings, parsed_args=parsed_args, logger=logger
     )
 
-
     qual_ebh_lines = {}  # dict to store the quality of the ebh lines
     # check quality of each ebh line
     # Thin out line, keep RTK/PPK fixed results
     # save in CSV files using ";" as separator
     for ebh_key, ebh_assur_line in ebh_assur_lines.items():
-        
+
         # Checking quality of each ebh line for ppk and rtk result.
-        # This info is needed to decide whether rtk or ppk quality is sufficient for ASSUR    
-        if hasattr(parsed_args, "pos_ifn")  and parsed_args.pos_ifn:
-            qual_ebh_lines[ebh_key] = ppk_rnx2rtkp.quality_analysis(ebh_assur_line, logger=logger)
-            logger.info(f"The ppk quality of the line {ebh_key} is {qual_ebh_lines[ebh_key]}")        
+        # This info is needed to decide whether rtk or ppk quality is sufficient for ASSUR
+        if hasattr(parsed_args, "pos_ifn") and parsed_args.pos_ifn:
+            qual_ebh_lines[ebh_key] = ppk_rnx2rtkp.quality_analysis(
+                ebh_assur_line, logger=logger
+            )
+            logger.info(
+                f"The ppk quality of the line {ebh_key} is {qual_ebh_lines[ebh_key]}"
+            )
         else:
-            qual_ebh_lines[ebh_key] = rtk_pvtgeod.quality_analysis(ebh_assur_line, logger=logger)
-            logger.info(f"The rtk quality of the line {ebh_key} is {qual_ebh_lines[ebh_key]}")
+            qual_ebh_lines[ebh_key] = rtk_pvtgeod.quality_analysis(
+                ebh_assur_line, logger=logger
+            )
+            logger.info(
+                f"The rtk quality of the line {ebh_key} is {qual_ebh_lines[ebh_key]}"
+            )
 
         # thin out the df_line to keep positions every 0.5 meters and keep only RTK/PPK fixed results
         ebh_assur_line = ebh_line_thin_out(
             df_line=ebh_assur_line, parsed_args=parsed_args, logger=logger
         )
-                
+
         # name the file according to the ebh line key
         ebh_line_fn = f"{parsed_args.desc}_{ebh_key}.csv"
         print(
@@ -412,15 +420,74 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
             f"{ebh_assur_line.select(['UTM.E', 'UTM.N', 'orthoH'])}"
         )
 
-        # keep the columns UTM.E, UTM.N and ortoH and write to CSV file
-        ebh_assur_line.select(["UTM.E", "UTM.N", "orthoH"]).write_csv(
-            ebh_line_fn, separator=";", include_header=False, float_precision=3
+        # keep the columns UTM.E, UTM.N and ortoH
+        ebh_assur_df = ebh_assur_line.select(["UTM.E", "UTM.N", "orthoH"])
+
+        # if ebh destination directory is not specified it will write to EBH_ASSUR dir in the directory of the input sbf or pos file
+        if parsed_args.ebh_dest_dir == None:
+
+            # destination directory of ebh ASSUR files
+            if hasattr(parsed_args, "pos_ifn") and parsed_args.pos_ifn:
+
+                parsed_args.ebh_dest_dir = os.path.join(
+                    os.path.dirname(parsed_args.pos_ifn), "EBH_ASSUR"
+                )
+
+            elif hasattr(parsed_args, "sbf_ifn") and parsed_args.sbf_ifn:
+
+                parsed_args.ebh_dest_dir = os.path.join(
+                    os.path.dirname(parsed_args.sbf_ifn), "EBH_ASSUR"
+                )
+
+            else:
+                pass
+
+
+        # writing ebh assur to file
+        ebh_to_file(
+            ebh_assur_df=ebh_assur_df,
+            ebh_assur_fn=ebh_line_fn,
+            dest_dir=parsed_args.ebh_dest_dir,
+            logger=logger,
         )
 
     return qual_ebh_lines
 
+
+def ebh_to_file(
+    ebh_assur_df: pl.DataFrame, ebh_assur_fn: str, dest_dir: str, logger: Logger
+) -> None:
+    """
+    Write ebh file (according to ASSUR format) to a destination directory
+
+    args:
+    ebh_assur_df (pl.DataFrame): EBH ASSUR formatted dataframe
+    ebh_assur_fn (str): file name of EBH ASSUR
+    dest_dir (str): Path to destination directory
+    logger (Logger): Logger object
+    """
+
+    # Check if the directory already exists
+    if not os.path.exists(dest_dir):
+        try:
+            os.mkdir(dest_dir)
+            logger.info(f"Directory created: {dest_dir}")
+        except OSError as e:
+            logger.info(f"Error creating directory {dest_dir}: {e}")
+
+    # write ebh assur to a file at dest_dir
+    ebh_assur_fp = os.path.join(dest_dir, ebh_assur_fn)  # ebh_assur_fullpath
+    logger.info(f"writing ebh assur df to {ebh_assur_fp}")
+
+    ebh_assur_df.write_csv(
+        ebh_assur_fp, separator=";", include_header=False, float_precision=3
+    )
+
+    logger.info(f"Done writing ebh assur file to {ebh_assur_fp}")
+    print(f"Done writing ebh assur file to {ebh_assur_fp}")
+
 if __name__ == "__main__":
-    
+
     # fetch script name for logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
@@ -431,5 +498,5 @@ if __name__ == "__main__":
     logger = init_logger.logger_setup(args=parsed_args, base_name=script_name)
     # # test logger
     logger.info(f"Parsed arguments: {parsed_args}")
-    
+
     ebh_lines(parsed_args=parsed_args, logger=logger)

@@ -257,7 +257,7 @@ class SBF:
                 sbf_dfs[sbf_block] = sbf_df
 
                 # archiving the converted sbf file
-                if not archive == "":
+                if not archive == None:
                     self.archive_file(fn=bin2asc_fn[0], dest_dir=archive)
 
         if sbf_dfs == {}:
@@ -398,7 +398,7 @@ class SBF:
                     self.logger.info(f"succesfully created  dataframe for {sbf_block}")
                     self.logger.info(sbf_dfs[sbf_block])
 
-                if not archive == "":
+                if not archive == None:
                     # Archive the created files
                     self.archive_file(fn=sbf2asc_fn[0], dest_dir=archive)
 

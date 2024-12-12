@@ -200,7 +200,14 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
         help="input SBF (RTK) filename",
         type=str,
     )
-
+    parser.add_argument(
+        "-odir",
+        "--ebh_dest_dir",
+        help="Destination directory of ebh assur files (default: EBH_ASSUR directory in directory of the input sbf or pos file)",
+        type=str,
+        required=False,
+        default=None
+    )
     parser.add_argument(
         "--desc",
         help="description of EBH lines project",
@@ -214,6 +221,7 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
         type=str,
         required=True,
     )
+
 
     # allow argument completion
     argcomplete.autocomplete(parser)
@@ -268,7 +276,7 @@ def argument_parser_get_ebh_timings(args: list) -> argparse.Namespace:
         help="Specify archive's directory name. (full or relative (@sbf_ifn) path) \
             Default is no archiving.",
         required=False,
-        default="",
+        default=None,
         type=str,
     )
     parser.add_argument(
@@ -388,11 +396,19 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
         default="ebh_line",
     )
     parser.add_argument(
+        "-odir",
+        "--ebh_dest_dir",
+        help="Destination directory of ebh assur files (default: EBH_ASSUR directory in directory of the input sbf or pos file)",
+        type=str,
+        required=False,
+        default=None
+    )
+    parser.add_argument(
         "--archive",
-        help="Specify archive's directory name. (full or relative (@sbf_ifn) path) \
+        help="Archives extracted sbf blocks to specified archive's directory name. (full or relative (@sbf_ifn) path) \
             Default is no archiving.",
         required=False,
-        default="",
+        default=None,
         type=str,
     )
     parser.add_argument(

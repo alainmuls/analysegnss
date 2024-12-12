@@ -47,6 +47,7 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
     # LAUNCHING ebh_lines: in RTK mode to get ebh lines. It returns a quality analysis of each line in dict
     parsed_args.timing_ifn = parsed_args.sbf_ifn + "_ebh_timings.txt"
     ebh_qual_rtk = ebh_lines.ebh_lines(parsed_args=parsed_args, logger=logger)
+
     # Checking RTK quality and rejecting lines that are not of sufficient quality
     rejected_rtk_lines, rtk_qual_decision = rtk_ppk_qual_check(
         qual_analysis=ebh_qual_rtk,
@@ -55,6 +56,7 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
         logger=logger,
     )
 
+    # checking if ALL ebh lines are meet the criteria. If yes exit with code 0 (success) else it start PPK process
     if rtk_qual_decision == "ALL-EBH-OK":
         print(
             "RTK solution for all ebh lines is of sufficient quality. ASSUR EBH files -> OK."
@@ -63,6 +65,7 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
             "RTK solution for all ebh lines is of sufficient quality. ASSUR EBH files -> OK."
         )
 
+        
     else:
 
         # LAUNCHING ppk_by_decision: runs rnx2rtkp in PPK mode for the ebh lines that have been rejected. It returns a rtklib pos_file
