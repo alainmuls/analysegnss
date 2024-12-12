@@ -412,11 +412,11 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
         ebh_line_fn = f"{parsed_args.desc}_{ebh_key}.csv"
         print(
             f"Writing CSV AssurTool file for {str_yellow(ebh_key)} to "
-            f"{str_yellow(ebh_line_fn)}\n"
+            f"{str_yellow(ebh_line_fn)}"
         )
         logger.info(
             f"Writing CSV AssurTool file for {str_yellow(ebh_key)} to "
-            f"{str_yellow(ebh_line_fn)}\n"
+            f"{str_yellow(ebh_line_fn)}"
             f"{ebh_assur_line.select(['UTM.E', 'UTM.N', 'orthoH'])}"
         )
 

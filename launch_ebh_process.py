@@ -58,14 +58,13 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
 
     # checking if ALL ebh lines are meet the criteria. If yes exit with code 0 (success) else it start PPK process
     if rtk_qual_decision == "ALL-EBH-OK":
-        print(
-            "RTK solution for all ebh lines is of sufficient quality. ASSUR EBH files -> OK."
-        )
         logger.info(
-            "RTK solution for all ebh lines is of sufficient quality. ASSUR EBH files -> OK."
+            "Solution for all ebh lines meet the quality criteria. ASSUR EBH files -> OK."
         )
+        print(f"{utilities.str_green(rtk_qual_decision)}")
 
-        
+        sys.exit(0)
+
     else:
 
         # LAUNCHING ppk_by_decision: runs rnx2rtkp in PPK mode for the ebh lines that have been rejected. It returns a rtklib pos_file
@@ -87,6 +86,28 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
             rejection_level=EBH_REJECTION_LEVEL,
             logger=logger,
         )
+
+    if ppk_qual_decision == "ALL-EBH-OK":
+
+        logger.info(
+            "Solution for all ebh lines meet the quality criteria. ASSUR EBH files -> OK."
+        )
+        print(f"{utilities.str_green(ppk_qual_decision)}")
+
+        sys.exit(0)
+
+    else:
+        logger.warning("Solution for all ebh lines DO NOT meet the quality criteria.")
+
+        logger.warning(
+            f"EBH files {utilities.str_red(rejected_ppk_lines)} DO NOT meet the quality criteria"
+        )
+
+        print(
+            f"{utilities.str_red(ppk_qual_decision)} -> EBH files {utilities.str_red(rejected_ppk_lines)} DO NOT meet the quality criteria."
+        )
+
+        sys.exit(1)
 
 
 def rtk_ppk_qual_check(
@@ -138,9 +159,6 @@ def rtk_ppk_qual_check(
         logger.info("Solution for all ebh lines is of sufficient quality.")
         logger.info("ASSUR FILES OK")
 
-        print(
-            f"Solution for all ebh lines is of sufficient quality.\n{utilities.str_green("ASSUR EBH files -> OK.")}"
-        )
         ebh_qual_decision = "ALL-EBH-OK"
 
     elif len(rejected_ebh_lines) == 1:
@@ -225,7 +243,7 @@ def do_ppk_by_decision(
             rnx_nav_fn = glob.glob(
                 os.path.join(rnx_odir, "*MN.rnx")
             )  # TODO check if there are no more than one MN rinex files
-            parsed_args.nav = rnx_nav_fn # rnx_nav_fn is kept as a list because argpase.add_argument --nav uses the nargs=+ option. This option requires the argument to be a list of strings.
+            parsed_args.nav = rnx_nav_fn  # rnx_nav_fn is kept as a list because argpase.add_argument --nav uses the nargs=+ option. This option requires the argument to be a list of strings.
 
             logger.info(
                 f"Using RINEX files for PPK calculation: {parsed_args.obs} and {parsed_args.nav}"
@@ -347,7 +365,7 @@ def do_ppk_by_decision(
             rnx_nav_fn = glob.glob(
                 os.path.join(rnx_odir, "*MN.rnx")
             )  # TODO check if there are no more than one MN rinex files
-            parsed_args.nav = rnx_nav_fn # rnx_nav_fn is kept as a list because argpase.add_argument --nav uses the nargs=+ option. This option requires the argument to be a list of strings.
+            parsed_args.nav = rnx_nav_fn  # rnx_nav_fn is kept as a list because argpase.add_argument --nav uses the nargs=+ option. This option requires the argument to be a list of strings.
 
             logger.info(
                 f"Using RINEX files for PPK calculation: {parsed_args.obs} and {parsed_args.nav}"
