@@ -378,7 +378,7 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
         "--config_ppk",
         help="file name of config file used for RTKLib rnx2rtkp calculation.",
         type=str,
-        required=True,
+        required=False,
     )
     parser.add_argument(
         "--desc",

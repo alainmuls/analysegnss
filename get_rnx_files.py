@@ -31,7 +31,9 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> str:
     # generating RNX files from sbf_ifn using sbf2rin.sh
 
     # Path to sbf2rin shell script
-    sbf2rin_path = "scripts/sbf2rin.sh"
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    sbf2rin_path = os.path.join(current_dir, "scripts/sbf2rin.sh")
+    logger.info(f"Using sbf2rin.sh full path {sbf2rin_path}")
 
     # get basename of sbf_ifn without extension
     sbf_basename = os.path.basename(parsed_args.sbf_ifn).split(".")[0]
