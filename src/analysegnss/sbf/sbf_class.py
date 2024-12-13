@@ -9,6 +9,8 @@ from dataclasses import dataclass, field
 import numpy as np
 import polars as pl
 import utm
+from rich import print
+from rich.console import Console
 
 from analysegnss.config import ERROR_CODES
 from analysegnss.gnss.gnss_dt import gpsms2dt
@@ -24,6 +26,7 @@ class SBF:
 
     logger: logging.Logger = field(default=None)
     _console_loglevel: int = field(default=logging.ERROR)
+    rich_console: Console = field(default=Console())
 
     def __post_init__(self):
         self.validate_file()
@@ -148,9 +151,9 @@ class SBF:
             cmd_bin2asc.append("-e")
             cmd_bin2asc.append(self.end_time.strftime("%H:%M:%S"))
 
-        # add logging level to cmd_bin2asc when self._console_loglevel is DEBUG
-        if self._console_loglevel == logging.DEBUG:
-            cmd_bin2asc.append("-v")
+        # # add logging level to cmd_bin2asc when self._console_loglevel is DEBUG
+        # if self._console_loglevel == logging.DEBUG:
+        #     cmd_bin2asc.append("-v")
 
         for sbf_block in lst_sbfblocks:
             cmd_bin2asc.append("-m")
@@ -161,7 +164,11 @@ class SBF:
             self.logger.debug(f"... running: {str_yellow(' '.join(cmd_bin2asc))}")
 
         try:
-            process = subprocess.run(cmd_bin2asc)
+            with self.rich_console.status(
+                f"[bold green]Converting SBF ({lst_sbfblocks}) to CSV files...",
+                spinner="point",
+            ):
+                process = subprocess.run(cmd_bin2asc)
         except Exception as e:
             sys.stderr.write(f"{process} Error: {e}\n")
             if self.logger:
@@ -190,19 +197,23 @@ class SBF:
             keep_cols = self.used_columns(sbf_block)
             # print(f"list(keep_cols.keys()) = \n{list(keep_cols.keys())}")
 
-            sbf_df = pl.read_csv(
-                source=bin2asc_fn[0],
-                separator=",",
-                columns=list(keep_cols.keys()),
-                comment_prefix="#",
-                has_header=True,
-                skip_rows_after_header=1,  # Skip 1 row after the header
-                dtypes=keep_cols,
-                null_values="NaN",
-            )
+            with self.rich_console.status(
+                f"[bold green]Reading from CSV file ({sbf_block})...",
+                spinner="point",
+            ):
+                sbf_df = pl.read_csv(
+                    source=bin2asc_fn[0],
+                    separator=",",
+                    columns=list(keep_cols.keys()),
+                    comment_prefix="#",
+                    has_header=True,
+                    skip_rows_after_header=1,  # Skip 1 row after the header
+                    dtypes=keep_cols,
+                    null_values="NaN",
+                )
 
-            # add columns to the dataframe
-            sbf_df = self.add_columns(block_df=sbf_df)
+                # add columns to the dataframe
+                sbf_df = self.add_columns(block_df=sbf_df)
 
             sbf_dfs[sbf_block] = sbf_df
 
@@ -473,19 +484,6 @@ class SBF:
                 "L_cycles [cyc]",
             ]
         elif sbf_block == "PVTGeodetic2":
-            # ['TOW [0.001 s]', 'WNc [w]', 'Type', 'AutoBase', 'Flag2D', 'Error',
-            # 'Latitude [rad]', 'Longitude [rad]', 'Height [m]', 'Undulation',
-            # 'Vn [m/s]', 'Ve [m/s]', 'Vu [m/s]', 'COG [°]',
-            # 'RxClkBias [ms]', 'RxClkDrift [ppm]', 'TimeSystem', 'Datum',
-            # 'NrSV', 'LC', 'FC', 'I', 'AI', 'PA',
-            # 'RtkBaseType', 'ReferenceID', 'MeanCorrAge [0.01 s]',
-            # 'SignalInfo', 'RAIM integrity flag', 'Integrity failed',
-            # 'Storm Flag', 'Accuracy limit exceeded', 'NrBases',
-            # 'SeedAge [s]', 'SeedType', 'Latency [0.0001 s]',
-            # 'HAccuracy [0.01 m]', 'VAccuracy [0.01 m]', 'Misc',
-            # 'Baseline', 'Phase center variation', 'SIGIL',
-            # 'RTCMV', 'PPVTAge', 'ARPMarkerOffset']
-
             # dict of your column names keyed by dtype
             col_types = {
                 pl.Float64: [
@@ -568,6 +566,7 @@ class SBF:
                 "DeltaLS [s]",
             ]
         elif sbf_block == "PosCovGeodetic1":
+            # dict of your column names keyed by dtype
             col_types = {
                 pl.Float32: [
                     "Cov_latlat [m²]",
@@ -581,6 +580,7 @@ class SBF:
                     "WNc [w]",
                 ],
             }
+
         keep_cols = {}
         for dtype, columns in col_types.items():
             for col in columns:
@@ -590,6 +590,35 @@ class SBF:
             self.logger.info(f"Keeping columns: \n{keep_cols}")
 
         return keep_cols
+
+    def convert_Cov2SD(self, df_cov: pl.DataFrame) -> pl.DataFrame:
+        """Convert covariance matrix to standard deviation
+
+        Args:
+            df_cov (pl.DataFrame): df with covariance diagonal elements
+
+        Returns:
+            pl.DataFrame: df with standard deviations
+        """
+        # Define column name mapping
+        rename_map = {
+            "Cov_latlat [m²]": "SD_lat [m]",
+            "Cov_lonlon [m²]": "SD_lon [m]",
+            "Cov_hgthgt [m²]": "SD_hgt [m]",
+        }
+
+        return (
+            df_cov.lazy()
+            .with_columns(
+                [
+                    (pl.col(col) ** 0.5).alias(rename_map.get(col, col))
+                    for col in rename_map.keys()
+                ]
+            )
+            .drop(rename_map.keys())
+            # .drop(["TOW [0.001 s]", "WNc [w]"])
+            .collect()
+        )
 
     def sbf2asc_convert_sbfblock(self, sbf_block: str) -> str:
         """This looks up which sbf2asc argument belongs to which sbfblock

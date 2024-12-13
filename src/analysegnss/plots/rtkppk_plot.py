@@ -4,6 +4,7 @@ import os
 import sys
 
 import polars as pl
+from rich import print
 
 import analysegnss.rtkpos.ppk_rnx2rtkp as ppk_rnx2rtkp
 import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
@@ -57,31 +58,47 @@ def rtkppk_plot(argv: list):
             )
         # df_utm = df_pos.select(["DT", "Q", "ns", "UTM.E", "UTM.N", "orthoH"])
 
-        with pl.Config(
-            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-        ):
-            if logger is not None:
-                logger.info(f"df_pos = \n{df_pos}")
-                logger.info(f"df_utm = \n{df_utm}")
-
     elif args_parsed.sbf_fn is not None:
         # create the RTK position dataframe by calling rtk_pvtgeod.py
         # create the PPK position dataframe by calling ppk_rnx2rtkp.py
         sbf_fn_index = argv.index("--sbf_fn")
         sbf_fn_value = argv[sbf_fn_index + 1]
 
-        rtk_pvtgeod_args = ["rtk_pvtgeod.py", "--sbf_fn", sbf_fn_value]
+        if args_parsed.sd:
+            rtk_pvtgeod_args = [
+                "rtk_pvtgeod.py",
+                "--sbf_fn",
+                sbf_fn_value,
+                "--sd",
+            ]
+        else:
+            rtk_pvtgeod_args = ["rtk_pvtgeod.py", "--sbf_fn", sbf_fn_value]
+
         df_rtk = rtk_pvtgeod.rtk_pvtgeod(argv=rtk_pvtgeod_args)
+        # with pl.Config(
+        #     tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+        # ):
+        #     for sbf_block, df_block in dfs_rtk.items():
+        #         print(f"[bold green]df_{sbf_block}")
+        #         print(df_block)
 
         # select the columns needed for the plot
-        df_utm = df_rtk.select(["DT", "Type", "NrSV", "UTM.E", "UTM.N", "orthoH"])
-
-        with pl.Config(
-            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-        ):
-            if logger is not None:
-                logger.info(f"df_rtk = \n{df_rtk}")
-                logger.info(f"df_utm = \n{df_utm}")
+        if not args_parsed.sd:
+            df_utm = df_rtk.select(["DT", "Type", "NrSV", "UTM.E", "UTM.N", "orthoH"])
+        else:
+            df_utm = df_rtk.select(
+                [
+                    "DT",
+                    "Type",
+                    "NrSV",
+                    "UTM.E",
+                    "UTM.N",
+                    "orthoH",
+                    "SD_lat [m]",
+                    "SD_lon [m]",
+                    "SD_hgt [m]",
+                ]
+            )
 
     else:
         if logger is not None:
@@ -89,15 +106,17 @@ def rtkppk_plot(argv: list):
         print("No position file specified")
         sys.exit(ERROR_CODES["E_INVALID_ARGS"])
 
-    # create a title for the plot
-    if args_parsed.title is not None:
-        title = args_parsed.title
-    else:
-        fn_full = args_parsed.pos_fn if args_parsed.pos_fn else args_parsed.sbf_fn
-        # separate the filename from the path
-        filename = os.path.basename(fn_full)
-        dir_fn = os.path.dirname(fn_full)
+    with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
+        if logger is not None:
+            logger.info(f"df_utm = \n{df_utm}")
 
+    # find filename and directory from the position file
+    fn_full = args_parsed.pos_fn if args_parsed.pos_fn else args_parsed.sbf_fn
+    # separate the filename from the path
+    filename = os.path.basename(fn_full)
+    dir_fn = os.path.dirname(fn_full)
+
+    # set the origin of the coordinates
     origin = "PPK" if args_parsed.pos_fn else "RTK"
 
     # plot the UTM and orthoH coordinates

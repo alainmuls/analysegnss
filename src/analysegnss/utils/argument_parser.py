@@ -33,6 +33,14 @@ def argument_parser_rtk(args: list) -> argparse.Namespace:
         required=False,
     )
 
+    parser.add_argument(
+        "--sd",
+        help="add standard deviation to the plot",
+        action="store_true",
+        required=False,
+        default=False,
+    )
+
     parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
     parser.add_argument(
         "-v",
