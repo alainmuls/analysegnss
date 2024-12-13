@@ -38,7 +38,8 @@
                 "--pos_fn",
                 "/home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rtkp/134200BEL_R_20242751023_01H_10Z_MO.pos",
                 "-vvv",
-                "--plot"
+                "--plot",
+                "--sd",
             ]
         },
         {
