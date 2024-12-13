@@ -87,8 +87,7 @@ def argument_parser_ppk(args: list) -> argparse.Namespace:
 
 
 def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
-    """(Deprecated. Use ppk_rnx2rtkp instead.)
-    Parses the arguments
+    """Parses the arguments for plotting the PPK or RTK UTM coordinates
 
     Args:
         argv (list): list of arguments
@@ -147,6 +146,14 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
         "--sbf_fn",
         help="input SBF filename",
         type=str,
+    )
+
+    parser.add_argument(
+        "--sd",
+        help="add standard deviation to the plot",
+        action="store_true",
+        required=False,
+        default=False,
     )
 
     # allow argument completion
