@@ -90,7 +90,7 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
         )
 
     else:
-        logger.warning("Base correction are not available. Not possible to calculate PPK. EBH ONLY BASED ON RTK")
+        logger.warning("Base corrections are not available. Not possible to calculate PPK. EBH ONLY BASED ON RTK")
         print(f"{utilities.str_yellow('Base correction are not available. Not possible to calculate PPK. EBH result only based on RTK')}")
 
 

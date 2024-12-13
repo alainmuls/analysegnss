@@ -46,7 +46,7 @@ def argument_parser_rtk(args: list) -> argparse.Namespace:
         "--archive",
         help="Specify archive's directory name",
         required=False,
-        default="",
+        default=None,
         type=str,
     )
 
@@ -90,7 +90,7 @@ def argument_parser_ppk(args: list) -> argparse.Namespace:
         "--archive",
         help="Specify archive's directory name",
         required=False,
-        default="",
+        default=None,
         type=str,
     )
     # allow argument completion
@@ -388,6 +388,15 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
         type=str,
         required=False,
     )
+    #TODO add sbf2asc compatibility (check if sbf2asc can extract sbf comments, ...)
+    """
+    parser.add_argument(
+        "--sbf2asc",
+        help="Using sbf2asc instead of bin2asc as sbf converter. Use sbf2asc if environment is ran on a ARM processor.",
+        action="store_true",
+        required=False,
+    )
+    """
     parser.add_argument(
         "--desc",
         help="description of EBH lines project",

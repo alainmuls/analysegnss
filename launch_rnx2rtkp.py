@@ -125,14 +125,8 @@ def rnx2rtkp_ppk(
 
     # run rnx2rtkp
     try:
-        proc_rnx2rtkp = subprocess.run(cmd_rnx2rtkp, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        #subprocess.run(cmd_rnx2rtkp,check=True)
-
-        stdout = proc_rnx2rtkp.stdout.decode()
-        stderr = proc_rnx2rtkp.stderr.decode()
-        print(f"rnx2rtkp output: {stdout}") # TODO: this still doesnt print out the stdout of the rnx2rtkp process ...
-        print(f"rnx2rtkp error: {stderr}")
-
+        proc_rnx2rtkp = subprocess.run(cmd_rnx2rtkp, check=True, stdout=sys.stdout, stderr=sys.stderr)
+    
     except subprocess.CalledProcessError as e:
         logger.error(f"rnx2rtkp failed with error code {e.returncode}")
         sys.exit(ERROR_CODES["E_PROCESS"])
