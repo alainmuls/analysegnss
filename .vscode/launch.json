@@ -13,7 +13,8 @@
             "args": [
                 "--sbf_fn",
                 "/home/amuls/GNSSData/USA_CA_2024/Ocotillo/rover/1342172Z.24_",
-                "-vvv"
+                "-vvv",
+                "--sd",
             ]
         },
         {
