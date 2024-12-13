@@ -39,7 +39,23 @@ def rtkppk_plot(argv: list):
         df_pos = ppk_rnx2rtkp.rtkp_pos(argv=ppk_rnx2rtkp_args)
 
         # select the columns needed for the plot
-        df_utm = df_pos.select(["DT", "Q", "ns", "UTM.E", "UTM.N", "orthoH"])
+        if not args_parsed.sd:
+            df_utm = df_pos.select(["DT", "Q", "ns", "UTM.E", "UTM.N", "orthoH"])
+        else:
+            df_utm = df_pos.select(
+                [
+                    "DT",
+                    "Q",
+                    "ns",
+                    "UTM.E",
+                    "UTM.N",
+                    "orthoH",
+                    "sdn(m)",
+                    "sde(m)",
+                    "sdu(m)",
+                ]
+            )
+        # df_utm = df_pos.select(["DT", "Q", "ns", "UTM.E", "UTM.N", "orthoH"])
 
         with pl.Config(
             tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
@@ -77,19 +93,29 @@ def rtkppk_plot(argv: list):
     if args_parsed.title is not None:
         title = args_parsed.title
     else:
-        filename = args_parsed.pos_fn if args_parsed.pos_fn else args_parsed.sbf_fn
-        # Take last 30 chars of filename
-        truncated_filename = filename[-50:] if len(filename) > 50 else filename
-        title = f"...{truncated_filename}"
+        fn_full = args_parsed.pos_fn if args_parsed.pos_fn else args_parsed.sbf_fn
+        # separate the filename from the path
+        filename = os.path.basename(fn_full)
+        dir_fn = os.path.dirname(fn_full)
 
     origin = "PPK" if args_parsed.pos_fn else "RTK"
 
     # plot the UTM and orthoH coordinates
     if args_parsed.plot:
-        plot_utm.plot_utm_coords(
+        plot_utm.plot_utm_scatter(
             utm_df=df_utm,
             origin=origin,
-            title=title,
+            fn=filename,
+            dir_fn=dir_fn,
+            logger=logger,
+        )
+
+        plot_utm.plot_utm_height(
+            utm_df=df_utm,
+            origin=origin,
+            fn=filename,
+            dir_fn=dir_fn,
+            sd=args_parsed.sd,
             logger=logger,
         )
 
