@@ -59,18 +59,6 @@ def plot_utm_scatter(
             )
         )
 
-    # elif origin == "PPK":
-    #     for qual, qual_data in utm_df.groupby(quality):
-    #         fig.add_trace(
-    #             go.Scatter(
-    #                 x=qual_data[cols.east],
-    #                 y=qual_data[cols.north],
-    #                 mode="markers",
-    #                 name=f"{rtkc.dict_rtk_pvtmode[qual]['desc']}",
-    #                 marker=dict(color=rtkc.dict_rtk_pvtmode[qual]["color"], size=1),
-    #             )
-    #         )
-
     fig.update_layout(
         plot_bgcolor="white",
         font=dict(color="#909497", size=18),
@@ -144,95 +132,162 @@ def plot_utm_height(
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True)
 
     # Add traces to each subplot and add error bars when asked for
-    if not sd:
-        fig.add_trace(
-            go.Scatter(
-                x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
-                y=utm_df[cols.north],
-                mode="markers",
-                marker=dict(color=enu_colors[0], size=1),
-                # name=cols.north,
-            ),
-            row=1,
-            col=1,
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
-                y=utm_df[cols.east],
-                mode="markers",
-                marker=dict(color=enu_colors[1], size=1),
-                # name=cols.east,
-            ),
-            row=2,
-            col=1,
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
-                y=utm_df["orthoH"],
-                mode="markers",
-                marker=dict(color=enu_colors[2], size=1),
-                # name="orthoH",
-            ),
-            row=3,
-            col=1,
-        )
-    else:  # display the standard deviation
-        fig.add_trace(
-            go.Scatter(
-                x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
-                y=utm_df[cols.north],
-                mode="markers+lines",
-                marker=dict(color=enu_colors[0], size=1),
-                line=dict(color=enu_colors[0]),
-                # name=cols.north,
-                error_y=dict(
+    # if not sd:
+    #     fig.add_trace(
+    #         go.Scatter(
+    #             x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
+    #             y=utm_df[cols.north],
+    #             mode="markers",
+    #             marker=dict(color=enu_colors[0], size=1),
+    #             # name=cols.north,
+    #         ),
+    #         row=1,
+    #         col=1,
+    #     )
+    #     fig.add_trace(
+    #         go.Scatter(
+    #             x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
+    #             y=utm_df[cols.east],
+    #             mode="markers",
+    #             marker=dict(color=enu_colors[1], size=1),
+    #             # name=cols.east,
+    #         ),
+    #         row=2,
+    #         col=1,
+    #     )
+    #     fig.add_trace(
+    #         go.Scatter(
+    #             x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
+    #             y=utm_df["orthoH"],
+    #             mode="markers",
+    #             marker=dict(color=enu_colors[2], size=1),
+    #             # name="orthoH",
+    #         ),
+    #         row=3,
+    #         col=1,
+    #     )
+    # else:  # display the standard deviation
+    #     fig.add_trace(
+    #         go.Scatter(
+    #             x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
+    #             y=utm_df[cols.north],
+    #             mode="markers+lines",
+    #             marker=dict(color=enu_colors[0], size=1),
+    #             line=dict(color=enu_colors[0]),
+    #             # name=cols.north,
+    #             error_y=dict(
+    #                 type="data",
+    #                 array=utm_df[cols.sdn],
+    #                 visible=True,
+    #                 color=enu_colors_transparent[0],
+    #             ),
+    #         ),
+    #         row=1,
+    #         col=1,
+    #     )
+    #     fig.add_trace(
+    #         go.Scatter(
+    #             x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
+    #             y=utm_df[cols.east],
+    #             mode="markers+lines",
+    #             marker=dict(color=enu_colors[1], size=1),
+    #             line=dict(color=enu_colors[1]),
+    #             # name=cols.east,
+    #             error_y=dict(
+    #                 type="data",
+    #                 array=utm_df[cols.sde],
+    #                 visible=True,
+    #                 color=enu_colors_transparent[1],
+    #             ),
+    #         ),
+    #         row=2,
+    #         col=1,
+    #     )
+    #     fig.add_trace(
+    #         go.Scatter(
+    #             x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
+    #             y=utm_df["orthoH"],
+    #             mode="markers+lines",
+    #             marker=dict(color=enu_colors[2], size=1),
+    #             line=dict(color=enu_colors[2]),
+    #             # name="H",
+    #             error_y=dict(
+    #                 type="data",
+    #                 array=utm_df[cols.sdu],
+    #                 visible=True,
+    #                 color=enu_colors_transparent[2],
+    #             ),
+    #         ),
+    #         row=3,
+    #         col=1,
+    #     )
+
+    fig.add_trace(
+        go.Scatter(
+            x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
+            y=utm_df[cols.north],
+            mode="markers" if not sd else "markers+lines",
+            marker=dict(color=enu_colors[0], size=1),
+            line=dict(color=enu_colors[0]) if sd else None,
+            # name=cols.north,
+            error_y=(
+                dict(
                     type="data",
                     array=utm_df[cols.sdn],
                     visible=True,
                     color=enu_colors_transparent[0],
-                ),
+                )
+                if sd
+                else None
             ),
-            row=1,
-            col=1,
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
-                y=utm_df[cols.east],
-                mode="markers+lines",
-                marker=dict(color=enu_colors[1], size=1),
-                line=dict(color=enu_colors[1]),
-                # name=cols.east,
-                error_y=dict(
+        ),
+        row=1,
+        col=1,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
+            y=utm_df[cols.east],
+            mode="markers" if not sd else "markers+lines",
+            marker=dict(color=enu_colors[1], size=1),
+            line=dict(color=enu_colors[1]) if sd else None,
+            # name=cols.east,
+            error_y=(
+                dict(
                     type="data",
                     array=utm_df[cols.sde],
                     visible=True,
                     color=enu_colors_transparent[1],
-                ),
+                )
+                if sd
+                else None
             ),
-            row=2,
-            col=1,
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
-                y=utm_df["orthoH"],
-                mode="markers+lines",
-                marker=dict(color=enu_colors[2], size=1),
-                line=dict(color=enu_colors[2]),
-                # name="H",
-                error_y=dict(
+        ),
+        row=2,
+        col=1,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
+            y=utm_df["orthoH"],
+            mode="markers" if not sd else "markers+lines",
+            marker=dict(color=enu_colors[2], size=1),
+            line=dict(color=enu_colors[2]) if sd else None,
+            # name="H",
+            error_y=(
+                dict(
                     type="data",
                     array=utm_df[cols.sdu],
                     visible=True,
                     color=enu_colors_transparent[2],
-                ),
+                )
+                if sd
+                else None
             ),
-            row=3,
-            col=1,
-        )
+        ),
+        row=3,
+        col=1,
+    )
 
     # Update layout for better visualization
     fig.update_layout(
