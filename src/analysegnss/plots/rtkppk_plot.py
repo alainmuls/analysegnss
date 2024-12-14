@@ -118,6 +118,7 @@ def rtkppk_plot(argv: list):
 
     # set the origin of the coordinates
     origin = "PPK" if args_parsed.pos_fn else "RTK"
+    print(f"creating plot for {origin} position file {filename}")
 
     # plot the UTM and orthoH coordinates
     if args_parsed.plot:

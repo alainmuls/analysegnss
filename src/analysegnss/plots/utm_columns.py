@@ -21,6 +21,7 @@ class UTMColumns:
     sde: str
     sdn: str
     sdu: str
+    nrSVN: str
 
 
 # Define mappings for different origins
@@ -31,9 +32,10 @@ COLUMN_MAPPINGS: Dict[str, UTMColumns] = {
         height="orthoH",
         time="DT",
         quality_mapping=UTMQualityMapping("Type", sbfc.dict_sbf_pvtmode),
-        sde="sde(m)",
-        sdn="sdn(m)",
-        sdu="sdu(m)",
+        sde="SD_lon [m]",
+        sdn="SD_lat [m]",
+        sdu="SD_hgt [m]",
+        nrSVN="NrSV",
     ),
     "PPK": UTMColumns(
         east="UTM.E",
@@ -44,6 +46,7 @@ COLUMN_MAPPINGS: Dict[str, UTMColumns] = {
         sde="sde(m)",
         sdn="sdn(m)",
         sdu="sdu(m)",
+        nrSVN="ns",
     ),
 }
 

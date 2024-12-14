@@ -78,8 +78,8 @@ def plot_utm_scatter(
         xaxis=dict(title=cols.east, linecolor="#909497"),
         yaxis=dict(title=cols.north, tickformat=",", linecolor="#909497"),
         margin=dict(t=100, r=80, b=80, l=120),
-        height=720,
-        width=1280,
+        height=600,
+        width=1024,
         legend=dict(itemsizing="constant", itemwidth=30),
     )
 
@@ -91,12 +91,13 @@ def plot_utm_scatter(
     if not os.path.exists(os.path.join(dir_fn, "plots")):
         os.makedirs(os.path.join(dir_fn, "plots"))
 
-    fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_scatter.png")
-    fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_scatter.html")
+    fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_scatter.pdf")
+    # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_scatter.html")
     # create a console logger
     console = Console()
     with console.status(f"Saving plot to {fn_plot}", spinner="point"):
-        fig.write_image(fn_plot, width=1280, height=720)
+        fig.write_image(fn_plot, width=1024, height=600)
+        # fig.write_html(fn_plot)
     print(f"Plot saved to {fn_plot}")
 
 
@@ -235,8 +236,8 @@ def plot_utm_height(
 
     # Update layout for better visualization
     fig.update_layout(
-        height=720,  # Taller figure to accommodate 3 subplots
-        width=1280,
+        height=600,  # Taller figure to accommodate 3 subplots
+        width=1024,
         showlegend=False,
         plot_bgcolor="white",
         title=dict(text=f"{fn} - {origin}", font=dict(size=22)),
@@ -257,20 +258,20 @@ def plot_utm_height(
         os.makedirs(os.path.join(dir_fn, "plots"))
 
     # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}.svg")
-    # fig.write_image(fn_plot, width=1280, height=720)
+    # fig.write_image(fn_plot, width=1024, height=600)
 
     if not sd:
-        fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu.png")
-        fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu.html")
+        fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu.pdf")
+        # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu.html")
         # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu.svg")
     else:
-        fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu_sd.png")
-        fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu_sd.html")
+        fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu_sd.pdf")
+        # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu_sd.html")
         # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu_sd.svg")
 
     # create a console logger
     console = Console()
     with console.status(f"Saving plot to {fn_plot}", spinner="point"):
-        # fig.write_image(fn_plot, width=1280, height=720)
-        fig.write_html(fn_plot)
+        fig.write_image(fn_plot, width=1024, height=600)
+        # fig.write_html(fn_plot)
     print(f"Plot saved to {fn_plot}")
