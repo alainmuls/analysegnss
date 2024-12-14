@@ -9,6 +9,7 @@ from rich import print
 from rich.console import Console
 
 from analysegnss.plots import discrete_colors as dc
+from analysegnss.plots.utm_columns import get_utm_columns
 from analysegnss.rtkpos import rtk_constants as rtkc
 from analysegnss.sbf import sbf_constants as sbfc
 
@@ -38,38 +39,44 @@ def plot_utm_scatter(
         ):
             logger.info(f"utm_df = \n{utm_df}")
 
+    # get the correct column names according to the origin
+    cols = get_utm_columns(origin)
+
+    # create a figure
     fig = go.Figure()
 
-    if origin == "RTK":
-        for pvtmode, pvtdata in utm_df.groupby("Type"):
-            fig.add_trace(
-                go.Scatter(
-                    x=pvtdata["UTM.E"],
-                    y=pvtdata["UTM.N"],
-                    mode="markers",
-                    name=f"{sbfc.dict_sbf_pvtmode[pvtmode]['desc']}",
-                    marker=dict(color=sbfc.dict_sbf_pvtmode[pvtmode]["color"], size=1),
-                )
+    # if origin == "RTK":
+    for qual, qual_data in utm_df.groupby(cols.quality_mapping.columns):
+        fig.add_trace(
+            go.Scatter(
+                x=qual_data[cols.east],
+                y=qual_data[cols.north],
+                mode="markers",
+                name=f"{cols.quality_mapping.quality_dict[qual]['desc']}",
+                marker=dict(
+                    color=cols.quality_mapping.quality_dict[qual]["color"], size=1
+                ),
             )
+        )
 
-    elif origin == "PPK":
-        for qual, qual_data in utm_df.groupby("Q"):
-            fig.add_trace(
-                go.Scatter(
-                    x=qual_data["UTM.E"],
-                    y=qual_data["UTM.N"],
-                    mode="markers",
-                    name=f"{rtkc.dict_rtk_pvtmode[qual]['desc']}",
-                    marker=dict(color=rtkc.dict_rtk_pvtmode[qual]["color"], size=1),
-                )
-            )
+    # elif origin == "PPK":
+    #     for qual, qual_data in utm_df.groupby(quality):
+    #         fig.add_trace(
+    #             go.Scatter(
+    #                 x=qual_data[cols.east],
+    #                 y=qual_data[cols.north],
+    #                 mode="markers",
+    #                 name=f"{rtkc.dict_rtk_pvtmode[qual]['desc']}",
+    #                 marker=dict(color=rtkc.dict_rtk_pvtmode[qual]["color"], size=1),
+    #             )
+    #         )
 
     fig.update_layout(
         plot_bgcolor="white",
         font=dict(color="#909497", size=18),
-        title=dict(text=fn, font=dict(size=22)),
-        xaxis=dict(title="UTM.E", linecolor="#909497"),
-        yaxis=dict(title="UTM.N", tickformat=",", linecolor="#909497"),
+        title=dict(text=f"{fn} - {origin}", font=dict(size=22)),
+        xaxis=dict(title=cols.east, linecolor="#909497"),
+        yaxis=dict(title=cols.north, tickformat=",", linecolor="#909497"),
         margin=dict(t=100, r=80, b=80, l=120),
         height=720,
         width=1280,
@@ -84,10 +91,8 @@ def plot_utm_scatter(
     if not os.path.exists(os.path.join(dir_fn, "plots")):
         os.makedirs(os.path.join(dir_fn, "plots"))
 
-    # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}.svg")
-    # fig.write_image(fn_plot, width=1280, height=720)
-
     fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_scatter.png")
+    fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_scatter.html")
     # create a console logger
     console = Console()
     with console.status(f"Saving plot to {fn_plot}", spinner="point"):
@@ -119,6 +124,9 @@ def plot_utm_height(
         ):
             logger.info(f"utm_df = \n{utm_df}")
 
+    # get the correct column names according to the origin
+    cols = get_utm_columns(origin)
+
     # create the colors used for the coordinates
     colors = dc.plotly_discrete_colors(n_colors=3)
     # Convert to Plotly color format
@@ -138,33 +146,33 @@ def plot_utm_height(
     if not sd:
         fig.add_trace(
             go.Scatter(
-                x=utm_df["DT"].dt.strftime("%Y-%m-%d %H:%M:%S"),
-                y=utm_df["UTM.N"],
+                x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
+                y=utm_df[cols.north],
                 mode="markers",
                 marker=dict(color=enu_colors[0], size=1),
-                name="UTM.N",
+                # name=cols.north,
             ),
             row=1,
             col=1,
         )
         fig.add_trace(
             go.Scatter(
-                x=utm_df["DT"].dt.strftime("%Y-%m-%d %H:%M:%S"),
-                y=utm_df["UTM.E"],
+                x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
+                y=utm_df[cols.east],
                 mode="markers",
                 marker=dict(color=enu_colors[1], size=1),
-                name="UTM.E",
+                # name=cols.east,
             ),
             row=2,
             col=1,
         )
         fig.add_trace(
             go.Scatter(
-                x=utm_df["DT"].dt.strftime("%Y-%m-%d %H:%M:%S"),
+                x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
                 y=utm_df["orthoH"],
                 mode="markers",
                 marker=dict(color=enu_colors[2], size=1),
-                name="orthoH",
+                # name="orthoH",
             ),
             row=3,
             col=1,
@@ -172,15 +180,15 @@ def plot_utm_height(
     else:  # display the standard deviation
         fig.add_trace(
             go.Scatter(
-                x=utm_df["DT"].dt.strftime("%Y-%m-%d %H:%M:%S"),
-                y=utm_df["UTM.N"],
+                x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
+                y=utm_df[cols.north],
                 mode="markers+lines",
                 marker=dict(color=enu_colors[0], size=1),
                 line=dict(color=enu_colors[0]),
-                name="UTM.N",
+                # name=cols.north,
                 error_y=dict(
                     type="data",
-                    array=utm_df["sdn(m)"],
+                    array=utm_df[cols.sdn],
                     visible=True,
                     color=enu_colors_transparent[0],
                 ),
@@ -190,15 +198,15 @@ def plot_utm_height(
         )
         fig.add_trace(
             go.Scatter(
-                x=utm_df["DT"].dt.strftime("%Y-%m-%d %H:%M:%S"),
-                y=utm_df["UTM.E"],
+                x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
+                y=utm_df[cols.east],
                 mode="markers+lines",
                 marker=dict(color=enu_colors[1], size=1),
                 line=dict(color=enu_colors[1]),
-                name="UTM.E",
+                # name=cols.east,
                 error_y=dict(
                     type="data",
-                    array=utm_df["sde(m)"],
+                    array=utm_df[cols.sde],
                     visible=True,
                     color=enu_colors_transparent[1],
                 ),
@@ -208,15 +216,15 @@ def plot_utm_height(
         )
         fig.add_trace(
             go.Scatter(
-                x=utm_df["DT"].dt.strftime("%Y-%m-%d %H:%M:%S"),
+                x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
                 y=utm_df["orthoH"],
                 mode="markers+lines",
                 marker=dict(color=enu_colors[2], size=1),
                 line=dict(color=enu_colors[2]),
-                name="H",
+                # name="H",
                 error_y=dict(
                     type="data",
-                    array=utm_df["sdu(m)"],
+                    array=utm_df[cols.sdu],
                     visible=True,
                     color=enu_colors_transparent[2],
                 ),
@@ -229,16 +237,16 @@ def plot_utm_height(
     fig.update_layout(
         height=720,  # Taller figure to accommodate 3 subplots
         width=1280,
-        showlegend=True,
+        showlegend=False,
         plot_bgcolor="white",
-        title=dict(text=fn, font=dict(size=22)),
+        title=dict(text=f"{fn} - {origin}", font=dict(size=22)),
     )
 
     # Update axes labels
-    fig.update_yaxes(title_text="UTM.N", row=1, col=1)
-    fig.update_yaxes(title_text="UTM.E", row=2, col=1)
-    fig.update_yaxes(title_text="Height", row=3, col=1)
-    fig.update_xaxes(title_text="Time", row=3, col=1)
+    fig.update_yaxes(title_text=cols.north, row=1, col=1)
+    fig.update_yaxes(title_text=cols.east, row=2, col=1)
+    fig.update_yaxes(title_text=cols.height, row=3, col=1)
+    fig.update_xaxes(title_text=cols.time, row=3, col=1)
 
     # fig.show()
 
@@ -253,11 +261,16 @@ def plot_utm_height(
 
     if not sd:
         fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu.png")
+        fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu.html")
+        # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu.svg")
     else:
         fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu_sd.png")
+        fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu_sd.html")
+        # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu_sd.svg")
 
     # create a console logger
     console = Console()
     with console.status(f"Saving plot to {fn_plot}", spinner="point"):
-        fig.write_image(fn_plot, width=1280, height=720)
+        # fig.write_image(fn_plot, width=1280, height=720)
+        fig.write_html(fn_plot)
     print(f"Plot saved to {fn_plot}")
