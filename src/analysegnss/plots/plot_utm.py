@@ -122,7 +122,7 @@ def plot_utm_height(
     enu_colors = [
         f"rgb({int(255*r)}, {int(255*g)}, {int(255*b)})" for r, g, b, _ in colors
     ]
-    alpha = 0.15
+    alpha = 0.75
     enu_colors_transparent = [
         f"rgba({int(255*r)}, {int(255*g)}, {int(255*b)}, {alpha})"
         for r, g, b, _ in colors
@@ -130,98 +130,7 @@ def plot_utm_height(
 
     # Create the subplot structure
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True)
-
-    # Add traces to each subplot and add error bars when asked for
-    # if not sd:
-    #     fig.add_trace(
-    #         go.Scatter(
-    #             x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
-    #             y=utm_df[cols.north],
-    #             mode="markers",
-    #             marker=dict(color=enu_colors[0], size=1),
-    #             # name=cols.north,
-    #         ),
-    #         row=1,
-    #         col=1,
-    #     )
-    #     fig.add_trace(
-    #         go.Scatter(
-    #             x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
-    #             y=utm_df[cols.east],
-    #             mode="markers",
-    #             marker=dict(color=enu_colors[1], size=1),
-    #             # name=cols.east,
-    #         ),
-    #         row=2,
-    #         col=1,
-    #     )
-    #     fig.add_trace(
-    #         go.Scatter(
-    #             x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
-    #             y=utm_df["orthoH"],
-    #             mode="markers",
-    #             marker=dict(color=enu_colors[2], size=1),
-    #             # name="orthoH",
-    #         ),
-    #         row=3,
-    #         col=1,
-    #     )
-    # else:  # display the standard deviation
-    #     fig.add_trace(
-    #         go.Scatter(
-    #             x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
-    #             y=utm_df[cols.north],
-    #             mode="markers+lines",
-    #             marker=dict(color=enu_colors[0], size=1),
-    #             line=dict(color=enu_colors[0]),
-    #             # name=cols.north,
-    #             error_y=dict(
-    #                 type="data",
-    #                 array=utm_df[cols.sdn],
-    #                 visible=True,
-    #                 color=enu_colors_transparent[0],
-    #             ),
-    #         ),
-    #         row=1,
-    #         col=1,
-    #     )
-    #     fig.add_trace(
-    #         go.Scatter(
-    #             x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
-    #             y=utm_df[cols.east],
-    #             mode="markers+lines",
-    #             marker=dict(color=enu_colors[1], size=1),
-    #             line=dict(color=enu_colors[1]),
-    #             # name=cols.east,
-    #             error_y=dict(
-    #                 type="data",
-    #                 array=utm_df[cols.sde],
-    #                 visible=True,
-    #                 color=enu_colors_transparent[1],
-    #             ),
-    #         ),
-    #         row=2,
-    #         col=1,
-    #     )
-    #     fig.add_trace(
-    #         go.Scatter(
-    #             x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
-    #             y=utm_df["orthoH"],
-    #             mode="markers+lines",
-    #             marker=dict(color=enu_colors[2], size=1),
-    #             line=dict(color=enu_colors[2]),
-    #             # name="H",
-    #             error_y=dict(
-    #                 type="data",
-    #                 array=utm_df[cols.sdu],
-    #                 visible=True,
-    #                 color=enu_colors_transparent[2],
-    #             ),
-    #         ),
-    #         row=3,
-    #         col=1,
-    #     )
-
+    # Add traces for each column
     fig.add_trace(
         go.Scatter(
             x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
@@ -236,6 +145,7 @@ def plot_utm_height(
                     array=utm_df[cols.sdn],
                     visible=True,
                     color=enu_colors_transparent[0],
+                    thickness=0,  # This removes the end caps
                 )
                 if sd
                 else None
@@ -258,6 +168,7 @@ def plot_utm_height(
                     array=utm_df[cols.sde],
                     visible=True,
                     color=enu_colors_transparent[1],
+                    thickness=0,  # This removes the end caps
                 )
                 if sd
                 else None
@@ -280,6 +191,7 @@ def plot_utm_height(
                     array=utm_df[cols.sdu],
                     visible=True,
                     color=enu_colors_transparent[2],
+                    thickness=0,  # This removes the end caps
                 )
                 if sd
                 else None
