@@ -5,7 +5,6 @@ import sys
 from dataclasses import dataclass, field
 
 import polars as pl
-from rich import print
 import re
 
 from analysegnss.config import ERROR_CODES
@@ -153,6 +152,7 @@ class GLABNG:
                             f"Section '{str_red(section)}' not found in {str_yellow(self.glab_fn)}, skipping"
                         )
 
+        section_dfs = {}  # dict with glabng section name and dataframe"
         for glab_section in valid_sections:
             # read the glab_fn file and just use the lines that start with glab_section
             section_data = []
@@ -175,10 +175,12 @@ class GLABNG:
                         section_data.append(parts)
 
             # print the section_data
-            print(section_data[:3])
-            # print(len(section_data[0]))
+            # print(section_data[:3])
 
             df = self.load_section_data(section=glab_section, section_data=section_data)
+            section_dfs[glab_section] = df
+
+        return section_dfs
 
     def load_section_data(self, section: str, section_data: list[str]) -> pl.DataFrame:
         # Create schema dictionary excluding X,Y,Z columns
@@ -200,9 +202,9 @@ class GLABNG:
         # Convert time string to datetime
         df = df.with_columns(pl.col("DT").str.strptime(pl.Time, format="%H:%M:%S.%f"))
 
-        with pl.Config(
-            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-        ):
-            print(df)
+        # with pl.Config(
+        #     tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+        # ):
+        #     print(df)
 
         return df
