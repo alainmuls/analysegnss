@@ -63,9 +63,25 @@ def plot_utm_scatter(
         plot_bgcolor="white",
         font=dict(color="#909497", size=18),
         title=dict(text=f"{fn} - {origin}", font=dict(size=22)),
-        xaxis=dict(title=cols.east, linecolor="#909497"),
-        yaxis=dict(title=cols.north, tickformat=",", linecolor="#909497"),
-        margin=dict(t=100, r=80, b=80, l=120),
+        xaxis=dict(
+            title=cols.east,
+            linecolor="#909497",
+            tickfont=dict(size=8),
+            tickformat=",.2f",
+            showgrid=True,
+            gridwidth=0.5,
+            gridcolor="lightgray",
+        ),
+        yaxis=dict(
+            title=cols.north,
+            linecolor="#909497",
+            tickfont=dict(size=8),
+            tickformat=",.2f",
+            showgrid=True,
+            gridwidth=0.5,
+            gridcolor="lightgray",
+        ),
+        # margin=dict(t=100, r=80, b=80, l=120),
         height=600,
         width=1024,
         legend=dict(itemsizing="constant", itemwidth=30),
@@ -145,7 +161,8 @@ def plot_utm_height(
                     array=utm_df[cols.sdn],
                     visible=True,
                     color=enu_colors_transparent[0],
-                    thickness=0,  # This removes the end caps
+                    thickness=0,
+                    width=0.5,
                 )
                 if sd
                 else None
@@ -168,7 +185,8 @@ def plot_utm_height(
                     array=utm_df[cols.sde],
                     visible=True,
                     color=enu_colors_transparent[1],
-                    thickness=0,  # This removes the end caps
+                    thickness=0,
+                    width=0.5,
                 )
                 if sd
                 else None
@@ -191,7 +209,8 @@ def plot_utm_height(
                     array=utm_df[cols.sdu],
                     visible=True,
                     color=enu_colors_transparent[2],
-                    thickness=0,  # This removes the end caps
+                    thickness=0,
+                    width=0.5,
                 )
                 if sd
                 else None
@@ -208,13 +227,34 @@ def plot_utm_height(
         showlegend=False,
         plot_bgcolor="white",
         title=dict(text=f"{fn} - {origin}", font=dict(size=22)),
+        yaxis_tickformat=",.2f",
+        yaxis2_tickformat=",.2f",
+        yaxis3_tickformat=",.2f",
+        xaxis_showgrid=True,
+        xaxis2_showgrid=True,
+        xaxis3_showgrid=True,
+        yaxis_showgrid=True,
+        yaxis2_showgrid=True,
+        yaxis3_showgrid=True,
+        xaxis_gridwidth=0.5,
+        xaxis2_gridwidth=0.5,
+        xaxis3_gridwidth=0.5,
+        yaxis_gridwidth=0.5,
+        yaxis2_gridwidth=0.5,
+        yaxis3_gridwidth=0.5,
+        xaxis_gridcolor="lightgray",
+        xaxis2_gridcolor="lightgray",
+        xaxis3_gridcolor="lightgray",
+        yaxis_gridcolor="lightgray",
+        yaxis2_gridcolor="lightgray",
+        yaxis3_gridcolor="lightgray",
     )
 
     # Update axes labels
-    fig.update_yaxes(title_text=cols.north, row=1, col=1)
-    fig.update_yaxes(title_text=cols.east, row=2, col=1)
-    fig.update_yaxes(title_text=cols.height, row=3, col=1)
-    fig.update_xaxes(title_text=cols.time, row=3, col=1)
+    fig.update_yaxes(title_text=cols.north, row=1, col=1, tickfont=dict(size=8))
+    fig.update_yaxes(title_text=cols.east, row=2, col=1, tickfont=dict(size=8))
+    fig.update_yaxes(title_text=cols.height, row=3, col=1, tickfont=dict(size=8))
+    fig.update_xaxes(title_text=cols.time, row=3, col=1, tickfont=dict(size=8))
 
     # fig.show()
 
