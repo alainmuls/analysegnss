@@ -1,11 +1,12 @@
 import datetime
 import logging
 import os
+import re
 import sys
 from dataclasses import dataclass, field
 
 import polars as pl
-import re
+import utm
 
 from analysegnss.config import ERROR_CODES
 from analysegnss.glabng.glab_msg_headers import GLAB_OUTPUTS
@@ -183,6 +184,29 @@ class GLABNG:
         return section_dfs
 
     def load_section_data(self, section: str, section_data: list[str]) -> pl.DataFrame:
+        """loads a specific section of a gLAB file into a polars dataframe
+
+        Args:
+            section (str): identifier of the section to load
+            section_data (list[str]): data for this specific section
+
+        Returns:
+            pl.DataFrame: dataframe with the data from the section
+        """
+
+        def latlon_to_utm(lat: float, lon: float) -> tuple:
+            """converts latitude and longitude to UTM coordinates
+
+            Args:
+                lat (float): latitude in degrees
+                lon (float): longitude in degrees
+
+            Returns:
+                tuple: (latitude, longitude))
+            """
+            easting, northing, _, _ = utm.from_latlon(lat, lon)
+            return (northing, easting)
+
         # Create schema dictionary excluding X,Y,Z columns
         schema = {}
         # columns_to_exclude = ["X", "Y", "Z"]
@@ -191,20 +215,33 @@ class GLABNG:
             schema[k] = v["dtype"]
 
         # Load data into polars DataFrame with filtered schema
-        df = pl.DataFrame(section_data, schema=schema)
+        df_section = pl.DataFrame(section_data, schema=schema).lazy()
 
         # Filter columns based on 'keep' field
         columns_to_keep = [
             col for col, props in GLAB_OUTPUTS[section].items() if props["keep"]
         ]
-        df = df.select(columns_to_keep)
+        df_section = df_section.select(columns_to_keep)
 
         # Convert time string to datetime
-        df = df.with_columns(pl.col("DT").str.strptime(pl.Time, format="%H:%M:%S.%f"))
+        df_section = df_section.with_columns(
+            pl.col("DT").str.strptime(pl.Time, format="%H:%M:%S.%f")
+        )
 
-        # with pl.Config(
-        #     tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-        # ):
-        #     print(df)
+        # add UTM coordinates if section is OUTPUT
+        if section == "OUTPUT":
+            df_section.with_columns(
+                pl.struct(["lat", "lon"])
+                .apply(
+                    lambda row: latlon_to_utm(row["lat"], row["lon"]),
+                    return_dtype=pl.Struct(
+                        [
+                            pl.Field("UTM.N", pl.Float64),
+                            pl.Field("UTM.E", pl.Float64),
+                        ]
+                    ),
+                )
+                .alias("utm_coords")
+            )
 
-        return df
+        return df_section.collect()
