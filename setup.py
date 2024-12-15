@@ -8,7 +8,7 @@ setup(
         "console_scripts": [
             "rtk_pvtgeod=analysegnss.sbf.rtk_pvtgeod:main",
             "ppk_rnx2rtkp=analysegnss.rtkpos.ppk_rnx2rtkp:main",
-            "rtkppk_plot=analysegnss.plots.rtkppk_plot:main",
+            "plot_coords=analysegnss.plots.plot_coords:main",
             "rnx_csv=analysegnss.rinex.rnx_csv:main",
             "rnxobs_csv=analysegnss.rinex.rnxobs_csv:main",
             "rnxnav_csv=analysegnss.rinex.rnxnav_csv:main",

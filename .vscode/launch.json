@@ -33,7 +33,7 @@
             "name": "Python Debugger: rtkppk_plot Keiheuvel 2024/20/01",
             "type": "debugpy",
             "request": "launch",
-            "program": "src/analysegnss/plots/rtkppk_plot.py",
+            "program": "src/analysegnss/plots/plot_coords.py",
             "console": "integratedTerminal",
             "args": [
                 "--pos_fn",
@@ -47,7 +47,7 @@
             "name": "Python Debugger: rtkppk_plot Ocotillo",
             "type": "debugpy",
             "request": "launch",
-            "program": "src/analysegnss/plots/rtkppk_plot.py",
+            "program": "src/analysegnss/plots/plot_coords.py",
             "console": "integratedTerminal",
             "args": [
                 "--sbf_fn",
