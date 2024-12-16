@@ -8,8 +8,9 @@ from plotly.subplots import make_subplots
 from rich import print
 from rich.console import Console
 
+from analysegnss.plots.plot_fonts import PlotlyFonts
 from analysegnss.plots import discrete_colors as dc
-from analysegnss.plots.utm_columns import get_utm_columns
+from analysegnss.plots.plot_columns import get_utm_columns
 from analysegnss.rtkpos import rtk_constants as rtkc
 from analysegnss.sbf import sbf_constants as sbfc
 
@@ -42,6 +43,9 @@ def plot_utm_scatter(
     # get the correct column names according to the origin
     cols = get_utm_columns(origin)
 
+    # get the common fonts to use in the plot
+    plot_fonts = PlotlyFonts()
+
     # create a figure
     fig = go.Figure()
 
@@ -61,12 +65,12 @@ def plot_utm_scatter(
 
     fig.update_layout(
         plot_bgcolor="white",
-        font=dict(color="#909497", size=18),
-        title=dict(text=f"{fn} - {origin}", font=dict(size=22)),
+        font=dict(color="#909497"),  # , size=14),
+        title=dict(text=f"{fn} - {origin}"),  # , font=dict(size=18)),
         xaxis=dict(
             title=cols.east,
             linecolor="#909497",
-            tickfont=dict(size=8),
+            # tickfont=dict(size=8),
             tickformat=",.2f",
             showgrid=True,
             gridwidth=0.5,
@@ -75,7 +79,7 @@ def plot_utm_scatter(
         yaxis=dict(
             title=cols.north,
             linecolor="#909497",
-            tickfont=dict(size=8),
+            # tickfont=dict(size=8),
             tickformat=",.2f",
             showgrid=True,
             gridwidth=0.5,
@@ -84,8 +88,11 @@ def plot_utm_scatter(
         # margin=dict(t=100, r=80, b=80, l=120),
         height=600,
         width=1024,
-        legend=dict(itemsizing="constant", itemwidth=30),
+        legend=dict(itemsizing="constant", itemwidth=30),  # , font=dict(size=8)),
     )
+
+    # Apply standard fonts
+    plot_fonts.apply_fonts(fig)
 
     # fig.show()
 
@@ -131,6 +138,9 @@ def plot_utm_height(
 
     # get the correct column names according to the origin
     cols = get_utm_columns(origin)
+
+    # get the common fonts to use in the plot
+    plot_fonts = PlotlyFonts()
 
     # create the colors used for the coordinates
     colors = dc.plotly_discrete_colors(n_colors=3)
@@ -226,7 +236,7 @@ def plot_utm_height(
         width=1024,
         showlegend=False,
         plot_bgcolor="white",
-        title=dict(text=f"{fn} - {origin}", font=dict(size=22)),
+        title=dict(text=f"{fn} - {origin}"),  # , font=dict(size=18)),
         yaxis_tickformat=",.2f",
         yaxis2_tickformat=",.2f",
         yaxis3_tickformat=",.2f",
@@ -251,10 +261,13 @@ def plot_utm_height(
     )
 
     # Update axes labels
-    fig.update_yaxes(title_text=cols.north, row=1, col=1, tickfont=dict(size=8))
-    fig.update_yaxes(title_text=cols.east, row=2, col=1, tickfont=dict(size=8))
-    fig.update_yaxes(title_text=cols.height, row=3, col=1, tickfont=dict(size=8))
-    fig.update_xaxes(title_text=cols.time, row=3, col=1, tickfont=dict(size=8))
+    fig.update_yaxes(title_text=cols.north, row=1, col=1)  # , tickfont=dict(size=8))
+    fig.update_yaxes(title_text=cols.east, row=2, col=1)  # , tickfont=dict(size=8))
+    fig.update_yaxes(title_text=cols.height, row=3, col=1)  # , tickfont=dict(size=8))
+    fig.update_xaxes(title_text=cols.time, row=3, col=1)  # , tickfont=dict(size=8))
+
+    # Apply standard fonts
+    plot_fonts.apply_fonts(fig)
 
     # fig.show()
 
