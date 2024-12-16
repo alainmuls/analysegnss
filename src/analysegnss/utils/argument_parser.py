@@ -1,6 +1,8 @@
 import argparse
 import os
+
 import argcomplete
+from rich import print
 
 from analysegnss.utils.utilities import str_yellow
 
@@ -94,8 +96,8 @@ def argument_parser_ppk(args: list) -> argparse.Namespace:
     return args
 
 
-def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
-    """Parses the arguments for plotting the PPK or RTK UTM coordinates
+def argument_parser_plot_coords(args: list) -> argparse.Namespace:
+    """Parses the arguments for plotting the UTM coordinates (evt with standard deviation)
 
     Args:
         argv (list): list of arguments
@@ -106,7 +108,11 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
     baseName = str_yellow(os.path.basename(__file__))
 
     help_txt = (
-        baseName + " Plot PPK (from ppk_rnx2rtkp.py) or RTK (from rtk_pvtgeod.py) data"
+        baseName
+        + """: Plot UTM scatter and line plots from data files.
+        
+        Note: The plotting options --sbf_fn, --pos_fn, and --glib_fn are mutually exclusive. 
+        You must choose exactly one of these options."""
     )
 
     # create the parser for command line arguments
@@ -120,25 +126,9 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
         help="verbose level... repeat up to three times.",
     )
 
-    parser.add_argument(
-        "--title",
-        help="title for plot",
-        type=str,
-        required=False,
-        default=None,
-    )
-
-    parser.add_argument(
-        "--plot",
-        help="display plots (default False)",
-        action="store_true",
-        required=False,
-        default=False,
-    )
-
     # Create a mutually exclusive group
     group = parser.add_mutually_exclusive_group(required=True)
-    group.description = "Specify either a POS file or an SBF file (required)"
+    group.description = "Specify origin (POS, SBF or gLABng) (required)"
     # parser.add_argument(
     #     "--mutually-exclusive",
     #     action="store_true",
@@ -146,19 +136,38 @@ def argument_parser_ppk_plot(args: list) -> argparse.Namespace:
     # )
 
     group.add_argument(
+        "--sbf_fn",
+        help="input SBF filename",
+        type=str,
+    )
+    group.add_argument(
         "--pos_fn",
         help="input rnx2rtkp pos filename",
         type=str,
     )
     group.add_argument(
-        "--sbf_fn",
-        help="input SBF filename",
+        "--glab_fn",
+        help="input gLABng filename",
         type=str,
     )
 
     parser.add_argument(
         "--sd",
         help="add standard deviation to the plot",
+        action="store_true",
+        required=False,
+        default=False,
+    )
+    parser.add_argument(
+        "--title",
+        help="title for plot",
+        type=str,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--plot",
+        help="display plots (default False)",
         action="store_true",
         required=False,
         default=False,

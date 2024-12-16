@@ -58,6 +58,20 @@
             ]
         },
         {
+            "name": "Python Debugger: gLABng plot",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/analysegnss/plots/plot_coords.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--glab_fn",
+                "/home/amuls/GNSSData/2024-03-29-schaffen/20240329/glab/KMS000BEL_R_20240890943_03H_01S_MO_gal.glab",
+                "-vvv",
+                "--plot",
+                "--sd",
+            ]
+        },
+        {
             "name": "Python Debugger: rnxobs_csv Keiheuvel 2024/20/01 (base station)",
             "type": "debugpy",
             "request": "launch",

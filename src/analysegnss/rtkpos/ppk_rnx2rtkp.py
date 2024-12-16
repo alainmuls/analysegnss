@@ -27,7 +27,7 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> None:
     for qual, qual_data in df_pos.group_by(["Q"]):
         qual_analysis.append(
             [
-                rtkc.dict_rtk_pvtmode[qual[0]]["desc"],
+                rtkc.DICT_RTK_PVTMODE[qual[0]]["desc"],
                 qual_data.shape[0],
                 f"{qual_data.shape[0]/total_obs*100:.2f}",
             ]

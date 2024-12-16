@@ -24,10 +24,10 @@ def quality_analysis(geod_df: pl.DataFrame, logger) -> None:
     qual_analysis = []
     total_obs = geod_df.shape[0]
     for qual, qual_data in geod_df.group_by("Type"):
-        if qual in sbfc.dict_sbf_pvtmode:
+        if qual in sbfc.DICT_SBF_PVTMODE:
             qual_analysis.append(
                 [
-                    sbfc.dict_sbf_pvtmode[qual]["desc"],
+                    sbfc.DICT_SBF_PVTMODE[qual]["desc"],
                     qual_data.shape[0],
                     f"{qual_data.shape[0]/total_obs*100:.2f}",
                 ]

@@ -49,7 +49,6 @@ def plot_utm_scatter(
     # create a figure
     fig = go.Figure()
 
-    # if origin == "RTK":
     for qual, qual_data in utm_df.groupby(cols.quality_mapping.columns):
         fig.add_trace(
             go.Scatter(

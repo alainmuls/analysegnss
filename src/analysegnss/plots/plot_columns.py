@@ -3,6 +3,7 @@ from typing import Callable, Dict
 
 from analysegnss.rtkpos import rtk_constants as rtkc
 from analysegnss.sbf import sbf_constants as sbfc
+from analysegnss.glabng import glab_constants as glabc
 
 
 @dataclass
@@ -31,7 +32,7 @@ COLUMN_MAPPINGS: Dict[str, UTMColumns] = {
         north="UTM.N",
         height="orthoH",
         time="DT",
-        quality_mapping=UTMQualityMapping("Type", sbfc.dict_sbf_pvtmode),
+        quality_mapping=UTMQualityMapping("Type", sbfc.DICT_SBF_PVTMODE),
         sde="SD_lon [m]",
         sdn="SD_lat [m]",
         sdu="SD_hgt [m]",
@@ -42,11 +43,22 @@ COLUMN_MAPPINGS: Dict[str, UTMColumns] = {
         north="UTM.N",
         height="orthoH",
         time="DT",
-        quality_mapping=UTMQualityMapping("Q", rtkc.dict_rtk_pvtmode),
+        quality_mapping=UTMQualityMapping("Q", rtkc.DICT_RTK_PVTMODE),
         sde="sde(m)",
         sdn="sdn(m)",
         sdu="sdu(m)",
         nrSVN="ns",
+    ),
+    "GLABNG": UTMColumns(
+        east="UTM.E",
+        north="UTM.N",
+        height="orthoH",
+        time="DT",
+        quality_mapping=UTMQualityMapping("mode", glabc.DICT_PROCESSING_MODE),
+        sde="sd.E",
+        sdn="sd.N",
+        sdu="sd.U",
+        nrSVN="#SVs",
     ),
 }
 
