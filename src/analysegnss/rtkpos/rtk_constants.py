@@ -1,5 +1,5 @@
 # dict containing the Quality modes
-dict_rtk_pvtmode = {
+DICT_RTK_PVTMODE = {
     1: dict(desc="PPK with ﬁxed ambiguities", color="green"),
     2: dict(desc="PPK with ﬂoat ambiguities", color="orange"),
     3: dict(desc="SBAS aided PVT", color="deepskyblue"),
