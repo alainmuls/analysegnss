@@ -8,8 +8,9 @@ from dataclasses import dataclass, field
 import polars as pl
 import utm
 
-from analysegnss.config import ERROR_CODES
+from analysegnss.config import GEOID_PATH
 from analysegnss.glabng.glab_msg_headers import GLAB_OUTPUTS
+from analysegnss.gnss import geoid
 from analysegnss.utils.utilities import str_red, str_yellow
 
 
@@ -183,6 +184,70 @@ class GLABNG:
 
         return section_dfs
 
+        # def load_section_data(self, section: str, section_data: list[str]) -> pl.DataFrame:
+        #     """loads a specific section of a gLAB file into a polars dataframe
+
+        #     Args:
+        #         section (str): identifier of the section to load
+        #         section_data (list[str]): data for this specific section
+
+        #     Returns:
+        #         pl.DataFrame: dataframe with the data from the section
+        #     """
+
+        #     def latlon_to_utm(lat: float, lon: float) -> tuple:
+        #         """converts latitude and longitude to UTM coordinates
+
+        #         Args:
+        #             lat (float): latitude in degrees
+        #             lon (float): longitude in degrees
+
+        #         Returns:
+        #             tuple: (latitude, longitude))
+        #         """
+        #         easting, northing, _, _ = utm.from_latlon(lat, lon)
+        #         return (northing, easting)
+
+        #     # Create schema dictionary excluding X,Y,Z columns
+        #     schema = {}
+        #     # columns_to_exclude = ["X", "Y", "Z"]
+
+        #     for k, v in GLAB_OUTPUTS[section].items():
+        #         schema[k] = v["dtype"]
+
+        #     # Load data into polars DataFrame with filtered schema
+        #     df_section = pl.DataFrame(section_data, schema=schema).lazy()
+
+        #     # Filter columns based on 'keep' field
+        #     columns_to_keep = [
+        #         col for col, props in GLAB_OUTPUTS[section].items() if props["keep"]
+        #     ]
+        #     df_section = df_section.select(columns_to_keep)
+
+        #     # Convert time string to datetime
+        #     df_section = df_section.with_columns(
+        #         pl.col("DT").str.strptime(pl.Time, format="%H:%M:%S.%f")
+        #     )
+
+        #     # Add UTM coordinates if section is OUTPUT
+        #     if section == "OUTPUT":
+        #         # First collect the lazy frame
+        #         df_section = df_section.collect()
+        #         # Convert lat/lon columns to float
+        #         lat_col = df_section["lat"].cast(pl.Float64)
+        #         lon_col = df_section["lon"].cast(pl.Float64)
+        #         # Apply UTM conversion
+        #         utm_coords = [latlon_to_utm(lat, lon) for lat, lon in zip(lat_col, lon_col)]
+        #         # Add new columns
+        #         df_section = df_section.with_columns(
+        #             [
+        #                 pl.Series("UTM_N", [coord[0] for coord in utm_coords]),
+        #                 pl.Series("UTM_E", [coord[1] for coord in utm_coords]),
+        #             ]
+        #         )
+
+        #     return df_section
+
     def load_section_data(self, section: str, section_data: list[str]) -> pl.DataFrame:
         """loads a specific section of a gLAB file into a polars dataframe
 
@@ -194,7 +259,7 @@ class GLABNG:
             pl.DataFrame: dataframe with the data from the section
         """
 
-        def latlon_to_utm(lat: float, lon: float) -> tuple:
+        def latlon_to_utm(lat: float, lon: float) -> dict:
             """converts latitude and longitude to UTM coordinates
 
             Args:
@@ -202,19 +267,17 @@ class GLABNG:
                 lon (float): longitude in degrees
 
             Returns:
-                tuple: (latitude, longitude))
+                dict: containing UTM coordinates
             """
             easting, northing, _, _ = utm.from_latlon(lat, lon)
-            return (northing, easting)
+            return {"easting": easting, "northing": northing}
 
-        # Create schema dictionary excluding X,Y,Z columns
+        # Create schema dictionary
         schema = {}
-        # columns_to_exclude = ["X", "Y", "Z"]
-
         for k, v in GLAB_OUTPUTS[section].items():
             schema[k] = v["dtype"]
 
-        # Load data into polars DataFrame with filtered schema
+        # Load data into polars DataFrame
         df_section = pl.DataFrame(section_data, schema=schema).lazy()
 
         # Filter columns based on 'keep' field
@@ -228,20 +291,58 @@ class GLABNG:
             pl.col("DT").str.strptime(pl.Time, format="%H:%M:%S.%f")
         )
 
-        # add UTM coordinates if section is OUTPUT
+        # Add UTM coordinates and orthometric height if section is OUTPUT
         if section == "OUTPUT":
-            df_section.with_columns(
+            if self.logger:
+                self.logger.info("\tadding UTM coordinates to the dataframe")
+                self.logger.info(
+                    "\tadding geoid undulation & orthometric height to the dataframe"
+                )
+
+            # Initialize geoid model
+            gh_model = geoid.GeoidHeight(GEOID_PATH)
+
+            # Add UTM coordinates
+            df_section = df_section.with_columns(
                 pl.struct(["lat", "lon"])
                 .apply(
                     lambda row: latlon_to_utm(row["lat"], row["lon"]),
                     return_dtype=pl.Struct(
                         [
-                            pl.Field("UTM.N", pl.Float64),
-                            pl.Field("UTM.E", pl.Float64),
+                            pl.Field("easting", pl.Float64),
+                            pl.Field("northing", pl.Float64),
                         ]
                     ),
                 )
                 .alias("utm_coords")
-            )
+            ).lazy()
+
+            # Extract UTM coordinates
+            df_section = df_section.with_columns(
+                [
+                    pl.col("utm_coords").struct.field("easting").alias("UTM.E"),
+                    pl.col("utm_coords").struct.field("northing").alias("UTM.N"),
+                ]
+            ).lazy()
+
+            # Add geoid undulation
+            df_section = df_section.with_columns(
+                pl.struct(["lat", "lon"])
+                .apply(
+                    lambda x: gh_model.get(x["lat"], x["lon"], gh_model),
+                    return_dtype=pl.Float64,
+                )
+                .alias("undulation")
+            ).lazy()
+
+            # Calculate orthometric height
+            df_section = df_section.with_columns(
+                pl.struct(["ellH", "undulation"])
+                .apply(lambda x: x["ellH"] - x["undulation"], return_dtype=pl.Float64)
+                .alias("orthoH")
+            ).lazy()
+
+            # Clean up intermediate columns
+            df_section = df_section.drop(["utm_coords"]).lazy()
 
         return df_section.collect()
