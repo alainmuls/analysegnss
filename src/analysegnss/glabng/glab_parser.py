@@ -10,14 +10,14 @@ from analysegnss.glabng.glabng_class import GLABNG
 from analysegnss.utils import argument_parser, init_logger
 
 
-def glab_parser(
-    glab_fn: str, glab_sections: list[str], logger: logging.Logger = None
+def parse_glab_section(
+    glab_fn: str, section: list[str], logger: logging.Logger = None
 ) -> dict[str, pl.DataFrame]:
     """parses specified section in a glab file
 
     Args:
         glab_fn (str): name of glab file
-        glab_sections (list[str]): sections to parse
+        section (list[str]): sections to parse
 
     Returns:
         dict[str, pl.DataFrame]: dictionary of dataframes where the section name is the key and the dataframe is the value
@@ -28,17 +28,17 @@ def glab_parser(
         print(f"Validation failed: {e}")
 
     # parse the OUTPUT section of glab file
-    glab_dfs = glab.glab_dataframe(lst_sections=glab_sections)
+    glab_dfs = glab.glab_dataframe(lst_sections=section)
 
-    with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
-        for section, df_section in glab_dfs.items():
-            print(f"dataframe from [green][bold]{section}[/bold][/green] section")
-            print(df_section)
+    # with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
+    #     for section, df_section in glab_dfs.items():
+    #         print(f"dataframe from [green][bold]{section}[/bold][/green] section")
+    #         print(df_section)
 
     return glab_dfs
 
 
-def main() -> dict[str, pl.DataFrame]:
+def glab_parser(argv: list) -> dict[str, pl.DataFrame]:
     """
     Parses a gLAB file.
 
@@ -49,19 +49,27 @@ def main() -> dict[str, pl.DataFrame]:
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    args_parsed = argument_parser.argument_parser_glab_parser(args=sys.argv[1:])
+    args_parsed = argument_parser.argument_parser_glab_parser(args=argv[1:])
 
     # create the file/console logger
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
     logger.info(f"Parsed arguments: {args_parsed}")
 
-    dfs_glabng = glab_parser(
+    dfs_glabng = parse_glab_section(
         glab_fn=args_parsed.glab_fn,
-        glab_sections=args_parsed.section,
+        section=args_parsed.section,
         logger=logger,
     )
 
     return dfs_glabng
+
+
+def main():
+    dfs_glab = glab_parser(argv=sys.argv)
+    with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
+        for section, df_section in dfs_glab.items():
+            print(f"dataframe from [green][bold]{section}[/bold][/green] section")
+            print(df_section)
 
 
 if __name__ == "__main__":

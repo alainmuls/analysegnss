@@ -10,22 +10,22 @@ HDRS_OUTPUT = {
     "Year": {
         "dtype": pl.UInt16,
         "desc": "Year number (4 digits).",
-        "keep": False,
+        "keep": True,
     },
-    "DoY": {
+    "DOY": {
         "dtype": pl.UInt16,
         "desc": "Day of Year (3 digits).",
-        "keep": False,
+        "keep": True,
     },
-    "sod": {
+    "SOD": {
         "dtype": pl.Float32,
         "desc": "Seconds elapsed since the beginning of the day.",
-        "keep": False,
+        "keep": True,
     },
-    "DT": {
+    "time": {
         "dtype": pl.String,
         "desc": "Date and time of the message.",
-        "keep": True,
+        "keep": False,
     },
     "mode": {
         "dtype": pl.UInt16,

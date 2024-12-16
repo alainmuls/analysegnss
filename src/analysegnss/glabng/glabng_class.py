@@ -184,70 +184,6 @@ class GLABNG:
 
         return section_dfs
 
-        # def load_section_data(self, section: str, section_data: list[str]) -> pl.DataFrame:
-        #     """loads a specific section of a gLAB file into a polars dataframe
-
-        #     Args:
-        #         section (str): identifier of the section to load
-        #         section_data (list[str]): data for this specific section
-
-        #     Returns:
-        #         pl.DataFrame: dataframe with the data from the section
-        #     """
-
-        #     def latlon_to_utm(lat: float, lon: float) -> tuple:
-        #         """converts latitude and longitude to UTM coordinates
-
-        #         Args:
-        #             lat (float): latitude in degrees
-        #             lon (float): longitude in degrees
-
-        #         Returns:
-        #             tuple: (latitude, longitude))
-        #         """
-        #         easting, northing, _, _ = utm.from_latlon(lat, lon)
-        #         return (northing, easting)
-
-        #     # Create schema dictionary excluding X,Y,Z columns
-        #     schema = {}
-        #     # columns_to_exclude = ["X", "Y", "Z"]
-
-        #     for k, v in GLAB_OUTPUTS[section].items():
-        #         schema[k] = v["dtype"]
-
-        #     # Load data into polars DataFrame with filtered schema
-        #     df_section = pl.DataFrame(section_data, schema=schema).lazy()
-
-        #     # Filter columns based on 'keep' field
-        #     columns_to_keep = [
-        #         col for col, props in GLAB_OUTPUTS[section].items() if props["keep"]
-        #     ]
-        #     df_section = df_section.select(columns_to_keep)
-
-        #     # Convert time string to datetime
-        #     df_section = df_section.with_columns(
-        #         pl.col("DT").str.strptime(pl.Time, format="%H:%M:%S.%f")
-        #     )
-
-        #     # Add UTM coordinates if section is OUTPUT
-        #     if section == "OUTPUT":
-        #         # First collect the lazy frame
-        #         df_section = df_section.collect()
-        #         # Convert lat/lon columns to float
-        #         lat_col = df_section["lat"].cast(pl.Float64)
-        #         lon_col = df_section["lon"].cast(pl.Float64)
-        #         # Apply UTM conversion
-        #         utm_coords = [latlon_to_utm(lat, lon) for lat, lon in zip(lat_col, lon_col)]
-        #         # Add new columns
-        #         df_section = df_section.with_columns(
-        #             [
-        #                 pl.Series("UTM_N", [coord[0] for coord in utm_coords]),
-        #                 pl.Series("UTM_E", [coord[1] for coord in utm_coords]),
-        #             ]
-        #         )
-
-        #     return df_section
-
     def load_section_data(self, section: str, section_data: list[str]) -> pl.DataFrame:
         """loads a specific section of a gLAB file into a polars dataframe
 
@@ -286,10 +222,20 @@ class GLABNG:
         ]
         df_section = df_section.select(columns_to_keep)
 
-        # Convert time string to datetime
+        # # Convert time string to datetime
+        # df_section = df_section.with_columns(
+        #     pl.col("DT").str.strptime(pl.Time, format="%H:%M:%S.%f")
+        # )
+        # Convert YEAR, DOY and SOD to datetime
         df_section = df_section.with_columns(
-            pl.col("DT").str.strptime(pl.Time, format="%H:%M:%S.%f")
-        )
+            pl.struct(["Year", "DOY", "SOD"])
+            .apply(
+                lambda x: datetime.datetime(year=int(x["Year"]), month=1, day=1)
+                + datetime.timedelta(days=int(x["DOY"]) - 1, seconds=float(x["SOD"])),
+                return_dtype=pl.Datetime,
+            )
+            .alias("DT")
+        ).lazy()
 
         # Add UTM coordinates and orthometric height if section is OUTPUT
         if section == "OUTPUT":
@@ -343,6 +289,6 @@ class GLABNG:
             ).lazy()
 
             # Clean up intermediate columns
-            df_section = df_section.drop(["utm_coords"]).lazy()
+            df_section = df_section.drop(["Year", "DOY", "SOD", "utm_coords"]).lazy()
 
         return df_section.collect()
