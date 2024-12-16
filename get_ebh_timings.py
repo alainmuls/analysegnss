@@ -46,7 +46,7 @@ def get_SBFcomments(parsed_args: argparse.Namespace, logger: Logger) -> pl.DataF
 
 def parseSBFComments(df_sbfComments: pl.DataFrame, logger: Logger) -> pl.DataFrame:
     """
-    Extract EBH time stamps from SBF comments
+    Parse SBF comments dataframe to return correct formatted EBH timestamps
 
     args:
     df_sfbComments (pl.DataFrame): SBF comments
@@ -63,7 +63,8 @@ def parseSBFComments(df_sbfComments: pl.DataFrame, logger: Logger) -> pl.DataFra
         [
             # Create a new column with the timestamp key
             pl.col("Comment").str.extract(r"(?:[^_]*_){2}(.+)").alias("key"),
-            # For comment format: 20241001_10-34-51_Start_l1
+            # For comment format: 20241001_10-34-51_Start_0m 
+            # For comment format: 20241001_10-34-51_Finished
             pl.col("Comment")
             .str.extract(r"(\d{8}_\d{2}-\d{2}-\d{2})")
             .alias("EBH_timestamps"),
@@ -104,14 +105,14 @@ def reformat_ebh_timestamps(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> 
 
     logger.info("Reformatting EBH timestamps")
 
-    # During an EBH measurement a new measurement can be started and ended multiple times.
-    # Therefore, we need to group these measurements
-    # Right now all the rows after the key Finished measurement are ignored
-    # TODO group each measurement found in sbf comments
+    # An EBH measurement is only initiated once
+    # if a measurements fails, the web applications requests the user to rename the survey 
+    # This resolves the issue of having duplicate stop/finish commands for one survey
+
     logger.info("Grouping EBH timestamp dataframe for each found measurement")
 
     # Key that identifies the end of a measurement
-    key_stop = "Finished measurement"
+    key_stop = "Finished"
 
     # find index idx of the key_stop / we use series to serialize the boolean values
     key_stop_idx = (
@@ -131,29 +132,31 @@ def reformat_ebh_timestamps(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> 
         )
         logger.info(df_ebh_timestamps)
 
-        # Group the dataframe by the key column
-        # TODO slice dataframe further per measurement
     else:
         logger.warning(
-            "No key 'Finished measurement' found in SBF comments. Using all timestamps"
+            "No key 'Finished' found in SBF comments. Using all timestamps"
         )
 
     # Search for patterns "Start_l" and "End_l", and group them by index
     ebh_timings_ebhlinefmt = {}
     ebh_timings = {}
-    # using regex to extract the index (last digit after '_l')
-    # Regex pattern to match 'Start_l'
-    start_pattern = r"Start_l(\d+)"
+    # using regex to extract the index (last digit after '_' which can be "0m" or "-5m", ...)
+    # Regex pattern to match 'Start_'
+    start_pattern = r"Start_([+-]?)(\d+)m"
 
     # Iterate over all keys to find matching pairs
     for start_key in df_ebh_timestamps["key"]:
         match = re.match(start_pattern, start_key)
         if match:
-            # in the used regex pattern the capturing group is (\d+) which is also our index
-            index = match.group(1)
+
+            logger.debug(f"found match for {start_key}: {match}")
+            # in the used regex pattern the capturing groups are ([+-]?) which is the sign and  (\d+) which is the line number
+            sign = match.group(1) # this capture the group with + or - sign
+            line_number = match.group(2) # this capture the group with the line number [string]
+
 
             # Find the corresponding "End_l" key using the same index
-            end_key = f"End_l{index}"
+            end_key = f"End_{sign}{line_number}"
 
             logger.debug(f"start_key {start_key}, end_key {end_key}")
 
@@ -177,8 +180,8 @@ def reformat_ebh_timestamps(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> 
             # the following block stores the timings data using a dict in ebh_lines.py format and in another dict using a more general format
             # The latter uses tuples instead strings which facilitates easier conversion between wnc tow and time date formats using gnss_dt.py
             if (
-                index == "1"
-            ):  # Special case for l1: Change the key name to CL for compatibility reasons with ebh_lines.py
+                sign == ""
+            ):  # Special case for 0m: Change the key name to CL for compatibility reasons with ebh_lines.py
                 
                 # ebh_lines.py format
                 ebh_timings_ebhlinefmt["CL"] = (
@@ -190,13 +193,14 @@ def reformat_ebh_timestamps(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> 
             else:
                 
                 # ebh_lines.py format
-                ebh_timings_ebhlinefmt[f"l{index}"] = (
+                ebh_timings_ebhlinefmt[f"{sign}{line_number}"] = (
                     f"{int(start_data[0])} {start_data[1]}, {int(end_data[0])} {end_data[1]}"
                 )
                 
                 # general format using tuples
-                ebh_timings[f"l{index}"] = [(start_data[0],start_data[1]),(end_data[0],end_data[1])]
-            
+                ebh_timings[f"{sign}{line_number}"] = [(start_data[0],start_data[1]),(end_data[0],end_data[1])]
+        else:
+            logger.debug(f"no match for {start_key}") 
 
     logger.info(f"ebh line timings using ebh_lines format:\n{ebh_timings_ebhlinefmt}")
 
