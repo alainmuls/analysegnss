@@ -50,9 +50,9 @@ COLUMN_MAPPINGS: Dict[str, UTMColumns] = {
         nrSVN="ns",
     ),
     "GLABNG": UTMColumns(
-        east="delta.E",
-        north="delta.N",
-        height="delta.U",
+        east="UTM.E",
+        north="UTM.N",
+        height="orthoH",
         time="DT",
         quality_mapping=UTMQualityMapping("mode", glabc.DICT_PROCESSING_MODE),
         sde="sd.E",
@@ -60,6 +60,17 @@ COLUMN_MAPPINGS: Dict[str, UTMColumns] = {
         sdu="sd.U",
         nrSVN="#SVs",
     ),
+    # "GLABNG": UTMColumns(
+    #     east="delta.E",
+    #     north="delta.N",
+    #     height="delta.U",
+    #     time="DT",
+    #     quality_mapping=UTMQualityMapping("mode", glabc.DICT_PROCESSING_MODE),
+    #     sde="sd.E",
+    #     sdn="sd.N",
+    #     sdu="sd.U",
+    #     nrSVN="#SVs",
+    # ),
 }
 
 
