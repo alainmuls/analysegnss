@@ -156,84 +156,90 @@ def plot_utm_height(
     # Create the subplot structure
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True)
     # Add traces for each column
-    fig.add_trace(
-        go.Scatter(
-            x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
-            y=utm_df[cols.north],
-            mode="markers" if not sd else "markers+lines",
-            marker=dict(color=enu_colors[0], size=1),
-            line=dict(color=enu_colors[0]) if sd else None,
-            # name=cols.north,
-            error_y=(
-                dict(
-                    type="data",
-                    array=utm_df[cols.sdn],
-                    visible=True,
-                    color=enu_colors_transparent[0],
-                    thickness=0,
-                    width=0.5,
-                )
-                if sd
-                else None
+    for qual, qual_data in utm_df.groupby(cols.quality_mapping.columns):
+
+        fig.add_trace(
+            go.Scatter(
+                x=qual_data[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
+                y=qual_data[cols.north],
+                mode="markers",
+                marker=dict(
+                    color=cols.quality_mapping.quality_dict[qual]["color"], size=1
+                ),
+                name=f"{cols.quality_mapping.quality_dict[qual]['desc']}",
+                showlegend=True,
+                error_y=(
+                    dict(
+                        type="data",
+                        array=qual_data[cols.sdn],
+                        visible=True,
+                        color=cols.quality_mapping.quality_dict[qual]["color"],
+                        thickness=0,
+                        width=0.5,
+                    )
+                    if sd
+                    else None
+                ),
             ),
-        ),
-        row=1,
-        col=1,
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
-            y=utm_df[cols.east],
-            mode="markers" if not sd else "markers+lines",
-            marker=dict(color=enu_colors[1], size=1),
-            line=dict(color=enu_colors[1]) if sd else None,
-            # name=cols.east,
-            error_y=(
-                dict(
-                    type="data",
-                    array=utm_df[cols.sde],
-                    visible=True,
-                    color=enu_colors_transparent[1],
-                    thickness=0,
-                    width=0.5,
-                )
-                if sd
-                else None
+            row=1,
+            col=1,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=qual_data[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
+                y=qual_data[cols.east],
+                mode="markers",
+                marker=dict(
+                    color=cols.quality_mapping.quality_dict[qual]["color"], size=1
+                ),
+                showlegend=False,
+                error_y=(
+                    dict(
+                        type="data",
+                        array=qual_data[cols.sde],
+                        visible=True,
+                        color=cols.quality_mapping.quality_dict[qual]["color"],
+                        thickness=0,
+                        width=0.5,
+                    )
+                    if sd
+                    else None
+                ),
             ),
-        ),
-        row=2,
-        col=1,
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
-            y=utm_df[cols.height],
-            mode="markers" if not sd else "markers+lines",
-            marker=dict(color=enu_colors[2], size=1),
-            line=dict(color=enu_colors[2]) if sd else None,
-            # name="H",
-            error_y=(
-                dict(
-                    type="data",
-                    array=utm_df[cols.sdu],
-                    visible=True,
-                    color=enu_colors_transparent[2],
-                    thickness=0,
-                    width=0.5,
-                )
-                if sd
-                else None
+            row=2,
+            col=1,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=qual_data[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
+                y=qual_data[cols.height],
+                mode="markers",
+                marker=dict(
+                    color=cols.quality_mapping.quality_dict[qual]["color"], size=1
+                ),
+                showlegend=False,
+                error_y=(
+                    dict(
+                        type="data",
+                        array=qual_data[cols.sdu],
+                        visible=True,
+                        color=cols.quality_mapping.quality_dict[qual]["color"],
+                        thickness=0,
+                        width=0.5,
+                    )
+                    if sd
+                    else None
+                ),
             ),
-        ),
-        row=3,
-        col=1,
-    )
+            row=3,
+            col=1,
+        )
 
     # Update layout for better visualization
     fig.update_layout(
         height=600,  # Taller figure to accommodate 3 subplots
         width=1024,
-        showlegend=False,
+        showlegend=True,
         plot_bgcolor="white",
         title=dict(text=f"{fn} - {origin}"),  # , font=dict(size=18)),
         yaxis_tickformat=",.2f",
@@ -257,6 +263,7 @@ def plot_utm_height(
         yaxis_gridcolor="lightgray",
         yaxis2_gridcolor="lightgray",
         yaxis3_gridcolor="lightgray",
+        legend=dict(itemsizing="constant", itemwidth=30),
     )
 
     # Update axes labels
