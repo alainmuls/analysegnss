@@ -11,17 +11,19 @@ Using classes for each data source and commonly used functions, the GNSS data ca
 
 ## Description
 
-The repository contains Python scripts and Python classes for analyzing GNSS data. The repository is organized as follows:
+The repository contains Python scripts and Python classes for analyzing and visualizing GNSS data. The repository contains directories for each of the following data sources:
 - `sbf`: contains the classes for reading and parsing SBF files
 - `rinex`: contains the classes for reading and parsing RINEX observation and navigation files
 - `rtkpos`: contains the classes for reading and parsing the position and status files obtained by RTKLib processing
-- `glab`: contains the classes for reading and parsing GLAB files (*not yet implemented*)
+- `glabng`: contains the classes for reading and parsing gLAB v6.0 (or gLABng) files
+- `gnss`: contains specific GNSS related functions
+- `plots`: contains functions for plotting GNSS data
+- `utils`: contains utility functions
 - `scripts`: contains `bash`scripts 
 
-Each of these directories contain  Python classes for reading and parsing the data. The classes are designed to be used in a way that is reusable.
+Each of these directories contain Python classes or functions for reading, parsing, plotting or perform analysis of GNSS data. These classes and scripts are designed to be used in a reusable way.
 
-Next to these directories there is a `utils` directory which contains utility functions that can be used by Python scripts or the classes. The `gnss` directory contains at present the `geoid` directory which is used to calculate the geoid undulation $N$, so that orthometric height $H$ can be calculated from the ellipsoid height $h$. The `plot` directory contains functions for plotting GNSS data.
-
+## Classes
 
 The repository contains the following classes:
 - `sbf/sbf_class`: class for reading and parsing SBF files
@@ -30,25 +32,25 @@ The repository contains the following classes:
   - `rinex_class`:  class containing common elements used by `rinex_obs_class` and `rinex_nav_class`
   - `rinex_obs_class`: class for reading and parsing RINEX observation files
   - `rinex_nav_class`: class for reading and parsing RINEX navigation files
-- `glab/glab_class`: class for reading and parsing the gLAB files (*__not yet implemented__*)
-- Other classes for reading and parsing data from other sources can be added similarly.
+- `glabng/glabng_class`: class for reading and parsing the gLABng files
+- Other classes for reading and parsing data from other sources will be added similarly.
 
-The main purpose is to create classes which are reusable for different contexts, whether it is for pure analysis, for monitoring purposes or for extracting GNSS data used for EBH (Equivalent Bump Height) calculations.
+The main purpose is to create classes and functions which are reusable for different contexts, whether it is for pure analysis, for monitoring purposes or for extracting GNSS data used for EBH (Equivalent Bump Height) calculations.
 
-The design goal is to create Python scripts which follow the Linux principle of **"do one thing and do it well"**. Subsequent scripts can be used to call another script to further enhance the functionality. This is obtained by using the Python idiom `if __name__ == "__main__":`. This construct enables a single Python file to not only support reusable code and functions, but also contain executable code that will not explicitly run when a module is imported.
+The design goal is to create Python scripts which follow the Linux principle of **"do one thing and do it well"**. Subsequent scripts can be used to call another script, using the output of the called script to further enhance the functionality. This is obtained by using the Python idiom `if __name__ == "__main__":`. This construct enables a single Python file to not only support reusable code and functions, but also contain executable code that will not explicitly run when a module is imported.
 
 ## Usage of Python logging class
 
-See [Python logging class](./utils/readme.md).
+See [Python logging class](./src/analysegnss/utils/readme.md).
 
 ## SBF related classes and functions
 
-See [SBF related classes and functions](./sbf/readme.md).
+See [SBF related classes and functions](./src/analysegnss/sbf/readme.md).
 
 
 ## RTKPos related classes and functions
 
-See [RTKPos related classes and functions](./rtkpos/readme.md).
+See [RTKPos related classes and functions](./src/analysegnss/rtkpos/readme.md).
 
 ## Contributing
 State if you are open to contributions and what your requirements are for accepting them.

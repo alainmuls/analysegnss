@@ -1,6 +1,8 @@
 
 ## SBF related classes and functions
 
+### Class `SBF`
+
 The `sbf_class` is a class that reads and parses SBF files. The class  has the following fields:
 - `sbf_fn`: the SBF filename, mandatory
 - `start_time`: the start time of the SBF file, optional
@@ -27,8 +29,20 @@ The class has the following methods:
     The `bin2asc` conversion creates CSV files with a lot of information which are not all needed. This method selects the columns used for the subsequent analysis or processing. The columns are selected based on the SBF block name and the `dtype` of the column is set to the [polars](https://docs.pola.rs/) type definition, reducing the memory usage of the SBF block [polars dataframe](https://docs.pola.rs/).
         - _Remark: currently only implemented for the `PVTGeodetic2` SBF block._
 
+- `def add_columns(self, block_df: pl.DataFrame) -> pl.DataFrame:`
+    Some data are removed while columns are added to the dataframe by default based on the requested SBF block.
+    - datarows without valid PNT solution are excluded.
+    - the columns `"SVID"` and `"PRN"` are converted to `"PRN"` and `"SVID"` respectively.
+    - the columns `"Latitude [rad]", "Longitude [rad]"` are converted to `"Latitude [deg]"` and `"Longitude [deg]"` and to `"UTM.E", "UTM.N"` using the `utm` module. The geodetic coordinates in radians are subsequently dropped.
+    - the columns `"Height [m]", "Undulation [m]"` are combined to `"ortoH [m]"`
+    - the columns `"WNc [w]", "TOW [0.001 s]"` are converted to a Python `datetime` object.
+    - if needed the SBF block containing the geodetic covariance matrix is transformed to standard deviations (only diagonal elements)?
+    - 
 In the `sbf` directory the file `sbf_constants.py` contains the constants used for interpreting some of the SBF data fields.
 
+### Python script `rtk_pvtgeod`
+
+The script `rtk_pvtgeod` is a Python script that reads and parses the `PVTGeodetic2` SBF block from an SBF file and writes the data to a CSV file. The script has the following options:
 ---
 
-Return to  [top level readme](../README.md)
+Return to  [top level readme](../../../README.md)
