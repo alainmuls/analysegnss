@@ -207,7 +207,7 @@ def plot_utm_height(
     fig.add_trace(
         go.Scatter(
             x=utm_df[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
-            y=utm_df["orthoH"],
+            y=utm_df[cols.height],
             mode="markers" if not sd else "markers+lines",
             marker=dict(color=enu_colors[2], size=1),
             line=dict(color=enu_colors[2]) if sd else None,

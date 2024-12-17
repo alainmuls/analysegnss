@@ -165,7 +165,8 @@ def plot_coords(argv: list):
             ]
         )
     # select the columns needed for the plot
-    print(f"=====================\n{df_utm}\n=====================")
+    with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
+        print(f"=====================\ndf_utm = \n{df_utm}\n=====================")
 
     # if args_parsed.pos_fn is not None:
     #     # create the PPK position dataframe by calling ppk_rnx2rtkp.py
