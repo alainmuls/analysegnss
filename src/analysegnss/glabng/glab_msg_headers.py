@@ -230,12 +230,12 @@ HDRS_SATSEL = {
         "desc": "Year number (4 digits).",
         "keep": True,
     },
-    "DoY": {
+    "DOY": {
         "dtype": pl.UInt16,
         "desc": "Day of Year (3 digits).",
         "keep": True,
     },
-    "sod": {
+    "SOD": {
         "dtype": pl.Float32,
         "desc": "Seconds elapsed since the beginning of the day.",
         "keep": True,

@@ -509,7 +509,7 @@ def argument_parser_glab_parser(args: list) -> argparse.Namespace:
     parser.add_argument(
         "--section",
         type=lambda x: [str(item).strip() for item in x.split(",")],
-        help='Comma-separated gLAB sections to parse (default: OUTPUT) (e.g. "OUTPUT,SATSEL,INFO")',
+        help="Comma-separated gLAB sections to parse (default: OUTPUT) (e.g. OUTPUT,SATSEL,INFO)",
         required=False,
         default="OUTPUT",
     )

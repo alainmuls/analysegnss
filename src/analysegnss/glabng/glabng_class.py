@@ -222,11 +222,8 @@ class GLABNG:
         ]
         df_section = df_section.select(columns_to_keep)
 
-        # # Convert time string to datetime
-        # df_section = df_section.with_columns(
-        #     pl.col("DT").str.strptime(pl.Time, format="%H:%M:%S.%f")
-        # )
-        # Convert YEAR, DOY and SOD to datetime
+        # Convert YEAR, DOY and SOD to datetime if present
+
         df_section = df_section.with_columns(
             pl.struct(["Year", "DOY", "SOD"])
             .apply(
