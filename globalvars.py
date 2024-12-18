@@ -37,6 +37,7 @@ def initialize() -> None:
         "E_FAILED_SUBPROCESS": 40,
         "E_TIMEOUT": 41,
         "E_FILE_NOT_READABLE": 42,
+        "E_FILE_EMPTY": 46,
         "E_PROCESS": 90,
         "E_FAILURE": 99,
     }

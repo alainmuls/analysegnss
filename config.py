@@ -45,6 +45,7 @@ ERROR_CODES = {
     "E_NO_QUAL": 43,
     "E_NO_SBF_BLOCK": 44,
     "ERROR_SBF_OBJECT": 45,
+    "E_FILE_EMPTY": 46,
     "E_PROCESS": 90,
     "E_FAILURE": 99,
 }

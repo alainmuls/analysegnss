@@ -7,6 +7,7 @@ import sys
 from logging import Logger
 from math import atan2, degrees, sqrt, fabs
 
+
 import polars as pl
 from tabulate import tabulate
 
@@ -17,7 +18,7 @@ from gnss.gnss_dt import gnss2dt
 from rtkpos import rtk_constants as rtkc
 from rtkpos.rtkpos_class import Rtkpos
 from utils import argument_parser, init_logger
-from utils.utilities import str_yellow
+from utils.utilities import str_yellow, str_red
 
 
 def get_ppk_dataframe(parsed_args: argparse.Namespace, logger: Logger) -> pl.DataFrame:
@@ -91,6 +92,7 @@ def read_ebh_line_timings(timings_fn: str, logger: Logger) -> dict:
         logger.critical(f"File {timings_fn} is not readable. Exiting")
         sys.exit(ERROR_CODES["E_FILE_NOT_EXIST"])
 
+
     # Regular expression pattern to match both integers and float values
     pattern = r"\d+\.\d+|\d+"
 
@@ -121,6 +123,13 @@ def read_ebh_line_timings(timings_fn: str, logger: Logger) -> dict:
     #     print(
     #         f"{line} = {timings[0].strftime('%Y/%m/%d %H:%M:%S')} - {timings[1].strftime('%Y/%m/%d %H:%M:%S')}"
     #     )
+
+
+    # check if the timings file is empty
+    if not line_timings:
+        print(str_red(f"ERROR: File {timings_fn} is empty. Probably no timings key found in SBF comments or sbf comment are modified. Exiting"))
+        logger.critical(f"File {timings_fn} is empty. Exiting")
+        sys.exit(ERROR_CODES["E_FILE_EMPTY"])
 
     logger.info(
         tabulate(
@@ -196,9 +205,9 @@ def ebh_lines_extract(
         parsed_args (argparse.Namespace): CLI arguments
         logger (Logger): logger object
     """
-    cl_map_angle = ebh_timings["CL"][2]
-    # print(f"cl_map_angle = {cl_map_angle}")
 
+    # init reference map angle
+    ref_map_angle = ""
     # keep the dataframes in a dictionary
     ebh_lines_assur = dict()
 
@@ -210,8 +219,14 @@ def ebh_lines_extract(
         #    pl.col("DT") <= timings[1]
         # )
 
+        # We are going fetch the reference map angle and use this to order the EBH lines in the same direction
+
+        if ref_map_angle == "":
+            ref_map_angle = ebh_timings[ebh_key][2]
+            logger.info(f"Using {first_ebh_key} as reference for ebh line direction")
+
         # check orientation of the current line
-        if cl_map_angle - 10 < timings[2] < cl_map_angle + 10:
+        if ref_map_angle - 10 < timings[2] < ref_map_angle + 10:
             ebh_lines_assur[ebh_key] = df_pos.filter(
                 pl.col("DT").is_between((timings[0]), (timings[1])),
             )
@@ -351,7 +366,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
         df_pos = pos_df.select(["DT", "Type", "NrSV", "UTM.E", "UTM.N", "orthoH"])
     else:
         logger.error("No processing type selected or no input file provided. EXITING.")
-        sys.exit(ERROR_CODES["E_FILE_NOT_EXIST"])
+        sys.exit(globalvars.ERROR_CODES["E_FILE_NOT_EXIST"])
 
     with pl.Config(tbl_cols=-1):
         logger.info(df_pos)
@@ -395,6 +410,9 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
             logger.info(
                 f"The ppk quality of the line {ebh_key} is {qual_ebh_lines[ebh_key]}"
             )
+
+            # put here function (ebhrtk_to_csv) to save dataframes to csv files that can be used for plotting
+
         else:
             qual_ebh_lines[ebh_key] = rtk_pvtgeod.quality_analysis(
                 ebh_assur_line, logger=logger
@@ -403,10 +421,15 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
                 f"The rtk quality of the line {ebh_key} is {qual_ebh_lines[ebh_key]}"
             )
 
+            # put here function (ebhppk_to_csv) to save dataframes to csv files that can be used for plotting
+
+
+
         # thin out the df_line to keep positions every 0.5 meters and keep only RTK/PPK fixed results
         ebh_assur_line = ebh_line_thin_out(
             df_line=ebh_assur_line, parsed_args=parsed_args, logger=logger
         )
+
 
         # name the file according to the ebh line key
         ebh_line_fn = f"{parsed_args.desc}_{ebh_key}.csv"
@@ -419,6 +442,8 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
             f"{str_yellow(ebh_line_fn)}"
             f"{ebh_assur_line.select(['UTM.E', 'UTM.N', 'orthoH'])}"
         )
+
+
 
         # keep the columns UTM.E, UTM.N and ortoH
         ebh_assur_df = ebh_assur_line.select(["UTM.E", "UTM.N", "orthoH"])
@@ -444,7 +469,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
 
 
         # writing ebh assur to file
-        ebh_to_file(
+        ebh_to_assurfmt(
             ebh_assur_df=ebh_assur_df,
             ebh_assur_fn=ebh_line_fn,
             dest_dir=parsed_args.ebh_dest_dir,
@@ -454,7 +479,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
     return qual_ebh_lines
 
 
-def ebh_to_file(
+def ebh_to_assurfmt(
     ebh_assur_df: pl.DataFrame, ebh_assur_fn: str, dest_dir: str, logger: Logger
 ) -> None:
     """
@@ -485,6 +510,35 @@ def ebh_to_file(
 
     logger.info(f"Done writing ebh assur file to {ebh_assur_fp}")
     print(f"Done writing ebh assur file to {ebh_assur_fp}")
+
+
+def ebhrtk_to_csv(rtk_df: pl.dataframe, rtk_fn: str, dest_dir: str, logger: Logger) -> None:
+    """
+    Write ebh rtk (sourced from sbf) dataframe with UTM coordinates, orthometric H, lat lon coordinates, Datetime, Type and NrSV
+    to csv file. 
+
+    args:
+    rtk_df (pl.DataFrame): RTK dataframe
+    rtk_fn (str): file name of RTK
+    dest_dir (str): Path to destination directory
+    logger (Logger): Logger object
+    """
+
+
+def ebhppk_to_csv(rtk_df: pl.dataframe, rtk_fn: str, dest_dir: str, logger: Logger) -> None:
+    """
+    Write ebh ppk (sourced from sbf) dataframe with UTM coordinates, orthometric H, lat lon coordinates, Datetime, Type and NrSV
+    to csv file. 
+
+    args:
+    rtk_df (pl.DataFrame): RTK dataframe
+    rtk_fn (str): file name of RTK
+    dest_dir (str): Path to destination directory
+    logger (Logger): Logger object
+    """
+
+
+
 
 if __name__ == "__main__":
 

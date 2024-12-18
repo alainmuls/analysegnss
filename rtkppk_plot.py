@@ -11,7 +11,7 @@ from config import ERROR_CODES
 from plots import plot_utm
 from utils import argument_parser, init_logger
 
-
+#TODO split function. If extracted rtk/ppk dataframe/csv already exist there is no need to redo calculation
 def rtkppk_plot(argv: list):
     """analyses the rnx2rtkp output file and extracts the position information
 
@@ -50,7 +50,7 @@ def rtkppk_plot(argv: list):
         if args_parsed.title is not None:
             title = args_parsed.title
         else:
-            title = args_parsed.pos_fn + " (" + origin + ")"
+            title = args_parsed.pos_ifn + " (" + origin + ")"
 
     elif args_parsed.sbf_ifn is not None:
         # create the RTK position dataframe by calling rtk_pvtgeod.py
