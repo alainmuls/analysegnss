@@ -34,11 +34,14 @@ class SBF:
         self.validate_logger_level()
 
     def validate_file(self):
+
         if not os.path.isfile(self.sbf_fn):
             if self.logger:
                 self.logger.error(f"File does not exist: {self.sbf_fn}")
             raise ValueError(f"File does not exist: {self.sbf_fn}")
 
+        #TODO The following sometimes gives a false negative. Needs to be revised.
+        """
         with open(self.sbf_fn, "rb") as f:
             first_two_bytes = f.read(2)
 
@@ -50,6 +53,7 @@ class SBF:
             raise ValueError(
                 f'File type is not valid, first two bytes must be "$@": {self.sbf_fn}'
             )
+        """
 
         if self.logger:
             self.logger.info(f"File validated successfully: {self.sbf_fn}")
