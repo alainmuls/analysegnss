@@ -166,7 +166,7 @@ def argument_parser_plot_coords(args: list) -> argparse.Namespace:
         default=None,
     )
     parser.add_argument(
-        "--plot",
+        "--display",
         help="display plots (default False)",
         action="store_true",
         required=False,

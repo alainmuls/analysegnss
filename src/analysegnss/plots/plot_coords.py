@@ -188,23 +188,24 @@ def plot_coords(argv: list):
     print(f"creating plot for {origin} position file {filename}")
 
     # plot the UTM and orthoH coordinates
-    if args_parsed.plot:
-        plot_utm.plot_utm_scatter(
-            utm_df=df_utm,
-            origin=origin,
-            fn=filename,
-            dir_fn=dir_fn,
-            logger=logger,
-        )
+    plot_utm.plot_utm_scatter(
+        utm_df=df_utm,
+        origin=origin,
+        fn=filename,
+        dir_fn=dir_fn,
+        logger=logger,
+        display=args_parsed.display,
+    )
 
-        plot_utm.plot_utm_height(
-            utm_df=df_utm,
-            origin=origin,
-            fn=filename,
-            dir_fn=dir_fn,
-            sd=args_parsed.sd,
-            logger=logger,
-        )
+    plot_utm.plot_utm_height(
+        utm_df=df_utm,
+        origin=origin,
+        fn=filename,
+        dir_fn=dir_fn,
+        sd=args_parsed.sd,
+        logger=logger,
+        display=args_parsed.display,
+    )
 
 
 def main():

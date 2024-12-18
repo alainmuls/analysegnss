@@ -21,6 +21,7 @@ def plot_utm_scatter(
     fn: str,
     dir_fn: str,
     logger: logging.Logger = None,
+    display: bool = False,
 ) -> None:
     """
     Plots the UTM (North vs East) coordinates from a Polars DataFrame.
@@ -93,7 +94,8 @@ def plot_utm_scatter(
     # Apply standard fonts
     plot_fonts.apply_fonts(fig)
 
-    # fig.show()
+    if display:
+        fig.show()
 
     # get from the title the name of the station and its directory
     # and save the plot in the sub-directory 'plots'
@@ -118,6 +120,7 @@ def plot_utm_height(
     dir_fn: str,
     sd: bool = False,
     logger: logging.Logger = None,
+    display: bool = False,
 ) -> None:
     """plot the UTM.N,UTM.E and height vs time with display of standard deviation
 
@@ -275,7 +278,8 @@ def plot_utm_height(
     # Apply standard fonts
     plot_fonts.apply_fonts(fig)
 
-    # fig.show()
+    if display:
+        fig.show()
 
     # get from the title the name of the station and its directory
     # and save the plot in the sub-directory 'plots'
