@@ -3,15 +3,15 @@
 
 The `RTKPos` class is used to read and parse the position and status files obtained by RTKLib processing.  The class has the following fields:
 - `pos_fn`: the SBF filename, mandatory
-- `start_time`: the start time of the SBF file, optional
-- `end_time`: the end time of the SBF file, optional
+- `start_time`: the start time, optional
+- `end_time`: the end time, optional
 - `logger`: the logger object, optional
 
-    - _Remark: for using the RTKLib created position file with the [polars dataframe](https://docs.pola.rs/) the position file has to be created with the `-s sep :   field separator [' ']` option to obtain a CSV file._
+    <!-- - _Remark: for using the RTKLib created position file with the [polars dataframe](https://docs.pola.rs/) the position file has to be created with the `-s sep :   field separator [' ']` option to obtain a CSV file._ -->
 
 The class has the following methods:
 - `def rtkpos_schema(self) -> dict:`
-    This method returns a dictionary with the column names and the [polars](https://docs.pola.rs/) dtypes for the columns found in the RTKPos CSV position file, reducing the memory usage of the  [polars dataframe](https://docs.pola.rs/).
+    This method returns a dictionary with the column names and the [polars](https://docs.pola.rs/) dtypes for the columns found in the RTKPos CSV position file, reducing the memory usage of the [polars dataframe](https://docs.pola.rs/).
 
 - `def info_processing(self) -> Tuple[dict, list]:`
     This method returns a tuple containing:
