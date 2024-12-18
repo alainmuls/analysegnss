@@ -99,6 +99,10 @@ def rtk_pvtgeod(argv: list) -> dict:
 
             # merge the RTK position dataframes on the DT column
             df_pvt = combine_dfs(dfs_pvt)
+            # Drop the column
+            if "DT_right" in df_pvt.columns:
+                df_pvt = df_pvt.drop("DT_right")
+
             # with pl.Config(
             #     tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
             # ):
