@@ -29,7 +29,7 @@ The `RINEX_NAV` class is used to read and parse the RINEX navigation files. The 
     - `def validate_rnxnav_fn(self):` which checks if the RINEX navigation file is valid and corresponds to a navigation file.
     - `def gfzrnx_tabnav(self) -> dict:` which returns a dictionary with the navigation types and their corresponding values per GNSS in the RINEX navigation file using the `gfzrnx` executable and creates a tabular representation of the navigation types in a CSV file.
 
-## The scripts `rnxobs_csv.py`, `rnxnav_csv.py` and `rnx_csv.py`
+## The scripts `rnxobs_csv`, `rnxnav_csv` and `rnx_csv`
 
 ```bash
 ± rnxobs_csv -h
@@ -99,3 +99,9 @@ options:
   --nav_fn NAV_FN  RINEX navigation filename
   --gnss GNSS      GNSS systems to convert (default: GE, select between G, R, E, C)
 ```
+
+
+
+---
+
+Return to  [top level readme](../../../README.md)
