@@ -380,7 +380,7 @@ def ebh_lines(argv: list):
             f"{ebh_assur_line.select(['UTM.E', 'UTM.N', 'orthoH'])}"
         )
 
-        # keep the columns UTM.E, UTM.N and ortoH and write to CSV file
+        # keep the columns UTM.E, UTM.N and orthoH and write to CSV file
         ebh_assur_line.select(["UTM.E", "UTM.N", "orthoH"]).write_csv(
             ebh_line_fn, separator=";", include_header=False, float_precision=3
         )
