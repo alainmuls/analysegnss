@@ -112,7 +112,7 @@ def reformat_ebh_timestamps(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> 
     logger.info("Grouping EBH timestamp dataframe for each found measurement")
 
     # Key that identifies the end of a measurement
-    key_stop = "Finished"
+    key_stop = "Finish"
 
     # find index idx of the key_stop / we use series to serialize the boolean values
     key_stop_idx = (
@@ -134,7 +134,7 @@ def reformat_ebh_timestamps(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> 
 
     else:
         logger.warning(
-            "No key 'Finished' found in SBF comments. Using all timestamps"
+            f"No key {key_stop} found in SBF comments. Using all timestamps"
         )
 
     # Search for patterns "Start_l" and "End_l", and group them by index
@@ -156,7 +156,7 @@ def reformat_ebh_timestamps(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> 
 
 
             # Find the corresponding "End_l" key using the same index
-            end_key = f"End_{sign}{line_number}"
+            end_key = f"End_{sign}{line_number}m"
 
             logger.debug(f"start_key {start_key}, end_key {end_key}")
 
@@ -200,7 +200,7 @@ def reformat_ebh_timestamps(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> 
                 # general format using tuples
                 ebh_timings[f"{sign}{line_number}"] = [(start_data[0],start_data[1]),(end_data[0],end_data[1])]
         else:
-            logger.debug(f"no match for {start_key}") 
+            logger.debug(f"{start_key} does not match sbf comment timestamp with pattern {start_pattern}") 
 
     logger.info(f"ebh line timings using ebh_lines format:\n{ebh_timings_ebhlinefmt}")
 

@@ -366,7 +366,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
         df_pos = pos_df.select(["DT", "Type", "NrSV", "UTM.E", "UTM.N", "orthoH"])
     else:
         logger.error("No processing type selected or no input file provided. EXITING.")
-        sys.exit(globalvars.ERROR_CODES["E_FILE_NOT_EXIST"])
+        sys.exit(ERROR_CODES["E_FILE_NOT_EXIST"])
 
     with pl.Config(tbl_cols=-1):
         logger.info(df_pos)
@@ -399,6 +399,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
     # check quality of each ebh line
     # Thin out line, keep RTK/PPK fixed results
     # save in CSV files using ";" as separator
+    #TODO check if ebh lines have the same distances
     for ebh_key, ebh_assur_line in ebh_assur_lines.items():
 
         # Checking quality of each ebh line for ppk and rtk result.
@@ -468,7 +469,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
                 pass
 
 
-        # writing ebh assur to file
+        # writing ebh assur line to file
         ebh_to_assurfmt(
             ebh_assur_df=ebh_assur_df,
             ebh_assur_fn=ebh_line_fn,

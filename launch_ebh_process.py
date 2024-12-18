@@ -136,6 +136,13 @@ def rtk_ppk_qual_check(
     ebh_qual_decision (str):    string with the decision (ALL-EBH-OK, 1-EBH-OK or ALL-EBH-NOK)
     """
 
+    # check of qual_analysis which contains all the quality analysis of the ebh lines is empty
+
+    if not qual_analysis:
+        logger.critical("No quality analysis available. No ebh lines to check.")
+        print(utilities.str_red("No quality analysis available. No ebh lines to check. Redo measurement."))
+        sys.exit(ERROR_CODES["E_FAILURE"])
+
     logger.info(
         f"rkt_ppk checker launched for {qual_analysis} in RTK mode {RTK_mode} with a rejection level of {rejection_level}"
     )
@@ -144,7 +151,7 @@ def rtk_ppk_qual_check(
     for ebh_key, ebh_qual_value in qual_analysis.items():
         if RTK_mode:
             if ebh_qual_value[0][2] >= rejection_level:
-                logger.info(f"ebh line {ebh_key} passed")
+                logger.info(f"ebh line {ebh_key} passed with {ebh_qual_value[0][2]}")
             else:
                 rejected_ebh_lines.append(ebh_key)
                 logger.warning(
@@ -153,7 +160,7 @@ def rtk_ppk_qual_check(
 
         else:  # PPK MODE
             if ebh_qual_value[0][2] >= rejection_level:
-                logger.info(f"ebh line {ebh_key} has passed")
+                logger.info(f"ebh line {ebh_key} has passed with {ebh_qual_value[0][2]}")
             else:
                 rejected_ebh_lines.append(ebh_key)
                 logger.info(
