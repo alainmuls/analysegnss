@@ -17,7 +17,7 @@ The class has the following methods:
     This method returns a tuple containing:
         - a dictionary with the processing information extracted from the RTKPos CSV position file (cfr extract below)
         - a list containing the column names of the RTKPos CSV position file, by replacing the `"GPST"` column name with `"WNc", "TOW(s)"`.
-```bash
+```text
 % program   : rnx2rtkp ver.demo5 b34g
 % inp file  : rnx/ROVR00BEL_R_20241701647_05H_10Z_MO.rnx
 % inp file  : rnx/SSEA00XXX_R_20241701639_05H_01S_MO.rnx

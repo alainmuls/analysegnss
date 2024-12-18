@@ -39,7 +39,7 @@ options:
 By importing the `argcomplete` module, the command line arguments can be completed automatically by pressing the tab key after including in the `~/.bashrc` file:
 
 ```bash
-for file in  rtk_pvtgeod.py ppk_rnx2rtkp.py rtkppk_plot.py ebh_lines.py
+for file in  rtk_pvtgeod ppk_rnx2rtkp rtkppk_plot ebh_lines
 do
     complete -o nospace -o default -o bashdefault -F _Python_argcomplete ${file}
 done
