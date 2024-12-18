@@ -50,3 +50,10 @@ The dataframe obtained when parsing the `"SATSEL"` section contains following co
 ```
 ['SATSEL', 'Year', 'DOY', 'SOD', 'DT', 'GNSS', 'PRN', 'code', 'code_desc']
 ```
+
+
+
+
+---
+
+Return to  [top level readme](../../../README.md)

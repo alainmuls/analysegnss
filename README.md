@@ -56,6 +56,10 @@ See [RTKPos related classes and functions](./src/analysegnss/rtkpos/readme.md).
 
 See [GLABNG related classes and functions](./src/analysegnss/glabng/readme.md).
 
+### PLOT scripts
+
+See [PLOT scripts](./src/analysegnss/plots/readme.md).
+
 ## Contributing
 State if you are open to contributions and what your requirements are for accepting them.
 
