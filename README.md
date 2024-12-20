@@ -504,6 +504,344 @@ shape: (3_037, 3)
 └───────────────┴──────────┴────────────┘
 ```
 
+
+
+
+### The script `launch_ebh_process.py`
+
+This is the main script that orchestrates the complete EBH (Equivalent Bump Height) processing workflow. It implements a quality-based decision system for processing the GNSS data:
+
+
+__Key features:__
+
+- Automated RTK/PPK processing selection based on quality metrics
+- Handling of single vs multiple line failures
+- Handles Septentrio SBF data for RTK processing
+- Integration with RTKLIB for PPK processing
+- ASSUR-formatted output generation
+
+The workflow consists of several stages:
+
+- EBH timing extraction from SBF files
+- RTK solution quality analysis
+- Processing mode decision (RTK vs PPK)
+- PPK processing when needed
+- ASSUR-compatible output generation
+ 
+Quality-based decision criteria:
+
+- RTK acceptance threshold: >99% fixed solutions
+- Single line failure: PPK only for failed line
+- Multiple line failures: Full PPK reprocessing
+
+__Key functions:__
+
+- `ebh_process_launcher(parsed_args, logger)`: Main orchestrator function that coordinates the entire EBH workflow
+- `rtk_ppk_qual_check(qual_analysis, RTK_mode, rejection_level, logger)`: Analyzes solution quality and determines processing strategy
+- `do_ppk_by_decision(rejected_rtk_lines, rtk_qual_decision, ebh_timings, parsed_args, logger)`: Handles PPK processing based on quality analysis
+
+
+```bash
+± launch_ebh_process.py -h
+usage: launch_ebh_process.py [-h] [-V] [-v] --sbf_ifn SBF_IFN [--base_corr BASE_CORR] [-cfg CONFIG_PPK] [--desc DESC] [-odir EBH_DEST_DIR] [--archive ARCHIVE] [--log_dest LOG_DEST]
+
+argument_parser.py Launches the appropiate functions to calculate the ebh_lines from the sbf_ifn file from which it retrievers the correct timings, decides whether the RTK or PPK
+solution has a sufficient quality, and finally outputs correct ASSUR formatted files for each ebh line.
+
+options:
+  -h, --help            show this help message and exit
+  -V, --version         show program's version number and exit
+  -v, --verbose         verbose level... repeat up to three times.
+  --sbf_ifn SBF_IFN     input sbf file name. This sbf file not only contains the RTK/obs/nav data but also the ebh line timestamps
+  --base_corr BASE_CORR
+                        base correction filename. RNX OBS or SBF file obtained from GNSS base station. If provided, a PPK solution is calculated for each RTK solution that is not of
+                        sufficient quality.
+  -cfg CONFIG_PPK, --config_ppk CONFIG_PPK
+                        File name of config file used for RTKLib rnx2rtkp calculation. Default: rtkpos/rnx2rtkp_config/rnx2rtkp_EBH_PPK_default.conf
+  --desc DESC           description of EBH lines project
+  -odir EBH_DEST_DIR, --ebh_dest_dir EBH_DEST_DIR
+                        Destination directory of ebh assur files (default: EBH_ASSUR directory in directory of the input sbf or pos file)
+  --archive ARCHIVE     Archives extracted sbf blocks to specified archive's directory name. (full or relative (@sbf_ifn) path) Default is no archiving.
+  --log_dest LOG_DEST   Specify log destination directory (full path). Default is /tmp/logs/
+usage: launch_ebh_process.py [-h] [-V] [-v] --sbf_ifn SBF_IFN --base_corr BASE_CORR --config_ppk CONF --desc DESC [--log_dest LOG_DEST]
+
+options:
+  -h, --help            show this help message and exit
+  -V, --version         show program's version number and exit
+  -v, --verbose         verbose level... repeat up to three times.
+  --sbf_ifn SBF_IFN     input SBF filename
+  --base_corr BASE_CORR base station corrections (RTCM or RINEX)
+  --config_ppk          PPK configuration file
+  --desc DESC           description of EBH lines project
+  --log_dest LOG_DEST   directory for logging output
+```
+
+
+
+__Example Usage__
+
+```bash
+launch_ebh_process.py --sbf_ifn ebh_measurements.sbf --base_corr base_MO.rnx \
+--conf_ppk ppk.conf --desc "Project A" -vv
+```
+The script returns:
+
+- Quality analysis statistics
+- Processing decisions for each line
+- ASSUR-formatted output files
+- Comprehensive logging information
+
+```bash
+(py-gnss) pj@pj-Book:~/Documents/GNSS4Def/gitlab/analysegnss$ ./launch_ebh_process.py --sbf_ifn /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/rover.sbf --base_corr /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/BASE/base.sbf -vv
+---------- START of launch_ebh_process (process logged @ /tmp/logs/) ----------
+2024-12-20 11:44:17,182 [WARNING](launch_ebh_process:logger_setup:81): ---------- START of launch_ebh_process (process logged @ /tmp/logs/) ----------
+2024-12-20 11:44:17,182 [INFO](launch_ebh_process:<module>:486): Parsed arguments: Namespace(verbose=2, sbf_ifn='/home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/rover.sbf', base_corr='/home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/BASE/base.sbf', config_ppk='rtkpos/rnx2rtkp_config/rnx2rtkp_EBH_PPK_default.conf', desc='ebh_line', ebh_dest_dir=None, archive=None, log_dest='/tmp/logs/')
+2024-12-20 11:44:17,182 [INFO](launch_ebh_process:get_SBFcomments:27): Creating SBF object from SBF file
+2024-12-20 11:44:17,182 [INFO](launch_ebh_process:validate_logger_level:110): Console log level set to INFO
+2024-12-20 11:44:17,182 [INFO](launch_ebh_process:bin2asc_dataframe:176): /opt/Septentrio/RxTools/bin/bin2asc conversion of SBF file /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/rover.sbf to CSV files and importing into dataframes for SBF blocks
+Comment1
+2024-12-20 11:44:17,704 [WARNING](launch_ebh_process:add_columns:527): 	collecting the dataframe. Be patient.
+2024-12-20 11:44:17,705 [INFO](launch_ebh_process:parseSBFComments:58): Extracting EBH timestamps from SBF comments and parsing the key,time and misc values
+2024-12-20 11:44:17,708 [INFO](launch_ebh_process:reformat_ebh_timestamps:106): Reformatting EBH timestamps
+2024-12-20 11:44:17,708 [INFO](launch_ebh_process:reformat_ebh_timestamps:112): Grouping EBH timestamp dataframe for each found measurement
+2024-12-20 11:44:17,708 [INFO](launch_ebh_process:reformat_ebh_timestamps:124): Found 1 stop call . Finished measurement at index 13
+2024-12-20 11:44:17,708 [INFO](launch_ebh_process:reformat_ebh_timestamps:130): Sliced dataframe to only include rows before the first stop measurement call
+2024-12-20 11:44:17,711 [INFO](launch_ebh_process:reformat_ebh_timestamps:205): ebh line timings using ebh_lines format:
+{'CL': '2345 378822.0, 2345 378928.0', '+5': '2345 378947.0, 2345 379054.0', '-5': '2345 379076.0, 2345 379244.0'}
+2024-12-20 11:44:17,712 [INFO](launch_ebh_process:ebh_timings_to_file:220): writing ebh timings to file
+2024-12-20 11:44:17,712 [INFO](launch_ebh_process:ebh_timings_to_file:226): Done writing timings file to /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/rover.sbf_ebh_timings.txt
+---------- START of rtk_pvtgeod (process logged @ /tmp/logs/) ----------
+2024-12-20 11:44:17,713 [WARNING](rtk_pvtgeod:logger_setup:81): ---------- START of rtk_pvtgeod (process logged @ /tmp/logs/) ----------
+2024-12-20 11:44:17,713 [INFO](rtk_pvtgeod:validate_logger_level:110): Console log level set to INFO
+2024-12-20 11:44:17,714 [INFO](rtk_pvtgeod:bin2asc_dataframe:176): /opt/Septentrio/RxTools/bin/bin2asc conversion of SBF file /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/rover.sbf to CSV files and importing into dataframes for SBF blocks
+PVTGeodetic2
+2024-12-20 11:44:18,313 [WARNING](rtk_pvtgeod:add_columns:527): 	collecting the dataframe. Be patient.
+2024-12-20 11:44:18,622 [INFO](rtk_pvtgeod:quality_analysis:44): Quality analysis:
+╒═══════════════════════════╤═════════╤══════════════╕
+│ PNT Mode                  │   Count │   Percentage │
+╞═══════════════════════════╪═════════╪══════════════╡
+│ RTK with ﬁxed ambiguities │    8586 │         97.7 │
+│ RTK with ﬂoat ambiguities │     202 │          2.3 │
+╘═══════════════════════════╧═════════╧══════════════╛
+2024-12-20 11:44:18,623 [INFO](launch_ebh_process:ebh_lines:343): Dataframe obtained from RTK processing of /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/rover.sbf
+2024-12-20 11:44:18,626 [INFO](launch_ebh_process:ebh_lines:373): CL       : 2024/12/19 09:13:42 - 2024/12/19 09:15:28 | -155.2
+2024-12-20 11:44:18,626 [INFO](launch_ebh_process:ebh_lines:373): +5       : 2024/12/19 09:15:47 - 2024/12/19 09:17:34 |   24.9
+2024-12-20 11:44:18,626 [INFO](launch_ebh_process:ebh_lines:373): -5       : 2024/12/19 09:17:56 - 2024/12/19 09:20:44 | -155.1
+2024-12-20 11:44:18,626 [INFO](launch_ebh_process:ebh_lines_extract:211): Using CL as reference for ebh line direction
+2024-12-20 11:44:18,627 [INFO](launch_ebh_process:quality_analysis:44): Quality analysis:
+╒═══════════════════════════╤═════════╤══════════════╕
+│ PNT Mode                  │   Count │   Percentage │
+╞═══════════════════════════╪═════════╪══════════════╡
+│ RTK with ﬁxed ambiguities │    1061 │          100 │
+╘═══════════════════════════╧═════════╧══════════════╛
+2024-12-20 11:44:18,627 [INFO](launch_ebh_process:ebh_lines:406): The rtk quality of the line CL is [['RTK with ﬁxed ambiguities', 1061, 100.0]]
+2024-12-20 11:44:18,628 [INFO](launch_ebh_process:ebh_line_thin_out:249): Starting thinning out of ebh line. And only keeping RTK/PPK fixed values
+Writing CSV AssurTool file for CL to ebh_line_CL.csv
+2024-12-20 11:44:18,633 [INFO](launch_ebh_process:ebh_to_assurfmt:497): Done writing ebh assur file to /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/EBH_ASSUR/ebh_line_CL.csv
+Done writing ebh assur file to /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/EBH_ASSUR/ebh_line_CL.csv
+2024-12-20 11:44:18,633 [INFO](launch_ebh_process:quality_analysis:44): Quality analysis:
+╒═══════════════════════════╤═════════╤══════════════╕
+│ PNT Mode                  │   Count │   Percentage │
+╞═══════════════════════════╪═════════╪══════════════╡
+│ RTK with ﬁxed ambiguities │    1071 │          100 │
+╘═══════════════════════════╧═════════╧══════════════╛
+2024-12-20 11:44:18,634 [INFO](launch_ebh_process:ebh_lines:406): The rtk quality of the line +5 is [['RTK with ﬁxed ambiguities', 1071, 100.0]]
+2024-12-20 11:44:18,634 [INFO](launch_ebh_process:ebh_line_thin_out:249): Starting thinning out of ebh line. And only keeping RTK/PPK fixed values
+Writing CSV AssurTool file for +5 to ebh_line_+5.csv
+2024-12-20 11:44:18,638 [INFO](launch_ebh_process:ebh_to_assurfmt:497): Done writing ebh assur file to /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/EBH_ASSUR/ebh_line_+5.csv
+Done writing ebh assur file to /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/EBH_ASSUR/ebh_line_+5.csv
+2024-12-20 11:44:18,639 [INFO](launch_ebh_process:quality_analysis:44): Quality analysis:
+╒═══════════════════════════╤═════════╤══════════════╕
+│ PNT Mode                  │   Count │   Percentage │
+╞═══════════════════════════╪═════════╪══════════════╡
+│ RTK with ﬁxed ambiguities │    1681 │          100 │
+╘═══════════════════════════╧═════════╧══════════════╛
+2024-12-20 11:44:18,639 [INFO](launch_ebh_process:ebh_lines:406): The rtk quality of the line -5 is [['RTK with ﬁxed ambiguities', 1681, 100.0]]
+2024-12-20 11:44:18,639 [INFO](launch_ebh_process:ebh_line_thin_out:249): Starting thinning out of ebh line. And only keeping RTK/PPK fixed values
+Writing CSV AssurTool file for -5 to ebh_line_-5.csv
+2024-12-20 11:44:18,645 [INFO](launch_ebh_process:ebh_to_assurfmt:497): Done writing ebh assur file to /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/EBH_ASSUR/ebh_line_-5.csv
+Done writing ebh assur file to /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/EBH_ASSUR/ebh_line_-5.csv
+2024-12-20 11:44:18,646 [INFO](launch_ebh_process:rtk_ppk_qual_check:138): rkt_ppk checker launched for {'CL': [['RTK with ﬁxed ambiguities', 1061, 100.0]], '+5': [['RTK with ﬁxed ambiguities', 1071, 100.0]], '-5': [['RTK with ﬁxed ambiguities', 1681, 100.0]]} with a rejection level of ebh 101
+2024-12-20 11:44:18,646 [INFO](launch_ebh_process:rtk_ppk_qual_check:143): Number of measured ebh lines: 3
+2024-12-20 11:44:18,646 [INFO](launch_ebh_process:rtk_ppk_qual_check:148): Number of measured points for CL: 1061
+2024-12-20 11:44:18,646 [WARNING](launch_ebh_process:rtk_ppk_qual_check:156): ebh line CL is rejected with the quality of 100.0 against the rejection level of 101
+2024-12-20 11:44:18,646 [INFO](launch_ebh_process:rtk_ppk_qual_check:148): Number of measured points for +5: 1071
+2024-12-20 11:44:18,646 [WARNING](launch_ebh_process:rtk_ppk_qual_check:156): ebh line +5 is rejected with the quality of 100.0 against the rejection level of 101
+2024-12-20 11:44:18,646 [INFO](launch_ebh_process:rtk_ppk_qual_check:148): Number of measured points for -5: 1681
+2024-12-20 11:44:18,646 [WARNING](launch_ebh_process:rtk_ppk_qual_check:156): ebh line -5 is rejected with the quality of 100.0 against the rejection level of 101
+
+ALL-EBH-NOK
+The ebh quality check decides that that ALL EBH lines do not comply according to the ebh rejection value of 101.
+2024-12-20 11:44:18,646 [WARNING](launch_ebh_process:rtk_ppk_qual_check:213): The ebh quality check decides that that ALL EBH lines do not comply according to the ebh rejection value of 101.
+Starting PPK process for all EBH lines with rejected status
+2024-12-20 11:44:18,646 [WARNING](launch_ebh_process:do_ppk_by_decision:377): PNT solution for all ebh lines ['CL', '+5', '-5'] are not of sufficient quality.             Recalculating these lines in PPK mode with timings {'CL': [(2345.0, 378822.0), (2345.0, 378928.0)], '+5': [(2345.0, 378947.0), (2345.0, 379054.0)], '-5': [(2345.0, 379076.0), (2345.0, 379244.0)]}
+2024-12-20 11:44:18,646 [WARNING](launch_ebh_process:get_rnx_frm_sbf:60): RNX obs and nav files already exist in /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/rover_RNX. Skipping running sbf2rin.sh
+2024-12-20 11:44:18,647 [INFO](launch_ebh_process:do_ppk_by_decision:397): Using RINEX files for PPK calculation: /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/rover_RNX/SEPT00BEL_R_20243540907_14M_10Z_MO.rnx and ['/home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/rover_RNX/SEPT00BEL_R_20243540907_14M_MN.rnx']
+2024-12-20 11:44:18,647 [INFO](launch_ebh_process:validate_logger_level:110): Console log level set to INFO
+2024-12-20 11:44:18,647 [INFO](launch_ebh_process:bin2asc_dataframe:176): /opt/Septentrio/RxTools/bin/bin2asc conversion of SBF file /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/rover.sbf to CSV files and importing into dataframes for SBF blocks
+BaseStation1
+2024-12-20 11:44:19,163 [WARNING](launch_ebh_process:add_columns:527): 	collecting the dataframe. Be patient.
+2024-12-20 11:44:19,165 [INFO](launch_ebh_process:archive_file:151): Succesfully archived file /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/rover.sbf_SBF_BaseStation1.txt to /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/20241220_1144_rover.sbf_SBF_BaseStation1.txt
+2024-12-20 11:44:19,165 [INFO](launch_ebh_process:get_base_coord_from_sbf:75): Extracted basestation coordinates from sbf dataframe last row
+2024-12-20 11:44:19,165 [INFO](launch_ebh_process:get_base_coord_from_sbf:82): Base station coordinates (float): (4006078.331, 355391.011, 4933811.979)
+2024-12-20 11:44:19,166 [WARNING](launch_ebh_process:get_rnx_frm_sbf:60): RNX obs and nav files already exist in /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/BASE/base_RNX. Skipping running sbf2rin.sh
+2024-12-20 11:44:19,167 [INFO](launch_ebh_process:do_ppk_by_decision:458): using base correction file /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/BASE/base_RNX/SEPT00BEL_R_20243540906_15M_10S_MO.rnx
+2024-12-20 11:44:19,167 [INFO](launch_ebh_process:rnx2rtkp_ppk:107): Using /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/rover_RNX/SEPT00BEL_R_20243540907_14M_10Z_MO_PPK.pos as output file name for rnx2rtkp process
+2024-12-20 11:44:19,167 [INFO](launch_ebh_process:rnx2rtkp_ppk:112): Putting rnx2rtkp in debugging mode
+rnx2rtkp in debugging mode
+2024-12-20 11:44:56,233 [INFO](launch_ebh_process:rnx2rtkp_ppk:138): Finished calculating PPK solution. Written file to /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/rover_RNX/SEPT00BEL_R_20243540907_14M_10Z_MO_PPK.pos
+2024-12-20 11:44:56,233 [INFO](launch_ebh_process:do_ppk_by_decision:466): Finished calculating PPK solution for ebh lines ['CL', '+5', '-5'] with timings {'CL': [(2345.0, 378822.0), (2345.0, 378928.0)], '+5': [(2345.0, 378947.0), (2345.0, 379054.0)], '-5': [(2345.0, 379076.0), (2345.0, 379244.0)]}. Saved solution to /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/rover_RNX/SEPT00BEL_R_20243540907_14M_10Z_MO_PPK.pos
+---------- START of ppk_rnx2rtkp (process logged @ /tmp/logs/) ----------
+2024-12-20 11:44:56,234 [WARNING](ppk_rnx2rtkp:logger_setup:81): ---------- START of ppk_rnx2rtkp (process logged @ /tmp/logs/) ----------
+2024-12-20 11:44:56,234 [INFO](ppk_rnx2rtkp:validate_file:51): File validated successfully: /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/rover_RNX/SEPT00BEL_R_20243540907_14M_10Z_MO_PPK.pos
+2024-12-20 11:44:56,234 [INFO](ppk_rnx2rtkp:validate_start_time:75): No start time specified.
+2024-12-20 11:44:56,234 [INFO](ppk_rnx2rtkp:validate_end_time:99): No end time specified.
+2024-12-20 11:44:56,234 [INFO](ppk_rnx2rtkp:validate_logger_level:112): Console log level set to INFO
+2024-12-20 11:44:56,285 [INFO](ppk_rnx2rtkp:add_columns:355): 	collecting the dataframe. Be patient.
+2024-12-20 11:44:56,601 [INFO](ppk_rnx2rtkp:quality_analysis:45): Analysis of the quality of the position data.
+╒═══════════════════════════╤═════════╤══════════════╕
+│ PNT Mode                  │   Count │   Percentage │
+╞═══════════════════════════╪═════════╪══════════════╡
+│ PPK with ﬁxed ambiguities │    8191 │        94.08 │
+│ PPK with ﬂoat ambiguities │     515 │         5.92 │
+╘═══════════════════════════╧═════════╧══════════════╛
+2024-12-20 11:44:56,602 [INFO](launch_ebh_process:ebh_lines:322): Dataframe obtained from PPK processing of /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/rover_RNX/SEPT00BEL_R_20243540907_14M_10Z_MO_PPK.pos
+2024-12-20 11:44:56,606 [INFO](launch_ebh_process:ebh_lines:373): CL       : 2024/12/19 09:13:42 - 2024/12/19 09:15:28 | -155.1
+2024-12-20 11:44:56,606 [INFO](launch_ebh_process:ebh_lines:373): +5       : 2024/12/19 09:15:47 - 2024/12/19 09:17:34 |   24.9
+2024-12-20 11:44:56,606 [INFO](launch_ebh_process:ebh_lines:373): -5       : 2024/12/19 09:17:56 - 2024/12/19 09:20:44 | -155.1
+2024-12-20 11:44:56,606 [INFO](launch_ebh_process:ebh_lines_extract:211): Using CL as reference for ebh line direction
+2024-12-20 11:44:56,608 [INFO](launch_ebh_process:quality_analysis:45): Analysis of the quality of the position data.
+╒═══════════════════════════╤═════════╤══════════════╕
+│ PNT Mode                  │   Count │   Percentage │
+╞═══════════════════════════╪═════════╪══════════════╡
+│ PPK with ﬁxed ambiguities │    1061 │          100 │
+╘═══════════════════════════╧═════════╧══════════════╛
+2024-12-20 11:44:56,608 [INFO](launch_ebh_process:ebh_lines:396): The ppk quality of the line CL is [['PPK with ﬁxed ambiguities', 1061, 100.0]]
+2024-12-20 11:44:56,608 [INFO](launch_ebh_process:ebh_line_thin_out:249): Starting thinning out of ebh line. And only keeping RTK/PPK fixed values
+Writing CSV AssurTool file for CL to ebh_line_CL.csv
+2024-12-20 11:44:56,613 [INFO](launch_ebh_process:ebh_to_assurfmt:497): Done writing ebh assur file to /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/EBH_ASSUR/ebh_line_CL.csv
+Done writing ebh assur file to /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/EBH_ASSUR/ebh_line_CL.csv
+2024-12-20 11:44:56,614 [INFO](launch_ebh_process:quality_analysis:45): Analysis of the quality of the position data.
+╒═══════════════════════════╤═════════╤══════════════╕
+│ PNT Mode                  │   Count │   Percentage │
+╞═══════════════════════════╪═════════╪══════════════╡
+│ PPK with ﬁxed ambiguities │    1071 │          100 │
+╘═══════════════════════════╧═════════╧══════════════╛
+2024-12-20 11:44:56,614 [INFO](launch_ebh_process:ebh_lines:396): The ppk quality of the line +5 is [['PPK with ﬁxed ambiguities', 1071, 100.0]]
+2024-12-20 11:44:56,615 [INFO](launch_ebh_process:ebh_line_thin_out:249): Starting thinning out of ebh line. And only keeping RTK/PPK fixed values
+Writing CSV AssurTool file for +5 to ebh_line_+5.csv
+2024-12-20 11:44:56,620 [INFO](launch_ebh_process:ebh_to_assurfmt:497): Done writing ebh assur file to /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/EBH_ASSUR/ebh_line_+5.csv
+Done writing ebh assur file to /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/EBH_ASSUR/ebh_line_+5.csv
+2024-12-20 11:44:56,621 [INFO](launch_ebh_process:quality_analysis:45): Analysis of the quality of the position data.
+╒═══════════════════════════╤═════════╤══════════════╕
+│ PNT Mode                  │   Count │   Percentage │
+╞═══════════════════════════╪═════════╪══════════════╡
+│ PPK with ﬁxed ambiguities │    1681 │          100 │
+╘═══════════════════════════╧═════════╧══════════════╛
+2024-12-20 11:44:56,621 [INFO](launch_ebh_process:ebh_lines:396): The ppk quality of the line -5 is [['PPK with ﬁxed ambiguities', 1681, 100.0]]
+2024-12-20 11:44:56,621 [INFO](launch_ebh_process:ebh_line_thin_out:249): Starting thinning out of ebh line. And only keeping RTK/PPK fixed values
+Writing CSV AssurTool file for -5 to ebh_line_-5.csv
+2024-12-20 11:44:56,627 [INFO](launch_ebh_process:ebh_to_assurfmt:497): Done writing ebh assur file to /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/EBH_ASSUR/ebh_line_-5.csv
+Done writing ebh assur file to /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-12-19-LZ_Schaffen_Test/ROVER/EBH_ASSUR/ebh_line_-5.csv
+2024-12-20 11:44:56,627 [INFO](launch_ebh_process:rtk_ppk_qual_check:138): rkt_ppk checker launched for {'CL': [['PPK with ﬁxed ambiguities', 1061, 100.0]], '+5': [['PPK with ﬁxed ambiguities', 1071, 100.0]], '-5': [['PPK with ﬁxed ambiguities', 1681, 100.0]]} with a rejection level of ebh 101
+2024-12-20 11:44:56,627 [INFO](launch_ebh_process:rtk_ppk_qual_check:143): Number of measured ebh lines: 3
+2024-12-20 11:44:56,627 [INFO](launch_ebh_process:rtk_ppk_qual_check:148): Number of measured points for CL: 1061
+2024-12-20 11:44:56,627 [WARNING](launch_ebh_process:rtk_ppk_qual_check:156): ebh line CL is rejected with the quality of 100.0 against the rejection level of 101
+2024-12-20 11:44:56,627 [INFO](launch_ebh_process:rtk_ppk_qual_check:148): Number of measured points for +5: 1071
+2024-12-20 11:44:56,627 [WARNING](launch_ebh_process:rtk_ppk_qual_check:156): ebh line +5 is rejected with the quality of 100.0 against the rejection level of 101
+2024-12-20 11:44:56,627 [INFO](launch_ebh_process:rtk_ppk_qual_check:148): Number of measured points for -5: 1681
+2024-12-20 11:44:56,627 [WARNING](launch_ebh_process:rtk_ppk_qual_check:156): ebh line -5 is rejected with the quality of 100.0 against the rejection level of 101
+
+ALL-EBH-NOK
+The ebh quality check decides that that ALL EBH lines do not comply according to the ebh rejection value of 101.
+2024-12-20 11:44:56,627 [WARNING](launch_ebh_process:rtk_ppk_qual_check:213): The ebh quality check decides that that ALL EBH lines do not comply according to the ebh rejection value of 101.
+2024-12-20 11:44:56,627 [WARNING](launch_ebh_process:ebh_process_launcher:112): EBH files ['CL', '+5', '-5'] DO NOT meet the quality criteria
+ALL-EBH-NOK -> EBH files ['CL', '+5', '-5'] DO NOT meet the quality criteria.
+```
+
+
+### The script `ebh_lines.py`
+
+```bash
+± ebh_lines.py -h
+usage: ebh_lines.py [-h] [-V] [-v] (--rtk | --ppk) --desc DESC --ebh_fn EBH_FN --timing_fn TIMING_FN [--plot]
+
+argument_parser.py extracts the EBH lines from RTK or PPK created dataframe
+
+options:
+  -h, --help            show this help message and exit
+  -V, --version         show program's version number and exit
+  -v, --verbose         verbose level... repeat up to three times.
+  --rtk                 extract lines from RTK solution
+  --ppk                 extract lines from PPK solution
+  --desc DESC           description of EBH lines project
+  --ebh_fn EBH_FN       input RTK/PPK filename
+  --timing_fn TIMING_FN
+                        input ebh lines timing filename
+```
+
+Using the created polars dataframes in RTK or PPK mode, the script `ebh_lines.py` extracts the EBH lines from the RTK or PPK created dataframe based on timing information provided.
+
+
+### The script `launch_rnx2rtkp.py`
+
+```bash
+± launch_rnx2rtkp.py -h
+usage: launch_rnx2rtkp.py [-h] [-V] [-v] --obs OBS --nav NAV [NAV ...] --base_corr BASE_CORR -X BASE_COORD_X -Y BASE_COORD_Y -Z BASE_COORD_Z -cfg_ppk CONFIG_PPK [-dts DATETIME_START]
+                          [-dte DATETIME_END] [--pos_ofn POS_OFN] [--log_dest LOG_DEST]
+
+argument_parser.py This program post-processes RINEX observations and navigation files and base correction data (RTCM or RNX obs) to obtain PPK, PPP, and SPP solutions using
+RTKLib. At the moment it only supports PPK calculations.
+
+options:
+  -h, --help            show this help message and exit
+  -V, --version         show program's version number and exit
+  -v, --verbose         verbose level... repeat up to three times.
+  --obs OBS             input RINEX observation filename
+  --nav NAV [NAV ...]   input (multiple) RINEX navigation filename. If more than one leave space between the different filenames
+  --base_corr BASE_CORR
+                        input RINEX observation filename or sbf filename obtained from GNSS base station (working on RTCM3).
+  -X BASE_COORD_X, --base_coord_X BASE_COORD_X
+                        Reference coordinates of base station in ECEF XYZ format.
+  -Y BASE_COORD_Y, --base_coord_Y BASE_COORD_Y
+                        Reference coordinates of base station in ECEF XYZ format.
+  -Z BASE_COORD_Z, --base_coord_Z BASE_COORD_Z
+                        Reference coordinates of base station in ECEF XYZ format
+  -cfg_ppk CONFIG_PPK, --config_ppk CONFIG_PPK
+                        RTKlib configuration file
+  -dts DATETIME_START, --datetime_start DATETIME_START
+                        obs start time in the format YYYY-MM-DD_HH:MM:SS(.s)
+  -dte DATETIME_END, --datetime_end DATETIME_END
+                        obs end time in the format YYYY-MM-DD_HH:MM:SS(.s)
+  --pos_ofn POS_OFN     output filename of position file (default is obs filename + _PPK.pos)
+  --log_dest LOG_DEST   Specify log destination directory (full path). Default is /tmp/logs/
+
+  ```
+
+This script automates the execution of RTKLIB's rnx2rtkp program for post-processing kinematic (PPK) GNSS data. It processes RINEX observation and navigation files along with base station corrections to generate precise positioning solutions.
+
+The script has the following key functions:
+
+- `rnx2rtkp_ppk(parsed_args, logger)`: Main function that:
+  - Validates input files and parameters
+  - Configures output filename based on input parameters
+  - Constructs and executes rnx2rtkp command with appropriate options
+  - Returns the path to the generated position solution file
+- `create_rnx2rtkp_args(parsed_args)`: Builds command line arguments for rnx2rtkp
+- `check_base_coord(parsed_args)`: Validates base station coordinates
+
+
+__Example usage__
+
+```bash
+launch_rnx2rtkp.py --obs rover.rnx --nav base.nav --base_corr base.rnx \
+--base_coord_X 4023741.2365 --base_coord_Y 309110.4418 --base_coord_Z 4922723.1945 \
+--rnx2rtkp_config_fn ppk.conf --datetime_start 2024-01-17_16:47:43 \
+--datetime_end 2024-01-17_21:03:43 -vv
+```
+
+
+
 ### The script `get_ebh_timings.py`
 
 ```bash
@@ -518,6 +856,8 @@ options:
   --timing_ofn TIMING_OFN
                         output timing filename
   --archive ARCHIVE     Specify archive's directory name
+  --log_dest LOG_DEST   Specify log destination directory (full path). Default is /tmp/logs/
+
 ```
 
 This script extracts EBH timing information from SBF comment blocks and formats them for use in EBH line calculations. It outputs timing information in a format compatible with `ebh_lines.py`.
@@ -553,188 +893,6 @@ Key functions:
   - Extracts BaseStation1 block
   - Retrieves base coordinates at specified datetime
   - Returns coordinates as tuple (X, Y, Z)
-
-
-### The script `launch_ebh_process.py`
-
-```bash
-± launch_ebh_process.py -h
-usage: launch_ebh_process.py [-h] [-V] [-v] --sbf_ifn SBF_IFN --base_corr BASE_CORR --config_ppk CONF --desc DESC [--log_dest LOG_DEST]
-
-options:
-  -h, --help            show this help message and exit
-  -V, --version         show program's version number and exit
-  -v, --verbose         verbose level... repeat up to three times.
-  --sbf_ifn SBF_IFN     input SBF filename
-  --base_corr BASE_CORR base station corrections (RTCM or RINEX)
-  --config_ppk          PPK configuration file
-  --desc DESC           description of EBH lines project
-  --log_dest LOG_DEST   directory for logging output
-```
-
-This script orchestrates the complete EBH (Equivalent Bump Height) processing workflow. It implements a quality-based decision system for processing GNSS data:
-
-
-__Key features:__
-
-- Automated RTK/PPK processing selection based on quality metrics
-- Handling of single vs multiple line failures
-- Integration with RTKLIB for PPK processing
-- ASSUR-formatted output generation
-
-The workflow consists of several stages:
-
-- EBH timing extraction from SBF files
-- RTK solution quality analysis
-- Processing mode decision (RTK vs PPK)
-- PPK processing when needed
-- ASSUR-compatible output generation
- 
-Quality-based decision criteria:
-
-- RTK acceptance threshold: >99% fixed solutions
-- Single line failure: PPK only for failed line
-- Multiple line failures: Full PPK reprocessing
-
-__Key functions:__
-
-- `ebh_process_launcher(parsed_args, logger)`: Main orchestrator function that coordinates the entire EBH workflow
-- `rtk_ppk_qual_check(qual_analysis, RTK_mode, rejection_level, logger)`: Analyzes solution quality and determines processing strategy
-- `do_ppk_by_decision(rejected_rtk_lines, rtk_qual_decision, ebh_timings, parsed_args, logger)`: Handles PPK processing based on quality analysis
-- `get_rnx_files(parsed_args, logger)`: Creates RINEX observation and navigation files from SBF data
-
-__Example Usage__
-
-```bash
-launch_ebh_process.py --sbf_ifn ebh_measurements.sbf --base_corr base_MO.rnx \
---conf_ppk ppk.conf --desc "Project A" -vv
-```
-The script returns:
-
-- Quality analysis statistics
-- Processing decisions for each line
-- ASSUR-formatted output files
-- Comprehensive logging information
-
-```bash
-(py-gnss) pj@pj-Book:~/Documents/GNSS4Def/gitlab/analysegnss$ ./launch_ebh_process.py --sbf_ifn /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-10-01-Keiheuvel_Demo/rover/2024-10-01-Keiheuvel-5lijnen.24_ -cfg_ppk rtkpos/rnx2rtkp_config/rnx2rtkp_PPK_el10_nomask_GE_tow.conf --base_corr /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-10-01-Keiheuvel_Demo/base/base00BEL_R_20242751022_01H_05S_MO.rnx -v
----------- START of launch_ebh_process (process logged @ /tmp/logs/) ----------
-2024-11-27 18:37:33,040 [WARNING](launch_ebh_process:logger_setup:81): ---------- START of launch_ebh_process (process logged @ /tmp/logs/) ----------
-2024-11-27 18:37:35,647 [WARNING](launch_ebh_process:add_columns:523): 	collecting the dataframe. Be patient.
----------- START of rtk_pvtgeod (process logged @ /tmp/logs/) ----------
-2024-11-27 18:37:35,655 [WARNING](rtk_pvtgeod:logger_setup:81): ---------- START of rtk_pvtgeod (process logged @ /tmp/logs/) ----------
-2024-11-27 18:37:38,705 [WARNING](rtk_pvtgeod:add_columns:523): 	collecting the dataframe. Be patient.
-Writing CSV AssurTool file for CL to ebh_line_CL.csv
-
-Writing CSV AssurTool file for l2 to ebh_line_l2.csv
-
-Writing CSV AssurTool file for l3 to ebh_line_l3.csv
-
-Writing CSV AssurTool file for l4 to ebh_line_l4.csv
-
-Writing CSV AssurTool file for l5 to ebh_line_l5.csv
-
-2024-11-27 18:37:40,692 [WARNING](launch_ebh_process:rtk_ppk_qual_check:111): ebh line CL is rejected with the quality of 98.36
-
-1-EBH-NOK
-The ebh quality check decides that the line CL does not comply according to the rejection value of 99.
-
-2024-11-27 18:37:40,693 [WARNING](launch_ebh_process:rtk_ppk_qual_check:143): The ebh quality check decides that the line CL does not comply according to the rejection value of 99.
-Starting PPK process for rejected EBH line
-2024-11-27 18:37:40,693 [WARNING](launch_ebh_process:do_ppk_by_decision:200): Solution for the ebh line ['CL'] is not of sufficient quality.Calculating this single line in PPK mode with timings [(2334.0, 210891.0), (2334.0, 211208.0)]
-2024-11-27 18:37:40,693 [WARNING](launch_ebh_process:get_rnx_files:387): RNX obs and nav files already exist in /home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-10-01-Keiheuvel_Demo/rover/2024-10-01-Keiheuvel-5lijnen_RNX. Skipping running sbf2rin.sh
-2024-11-27 18:37:43,289 [WARNING](launch_ebh_process:add_columns:523): 	collecting the dataframe. Be patient.
-2024-11-27 18:37:43,290 [WARNING](launch_ebh_process:get_base_coord_from_sbf:70): Time instant not found in SBF file. Using last row of dataframe with the XYZ coordinates: (3990013.004, 364269.583, 4946101.954)
----------- START of ppk_rnx2rtkp (process logged @ /tmp/logs/) ----------
-2024-11-27 18:38:14,392 [WARNING](ppk_rnx2rtkp:logger_setup:81): ---------- START of ppk_rnx2rtkp (process logged @ /tmp/logs/) ----------
-Processing info:
-{
-    "program": "RTKLIB ver.demo5 b34i",
-    "obs start": "2024/10/01 10:34:51.0 GPST (week2334 210891.0s)",
-    "obs end": "2024/10/01 10:40:08.0 GPST (week2334 211208.0s)",
-    "pos mode": "Kinematic",
-    "freqs": "L1+L2/E5b+L5",
-    "solution": "Combined-Phase Reset",
-    "elev mask": "10.0 deg",
-    "dynamics": "on",
-    "tidecorr": "off",
-    "ionos opt": "Broadcast",
-    "tropo opt": "Saastamoinen",
-    "ephemeris": "Broadcast",
-    "navi sys": "GPS Galileo",
-    "amb res": "Fix and Hold",
-    "val thres": "2.0",
-    "antenna1": "( 0.0000  0.0000  0.0000)",
-    "antenna2": "( 0.0000  0.0000  0.0000)",
-    "ref pos": "51.178778806   5.216377034   83.2076",
-    "rover_obs": "/home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-10-01-Keiheuvel_Demo/rover/2024-10-01-Keiheuvel-5lijnen_RNX/134200BEL_R_20242751023_01H_10Z_MO.rnx",
-    "base_obs": "/home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-10-01-Keiheuvel_Demo/base/base00BEL_R_20242751022_01H_05S_MO.rnx",
-    "brdc_nav": "/home/pj/Documents/GNSS4Def/site-surveys-recordings/Surveys/2024-10-01-Keiheuvel_Demo/rover/2024-10-01-Keiheuvel-5lijnen_RNX/134200BEL_R_20242751023_01H_MN.rnx"
-}
-2024-11-27 18:38:14,554 [WARNING](launch_ebh_process:ebh_lines_map_angle:155): No data found for 2024/10/01 10:43:24. Breaking.
-2024-11-27 18:38:14,554 [WARNING](launch_ebh_process:ebh_lines_map_angle:155): No data found for 2024/10/01 10:49:44. Breaking.
-2024-11-27 18:38:14,554 [WARNING](launch_ebh_process:ebh_lines_map_angle:155): No data found for 2024/10/01 10:56:19. Breaking.
-2024-11-27 18:38:14,555 [WARNING](launch_ebh_process:ebh_lines_map_angle:155): No data found for 2024/10/01 11:02:10. Breaking.
-Writing CSV AssurTool file for CL to ebh_line_CL.csv
-
-Solution for all ebh lines is of sufficient quality.
-ASSUR EBH files -> OK.
-```
-
-### The script `launch_rnx2rtkp.py`
-
-```bash
-± launch_rnx2rtkp.py -h
-usage: launch_rnx2rtkp.py [-h] [-V] [-v] --obs OBS --nav NAV --base_corr BASE_CORR --base_coord_X BASE_COORD_X --base_coord_Y BASE_COORD_Y --base_coord_Z BASE_COORD_Z --rnx2rtkp_config_fn RNX2RTKP_CONFIG_FN [--datetime_start DATETIME_START] [--datetime_end DATETIME_END] [--pos_ofn POS_OFN] [--log_dest LOG_DEST]
-
-argument_parser.py launches rnx2rtkp for PPK processing
-
-options:
-  -h, --help            show this help message and exit
-  -V, --version         show program's version number and exit
-  -v, --verbose         verbose level... repeat up to three times.
-  --obs OBS            RINEX observation file
-  --nav NAV            RINEX navigation file
-  --base_corr BASE_CORR
-                       base correction file (rinex obs)
-  --base_coord_X BASE_COORD_X
-                       base station X coordinate
-  --base_coord_Y BASE_COORD_Y
-                       base station Y coordinate
-  --base_coord_Z BASE_COORD_Z
-                       base station Z coordinate
-  --rnx2rtkp_config_fn RNX2RTKP_CONFIG_FN
-                       rnx2rtkp configuration file
-  --datetime_start DATETIME_START
-                       start time of calculation [YYYY-MM-DD_HH:MM:SS.f]
-  --datetime_end DATETIME_END
-                       end time of calculation [YYYY-MM-DD_HH:MM:SS.f]
-  --pos_ofn POS_OFN   output filename for PPK solution
-  --log_dest LOG_DEST  directory for logging output
-  ```
-
-This script automates the execution of RTKLIB's rnx2rtkp program for post-processing kinematic (PPK) GNSS data. It processes RINEX observation and navigation files along with base station corrections to generate precise positioning solutions.
-
-The script has the following key functions:
-
-- `rnx2rtkp_ppk(parsed_args, logger)`: Main function that:
-  - Validates input files and parameters
-  - Configures output filename based on input parameters
-  - Constructs and executes rnx2rtkp command with appropriate options
-  - Returns the path to the generated position solution file
-- `create_rnx2rtkp_args(parsed_args)`: Builds command line arguments for rnx2rtkp
-- `check_base_coord(parsed_args)`: Validates base station coordinates
-
-
-__Example usage__
-
-```bash
-launch_rnx2rtkp.py --obs rover.rnx --nav base.nav --base_corr base.rnx \
---base_coord_X 4023741.2365 --base_coord_Y 309110.4418 --base_coord_Z 4922723.1945 \
---rnx2rtkp_config_fn ppk.conf --datetime_start 2024-01-17_16:47:43 \
---datetime_end 2024-01-17_21:03:43 -vv
-```
-
 
 
 ## Roadmap
