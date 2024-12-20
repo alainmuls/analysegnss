@@ -42,7 +42,7 @@ def get_ppk_dataframe(parsed_args: argparse.Namespace, logger: Logger) -> pl.Dat
             case 3:
                 ppk_rnx2rtkp_args.append("-vvv")
 
-    logger.info(f"ppk_rnx2rtkp_args = {ppk_rnx2rtkp_args}")
+    logger.debug(f"ppk_rnx2rtkp_args = {ppk_rnx2rtkp_args}")
 
     df_pos = ppk_rnx2rtkp.rtkp_pos(argv=ppk_rnx2rtkp_args)
 
@@ -70,7 +70,7 @@ def get_rtk_dataframe(parsed_args: argparse.Namespace, logger: Logger) -> pl.Dat
             case 3:
                 rtk_pvtgeod_args.append("-vvv")
 
-    logger.info(f"rtk_pvtgeod_args = {rtk_pvtgeod_args}")
+    logger.debug(f"rtk_pvtgeod_args = {rtk_pvtgeod_args}")
 
     df_pos = rtk_pvtgeod.rtk_pvtgeod(argv=rtk_pvtgeod_args)
 
@@ -131,7 +131,7 @@ def read_ebh_line_timings(timings_fn: str, logger: Logger) -> dict:
         logger.critical(f"File {timings_fn} is empty. Exiting")
         sys.exit(ERROR_CODES["E_FILE_EMPTY"])
 
-    logger.info(
+    logger.debug(
         tabulate(
             line_timings.items(),
             headers=["EBH Line", "EBH Timings"],
@@ -221,7 +221,7 @@ def ebh_lines_extract(
             ).reverse()
 
         # print(f"df_line = {df_line}")
-        logger.info(f"Obtained ebh line {ebh_key} between {timings}")
+        logger.debug(f"Obtained ebh line {ebh_key} between {timings}")
 
     return ebh_lines_assur
 
@@ -354,7 +354,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
         sys.exit(ERROR_CODES["E_FILE_NOT_EXIST"])
 
     with pl.Config(tbl_cols=-1):
-        logger.info(df_pos)
+        logger.debug(df_pos)
         # print(df_pos)
 
     # read the timings for the ebh_lines
@@ -423,7 +423,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
             f"Writing CSV AssurTool file for {str_yellow(ebh_key)} to "
             f"{str_yellow(ebh_line_fn)}"
         )
-        logger.info(
+        logger.debug(
             f"Writing CSV AssurTool file for {str_yellow(ebh_key)} to "
             f"{str_yellow(ebh_line_fn)}"
             f"{ebh_assur_line.select(['UTM.E', 'UTM.N', 'orthoH'])}"
@@ -488,7 +488,7 @@ def ebh_to_assurfmt(
 
     # write ebh assur to a file at dest_dir
     ebh_assur_fp = os.path.join(dest_dir, ebh_assur_fn)  # ebh_assur_fullpath
-    logger.info(f"writing ebh assur df to {ebh_assur_fp}")
+    logger.debug(f"writing ebh assur df to {ebh_assur_fp}")
 
     ebh_assur_df.write_csv(
         ebh_assur_fp, separator=";", include_header=False, float_precision=3

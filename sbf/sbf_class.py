@@ -41,7 +41,6 @@ class SBF:
             raise ValueError(f"File does not exist: {self.sbf_fn}")
 
         #TODO The following sometimes gives a false negative. Needs to be revised.
-        """
         with open(self.sbf_fn, "rb") as f:
             first_two_bytes = f.read(2)
 
@@ -50,13 +49,14 @@ class SBF:
                 self.logger.error(
                     f'Invalid file type, first two bytes must be "$@" for file: {self.sbf_fn}'
                 )
+        """
             raise ValueError(
                 f'File type is not valid, first two bytes must be "$@": {self.sbf_fn}'
             )
         """
 
         if self.logger:
-            self.logger.info(f"File validated successfully: {self.sbf_fn}")
+            self.logger.debug(f"File validated successfully: {self.sbf_fn}")
 
     def validate_start_time(self):
         if self.start_time is not None:
@@ -70,12 +70,12 @@ class SBF:
                 )
             else:
                 if self.logger:
-                    self.logger.info(
+                    self.logger.debug(
                         f"Start time {self.start_time} validated successfully."
                     )
         else:
             if self.logger:
-                self.logger.info("No start time specified.")
+                self.logger.debug("No start time specified.")
 
     def validate_end_time(self):
         if self.end_time is not None:
@@ -89,12 +89,12 @@ class SBF:
                 )
             else:
                 if self.logger:
-                    self.logger.info(
+                    self.logger.debug(
                         f"end time {self.end_time} validated successfully."
                     )
         else:
             if self.logger:
-                self.logger.info("No end time specified.")
+                self.logger.debug("No end time specified.")
 
     def validate_logger_level(self):
         if self.logger is not None:
@@ -125,7 +125,7 @@ class SBF:
         # Getting directory of file to archive
         dir_fn = os.path.dirname(fn)
         dir_fnar = os.path.join(dir_fn, dest_dir)
-        self.logger.info(f"archive directory of file is {dir_fnar}")
+        self.logger.debug(f"archive directory of file is {dir_fnar}")
 
         # create directory if it does not exist
         if not os.path.exists(dir_fnar):
@@ -426,7 +426,7 @@ class SBF:
         # self.logger.info(f"block_df = \n{block_df}")
         # remove the rows where 'Type' equals 0 (no PVT available)
         if self.logger:
-            self.logger.info("\tremoving rows with no PVT solution")
+            self.logger.debug("\tremoving rows with no PVT solution")
 
         if "Type" in block_df.columns:
             block_df = block_df.filter(pl.col("Type") != 0).lazy()
@@ -435,7 +435,7 @@ class SBF:
         # add date-time and PRN (as str) to the dataframe
         if "WNc [w]" in block_df.columns and "TOW [0.001 s]" in block_df.columns:
             if self.logger:
-                self.logger.info("\tadding datetime column to the dataframe")
+                self.logger.debug("\tadding datetime column to the dataframe")
             block_df = block_df.with_columns(
                 pl.struct(["WNc [w]", "TOW [0.001 s]"])
                 .map_elements(
@@ -448,7 +448,7 @@ class SBF:
         # add date-time and PRN (as str) to the dataframe
         if "SVID" in block_df.columns:
             if self.logger:
-                self.logger.info("\tadding PRN column to the dataframe")
+                self.logger.debug("\tadding PRN column to the dataframe")
             block_df = block_df.with_columns(
                 pl.struct(["SVID"])
                 .map_elements(
@@ -463,7 +463,7 @@ class SBF:
             and "Longitude [rad]" in block_df.columns
         ):
             if self.logger:
-                self.logger.info("\tadding UTM coordinates to the dataframe")
+                self.logger.debug("\tadding UTM coordinates to the dataframe")
 
             # Function to convert lat/lon in degrees to UTM
             def latlon_to_utm(lat, lon):
@@ -513,7 +513,7 @@ class SBF:
         # add orthometric height to the dataframe
         if "Height [m]" in block_df.columns and "Undulation [m]" in block_df.columns:
             if self.logger:
-                self.logger.info("\tadding orthometric height to the dataframe")
+                self.logger.debug("\tadding orthometric height to the dataframe")
             block_df = block_df.with_columns(
                 pl.struct(["Height [m]", "Undulation [m]"])
                 .apply(
@@ -702,7 +702,7 @@ class SBF:
                 keep_cols[col] = dtype
 
         if self.logger is not None:
-            self.logger.info(f"Keeping columns: \n{keep_cols}")
+            self.logger.debug(f"Keeping columns: \n{keep_cols}")
 
         return keep_cols
 

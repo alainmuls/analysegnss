@@ -119,7 +119,7 @@ def rnx2rtkp_ppk(
         parsed_args.nav
     )  # parsed_args.nav is a list of multiple nav files
 
-    logger.info(
+    logger.debug(
         f"Running rnx2rtkp using input files {parsed_args.obs}, {parsed_args.base_corr} and {parsed_args.nav} \
     base station XYZ {parsed_args.base_coord_X}, {parsed_args.base_coord_Y}, {parsed_args.base_coord_Z}"
     )

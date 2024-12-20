@@ -33,7 +33,7 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> str:
     # Path to sbf2rin shell script
     current_dir = os.path.dirname(os.path.abspath(__file__))
     sbf2rin_path = os.path.join(current_dir, "scripts/sbf2rin.sh")
-    logger.info(f"Using sbf2rin.sh full path {sbf2rin_path}")
+    logger.debug(f"Using sbf2rin.sh full path {sbf2rin_path}")
 
     # get basename of sbf_ifn without extension
     sbf_basename = os.path.basename(parsed_args.sbf_ifn).split(".")[0]
@@ -50,7 +50,7 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> str:
     else:
         # checking if rinex files already exist
         existing_rnx_files = os.listdir(rnx_odir)
-        logger.info(
+        logger.debug(
             f"RNX dir {rnx_odir} already exists with files {existing_rnx_files}"
         )
 

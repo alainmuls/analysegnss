@@ -60,7 +60,7 @@ def rtk_pvtgeod(argv: list) -> pl.DataFrame:
 
     # create the file/console logger
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
-    logger.info(f"Parsed arguments: {args_parsed}")
+    logger.debug(f"Parsed arguments: {args_parsed}")
 
     # create a SBF class object
     try:
@@ -79,7 +79,7 @@ def rtk_pvtgeod(argv: list) -> pl.DataFrame:
         quality_analysis(geod_df=df_geod, logger=logger)
 
         with pl.Config(tbl_cols=-1):
-            logger.info(f"df_geod: \n{df_geod}")
+            logger.debug(f"df_geod: \n{df_geod}")
 
         return df_geod
 

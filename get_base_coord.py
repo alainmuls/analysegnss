@@ -24,7 +24,7 @@ def get_base_coord_from_sbf(parsed_args: argparse.Namespace, logger: Logger) -> 
     return:
     base_coord (tuple): base station coordinates (X, Y, Z)
     """
-    logger.info("Creating SBF object from SBF file")
+    logger.debug("Creating SBF object from SBF file")
     if parsed_args.sbf_ifn:
         # create a SBF class object
         try:
@@ -37,10 +37,10 @@ def get_base_coord_from_sbf(parsed_args: argparse.Namespace, logger: Logger) -> 
 
     # extract the SBF comment block(s) from SBF file
     df_sbfBaseStation = sbf.bin2asc_dataframe(
-        lst_sbfblocks=["BaseStation1"], archive=""
+        lst_sbfblocks=["BaseStation1"], archive=parsed_args.archive
     )["BaseStation1"]
 
-    logger.info(f"Extracted sbf block from SBF file.\n{df_sbfBaseStation}")
+    logger.debug(f"Extracted sbf block from SBF file.\n{df_sbfBaseStation}")
 
     if hasattr(parsed_args, "datetime") and parsed_args.datetime:
         logger.info(

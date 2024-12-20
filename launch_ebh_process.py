@@ -108,11 +108,8 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
         sys.exit(0)
 
     else:
-        logger.warning("Solution for all ebh lines DO NOT meet the quality criteria.")
 
-        logger.warning(
-            f"EBH files {rejected_lines} DO NOT meet the quality criteria"
-        )
+        logger.warning(f"EBH files {rejected_lines} DO NOT meet the quality criteria")
 
         print(
             f"{utilities.str_red(qual_decision)} -> EBH files {rejected_lines} {utilities.str_red("DO NOT")} meet the quality criteria."
@@ -157,7 +154,7 @@ def rtk_ppk_qual_check(
             else:
                 rejected_ebh_lines.append(ebh_key)
                 logger.warning(
-                    f"ebh line {ebh_key} is rejected with the quality of {ebh_qual_value[0][2]}"
+                    f"ebh line {ebh_key} is rejected with the quality of {ebh_qual_value[0][2]} against the rejection level of {rejection_level}"
                 )
         else:
             logger.warning(
@@ -246,9 +243,6 @@ def do_ppk_by_decision(
 
     ppk_pos_ofn = ""
 
-    logger.info(
-        f"Decided {ebh_qual_decision}. Calculating PPK solution for {rejected_ebh_lines}"
-    )
 
     match ebh_qual_decision:
         case "ALL-EBH-OK":
@@ -272,14 +266,10 @@ def do_ppk_by_decision(
             )
 
             # get the path of the rinex files and add them them to parsed_args namespace
-            #TODO check if there are no more than one MO rinex files
-            rnx_obs_fn = glob.glob(
-                os.path.join(rnx_odir, "*MO.rnx")
-            )
+            # TODO check if there are no more than one MO rinex files
+            rnx_obs_fn = glob.glob(os.path.join(rnx_odir, "*MO.rnx"))
             parsed_args.obs = rnx_obs_fn[0]
-            rnx_nav_fn = glob.glob(
-                os.path.join(rnx_odir, "*MN.rnx")
-            )
+            rnx_nav_fn = glob.glob(os.path.join(rnx_odir, "*MN.rnx"))
             parsed_args.nav = rnx_nav_fn  # rnx_nav_fn is kept as a list because argpase.add_argument --nav uses the nargs=+ option. This option requires the argument to be a list of strings.
 
             logger.info(
@@ -303,7 +293,9 @@ def do_ppk_by_decision(
                 parsed_args.base_coord_X,
                 parsed_args.base_coord_Y,
                 parsed_args.base_coord_Z,
-            ) = map(str, base_coord)  # convert to strings for CLI args used by rnx2rtkp
+            ) = map(
+                str, base_coord
+            )  # convert to strings for CLI args used by rnx2rtkp
             logger.info(
                 f"Using base coordinates: {parsed_args.base_coord_X}, {parsed_args.base_coord_Y}, {parsed_args.base_coord_Z}"
             )
@@ -366,7 +358,6 @@ def do_ppk_by_decision(
                 else:
                     logger.info("Specified base correction file is in rnx format")
 
-
                 logger.info(f"using base correction file {parsed_args.base_corr}")
 
                 # RUN rnx2rtkp
@@ -382,13 +373,10 @@ def do_ppk_by_decision(
         case "ALL-EBH-NOK":
 
             print("Starting PPK process for all EBH lines with rejected status")
-            logger.warning(
-                "PNT solution for one or more ebh lines is not of sufficient quality. Calculating all ebh lines in PPK mode."
-            )
 
             logger.warning(
                 f"PNT solution for all ebh lines {rejected_ebh_lines} are not of sufficient quality. \
-                    Recalculating these lines in PPK mode with timings {ebh_timings}"
+            Recalculating these lines in PPK mode with timings {ebh_timings}"
             )
 
             # created and get the rinex files from the sbf input filename
@@ -417,15 +405,12 @@ def do_ppk_by_decision(
                 parsed_args.base_coord_Y,
                 parsed_args.base_coord_Z,
             ) = map(str, base_coord)
-            logger.info(
+            logger.debug(
                 f"Using base coordinates: {parsed_args.base_coord_X}, {parsed_args.base_coord_Y}, {parsed_args.base_coord_Z}"
             )
 
             # Calculate PPK
-            logger.info(
-                f"Starting PPK calculation for ebh lines {rejected_ebh_lines} with timings {ebh_timings}"
-            )
-            logger.info(f"The correction file is: {parsed_args.base_corr}")
+            logger.debug(f"The correction file is: {parsed_args.base_corr}")
 
             # before calculating the PPK solution, check if the base correction file or/and base coordinates are imported correctly
 
@@ -438,13 +423,13 @@ def do_ppk_by_decision(
                 return ppk_pos_ofn
 
             else:
-                logger.info(f"base correction file is imported correctly")
+                logger.debug(f"base correction file is imported correctly")
 
                 # check format of base correction file
                 if parsed_args.base_corr.endswith(
                     ".sbf"
                 ) or parsed_args.base_corr.endswith("_"):
-                    logger.info("base correction file is in sbf format")
+                    logger.debug("base correction file is in sbf format")
 
                     # get obs rnx format from base correction file
                     # get_rnx_frm_sbf expects parsed_args.sbf_ifn as input. So , we need to update parsed_args.sbf_ifn wth base corr sbf fn
@@ -467,14 +452,13 @@ def do_ppk_by_decision(
                     rnx_nav_fn = glob.glob(os.path.join(base_rnx_odir, "*MN.rnx"))
                     parsed_args.nav = rnx_nav_fn
 
-                else: 
-                    logger.info("Specified base correction file is in RNX format")
-
+                else:
+                    logger.debug("Specified base correction file is in RNX format")
 
                 logger.info(f"using base correction file {parsed_args.base_corr}")
 
                 # CALCULATING PPK: calling rnx2rtkp_ppk function
-                logger.info(
+                logger.debug(
                     f"running rnx2rtkp_ppk function with parsed_args {parsed_args}"
                 )
                 ppk_pos_ofn = rnx2rtkp_ppk(parsed_args=parsed_args, logger=logger)

@@ -39,7 +39,7 @@ def get_SBFcomments(parsed_args: argparse.Namespace, logger: Logger) -> pl.DataF
     df_sbfComments = sbf.bin2asc_dataframe(
         lst_sbfblocks=["Comment1"], archive=parsed_args.archive
     )["Comment1"]
-    logger.info(f"Extracted sbf comment block from SBF file.\n{df_sbfComments}")
+    logger.debug(f"Extracted sbf comment block from SBF file.\n{df_sbfComments}")
 
     return df_sbfComments
 
@@ -71,7 +71,7 @@ def parseSBFComments(df_sbfComments: pl.DataFrame, logger: Logger) -> pl.DataFra
         ]
     )
 
-    logger.info(f"The extracted EBH timestamps are:{df_ebh_timestamps}")
+    logger.debug(f"The extracted EBH timestamps are:{df_ebh_timestamps}")
 
     # Convert EBH timestamps to GPS week number and Time of week format and store them in dict
     df_ebh_timestamps = df_ebh_timestamps.with_columns(
@@ -84,7 +84,7 @@ def parseSBFComments(df_sbfComments: pl.DataFrame, logger: Logger) -> pl.DataFra
         .alias("wnc-tow")
     )
 
-    logger.info(f"EBH timings with WN and TOW: {df_ebh_timestamps}")
+    logger.debug(f"EBH timings with WN and TOW: {df_ebh_timestamps}")
 
     return df_ebh_timestamps
 
@@ -130,7 +130,7 @@ def reformat_ebh_timestamps(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> 
         logger.info(
             f"Sliced dataframe to only include rows before the first stop measurement call"
         )
-        logger.info(df_ebh_timestamps)
+        logger.debug(df_ebh_timestamps)
 
     else:
         logger.warning(

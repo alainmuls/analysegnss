@@ -321,7 +321,7 @@ def argument_parser_get_base_coord(args: list) -> argparse.Namespace:
     )
     parser.add_argument(
         "--datetime",
-        help="Date time instance of the base station coordinates in YYYY-MM-DD_HH:MM:SS(.%f)",
+        help="Date time instance of the base station coordinates in YYYY-MM-DD_HH:MM:SS(.s)",
         type=str,
         required=False,
     )
@@ -383,7 +383,7 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
     parser.add_argument(
         "-cfg",
         "--config_ppk",
-        help="File name of config file used for RTKLib rnx2rtkp calculation. Default: rtkpos/rnx2rtkp_config/rnx2rtkp_PPK_el10_nomask_GE_tow.conf",
+        help="File name of config file used for RTKLib rnx2rtkp calculation. Default: rtkpos/rnx2rtkp_config/rnx2rtkp_EBH_PPK_default.conf",
         type=str,
         required=False,
         default="rtkpos/rnx2rtkp_config/rnx2rtkp_EBH_PPK_default.conf",
