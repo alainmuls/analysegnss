@@ -37,12 +37,13 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
     parsed_args: parsed CLI arguments (check argument_parser.py for more info)
 
     """
-
     # LAUNCHING get_ebh_timings: to extract timings from sbf_ifn which creates a ebh timings file for ebh_lines
     # timings are week number and time of week format [ebh_line_key: wnc tow, wnc tow]
     ebh_timings = get_ebh_timings.get_ebh_timings(
         parsed_args=parsed_args, logger=logger
     )
+
+    #### RTK MODE ####
 
     # LAUNCHING ebh_lines: in RTK mode to get ebh lines. It returns a quality analysis of each line in dict
     parsed_args.timing_ifn = parsed_args.sbf_ifn + "_ebh_timings.txt"
@@ -51,7 +52,6 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
     # Checking RTK quality and rejecting lines that are not of sufficient quality
     rejected_lines, qual_decision = rtk_ppk_qual_check(
         qual_analysis=ebh_qual_rtk,
-        RTK_mode=True,
         rejection_level=EBH_REJECTION_LEVEL,
         logger=logger,
     )
@@ -66,13 +66,13 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
         sys.exit(0)
 
     elif parsed_args.base_corr:
-        
-        #### STARTING PPK PROCESS ####
+
+        #### PPK MODE ####
 
         # LAUNCHING ppk_by_decision: runs rnx2rtkp in PPK mode for the ebh lines that have been rejected. It returns a rtklib pos_file
         parsed_args.pos_ifn = do_ppk_by_decision(
-            rejected_rtk_lines=rejected_lines,
-            rtk_qual_decision=qual_decision,
+            rejected_ebh_lines=rejected_lines,
+            ebh_qual_decision=qual_decision,
             ebh_timings=ebh_timings,
             parsed_args=parsed_args,
             logger=logger,
@@ -84,23 +84,26 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
 
         rejected_lines, qual_decision = rtk_ppk_qual_check(
             qual_analysis=ebh_qual_ppk,
-            RTK_mode=False,
             rejection_level=EBH_REJECTION_LEVEL,
             logger=logger,
         )
 
     else:
-        logger.warning("Base corrections are not available. Not possible to calculate PPK. EBH ONLY BASED ON RTK")
-        print(f"{utilities.str_yellow('Base correction are not available. Not possible to calculate PPK. EBH result only based on RTK')}")
+        logger.warning(
+            "Base corrections are not available. Not possible to calculate PPK. EBH ONLY BASED ON RTK"
+        )
+        print(
+            f"{utilities.str_yellow('Base correction are not available. Not possible to calculate PPK. EBH result only based on RTK')}"
+        )
 
-
+    # Checks of PPK quality and rejects lines that are not of sufficient quality
 
     if qual_decision == "ALL-EBH-OK":
 
         logger.info(
             "Solution for all ebh lines meet the quality criteria. ASSUR EBH files -> OK."
         )
-        print(f"{utilities.str_green(qual_decision)}")
+        print(f"{utilities.str_green(qual_decision)}. ASSUR EBH files -> OK.")
 
         sys.exit(0)
 
@@ -108,18 +111,18 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
         logger.warning("Solution for all ebh lines DO NOT meet the quality criteria.")
 
         logger.warning(
-            f"EBH files {utilities.str_red(rejected_lines)} DO NOT meet the quality criteria"
+            f"EBH files {rejected_lines} DO NOT meet the quality criteria"
         )
 
         print(
-            f"{utilities.str_red(qual_decision)} -> EBH files {utilities.str_red(rejected_lines)} DO NOT meet the quality criteria."
+            f"{utilities.str_red(qual_decision)} -> EBH files {rejected_lines} {utilities.str_red("DO NOT")} meet the quality criteria."
         )
 
         sys.exit(1)
 
 
 def rtk_ppk_qual_check(
-    qual_analysis: dict, RTK_mode: bool, rejection_level: float, logger: Logger
+    qual_analysis: dict, rejection_level: float, logger: Logger
 ) -> list:
     """Checks the RTK or PPK solutions and checks if the line is of sufficient quality
     to be used for the ebh_lines calculation and ASSURtool. It returns the rejected lines.
@@ -127,7 +130,6 @@ def rtk_ppk_qual_check(
     Args:
     qual_analysis (dict):       dictionary with the quality analysis of the RTK/PPK solution
                                 for each ebh line
-    RTK_mode (bool):            RTK (True) or PPK (False) mode
     rejection level (float):    a level of fixed_points/total (percentage) that needs to be met.
                                 Otherwise the results is rejected.
 
@@ -136,20 +138,20 @@ def rtk_ppk_qual_check(
     ebh_qual_decision (str):    string with the decision (ALL-EBH-OK, 1-EBH-OK or ALL-EBH-NOK)
     """
 
-    # check of qual_analysis which contains all the quality analysis of the ebh lines is empty
-
-    if not qual_analysis:
-        logger.critical("No quality analysis available. No ebh lines to check.")
-        print(utilities.str_red("No quality analysis available. No ebh lines to check. Redo measurement."))
-        sys.exit(ERROR_CODES["E_FAILURE"])
-
     logger.info(
-        f"rkt_ppk checker launched for {qual_analysis} in RTK mode {RTK_mode} with a rejection level of {rejection_level}"
+        f"rkt_ppk checker launched for {qual_analysis} with a rejection level of ebh {rejection_level}"
     )
+
+    number_ebh_lines = len(qual_analysis)
+    logger.info(f"Number of measured ebh lines: {number_ebh_lines}")
 
     rejected_ebh_lines = []  # list to store the decision for each ebh line
     for ebh_key, ebh_qual_value in qual_analysis.items():
-        if RTK_mode:
+        if ebh_qual_value[0][1] > 0:  # checks if ebh lines holds any data
+            logger.info(
+                f"Number of measured points for {ebh_key}: {ebh_qual_value[0][1]}"
+            )
+
             if ebh_qual_value[0][2] >= rejection_level:
                 logger.info(f"ebh line {ebh_key} passed with {ebh_qual_value[0][2]}")
             else:
@@ -157,15 +159,34 @@ def rtk_ppk_qual_check(
                 logger.warning(
                     f"ebh line {ebh_key} is rejected with the quality of {ebh_qual_value[0][2]}"
                 )
+        else:
+            logger.warning(
+                f"No measurements for ebh line {ebh_key}. Removing this ebh line."
+            )
+            print(f"No measurements for ebh line {ebh_key}. Removing this ebh line.")
+            del qual_analysis[ebh_key]  # removing empty ebh line
 
-        else:  # PPK MODE
-            if ebh_qual_value[0][2] >= rejection_level:
-                logger.info(f"ebh line {ebh_key} has passed with {ebh_qual_value[0][2]}")
-            else:
-                rejected_ebh_lines.append(ebh_key)
-                logger.info(
-                    f"ebh line {ebh_key} does not meet the quality of {ebh_qual_value[0][2]}"
-                )
+    # check of qual_analysis which contains all the quality analysis of the ebh lines is empty
+
+    if len(qual_analysis) == 0:
+        logger.critical("No quality analysis available. No ebh lines to check.")
+        print(
+            utilities.str_red(
+                "No quality analysis available. No ebh lines to check. Redo measurement."
+            )
+        )
+        sys.exit(ERROR_CODES["E_FAILURE"])
+
+    elif len(qual_analysis) < number_ebh_lines:
+        logger.warning(
+            f"{len(qual_analysis)}/{number_ebh_lines} of the ebh lines contain enough data for EBH ASSUR: continuing with ebh lines {list(qual_analysis.keys())}"
+        )
+        print(
+            f"{len(qual_analysis)}/{number_ebh_lines} of the ebh lines contain enough data for EBH ASSUR: continuing with ebh lines {list(qual_analysis.keys())}"
+        )
+
+    else:
+        pass
 
     # Checking PNT solution quality of each ebh line and deciding whether to continue with RTK or PPK solution
     # If more than one RTK ebh line is not sufficient, all the ebh lines will be recalculated in PPK mode
@@ -180,40 +201,40 @@ def rtk_ppk_qual_check(
         ebh_qual_decision = "1-EBH-NOK"
 
         print(
-            f"\n{utilities.str_red(ebh_qual_decision)}\nThe ebh quality check decides that the line {rejected_ebh_lines[0]} does not comply according to the rejection value of {rejection_level}.\n"
+            f"\n{utilities.str_red(ebh_qual_decision)}\nThe ebh quality check decides that the line {rejected_ebh_lines[0]} does not comply according to the ebh rejection value of {rejection_level}.\n"
         )
 
         logger.warning(
-            f"The ebh quality check decides that the line {rejected_ebh_lines[0]} does {utilities.str_red("not comply")} according to the rejection value of {rejection_level}."
+            f"The ebh quality check decides that the line {rejected_ebh_lines[0]} does {utilities.str_red("not comply")} according to the ebh rejection value of {rejection_level}."
         )
     else:
         ebh_qual_decision = "ALL-EBH-NOK"
 
         print(
-            f"\n{utilities.str_red(ebh_qual_decision)}\nThe ebh quality check decides that that ALL EBH lines do not comply according to the rejection value of {rejection_level}."
+            f"\n{utilities.str_red(ebh_qual_decision)}\nThe ebh quality check decides that that ALL EBH lines do not comply according to the ebh rejection value of {rejection_level}."
         )
         logger.warning(
-            f"The ebh quality check decides that that ALL EBH lines {utilities.str_red("do not comply")} according to the rejection value of {rejection_level}."
+            f"The ebh quality check decides that that ALL EBH lines {utilities.str_red("do not comply")} according to the ebh rejection value of {rejection_level}."
         )
 
     return rejected_ebh_lines, ebh_qual_decision
 
 
 def do_ppk_by_decision(
-    rejected_rtk_lines: list,
-    rtk_qual_decision: str,
+    rejected_ebh_lines: list,
+    ebh_qual_decision: str,
     ebh_timings: dict,
     parsed_args: argparse.Namespace,
     logger: Logger,
 ) -> str:
-    """A ppk process is launched for the ebh lines according to rtk quality decision.
+    """A ppk process is launched for the ebh lines according to ebh quality decision.
 
     args:
-    rejected_rtk_lines (list): list of ebh lines that are rejected
-    rtk_qual_decision (str): defines which condition is met for three possible outcomes
-                        case 1: rtk_qual_sol = "ALL-EBH-OK"
-                        case 2: rtk_qual_sol = "1-EBH-NOK"
-                        case 3: rtk_qual_sol = "ALL-EBH-NOK"
+    rejected_ebh_lines (list): list of ebh lines that are rejected
+    ebh_qual_decision (str): defines which condition is met for three possible outcomes
+                        case 1: ebh_qual_sol = "ALL-EBH-OK"
+                        case 2: ebh_qual_sol = "1-EBH-NOK"
+                        case 3: ebh_qual_sol = "ALL-EBH-NOK"
     ebh_timings (dict): timings of each ebh line [ebh_line_key: wnc tow, wnc tow]
     parsed_args: RNX Obs, RNX Nav, base corrections (RNX or RTCM) and PPK configuration file.
 
@@ -226,13 +247,13 @@ def do_ppk_by_decision(
     ppk_pos_ofn = ""
 
     logger.info(
-        f"Decided {rtk_qual_decision}. Calculating PPK solution for {rejected_rtk_lines}"
+        f"Decided {ebh_qual_decision}. Calculating PPK solution for {rejected_ebh_lines}"
     )
 
-    match rtk_qual_decision:
+    match ebh_qual_decision:
         case "ALL-EBH-OK":
             logger.info(
-                "Case ALL-EBH-OK. RTK solution for all ebh lines is of sufficient quality. Nothing to do."
+                "Case ALL-EBH-OK. ebh solution for all ebh lines is of sufficient quality. Nothing to do."
             )
             logger.info("ASSUR FILES OK")
             print("ASSUR FILES OK")
@@ -241,8 +262,8 @@ def do_ppk_by_decision(
 
             print("Starting PPK process for rejected EBH line")
             logger.warning(
-                f"Solution for the ebh line {rejected_rtk_lines} is not of sufficient quality."
-                f"Calculating this single line in PPK mode with timings {ebh_timings[rejected_rtk_lines[0]]}"
+                f"Solution for the ebh line {rejected_ebh_lines} is not of sufficient quality."
+                f"Calculating this single line in PPK mode with timings {ebh_timings[rejected_ebh_lines[0]]}"
             )
 
             # created and get the rinex files from the sbf input filename
@@ -251,26 +272,24 @@ def do_ppk_by_decision(
             )
 
             # get the path of the rinex files and add them them to parsed_args namespace
+            #TODO check if there are no more than one MO rinex files
             rnx_obs_fn = glob.glob(
                 os.path.join(rnx_odir, "*MO.rnx")
-            )  # TODO check if there are no more than one MO rinex files
+            )
             parsed_args.obs = rnx_obs_fn[0]
             rnx_nav_fn = glob.glob(
                 os.path.join(rnx_odir, "*MN.rnx")
-            )  # TODO check if there are no more than one MN rinex files
+            )
             parsed_args.nav = rnx_nav_fn  # rnx_nav_fn is kept as a list because argpase.add_argument --nav uses the nargs=+ option. This option requires the argument to be a list of strings.
 
             logger.info(
                 f"Using RINEX files for PPK calculation: {parsed_args.obs} and {parsed_args.nav}"
             )
 
-            # Converting EBH TIMINGS and adding them to parsed_args namespace
+            # extracting EBH TIMING of rejected ebh line
 
-            # updating ebh_timings dict by removing the timings which are not rejected.
-            # ebh_timings = {rejected_rtk_lines[0]: ebh_timings[rejected_rtk_lines[0]]}
-
-            wnctow_start = ebh_timings[rejected_rtk_lines[0]][0]  # start of ebh line
-            wnctow_end = ebh_timings[rejected_rtk_lines[0]][1]  # end of ebh line
+            wnctow_start = ebh_timings[rejected_ebh_lines[0]][0]  # start of ebh line
+            wnctow_end = ebh_timings[rejected_ebh_lines[0]][1]  # end of ebh line
 
             # gnss_dt.gnss2dt returns a datetime object however get_base_coord_from_sbf expects a string in the format of YYYY-MM-DD_HH:MM:SS.s
             parsed_args.datetime = datetime.strftime(
@@ -284,16 +303,14 @@ def do_ppk_by_decision(
                 parsed_args.base_coord_X,
                 parsed_args.base_coord_Y,
                 parsed_args.base_coord_Z,
-            ) = map(
-                str, base_coord
-            )  # convert to strings for CLI args used by rnx2rtkp
+            ) = map(str, base_coord)  # convert to strings for CLI args used by rnx2rtkp
             logger.info(
                 f"Using base coordinates: {parsed_args.base_coord_X}, {parsed_args.base_coord_Y}, {parsed_args.base_coord_Z}"
             )
 
             # STARTING PPK PROCESS
             logger.info(
-                f"Starting PPK calculation for ebh line {rejected_rtk_lines[0]} with timings {ebh_timings[rejected_rtk_lines[0]]}"
+                f"Starting PPK calculation for ebh line {rejected_ebh_lines[0]} with timings {ebh_timings[rejected_ebh_lines[0]]}"
             )
 
             # getting base corrections (from imported base sbf file)
@@ -337,11 +354,18 @@ def do_ppk_by_decision(
                         parsed_args=parsed_args, logger=logger
                     )
                     # get the path of the rinex files and add them them to parsed_args namespace
+                    # RNX OBS
                     rnx_obs_fn = glob.glob(os.path.join(base_rnx_odir, "*MO.rnx"))
                     parsed_args.base_corr = rnx_obs_fn[0]
                     parsed_args.sbf_ifn = (
                         sbf_ifn_rover  # restore original sbf file name
                     )
+                    # RNX NAV
+                    rnx_nav_fn = glob.glob(os.path.join(base_rnx_odir, "*MN.rnx"))
+                    parsed_args.nav = rnx_nav_fn
+                else:
+                    logger.info("Specified base correction file is in rnx format")
+
 
                 logger.info(f"using base correction file {parsed_args.base_corr}")
 
@@ -352,18 +376,18 @@ def do_ppk_by_decision(
                 ppk_pos_ofn = rnx2rtkp_ppk(parsed_args=parsed_args, logger=logger)
 
                 logger.info(
-                    f"Finished calculating PPK solution for ebh line {rejected_rtk_lines}. Solution saved to {ppk_pos_ofn}"
+                    f"Finished calculating PPK solution for ebh line {rejected_ebh_lines}. Solution saved to {ppk_pos_ofn}"
                 )
 
         case "ALL-EBH-NOK":
 
             print("Starting PPK process for all EBH lines with rejected status")
             logger.warning(
-                "RTK solution for one or more ebh lines is not of sufficient quality. Calculating all ebh lines in PPK mode."
+                "PNT solution for one or more ebh lines is not of sufficient quality. Calculating all ebh lines in PPK mode."
             )
 
             logger.warning(
-                f"RTK solution for all ebh lines {rejected_rtk_lines} are not of sufficient quality. \
+                f"PNT solution for all ebh lines {rejected_ebh_lines} are not of sufficient quality. \
                     Recalculating these lines in PPK mode with timings {ebh_timings}"
             )
 
@@ -386,20 +410,20 @@ def do_ppk_by_decision(
                 f"Using RINEX files for PPK calculation: {parsed_args.obs} and {parsed_args.nav}"
             )
 
-            # Get base coordinates and them to parsed_args namespace
+            # Get base coordinates and add them to parsed_args namespace in string format
             base_coord = get_base_coord_from_sbf(parsed_args=parsed_args, logger=logger)
             (
                 parsed_args.base_coord_X,
                 parsed_args.base_coord_Y,
                 parsed_args.base_coord_Z,
-            ) = base_coord
+            ) = map(str, base_coord)
             logger.info(
                 f"Using base coordinates: {parsed_args.base_coord_X}, {parsed_args.base_coord_Y}, {parsed_args.base_coord_Z}"
             )
 
             # Calculate PPK
             logger.info(
-                f"Starting PPK calculation for ebh lines {rejected_rtk_lines} with timings {ebh_timings}"
+                f"Starting PPK calculation for ebh lines {rejected_ebh_lines} with timings {ebh_timings}"
             )
             logger.info(f"The correction file is: {parsed_args.base_corr}")
 
@@ -433,11 +457,19 @@ def do_ppk_by_decision(
                         parsed_args=parsed_args, logger=logger
                     )
                     # get the path of the rinex files and add them them to parsed_args namespace
+                    # RNX OBS
                     rnx_obs_fn = glob.glob(os.path.join(base_rnx_odir, "*MO.rnx"))
                     parsed_args.base_corr = rnx_obs_fn[0]
                     parsed_args.sbf_ifn = (
                         sbf_ifn_rover  # restore original sbf file name
                     )
+                    # RNX NAV
+                    rnx_nav_fn = glob.glob(os.path.join(base_rnx_odir, "*MN.rnx"))
+                    parsed_args.nav = rnx_nav_fn
+
+                else: 
+                    logger.info("Specified base correction file is in RNX format")
+
 
                 logger.info(f"using base correction file {parsed_args.base_corr}")
 
@@ -448,7 +480,7 @@ def do_ppk_by_decision(
                 ppk_pos_ofn = rnx2rtkp_ppk(parsed_args=parsed_args, logger=logger)
 
                 logger.info(
-                    f"Finished calculating PPK solution for ebh lines {rejected_rtk_lines} with timings {ebh_timings}. Saved solution to {ppk_pos_ofn}"
+                    f"Finished calculating PPK solution for ebh lines {rejected_ebh_lines} with timings {ebh_timings}. Saved solution to {ppk_pos_ofn}"
                 )
 
     return ppk_pos_ofn

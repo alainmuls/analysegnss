@@ -42,7 +42,7 @@ def get_base_coord_from_sbf(parsed_args: argparse.Namespace, logger: Logger) -> 
 
     logger.info(f"Extracted sbf block from SBF file.\n{df_sbfBaseStation}")
 
-    if parsed_args.datetime:
+    if hasattr(parsed_args, "datetime") and parsed_args.datetime:
         logger.info(
             f"Extracting basestation coordinates from sbf dataframe at date time {parsed_args.datetime}"
         )
@@ -79,7 +79,7 @@ def get_base_coord_from_sbf(parsed_args: argparse.Namespace, logger: Logger) -> 
             df_sbfBaseStation.select(["X [m]", "Y [m]", "Z [m]"]).row(-1)
         )
 
-    logger.info(f"Base station coordinates: {base_coord}")
+    logger.info(f"Base station coordinates (float): {base_coord}")
 
     return base_coord
 

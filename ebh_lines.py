@@ -159,7 +159,7 @@ def ebh_lines_map_angle(
         row_start = df_pos.filter(pl.col("DT") == timings[0])
         row_end = df_pos.filter(pl.col("DT") == timings[1])
 
-        # Checking if dataframe is not empty
+        # Checking if dataframe is not empty. The following if clause handles the case when fewer lines are processed (for PPK) than there are key in ebh_timings
         if row_start.is_empty():
             logger.warning(
                 f"No data found for {timings[0].strftime('%Y/%m/%d %H:%M:%S')}. Breaking."
@@ -169,15 +169,6 @@ def ebh_lines_map_angle(
 
             if logger is not None:
                 logger.debug(f"row_start = {row_start}")
-                logger.debug(
-                    f"row_start.select(['UTM.E']) = {row_start.select(['UTM.E'])} |  {type(row_start.select(['UTM.E']))}"
-                )
-                logger.debug(
-                    f"row_start.select(['UTM.E']).to_numpy()[0] = {row_start.select(['UTM.E'])} |  {type(row_start.select(['UTM.E']))}"
-                )
-                logger.debug(
-                    f"row_start.select(['UTM.E', 'UTM.N']) = {row_start.select(['UTM.E', 'UTM.N'])}"
-                )
                 logger.debug(f"row_end = {row_end}")
 
             # calculate the map_angle
@@ -212,18 +203,12 @@ def ebh_lines_extract(
     ebh_lines_assur = dict()
 
     for ebh_key, timings in ebh_timings.items():
-        # print(f"ebh_key = {ebh_key}, timings = {timings}")
-
-        # filter the dataframe for the ebh line
-        # ebh_df = df_pos.filter(pl.col("DT") >= timings[0]).filter(
-        #    pl.col("DT") <= timings[1]
-        # )
 
         # We are going fetch the reference map angle and use this to order the EBH lines in the same direction
 
         if ref_map_angle == "":
             ref_map_angle = ebh_timings[ebh_key][2]
-            logger.info(f"Using {first_ebh_key} as reference for ebh line direction")
+            logger.info(f"Using {ebh_key} as reference for ebh line direction")
 
         # check orientation of the current line
         if ref_map_angle - 10 < timings[2] < ref_map_angle + 10:
@@ -305,13 +290,13 @@ def ebh_line_thin_out(
     df_assur = df_line.filter(pl.col("dist_mod05_diff") < -0.25).lazy()
 
     if logger is not None:
-        pl.Config.set_tbl_rows(30)
+        pl.Config.set_tbl_rows(20)
         logger.debug(f"df_line = \n{df_line.collect()}")
         # logger.debug first 30 rows of the dataframe
-        logger.debug(f"df_line.head(30) = \n{df_line.head(30)}")
+        #logger.debug(f"df_line.head(30) = \n{df_line.head(30)}")
         # thin out the df_line to keep positions every 0.5 meters
         logger.debug(f"df_assur = \n{df_assur.collect()}")
-        logger.debug(f"df_assur.head(30) = \n{df_assur.head(30)}")
+        #logger.debug(f"df_assur.head(30) = \n{df_assur.head(30)}")
 
     return df_assur.collect()
 

@@ -63,8 +63,12 @@ def rnx2rtkp_ppk(
     ]
 
     # adding timings to the command line arguments
-
-    if parsed_args.datetime_start and parsed_args.datetime_end:
+    if (
+        hasattr(parsed_args, "datetime_start")
+        and hasattr(parsed_args, "datetime_end")
+        and parsed_args.datetime_start
+        and parsed_args.datetime_end
+    ):
         # remove underscore from datetime format to get isoformat %Y-%m-%d %H:%M:%S
         s_dt = parsed_args.datetime_start.replace("_", " ")
         e_dt = parsed_args.datetime_end.replace("_", " ")
@@ -85,7 +89,7 @@ def rnx2rtkp_ppk(
         e_dt_obj = None
 
     # configure output filename
-    if hasattr(parsed_args,"pos_ofn") and parsed_args.pos_ofn:
+    if hasattr(parsed_args, "pos_ofn") and parsed_args.pos_ofn:
         pos_ofn = parsed_args.pos_ofn
         logger.info(f"Using {pos_ofn} as output file name for rnx2rtkp process")
     else:
@@ -95,7 +99,9 @@ def rnx2rtkp_ppk(
             tdiff = e_dt_obj - s_dt_obj
             tdiff_s = round(tdiff.total_seconds())
             # file name resembles RNX naming fmt: obs_PPK_000000_100S.pos
-            pos_ofn = pos_ofn + "_PPK_" + s_time + "_" + str(tdiff_s) + "S.pos" #TODO this naively trusts the cli timings, better would be to check first epoch of observation
+            pos_ofn = (
+                pos_ofn + "_PPK_" + s_time + "_" + str(tdiff_s) + "S.pos"
+            )  # TODO this naively trusts the cli timings, better would be to check first epoch of observation
         else:
             pos_ofn = pos_ofn + "_PPK.pos"
         logger.info(f"Using {pos_ofn} as output file name for rnx2rtkp process")
@@ -104,29 +110,27 @@ def rnx2rtkp_ppk(
 
     # TODO Get effective log leveli
     logger.info("Putting rnx2rtkp in debugging mode")
-    print('rnx2rtkp in debugging mode')
+    print("rnx2rtkp in debugging mode")
     cmd_rnx2rtkp.extend(["-x", "2"])
 
-    # add obs and nav rnx filenames to cli 
+    # add obs and nav rnx filenames to cli
+    cmd_rnx2rtkp.extend([parsed_args.obs, parsed_args.base_corr])
     cmd_rnx2rtkp.extend(
-        [
-        parsed_args.obs,
-        parsed_args.base_corr
-        ]
-        )
-    cmd_rnx2rtkp.extend(parsed_args.nav)# parsed_args.nav is a list of multiple nav files 
+        parsed_args.nav
+    )  # parsed_args.nav is a list of multiple nav files
 
     logger.info(
         f"Running rnx2rtkp using input files {parsed_args.obs}, {parsed_args.base_corr} and {parsed_args.nav} \
-    base station XYZ {parsed_args.base_coord_X}, {parsed_args.base_coord_Y}, {parsed_args.base_coord_Z}, \
-    the start time {parsed_args.datetime_start}, the end time {parsed_args.datetime_end}"
+    base station XYZ {parsed_args.base_coord_X}, {parsed_args.base_coord_Y}, {parsed_args.base_coord_Z}"
     )
     logger.debug(f"Running rnx2rtkp for PPK solution with command: {cmd_rnx2rtkp}")
 
     # run rnx2rtkp
     try:
-        proc_rnx2rtkp = subprocess.run(cmd_rnx2rtkp, check=True, stdout=sys.stdout, stderr=sys.stderr)
-    
+        proc_rnx2rtkp = subprocess.run(
+            cmd_rnx2rtkp, check=True, stdout=sys.stdout, stderr=sys.stderr
+        )
+
     except subprocess.CalledProcessError as e:
         logger.error(f"rnx2rtkp failed with error code {e.returncode}")
         sys.exit(ERROR_CODES["E_PROCESS"])

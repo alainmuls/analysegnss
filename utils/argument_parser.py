@@ -206,7 +206,7 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
         help="Destination directory of ebh assur files (default: EBH_ASSUR directory in directory of the input sbf or pos file)",
         type=str,
         required=False,
-        default=None
+        default=None,
     )
     parser.add_argument(
         "--desc",
@@ -221,7 +221,6 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
         type=str,
         required=True,
     )
-
 
     # allow argument completion
     argcomplete.autocomplete(parser)
@@ -370,7 +369,7 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
     )
     parser.add_argument(
         "--sbf_ifn",
-        help="input sbf file. This sbf file not only contains the RTK/obs/nav data but also the timestamps",
+        help="input sbf file name. This sbf file not only contains the RTK/obs/nav data but also the ebh line timestamps",
         type=str,
         required=True,
     )
@@ -382,13 +381,14 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
         required=False,
     )
     parser.add_argument(
-        "-cfg_ppk",
+        "-cfg",
         "--config_ppk",
-        help="file name of config file used for RTKLib rnx2rtkp calculation.",
+        help="File name of config file used for RTKLib rnx2rtkp calculation. Default: rtkpos/rnx2rtkp_config/rnx2rtkp_PPK_el10_nomask_GE_tow.conf",
         type=str,
         required=False,
+        default="rtkpos/rnx2rtkp_config/rnx2rtkp_EBH_PPK_default.conf",
     )
-    #TODO add sbf2asc compatibility (check if sbf2asc can extract sbf comments, ...)
+    # TODO add sbf2asc compatibility (check if sbf2asc can extract sbf comments, ...)
     """
     parser.add_argument(
         "--sbf2asc",
@@ -410,7 +410,7 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
         help="Destination directory of ebh assur files (default: EBH_ASSUR directory in directory of the input sbf or pos file)",
         type=str,
         required=False,
-        default=None
+        default=None,
     )
     parser.add_argument(
         "--archive",
@@ -470,8 +470,8 @@ def argument_parser_rnx2rtkp_launcher(args: list) -> argparse.Namespace:
         "--nav",
         nargs="+",
         help="input (multiple) RINEX navigation filename. If more than one leave space between the different filenames",
-        type=str, 
-        required=True
+        type=str,
+        required=True,
     )
     parser.add_argument(
         "--base_corr",
@@ -505,7 +505,7 @@ def argument_parser_rnx2rtkp_launcher(args: list) -> argparse.Namespace:
         "--config_ppk",
         help="RTKlib configuration file",
         type=str,
-        required=True
+        required=True,
     )
     parser.add_argument(
         "-dts",
@@ -542,7 +542,7 @@ def argument_parser_rnx2rtkp_launcher(args: list) -> argparse.Namespace:
 
 def argument_parser_get_rnx_files(args: list) -> argparse.Namespace:
     """
-    Extracts rinex files from binary files such as Septentrio SBF files 
+    Extracts rinex files from binary files such as Septentrio SBF files
     (Future work: extend this to other file formats such as rtcm3, ubx, etc.)
     """
 
@@ -570,7 +570,7 @@ def argument_parser_get_rnx_files(args: list) -> argparse.Namespace:
         "--sbf_ifn",
         help="input filename of binary file (e.g. SBF file)",
         type=str,
-        required=True
+        required=True,
     )
     parser.add_argument(
         "--log_dest",
@@ -583,5 +583,3 @@ def argument_parser_get_rnx_files(args: list) -> argparse.Namespace:
     args = parser.parse_args(args)
 
     return args
-
-
