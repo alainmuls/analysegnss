@@ -187,8 +187,17 @@ def plot_coords(argv: list):
     # origin = "PPK" if args_parsed.pos_fn else "RTK"
     print(f"creating plot for {origin} position file {filename}")
 
-    # plot the UTM and orthoH coordinates
-    plot_utm.plot_utm_scatter(
+    # # plot the UTM and orthoH coordinates
+    # plot_utm.plot_utm_scatter(
+    #     utm_df=df_utm,
+    #     origin=origin,
+    #     fn=filename,
+    #     dir_fn=dir_fn,
+    #     logger=logger,
+    #     display=args_parsed.display,
+    # )
+
+    plot_utm.plot_utm_scatter_mpl(
         utm_df=df_utm,
         origin=origin,
         fn=filename,
@@ -197,15 +206,15 @@ def plot_coords(argv: list):
         display=args_parsed.display,
     )
 
-    plot_utm.plot_utm_height(
-        utm_df=df_utm,
-        origin=origin,
-        fn=filename,
-        dir_fn=dir_fn,
-        sd=args_parsed.sd,
-        logger=logger,
-        display=args_parsed.display,
-    )
+    # plot_utm.plot_utm_height(
+    #     utm_df=df_utm,
+    #     origin=origin,
+    #     fn=filename,
+    #     dir_fn=dir_fn,
+    #     sd=args_parsed.sd,
+    #     logger=logger,
+    #     display=args_parsed.display,
+    # )
 
 
 def main():

@@ -39,7 +39,7 @@
                 "--pos_fn",
                 "/home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rtkp/134200BEL_R_20242751023_01H_10Z_MO.pos",
                 "-vvv",
-                "--plot",
+                "--display",
                 "--sd",
             ]
         },
@@ -53,7 +53,7 @@
                 "--sbf_fn",
                 "/home/amuls/GNSSData/USA_CA_2024/Ocotillo/rover/1342172Z.24_",
                 "-vvv",
-                "--plot",
+                "--display",
                 "--sd",
             ]
         },
@@ -67,7 +67,7 @@
                 "--glab_fn",
                 "/home/amuls/GNSSData/2024-03-29-schaffen/20240329/glab/KMS000BEL_R_20240890943_03H_01S_MO_gal.glab",
                 "-vvv",
-                "--plot",
+                "--display",
                 "--sd",
             ]
         },

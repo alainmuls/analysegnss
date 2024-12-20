@@ -1,6 +1,7 @@
 import logging as logging
 import os
 
+import numpy as np
 import plotly.graph_objects as go
 import polars as pl
 from matplotlib import cm
@@ -8,9 +9,9 @@ from plotly.subplots import make_subplots
 from rich import print
 from rich.console import Console
 
-from analysegnss.plots.plot_fonts import PlotlyFonts
 from analysegnss.plots import discrete_colors as dc
 from analysegnss.plots.plot_columns import get_utm_columns
+from analysegnss.plots.plot_fonts import PlotlyFonts, MatplotlibFonts
 from analysegnss.rtkpos import rtk_constants as rtkc
 from analysegnss.sbf import sbf_constants as sbfc
 
@@ -305,3 +306,188 @@ def plot_utm_height(
         fig.write_image(fn_plot, width=1024, height=600)
         # fig.write_html(fn_plot)
     print(f"Plot saved to {fn_plot}")
+
+
+import os
+
+import matplotlib.pyplot as plt
+import polars as pl
+import seaborn as sns
+
+# def plot_utm_scatter_mpl(
+#     utm_df: pl.DataFrame,
+#     origin: str,
+#     fn: str,
+#     dir_fn: str,
+#     logger: logging.Logger = None,
+#     display: bool = False,
+# ) -> None:
+
+#     # Get the correct column names according to the origin
+#     cols = get_utm_columns(origin)
+
+#     # Set the style
+#     # plt.style.use("seaborn")
+#     plt.style.use("tableau-colorblind10")
+
+#     # Create figure and axis
+#     fig, ax = plt.subplots(figsize=(12, 8))
+
+#     # Plot each quality group
+#     for qual, qual_data in utm_df.groupby(cols.quality_mapping.columns):
+#         ax.scatter(
+#             qual_data[cols.east],
+#             qual_data[cols.north],
+#             s=0.3,  # marker size
+#             c=[cols.quality_mapping.quality_dict[qual]["color"]],
+#             label=f"{cols.quality_mapping.quality_dict[qual]['desc']}",
+#             alpha=0.6,
+#         )
+
+#     # Calculate grid spacing based on data range
+#     x_range = utm_df[cols.east].max() - utm_df[cols.east].min()
+#     y_range = utm_df[cols.north].max() - utm_df[cols.north].min()
+#     grid_spacing = min(x_range, y_range) / 5  # 5 grid lines in the smaller dimension
+
+#     # Set grid with equal spacing
+#     ax.set_xticks(
+#         np.arange(utm_df[cols.east].min(), utm_df[cols.east].max(), grid_spacing)
+#     )
+#     ax.set_yticks(
+#         np.arange(utm_df[cols.north].min(), utm_df[cols.north].max(), grid_spacing)
+#     )
+
+#     # Customize the plot
+#     ax.set_xlabel(cols.east)
+#     ax.set_ylabel(cols.north)
+#     ax.set_title(f"{fn} - {origin}")
+#     ax.grid(True, linestyle="--", alpha=0.7)
+#     ax.set_aspect("equal")
+
+#     # Format axis with scientific notation
+#     ax.ticklabel_format(style="plain", useOffset=False)
+
+#     # Add legend
+#     ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left", markerscale=8)
+
+#     # Adjust layout to prevent label cutoff
+#     plt.tight_layout()
+
+#     if display:
+#         plt.show()
+
+#     # Create plots directory if it doesn't exist
+#     plots_dir = os.path.join(dir_fn, "plots")
+#     os.makedirs(plots_dir, exist_ok=True)
+
+#     # Save the plot
+#     fn_plot = os.path.join(plots_dir, f"{fn.replace('.', '_')}_scatter_mpl.png")
+#     fig.savefig(fn_plot, bbox_inches="tight", dpi=300)
+#     print(f"Plot saved to {fn_plot}")
+
+#     # Close the figure to free memory
+#     plt.close(fig)
+
+
+def plot_utm_scatter_mpl(
+    utm_df: pl.DataFrame,
+    origin: str,
+    fn: str,
+    dir_fn: str,
+    logger: logging.Logger = None,
+    display: bool = False,
+) -> None:
+
+    # get the columns used in the UTM dataframe
+    cols = get_utm_columns(origin)
+
+    plt.style.use("tableau-colorblind10")
+
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    # get the custom used fonts
+    plot_fonts = MatplotlibFonts()
+
+    # Calculate the range of data
+    x_min, x_max = utm_df[cols.east].min(), utm_df[cols.east].max()
+    y_min, y_max = utm_df[cols.north].min(), utm_df[cols.north].max()
+    plot_range = max(x_max - x_min, y_max - y_min)
+
+    # Define base intervals for tick values
+    base_intervals = [
+        0.1,
+        0.2,
+        0.5,
+        1,
+        2,
+        5,
+        10,
+        20,
+        50,
+        100,
+        200,
+        500,
+        1000,
+        2000,
+        5000,
+    ]
+
+    # Find appropriate interval that gives about 5-7 grid lines
+    target_lines = 7
+    tick_spacing = min(base_intervals, key=lambda x: abs(plot_range / x - target_lines))
+
+    # Calculate ticks using the selected base interval
+    x_start = np.floor(x_min / tick_spacing) * tick_spacing
+    x_end = np.ceil(x_max / tick_spacing) * tick_spacing
+    y_start = np.floor(y_min / tick_spacing) * tick_spacing
+    y_end = np.ceil(y_max / tick_spacing) * tick_spacing
+
+    x_ticks = np.arange(x_start, x_end + tick_spacing, tick_spacing)
+    y_ticks = np.arange(y_start, y_end + tick_spacing, tick_spacing)
+
+    for qual, qual_data in utm_df.groupby(cols.quality_mapping.columns):
+        ax.scatter(
+            qual_data[cols.east],
+            qual_data[cols.north],
+            s=0.2,
+            c=[cols.quality_mapping.quality_dict[qual]["color"]],
+            label=f"{cols.quality_mapping.quality_dict[qual]['desc']}",
+            alpha=0.6,
+        )
+
+    ax.set_xticks(x_ticks)
+    ax.set_yticks(y_ticks)
+
+    # Lock in the exact limits
+    ax.set_xlim(x_ticks[0], x_ticks[-1])
+    ax.set_ylim(y_ticks[0], y_ticks[-1])
+
+    # Ensure autoscaling is off
+    ax.autoscale(enable=False)
+
+    ax.set_xlabel(cols.east)
+    ax.set_ylabel(cols.north)
+    ax.set_title(f"{fn} - {origin}")
+    ax.grid(True, linestyle="--", alpha=0.7)
+    ax.set_aspect("equal")
+
+    ax.ticklabel_format(style="plain", useOffset=False)
+
+    legend = ax.legend(markerscale=8, loc="best")
+
+    # apply the MatplotlibFonts to the figure and axes
+    plot_fonts.apply_fonts(fig, ax)
+
+    plt.tight_layout()
+
+    if display:
+        plt.show()
+
+    plots_dir = os.path.join(dir_fn, "plots")
+    os.makedirs(plots_dir, exist_ok=True)
+
+    fn_plot = os.path.join(plots_dir, f"{fn.replace('.', '_')}_scatter_mpl.png")
+    fig.savefig(fn_plot, bbox_inches="tight", dpi=300)
+    print(f"Plot saved to {fn_plot}")
+
+    plt.close(fig)
