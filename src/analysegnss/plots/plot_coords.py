@@ -197,14 +197,14 @@ def plot_coords(argv: list):
     #     display=args_parsed.display,
     # )
 
-    plot_utm.plot_utm_scatter_mpl(
-        utm_df=df_utm,
-        origin=origin,
-        fn=filename,
-        dir_fn=dir_fn,
-        logger=logger,
-        display=args_parsed.display,
-    )
+    # plot_utm.plot_utm_scatter_mpl(
+    #     utm_df=df_utm,
+    #     origin=origin,
+    #     fn=filename,
+    #     dir_fn=dir_fn,
+    #     logger=logger,
+    #     display=args_parsed.display,
+    # )
 
     # plot_utm.plot_utm_height(
     #     utm_df=df_utm,
@@ -215,6 +215,16 @@ def plot_coords(argv: list):
     #     logger=logger,
     #     display=args_parsed.display,
     # )
+
+    plot_utm.plot_utm_height_mpl(
+        utm_df=df_utm,
+        origin=origin,
+        fn=filename,
+        dir_fn=dir_fn,
+        sd=args_parsed.sd,
+        logger=logger,
+        display=args_parsed.display,
+    )
 
 
 def main():

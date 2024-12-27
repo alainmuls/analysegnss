@@ -5,13 +5,14 @@ import numpy as np
 import plotly.graph_objects as go
 import polars as pl
 from matplotlib import cm
+from matplotlib.ticker import ScalarFormatter
 from plotly.subplots import make_subplots
 from rich import print
 from rich.console import Console
 
 from analysegnss.plots import discrete_colors as dc
 from analysegnss.plots.plot_columns import get_utm_columns
-from analysegnss.plots.plot_fonts import PlotlyFonts, MatplotlibFonts
+from analysegnss.plots.plot_fonts import MatplotlibFonts, PlotlyFonts
 from analysegnss.rtkpos import rtk_constants as rtkc
 from analysegnss.sbf import sbf_constants as sbfc
 
@@ -314,80 +315,6 @@ import matplotlib.pyplot as plt
 import polars as pl
 import seaborn as sns
 
-# def plot_utm_scatter_mpl(
-#     utm_df: pl.DataFrame,
-#     origin: str,
-#     fn: str,
-#     dir_fn: str,
-#     logger: logging.Logger = None,
-#     display: bool = False,
-# ) -> None:
-
-#     # Get the correct column names according to the origin
-#     cols = get_utm_columns(origin)
-
-#     # Set the style
-#     # plt.style.use("seaborn")
-#     plt.style.use("tableau-colorblind10")
-
-#     # Create figure and axis
-#     fig, ax = plt.subplots(figsize=(12, 8))
-
-#     # Plot each quality group
-#     for qual, qual_data in utm_df.groupby(cols.quality_mapping.columns):
-#         ax.scatter(
-#             qual_data[cols.east],
-#             qual_data[cols.north],
-#             s=0.3,  # marker size
-#             c=[cols.quality_mapping.quality_dict[qual]["color"]],
-#             label=f"{cols.quality_mapping.quality_dict[qual]['desc']}",
-#             alpha=0.6,
-#         )
-
-#     # Calculate grid spacing based on data range
-#     x_range = utm_df[cols.east].max() - utm_df[cols.east].min()
-#     y_range = utm_df[cols.north].max() - utm_df[cols.north].min()
-#     grid_spacing = min(x_range, y_range) / 5  # 5 grid lines in the smaller dimension
-
-#     # Set grid with equal spacing
-#     ax.set_xticks(
-#         np.arange(utm_df[cols.east].min(), utm_df[cols.east].max(), grid_spacing)
-#     )
-#     ax.set_yticks(
-#         np.arange(utm_df[cols.north].min(), utm_df[cols.north].max(), grid_spacing)
-#     )
-
-#     # Customize the plot
-#     ax.set_xlabel(cols.east)
-#     ax.set_ylabel(cols.north)
-#     ax.set_title(f"{fn} - {origin}")
-#     ax.grid(True, linestyle="--", alpha=0.7)
-#     ax.set_aspect("equal")
-
-#     # Format axis with scientific notation
-#     ax.ticklabel_format(style="plain", useOffset=False)
-
-#     # Add legend
-#     ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left", markerscale=8)
-
-#     # Adjust layout to prevent label cutoff
-#     plt.tight_layout()
-
-#     if display:
-#         plt.show()
-
-#     # Create plots directory if it doesn't exist
-#     plots_dir = os.path.join(dir_fn, "plots")
-#     os.makedirs(plots_dir, exist_ok=True)
-
-#     # Save the plot
-#     fn_plot = os.path.join(plots_dir, f"{fn.replace('.', '_')}_scatter_mpl.png")
-#     fig.savefig(fn_plot, bbox_inches="tight", dpi=300)
-#     print(f"Plot saved to {fn_plot}")
-
-#     # Close the figure to free memory
-#     plt.close(fig)
-
 
 def plot_utm_scatter_mpl(
     utm_df: pl.DataFrame,
@@ -487,6 +414,265 @@ def plot_utm_scatter_mpl(
     os.makedirs(plots_dir, exist_ok=True)
 
     fn_plot = os.path.join(plots_dir, f"{fn.replace('.', '_')}_scatter_mpl.png")
+    fig.savefig(fn_plot, bbox_inches="tight", dpi=300)
+    print(f"Plot saved to {fn_plot}")
+
+    plt.close(fig)
+
+
+def plot_utm_height_mpl(
+    utm_df: pl.DataFrame,
+    origin: str,
+    fn: str,
+    dir_fn: str,
+    sd: bool = False,
+    logger: logging.Logger = None,
+    display: bool = False,
+) -> None:
+    """Plot UTM North, East and height vs time using matplotlib
+
+    Args:
+        utm_df (pl.DataFrame): df with coordinates, standard deviation and time
+        origin (str): origin of the plot ('RTK' or 'PPK' or 'gLAB')
+        fn (str): name of file used
+        dir_fn (str): directory of the file
+        sd (bool): display the standard deviation if true
+        logger (logging.Logger, optional): logger. Defaults to None.
+        display (bool, optional): show plot. Defaults to False.
+    """
+    # Get the correct column names according to the origin
+    cols = get_utm_columns(origin)
+
+    # Get the custom fonts
+    plot_fonts = MatplotlibFonts()
+
+    # Create figure with three subplots sharing x-axis
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 8), sharex=True)
+
+    # Plot data for each quality level
+    for qual, qual_data in utm_df.groupby(cols.quality_mapping.columns):
+        color = cols.quality_mapping.quality_dict[qual]["color"]
+        label = cols.quality_mapping.quality_dict[qual]["desc"]
+
+        times = qual_data[cols.time].to_list()
+        north = qual_data[cols.north].to_list()
+        east = qual_data[cols.east].to_list()
+        height = qual_data[cols.height].to_list()
+
+        if sd:
+            # Standard deviation bands
+            sdn = qual_data[cols.sdn].to_list()
+            sde = qual_data[cols.sde].to_list()
+            if qual == 1:
+                sdu = (qual_data[cols.sdu] * 100).to_list()
+            else:
+                sdu = (qual_data[cols.sdu]).to_list()
+
+            # Plot error bars instead of fill_between
+            ax1.errorbar(
+                times, north, yerr=sdn, fmt="none", c="gray", alpha=0.05, capsize=0.1
+            )
+            ax2.errorbar(
+                times, east, yerr=sde, fmt="none", c="gray", alpha=0.05, capsize=0.1
+            )
+            ax3.errorbar(
+                times, height, yerr=sdu, fmt="none", c="gray", alpha=0.05, capsize=0.1
+            )
+
+        # Plot points only for each component
+        ax1.plot(
+            times,
+            north,
+            marker=".",
+            c=color,
+            ms=3,
+            label=label,
+            alpha=1,
+            linestyle="None",
+        )
+        ax2.plot(times, east, marker=".", c=color, ms=3, alpha=1, linestyle="None")
+        ax3.plot(times, height, marker=".", c=color, ms=3, alpha=1, linestyle="None")
+
+        # ax1.fill_between(
+        #     times,
+        #     [n - s for n, s in zip(north, sdn)],
+        #     [n + s for n, s in zip(north, sdn)],
+        #     color=color,
+        #     alpha=0.2,
+        # )
+        # ax2.fill_between(
+        #     times,
+        #     [e - s for e, s in zip(east, sde)],
+        #     [e + s for e, s in zip(east, sde)],
+        #     color=color,
+        #     alpha=0.2,
+        # )
+        # ax3.fill_between(
+        #     times,
+        #     [h - s for h, s in zip(height, sdu)],
+        #     [h + s for h, s in zip(height, sdu)],
+        #     color=color,
+        #     alpha=0.2,
+        # )
+    # for qual, qual_data in utm_df.groupby(cols.quality_mapping.columns):
+    #     color = cols.quality_mapping.quality_dict[qual]["color"]
+    #     label = cols.quality_mapping.quality_dict[qual]["desc"]
+
+    #     times = qual_data[cols.time].to_list()
+    #     north = qual_data[cols.north].to_list()
+    #     east = qual_data[cols.east].to_list()
+    #     height = qual_data[cols.height].to_list()
+
+    #     # Plot North component with SD
+    #     ax1.scatter(times, north, c=color, s=1, label=label, alpha=0.6)
+    #     if sd:
+    #         sdn = qual_data[cols.sdn].to_list()
+    #         ax1.fill_between(
+    #             times,
+    #             [n - s for n, s in zip(north, sdn)],
+    #             [n + s for n, s in zip(north, sdn)],
+    #             color=color,
+    #             alpha=0.2,
+    #         )
+
+    #     # Plot East component with SD
+    #     ax2.scatter(times, east, c=color, s=1, alpha=0.6)
+    #     if sd:
+    #         sde = qual_data[cols.sde].to_list()
+    #         ax2.fill_between(
+    #             times,
+    #             [e - s for e, s in zip(east, sde)],
+    #             [e + s for e, s in zip(east, sde)],
+    #             color=color,
+    #             alpha=0.2,
+    #         )
+
+    #     # Plot Height component with SD
+    #     ax3.scatter(times, height, c=color, s=1, alpha=0.6)
+    #     if sd:
+    #         sdu = qual_data[cols.sdu].to_list() * 10000
+    #         ax3.fill_between(
+    #             times,
+    #             [h - s for h, s in zip(height, sdu)],
+    #             [h + s for h, s in zip(height, sdu)],
+    #             color=color,
+    #             alpha=0.2,
+    #         )
+
+    # for qual, qual_data in utm_df.groupby(cols.quality_mapping.columns):
+    #     color = cols.quality_mapping.quality_dict[qual]["color"]
+    #     label = cols.quality_mapping.quality_dict[qual]["desc"]
+
+    #     print(f"Data shape before conversion: {qual_data.shape}")
+    #     print(f"Columns available: {qual_data.columns}")
+
+    #     # Convert to list first for safer handling
+    #     times = qual_data[cols.time].to_list()
+    #     north = qual_data[cols.north].to_list()
+
+    #     ax1.scatter(times, north, c=color, s=1, label=label, alpha=0.6)
+
+    #     # times = qual_data[cols.time].to_numpy()
+    #     # north = qual_data[cols.north].to_numpy()
+
+    #     # print(
+    #     #     f"Processing North - times shape: {times.shape}, north shape: {north.shape}"
+    #     # )
+    #     # try:
+    #     #     ax1.scatter(times, north, c=color, s=1, label=label, alpha=0.6)
+    #     #     print("North scatter completed successfully")
+    #     # except Exception as e:
+    #     #     print(f"Error in North scatter: {e}")
+    #     #     raise
+
+    #     # # North plot
+    #     # ax1.scatter(times, qual_data[cols.north], c=color, s=1, label=label, alpha=0.6)
+    #     # if sd:
+    #     #     ax1.fill_between(
+    #     #         times,
+    #     #         qual_data[cols.north] - qual_data[cols.sdn],
+    #     #         qual_data[cols.north] + qual_data[cols.sdn],
+    #     #         color=color,
+    #     #         alpha=0.2,
+    #     #     )
+
+    #     # Convert to list first for safer handling
+    #     times = qual_data[cols.time].to_list()
+    #     east = qual_data[cols.east].to_list()
+
+    #     ax2.scatter(times, east, c=color, s=1, label=label, alpha=0.6)
+
+    #     # print(f"type(times) = {type(times)}")
+    #     # print(f"times = {times}")
+    #     # print(f"qual_data[cols.east] = {qual_data[cols.east]}")
+    #     # print(f"East data: times={len(times)}, east={len(qual_data[cols.east])}")
+    #     # # East plot
+    #     # ax2.scatter(times, qual_data[cols.east], c=color, s=1, alpha=0.6)
+    #     # if sd:
+    #     #     ax2.fill_between(
+    #     #         times,
+    #     #         qual_data[cols.east] - qual_data[cols.sde],
+    #     #         qual_data[cols.east] + qual_data[cols.sde],
+    #     #         color=color,
+    #     #         alpha=0.2,
+    #     #     )
+
+    #     # Convert to list first for safer handling
+    #     times = qual_data[cols.time].to_list()
+    #     height = qual_data[cols.height].to_list()
+
+    #     ax3.scatter(times, height, c=color, s=1, label=label, alpha=0.6)
+
+    #     # print(f"type(times) = {type(times)}")
+    #     # print(f"times = {times}")
+    #     # print(f"qual_data[cols.height] = {qual_data[cols.height]}")
+    #     # print(f"Height data: times={len(times)}, height={len(qual_data[cols.height])}")
+    #     # # Height plot
+    #     # ax3.scatter(times, qual_data[cols.height], c=color, s=1, alpha=0.6)
+    #     # if sd:
+    #     #     ax3.fill_between(
+    #     #         times,
+    #     #         qual_data[cols.height] - qual_data[cols.sdu],
+    #     #         qual_data[cols.height] + qual_data[cols.sdu],
+    #     #         color=color,
+    #     #         alpha=0.2,
+    #     # )
+
+    # Configure axes
+    ax1.set_ylabel(cols.north)
+    ax2.set_ylabel(cols.east)
+    ax3.set_ylabel(cols.height)
+    ax3.set_xlabel(cols.time)
+
+    # Add grid to all subplots
+    for ax in [ax1, ax2, ax3]:
+        ax.grid(True, linestyle="--", alpha=0.7)
+        ax.yaxis.set_major_formatter(ScalarFormatter(useOffset=False))
+        ax.xaxis.set_major_formatter(ScalarFormatter(useOffset=False))
+
+    # Add legend only to first subplot
+    ax1.legend(markerscale=8, loc="best")
+
+    # Set title for entire figure
+    fig.suptitle(f"{fn} - {origin}")
+
+    # Apply custom fonts
+    plot_fonts.apply_fonts(fig, ax1)
+    plot_fonts.apply_fonts(fig, ax2)
+    plot_fonts.apply_fonts(fig, ax3)
+
+    plt.tight_layout()
+
+    if display:
+        plt.show()
+
+    # Create plots directory if it doesn't exist
+    plots_dir = os.path.join(dir_fn, "plots")
+    os.makedirs(plots_dir, exist_ok=True)
+
+    # Save plot
+    suffix = "_enu_sd" if sd else "_enu"
+    fn_plot = os.path.join(plots_dir, f"{fn.replace('.', '_')}{suffix}_mpl.png")
     fig.savefig(fn_plot, bbox_inches="tight", dpi=300)
     print(f"Plot saved to {fn_plot}")
 
