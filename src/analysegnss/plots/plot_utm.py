@@ -1,11 +1,13 @@
 import logging as logging
 import os
 
+import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 import polars as pl
-from matplotlib import cm
-from matplotlib.ticker import ScalarFormatter
+from matplotlib import dates as mdates
+from matplotlib.ticker import FormatStrFormatter
 from plotly.subplots import make_subplots
 from rich import print
 from rich.console import Console
@@ -13,8 +15,12 @@ from rich.console import Console
 from analysegnss.plots import discrete_colors as dc
 from analysegnss.plots.plot_columns import get_utm_columns
 from analysegnss.plots.plot_fonts import MatplotlibFonts, PlotlyFonts
-from analysegnss.rtkpos import rtk_constants as rtkc
-from analysegnss.sbf import sbf_constants as sbfc
+
+
+# Create a custom formatter that splits date and time
+class CustomDateFormatter(mdates.DateFormatter):
+    def __init__(self, fmt="%Y-%m-%d\n%H:%M:%S"):
+        super().__init__(fmt)
 
 
 def plot_utm_scatter(
@@ -105,13 +111,13 @@ def plot_utm_scatter(
     if not os.path.exists(os.path.join(dir_fn, "plots")):
         os.makedirs(os.path.join(dir_fn, "plots"))
 
-    fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_scatter.pdf")
+    fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_scatter.html")
     # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_scatter.html")
     # create a console logger
     console = Console()
     with console.status(f"Saving plot to {fn_plot}", spinner="point"):
-        fig.write_image(fn_plot, width=1024, height=600)
-        # fig.write_html(fn_plot)
+        # fig.write_image(fn_plot, width=1024, height=600)
+        fig.write_html(fn_plot)
     print(f"Plot saved to {fn_plot}")
 
 
@@ -293,27 +299,20 @@ def plot_utm_height(
     # fig.write_image(fn_plot, width=1024, height=600)
 
     if not sd:
-        fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu.pdf")
+        fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu.html")
         # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu.html")
         # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu.svg")
     else:
-        fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu_sd.pdf")
+        fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu_sd.html")
         # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu_sd.html")
         # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu_sd.svg")
 
     # create a console logger
     console = Console()
     with console.status(f"Saving plot to {fn_plot}", spinner="point"):
-        fig.write_image(fn_plot, width=1024, height=600)
-        # fig.write_html(fn_plot)
+        # fig.write_image(fn_plot, width=1024, height=600)
+        fig.write_html(fn_plot)
     print(f"Plot saved to {fn_plot}")
-
-
-import os
-
-import matplotlib.pyplot as plt
-import polars as pl
-import seaborn as sns
 
 
 def plot_utm_scatter_mpl(
@@ -324,6 +323,8 @@ def plot_utm_scatter_mpl(
     logger: logging.Logger = None,
     display: bool = False,
 ) -> None:
+    # Force the backend to TkAgg which works well for terminal usage
+    matplotlib.use("TkAgg")
 
     # get the columns used in the UTM dataframe
     cols = get_utm_columns(origin)
@@ -408,7 +409,7 @@ def plot_utm_scatter_mpl(
     plt.tight_layout()
 
     if display:
-        plt.show()
+        plt.show(block=True)
 
     plots_dir = os.path.join(dir_fn, "plots")
     os.makedirs(plots_dir, exist_ok=True)
@@ -440,6 +441,7 @@ def plot_utm_height_mpl(
         logger (logging.Logger, optional): logger. Defaults to None.
         display (bool, optional): show plot. Defaults to False.
     """
+    matplotlib.use("TkAgg")
     # Get the correct column names according to the origin
     cols = get_utm_columns(origin)
 
@@ -493,151 +495,6 @@ def plot_utm_height_mpl(
         ax2.plot(times, east, marker=".", c=color, ms=3, alpha=1, linestyle="None")
         ax3.plot(times, height, marker=".", c=color, ms=3, alpha=1, linestyle="None")
 
-        # ax1.fill_between(
-        #     times,
-        #     [n - s for n, s in zip(north, sdn)],
-        #     [n + s for n, s in zip(north, sdn)],
-        #     color=color,
-        #     alpha=0.2,
-        # )
-        # ax2.fill_between(
-        #     times,
-        #     [e - s for e, s in zip(east, sde)],
-        #     [e + s for e, s in zip(east, sde)],
-        #     color=color,
-        #     alpha=0.2,
-        # )
-        # ax3.fill_between(
-        #     times,
-        #     [h - s for h, s in zip(height, sdu)],
-        #     [h + s for h, s in zip(height, sdu)],
-        #     color=color,
-        #     alpha=0.2,
-        # )
-    # for qual, qual_data in utm_df.groupby(cols.quality_mapping.columns):
-    #     color = cols.quality_mapping.quality_dict[qual]["color"]
-    #     label = cols.quality_mapping.quality_dict[qual]["desc"]
-
-    #     times = qual_data[cols.time].to_list()
-    #     north = qual_data[cols.north].to_list()
-    #     east = qual_data[cols.east].to_list()
-    #     height = qual_data[cols.height].to_list()
-
-    #     # Plot North component with SD
-    #     ax1.scatter(times, north, c=color, s=1, label=label, alpha=0.6)
-    #     if sd:
-    #         sdn = qual_data[cols.sdn].to_list()
-    #         ax1.fill_between(
-    #             times,
-    #             [n - s for n, s in zip(north, sdn)],
-    #             [n + s for n, s in zip(north, sdn)],
-    #             color=color,
-    #             alpha=0.2,
-    #         )
-
-    #     # Plot East component with SD
-    #     ax2.scatter(times, east, c=color, s=1, alpha=0.6)
-    #     if sd:
-    #         sde = qual_data[cols.sde].to_list()
-    #         ax2.fill_between(
-    #             times,
-    #             [e - s for e, s in zip(east, sde)],
-    #             [e + s for e, s in zip(east, sde)],
-    #             color=color,
-    #             alpha=0.2,
-    #         )
-
-    #     # Plot Height component with SD
-    #     ax3.scatter(times, height, c=color, s=1, alpha=0.6)
-    #     if sd:
-    #         sdu = qual_data[cols.sdu].to_list() * 10000
-    #         ax3.fill_between(
-    #             times,
-    #             [h - s for h, s in zip(height, sdu)],
-    #             [h + s for h, s in zip(height, sdu)],
-    #             color=color,
-    #             alpha=0.2,
-    #         )
-
-    # for qual, qual_data in utm_df.groupby(cols.quality_mapping.columns):
-    #     color = cols.quality_mapping.quality_dict[qual]["color"]
-    #     label = cols.quality_mapping.quality_dict[qual]["desc"]
-
-    #     print(f"Data shape before conversion: {qual_data.shape}")
-    #     print(f"Columns available: {qual_data.columns}")
-
-    #     # Convert to list first for safer handling
-    #     times = qual_data[cols.time].to_list()
-    #     north = qual_data[cols.north].to_list()
-
-    #     ax1.scatter(times, north, c=color, s=1, label=label, alpha=0.6)
-
-    #     # times = qual_data[cols.time].to_numpy()
-    #     # north = qual_data[cols.north].to_numpy()
-
-    #     # print(
-    #     #     f"Processing North - times shape: {times.shape}, north shape: {north.shape}"
-    #     # )
-    #     # try:
-    #     #     ax1.scatter(times, north, c=color, s=1, label=label, alpha=0.6)
-    #     #     print("North scatter completed successfully")
-    #     # except Exception as e:
-    #     #     print(f"Error in North scatter: {e}")
-    #     #     raise
-
-    #     # # North plot
-    #     # ax1.scatter(times, qual_data[cols.north], c=color, s=1, label=label, alpha=0.6)
-    #     # if sd:
-    #     #     ax1.fill_between(
-    #     #         times,
-    #     #         qual_data[cols.north] - qual_data[cols.sdn],
-    #     #         qual_data[cols.north] + qual_data[cols.sdn],
-    #     #         color=color,
-    #     #         alpha=0.2,
-    #     #     )
-
-    #     # Convert to list first for safer handling
-    #     times = qual_data[cols.time].to_list()
-    #     east = qual_data[cols.east].to_list()
-
-    #     ax2.scatter(times, east, c=color, s=1, label=label, alpha=0.6)
-
-    #     # print(f"type(times) = {type(times)}")
-    #     # print(f"times = {times}")
-    #     # print(f"qual_data[cols.east] = {qual_data[cols.east]}")
-    #     # print(f"East data: times={len(times)}, east={len(qual_data[cols.east])}")
-    #     # # East plot
-    #     # ax2.scatter(times, qual_data[cols.east], c=color, s=1, alpha=0.6)
-    #     # if sd:
-    #     #     ax2.fill_between(
-    #     #         times,
-    #     #         qual_data[cols.east] - qual_data[cols.sde],
-    #     #         qual_data[cols.east] + qual_data[cols.sde],
-    #     #         color=color,
-    #     #         alpha=0.2,
-    #     #     )
-
-    #     # Convert to list first for safer handling
-    #     times = qual_data[cols.time].to_list()
-    #     height = qual_data[cols.height].to_list()
-
-    #     ax3.scatter(times, height, c=color, s=1, label=label, alpha=0.6)
-
-    #     # print(f"type(times) = {type(times)}")
-    #     # print(f"times = {times}")
-    #     # print(f"qual_data[cols.height] = {qual_data[cols.height]}")
-    #     # print(f"Height data: times={len(times)}, height={len(qual_data[cols.height])}")
-    #     # # Height plot
-    #     # ax3.scatter(times, qual_data[cols.height], c=color, s=1, alpha=0.6)
-    #     # if sd:
-    #     #     ax3.fill_between(
-    #     #         times,
-    #     #         qual_data[cols.height] - qual_data[cols.sdu],
-    #     #         qual_data[cols.height] + qual_data[cols.sdu],
-    #     #         color=color,
-    #     #         alpha=0.2,
-    #     # )
-
     # Configure axes
     ax1.set_ylabel(cols.north)
     ax2.set_ylabel(cols.east)
@@ -647,8 +504,12 @@ def plot_utm_height_mpl(
     # Add grid to all subplots
     for ax in [ax1, ax2, ax3]:
         ax.grid(True, linestyle="--", alpha=0.7)
-        ax.yaxis.set_major_formatter(ScalarFormatter(useOffset=False))
-        ax.xaxis.set_major_formatter(ScalarFormatter(useOffset=False))
+        ax.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
+        # Apply custom fonts
+        plot_fonts.apply_fonts(fig, ax)
+
+    # Configure x-axis to show dates properly with split format
+    ax3.xaxis.set_major_formatter(CustomDateFormatter())
 
     # Add legend only to first subplot
     ax1.legend(markerscale=8, loc="best")
@@ -656,15 +517,10 @@ def plot_utm_height_mpl(
     # Set title for entire figure
     fig.suptitle(f"{fn} - {origin}")
 
-    # Apply custom fonts
-    plot_fonts.apply_fonts(fig, ax1)
-    plot_fonts.apply_fonts(fig, ax2)
-    plot_fonts.apply_fonts(fig, ax3)
-
     plt.tight_layout()
 
     if display:
-        plt.show()
+        plt.show(block=True)
 
     # Create plots directory if it doesn't exist
     plots_dir = os.path.join(dir_fn, "plots")

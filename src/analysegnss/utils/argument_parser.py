@@ -172,6 +172,13 @@ def argument_parser_plot_coords(args: list) -> argparse.Namespace:
         required=False,
         default=False,
     )
+    parser.add_argument(
+        "--mpl",
+        help="use matplotlib for plotting (default plotly)",
+        action="store_true",
+        required=False,
+        default=False,
+    )
 
     # allow argument completion
     argcomplete.autocomplete(parser)
