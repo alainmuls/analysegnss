@@ -3,7 +3,7 @@
 # Add proper error handling
 set -e  # Exit on error
 
-OPTIONS=$(getopt -o hvf:r:x:b:e: -l help,sbf_fn,rnx_dir,excl_GNSS,begin_epoch,end_epoch -- "$@")
+OPTIONS=$(getopt -o hvf:r:x:b:e: -l help,verbose,sbf_fn,rnx_dir,excl_GNSS,begin_epoch,end_epoch -- "$@")
 
 function usage {
     echo "$0 converts a SBF file to RINEX v3.x format"
