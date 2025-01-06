@@ -36,8 +36,11 @@ ORIG_DIR=$(pwd)
 # Add after storing ORIG_DIR
 trap 'cd "${ORIG_DIR}"' EXIT
 
+# get the script name without extension
+SCRIPT_NAME=$(basename "$0" .sh)
+
 # Add at start of script
-LOG_FILE="${ORIG_DIR}/sbf2rin_$(date +%Y%m%d_%H%M%S).log"
+LOG_FILE="${ORIG_DIR}/${SCRIPT_NAME}_$(date +%Y%m%d_%H%M%S).log"
 exec 1> >(tee -a "$LOG_FILE") 2>&1
 
 cleanup() {
@@ -55,18 +58,18 @@ RNX_DIR="."
 EXCL_GNSS="RSCJI"
 
 while true; do
-  case "$1" in
-    -h|--help)          usage; ;;
-    -f|--file)          SBF_FN="$2" ; shift ;;
-    -x|--excl_GNSS)     EXCL_GNSS="$2" ; shift ;;
-    -b|--begin_epoch)   BEGIN_EPOCH="$2" ; shift ;;
-    -e|--end_epoch)     END_EPOCH="$2" ; shift ;;
-    -r|--rnx_dir)       RNX_DIR="$2" ; shift ;;
-    -v|--verbose)       VERBOSE=true ;;
-    --)                 shift ; break ;;
-    *)                  echo "unknown option: $1" ; exit 1 ;;
-  esac
-  shift
+    case "$1" in
+        -h|--help)          usage; ;;
+        -f|--file)          SBF_FN="$2" ; shift ;;
+        -x|--excl_GNSS)     EXCL_GNSS="$2" ; shift ;;
+        -b|--begin_epoch)   BEGIN_EPOCH="$2" ; shift ;;
+        -e|--end_epoch)     END_EPOCH="$2" ; shift ;;
+        -r|--rnx_dir)       RNX_DIR="$2" ; shift ;;
+        -v|--verbose)       VERBOSE=true ;;
+        --)                 shift ; break ;;
+        *)                  echo "unknown option: $1" ; exit 1 ;;
+    esac
+    shift
 done
 
 if [ $# -ne 0 ]; then
@@ -161,12 +164,3 @@ else
     echo -e "\e[1;31mError: Failed to create navigation file\e[0m"
     exit 7
 fi
-
-# cleanup() {
-#     echo "DEBUG: Cleanup function called" >&2
-#     cd "${ORIG_DIR}"
-#     if [ "${CONVERSION_SUCCESS:-false}" = true ] && [ -f "${LOG_FILE}" ]; then
-#         echo "DEBUG: Removing log file ${LOG_FILE}" >&2
-#         rm -f "${LOG_FILE}"
-#     fi
-# }
