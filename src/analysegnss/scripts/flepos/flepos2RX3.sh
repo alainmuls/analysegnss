@@ -1,21 +1,21 @@
-#!/bin/bash
+#!/bin/bash 
 # Script to convert FLEPOS data to RX3 format
 
 # Add proper error handling
 set -e  # Exit on error
 
-OPTIONS=$(getopt -o hvf:s:d:y:x:r: -l help,verbose,fp_dir,station,doy,year,excl_GNSS,rnx3_dir -- "$@")
+OPTIONS=$(getopt -o hvf:s:d:y:r: -l help,verbose,fp_dir,station,doy,year,rnx3_dir -- "$@")
 
 function usage {
     echo "$0 converts FLEPOS RINEX v2 files to RINEX v3.x format"
     echo
-    echo "usage: $0 [-h] -f fp_dir -s station -d DOY [-r rnx3_dir] [-x excl_GNSS]"
+    echo "usage: $0 [-h] -f fp_dir -s station -d DOY [-r rnx3_dir]"
     echo "  -h              display help"
     echo "  -f fp_dir       flepos directory"
     echo "  -s station      FLEPOS station name"
     echo "  -d DOY          day of year"
     echo "  -y year         year"
-    echo "  -x excl_GNSS    exclude GNSS (default: RSCJI)"
+    # echo "  -x excl_GNSS    exclude GNSS (default: RSCJI)"
     echo "  -r rnx3_dir     relative directory for RINEX v3.x output (default fp_dir)"
     echo "  -v              verbose output"
     exit 1
@@ -29,6 +29,8 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 MV=$(command -v mv)
+TOUCH=$(command -v touch)
+RM=$(command -v rm)
 
 # Add this section at the beginning of the script, right after the shebang
 if [ $# -eq 0 ]; then
@@ -36,8 +38,8 @@ if [ $# -eq 0 ]; then
 fi
 
 if [ $? -ne 0 ]; then
-  echo "getopt error"
-  exit 2
+    echo "getopt error"
+    exit 2
 fi
 
 eval set -- "${OPTIONS}"
@@ -71,7 +73,7 @@ trap cleanup EXIT INT TERM
 
 # set the default options
 RNX3_DIR="."
-EXCL_GNSS="RSCJI"
+EXCL_GNSS="SJI"
 
 # Define valid characters
 VALID_CHARS="GRECSJI"
@@ -112,10 +114,10 @@ while true; do
             RNX3_DIR="$2"
             shift 2
             ;;
-        -x|--excl_GNSS)
-            EXCL_GNSS="$2"
-            shift 2
-            ;;
+        # -x|--excl_GNSS)
+        #     EXCL_GNSS="$2"
+        #     shift 2
+        #     ;;
         -v|--verbose)
             VERBOSE=true
             shift
@@ -209,20 +211,93 @@ ERR_CODE=$?
 
 if [ $ERR_CODE -eq 0 ]; then
     echo -e "Renaming ${BLUE}${RNX_OBS_FILE}${NC} to ${GREEN}${RX3_fn}${NC}"
+    # ${TOUCH} "${RX3_fn}"
+    echo "RNX3_DIR: "${RNX3_DIR}
     ${MV} "${RNX_OBS_FILE}" "${RNX3_DIR}/${RX3_fn}"
+    ${RM} "${RX3_fn}"
     ERR_CODE=$?
 fi
 
 # Re-enable exit on error
 set -e
 
+# combine the RINEX navigation files for the station and DOY and selected GNSS
+# Define GNSS system mappings
+declare -A GNSS_MAP=(
+    [G]="n"  # GPS
+    [R]="g"  # GLONASS (l for Legacy)
+    [E]="l"  # Galileo
+    [C]="c"  # BeiDou
+    [S]="s"  # SBAS
+    [J]="j"  # QZSS
+    [I]="i"  # IRNSS/NavIC
+)
+
+# Validation function using the mapping
+validate_excl_gnss() {
+    local input=$1
+    for (( i=0; i<${#input}; i++ )); do
+        char="${input:$i:1}"
+        if [[ ! ${GNSS_MAP[$char]+_} ]]; then
+            echo -e "${RED}Error: Invalid character '$char'. Valid characters are: ${!GNSS_MAP[*]}${NC}"
+            return 1
+        fi
+    done
+    return 0
+}
+
+# Get non-excluded systems
+get_included_systems() {
+    local excluded="$1"
+    local included=""
+    
+    for sys in "${!GNSS_MAP[@]}"; do
+        if [[ ! $excluded =~ $sys ]]; then
+            included+="${GNSS_MAP[$sys]}"
+        fi
+    done
+    echo "$included"
+}
+
+# Usage example
+GNSS_NAV_EXT=$(get_included_systems "$EXCL_GNSS")
+echo "Included GNSS systems (navigation files): ${GNSS_NAV_EXT}"
+
+# Temporarily disable exit on error
+set +e
+
+# Get the list of RINEX navigation files for the station and DOY
+# Initialize array if not already done
+RINEX_NAV_FILES=()
+for (( i=0; i<${#GNSS_NAV_EXT}; i++ )); do
+    nav_type="${GNSS_NAV_EXT:$i:1}"
+    # echo "nav_type: ${nav_type} | ${STATION}${DOY}0.${YEAR}${nav_type}"
+    # RINEX_NAV_FILES=$(find . -maxdepth 1 -type f -name "${STATION}${DOY}0.${YEAR}${nav_type}")
+    RINEX_NAV_FILES+=("${STATION}${DOY}0.${YEAR}${nav_type}")
+done
+echo -e "Combining RINEX navigation files: ${BLUE}${RINEX_NAV_FILES[*]}${NC}"
+ERR_CODE=0
+
+if [ ${ERR_CODE} -eq 0 ]; then
+    # Combine the RINEX navigation files
+    echo "Running "${GFZRNX_EXEC}" -finp "${RINEX_NAV_FILES[@]}" -no_nav_stk -fout ::RX3::00,BEL -version_out 3.04 2> /tmp/gfzrnx.log"
+    ${GFZRNX_EXEC} -finp ${RINEX_NAV_FILES[@]} -no_nav_stk -fout ::RX3::00,BEL -version_out 3.04 2> /tmp/gfzrnx.log
+    ERR_CODE=$?
+fi
+
+# Re-enable exit on error
+set -e
+
+if [ $ERR_CODE -le 1 ]; then
+    latest_rnx=$(ls -t *.rnx | head -n1)
+    echo -e "Combined ${BLUE}${RINEX_NAV_FILES[*]}${NC} to ${GREEN}${latest_rnx}${NC}"
+    ${MV} "${latest_rnx}" "${RNX3_DIR}/${latest_rnx}"
+    ERR_CODE=$?
+fi
+
+# Check if the conversion was successful and perform cleanup
 if [ ${ERR_CODE} -eq 0 ]; then
     CONVERSION_SUCCESS=true
 else
     CONVERSION_SUCCESS=false
 fi
-
-
-# # exit 9
-# # gfzrnx -finp `ls -1 BERT3610.24[lngc]` -fout ::RX3::00,BEL -f
-# # gfzrnx -finp BERT3610.24o -fout ::RX3::00,BEL
