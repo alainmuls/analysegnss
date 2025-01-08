@@ -260,8 +260,8 @@ def get_ebh_timings(parsed_args: argparse.Namespace, logger:Logger) -> None:
     return ebh_timings
 
 
-if __name__ == "__main__":
-    
+def main():
+        
     # fetch script name for logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
     # Parse arguments
@@ -272,3 +272,6 @@ if __name__ == "__main__":
     )
     
     get_ebh_timings(parsed_args=parsed_args, logger=logger)
+
+if __name__ == "__main__":
+    main()

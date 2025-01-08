@@ -84,7 +84,7 @@ def get_base_coord_from_sbf(parsed_args: argparse.Namespace, logger: Logger) -> 
     return base_coord
 
 
-if __name__ == "__main__":
+def main():
 
     # fetch script name for logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
@@ -96,3 +96,6 @@ if __name__ == "__main__":
     )
 
     get_base_coord_from_sbf(parsed_args=parsed_args, logger=logger)
+
+if __name__ == "__main__":
+    main()

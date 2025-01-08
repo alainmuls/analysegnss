@@ -470,8 +470,7 @@ def do_ppk_by_decision(
     return ppk_pos_ofn
 
 
-if __name__ == "__main__":
-
+def main():
     # get the name of this script for naming the logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
@@ -486,3 +485,7 @@ if __name__ == "__main__":
     logger.info(f"Parsed arguments: {parsed_args}")
 
     ebh_process_launcher(parsed_args=parsed_args, logger=logger)
+
+if __name__ == "__main__":
+
+    main()

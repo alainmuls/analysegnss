@@ -94,9 +94,13 @@ def rtk_pvtgeod(argv: list) -> pl.DataFrame:
     return df_geod
 
 
-if __name__ == "__main__":
+def main():
+    
     geod_df = rtk_pvtgeod(argv=sys.argv)
 
     if geod_df is not None:
         with pl.Config(tbl_cols=-1):
-            print(geod_df)
+            print(geod_df)  
+
+if __name__ == "__main__":
+    main()

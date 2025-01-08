@@ -524,10 +524,8 @@ def ebhppk_to_csv(rtk_df: pl.dataframe, rtk_fn: str, dest_dir: str, logger: Logg
     """
 
 
-
-
-if __name__ == "__main__":
-
+def main():    
+    
     # fetch script name for logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
@@ -540,3 +538,7 @@ if __name__ == "__main__":
     logger.info(f"Parsed arguments: {parsed_args}")
 
     ebh_lines(parsed_args=parsed_args, logger=logger)
+
+
+if __name__ == "__main__":
+    main()

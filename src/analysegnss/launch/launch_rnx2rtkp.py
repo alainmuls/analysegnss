@@ -140,7 +140,7 @@ def rnx2rtkp_ppk(
     return pos_ofn
 
 
-if __name__ == "__main__":
+def main():
 
     # get the name of this script for naming the logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
@@ -154,3 +154,8 @@ if __name__ == "__main__":
     logger.debug(f"Parsed arguments: {parsed_args}")
 
     rnx2rtkp_ppk(parsed_args=parsed_args, logger=logger)
+
+
+if __name__ == "__main__":
+
+    main()

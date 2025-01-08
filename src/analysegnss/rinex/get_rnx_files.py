@@ -86,7 +86,7 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> str:
 
     return rnx_odir
 
-if __name__ == "__main__":
+def main():
 
     # make script standalone
 
@@ -101,3 +101,6 @@ if __name__ == "__main__":
 
     get_rnx_frm_sbf(parsed_args=parsed_args, logger=logger)
 
+if __name__ == "__main__":
+
+    main()

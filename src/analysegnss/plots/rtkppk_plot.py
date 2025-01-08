@@ -90,6 +90,8 @@ def rtkppk_plot(argv: list):
             logger=logger,
         )
 
+def main():
+    rtkppk_plot(argv=sys.argv)
 
 if __name__ == "__main__":
-    df_rtkpos = rtkppk_plot(argv=sys.argv)  # type: ignore
+    main()

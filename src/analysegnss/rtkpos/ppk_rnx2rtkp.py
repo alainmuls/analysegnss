@@ -91,7 +91,12 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
     return pos_df
 
 
-if __name__ == "__main__":
+def main():
+    
     df_rtkpos = rtkp_pos(argv=sys.argv)
     with pl.Config(tbl_cols=-1):
         print(df_rtkpos)
+
+
+if __name__ == "__main__":
+    main()
