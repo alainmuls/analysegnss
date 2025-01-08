@@ -243,10 +243,36 @@ class RINEX_OBS(RINEX):
                                 "PRN": df["PRN"].str.extract(r"(\d+)").cast(pl.Int16),
                                 "cfreq": f"L{freq}",
                                 "sigt": f"{freq}{sigt}",
-                                "C": df[f"C{freq}{sigt}"],
-                                "L": df[f"L{freq}{sigt}"],
-                                "D": df[f"D{freq}{sigt}"],
-                                "S": df[f"S{freq}{sigt}"].cast(pl.Float32),
+                                # "C": df[f"C{freq}{sigt}"],
+                                # "L": df[f"L{freq}{sigt}"],
+                                # "D": df[f"D{freq}{sigt}"],
+                                # "S": df[f"S{freq}{sigt}"].cast(pl.Float32),
+                                # "C": df(f"C{freq}{sigt}", pl.Series([None] * len(df))),
+                                # "L": df(f"L{freq}{sigt}", pl.Series([None] * len(df))),
+                                # "D": df(f"D{freq}{sigt}", pl.Series([None] * len(df))),
+                                # "S": df(
+                                #     f"S{freq}{sigt}", pl.Series([None] * len(df))
+                                #                         ).cast(pl.Float32),
+                                "C": (
+                                    pl.Series([None] * len(df))
+                                    if f"C{freq}{sigt}" not in df.columns
+                                    else df[f"C{freq}{sigt}"]
+                                ),
+                                "L": (
+                                    pl.Series([None] * len(df))
+                                    if f"L{freq}{sigt}" not in df.columns
+                                    else df[f"L{freq}{sigt}"]
+                                ),
+                                "D": (
+                                    pl.Series([None] * len(df))
+                                    if f"D{freq}{sigt}" not in df.columns
+                                    else df[f"D{freq}{sigt}"]
+                                ),
+                                "S": (
+                                    pl.Series([None] * len(df))
+                                    if f"S{freq}{sigt}" not in df.columns
+                                    else df[f"S{freq}{sigt}"]
+                                ).cast(pl.Float32),
                             }
                         )
                         .lazy()
