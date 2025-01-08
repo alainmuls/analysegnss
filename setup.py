@@ -14,6 +14,7 @@ setup(
             "rnxnav_csv=analysegnss.rinex.rnxnav_csv:main",
             "ebh_lines=analysegnss.scripts.ebh.ebh_lines:main",
             "glab_parser=analysegnss.glabng.glab_parser:main",
+            "cn0_daily=analysegnss.analyse.cn0_daily:main",
         ]
     },
 )

@@ -302,7 +302,7 @@ def argument_parser_ebh_lines(script_name: str, args: list) -> argparse.Namespac
 
 #     parser.add_argument(
 #         "--gnss",
-#         help="GNSS systems to convert (default: GE, select between G, R, E, C)",
+#         help="GNSS systems to convert (default: GE, select between GREC)",
 #         type=str,
 #         required=False,
 #         default="GE",
@@ -360,7 +360,7 @@ def argument_parser_rnxobs_csv(script_name: str, args: list) -> argparse.Namespa
 
     parser.add_argument(
         "--gnss",
-        help="GNSS systems to convert (default: GE, select between G, R, E, C)",
+        help="GNSS systems to convert (default: GE, select between GREC)",
         type=str,
         required=False,
         default="GE",
@@ -410,7 +410,7 @@ def argument_parser_rnxnav_csv(script_name: str, args: list) -> argparse.Namespa
 
     parser.add_argument(
         "--gnss",
-        help="GNSS systems to convert (default: GE, select between G, R, E, C)",
+        help="GNSS systems to convert (default: GE, select between GREC)",
         type=str,
         required=False,
         default="GE",
@@ -468,7 +468,7 @@ def argument_parser_rnx_csv(script_name: str, args: list) -> argparse.Namespace:
 
     parser.add_argument(
         "--gnss",
-        help="GNSS systems to convert (default: GE, select between G, R, E, C)",
+        help="GNSS systems to convert (default: GE, select between GREC)",
         type=str,
         required=False,
         default="GE",
@@ -519,6 +519,67 @@ def argument_parser_glab_parser(script_name: str, args: list) -> argparse.Namesp
         help="Comma-separated gLAB sections to parse (default: OUTPUT) (e.g. OUTPUT,SATSEL,INFO)",
         required=False,
         default="OUTPUT",
+    )
+
+    # allow argument completion
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args(args)
+
+    return args
+
+
+def argument_parser_cn0_daily(script_name: str, args: list) -> argparse.Namespace:
+    """parses the arguments for cn0_analyse
+    Args:
+        argv (list): list of arguments
+    Returns:
+        argparse.Namespace: parsed arguments
+    """
+    baseName = str_yellow(script_name)
+
+    help_txt = baseName + " analyses the CN0 values from a CSV observation file."
+
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_txt)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+    )
+
+    parser.add_argument(
+        "--obs_fn",
+        help="CSV observation file",
+        type=str,
+        required=True,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--gnss",
+        help="GNSS systems (select one of GREC)",
+        type=str,
+        required=True,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--sigtype",
+        help="signal type (e.g. 1C, 2W, ...)",
+        type=str,
+        required=True,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--interval",
+        help="interval in seconds (default=10s, can be fractional)",
+        type=float,
+        required=False,
+        default=10.0,
     )
 
     # allow argument completion
