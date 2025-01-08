@@ -25,7 +25,9 @@ def rnxobs_csv(argv: list):
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    args_parsed = argument_parser.argument_parser_rnxobs_csv(args=argv[1:])
+    args_parsed = argument_parser.argument_parser_rnxobs_csv(
+        args=argv[1:], script_name=os.path.basename(__file__)
+    )
 
     # create the file/console logger
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)

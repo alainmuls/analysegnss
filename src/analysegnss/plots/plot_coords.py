@@ -50,7 +50,9 @@ def plot_coords(argv: list):
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    args_parsed = argument_parser.argument_parser_plot_coords(args=argv[1:])
+    args_parsed = argument_parser.argument_parser_plot_coords(
+        args=argv[1:], script_name=os.path.basename(__file__)
+    )
     # print(f"\nParsed arguments: {args_parsed}")
 
     # create the file/console logger
