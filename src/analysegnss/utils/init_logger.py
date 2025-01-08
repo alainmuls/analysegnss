@@ -1,7 +1,7 @@
 import logging as logging
 from logging.handlers import TimedRotatingFileHandler
 import os
-from utils.utilities import str_green
+from analysegnss.utils.utilities import str_green
 from sys import stderr
 
 

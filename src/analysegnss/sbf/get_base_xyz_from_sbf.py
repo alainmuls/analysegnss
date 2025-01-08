@@ -7,9 +7,9 @@ import polars as pl
 import sys
 from logging import Logger
 
-from gnss import gnss_dt
-from sbf.sbf_class import SBF
-from utils import argument_parser, init_logger, utilities
+from analysegnss.gnss import gnss_dt
+from analysegnss.sbf.sbf_class import SBF
+from analysegnss.utils import argument_parser, init_logger, utilities
 
 
 def get_base_coord_from_sbf(parsed_args: argparse.Namespace, logger: Logger) -> tuple:

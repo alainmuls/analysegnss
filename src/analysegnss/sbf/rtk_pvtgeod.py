@@ -8,10 +8,10 @@ from tabulate import tabulate
 from logging import Logger
 
 # import globalvars
-from sbf import sbf_constants as sbfc
-from sbf.sbf_class import SBF
-from utils import argument_parser, init_logger
-from config import ERROR_CODES
+from analysegnss.sbf import sbf_constants as sbfc
+from analysegnss.sbf.sbf_class import SBF
+from analysegnss.utils import argument_parser, init_logger
+from analysegnss.config import ERROR_CODES
 
 
 def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:

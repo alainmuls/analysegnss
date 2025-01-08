@@ -3,7 +3,7 @@ import os
 
 import argcomplete
 
-from utils.utilities import str_yellow
+from analysegnss.utils.utilities import str_yellow
 
 
 def argument_parser_rtk(args: list) -> argparse.Namespace:

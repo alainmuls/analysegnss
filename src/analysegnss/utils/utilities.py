@@ -9,7 +9,8 @@ from datetime import date, datetime, timedelta
 
 import numpy as np
 from termcolor import colored
-from config import ERROR_CODES
+
+from analysegnss.config import ERROR_CODES
 
 __author__ = "amuls"
 

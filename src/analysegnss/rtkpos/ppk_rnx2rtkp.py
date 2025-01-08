@@ -9,10 +9,10 @@ import polars as pl
 from tabulate import tabulate
 
 # import globalvars
-from plots import plot_utm
-from rtkpos import rtk_constants as rtkc
-from rtkpos.rtkpos_class import Rtkpos
-from utils import argument_parser, init_logger
+from analysegnss.plots import plot_utm
+from analysegnss.rtkpos import rtk_constants as rtkc
+from analysegnss.rtkpos.rtkpos_class import Rtkpos
+from analysegnss.utils import argument_parser, init_logger
 
 
 def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> list:

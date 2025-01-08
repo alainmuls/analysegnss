@@ -8,9 +8,9 @@ import polars as pl
 from datetime import datetime
 import re
 
-from gnss import gnss_dt
-from sbf.sbf_class import SBF
-from utils import argument_parser, init_logger, utilities
+from analysegnss.gnss import gnss_dt
+from analysegnss.sbf.sbf_class import SBF
+from analysegnss.utils import argument_parser, init_logger, utilities
 
 
 def get_SBFcomments(parsed_args: argparse.Namespace, logger: Logger) -> pl.DataFrame:

@@ -5,11 +5,11 @@ import sys
 
 import polars as pl
 
-import ppk_rnx2rtkp
-import rtk_pvtgeod
-from config import ERROR_CODES
-from plots import plot_utm
-from utils import argument_parser, init_logger
+import analysegnss.rtkpos.ppk_rnx2rtkp
+import analysegnss.sbf.rtk_pvtgeod
+from analysegnss.config import ERROR_CODES
+from analysegnss.plots import plot_utm
+from analysegnss.utils import argument_parser, init_logger
 
 #TODO split function. If extracted rtk/ppk dataframe/csv already exist there is no need to redo calculation
 def rtkppk_plot(argv: list):

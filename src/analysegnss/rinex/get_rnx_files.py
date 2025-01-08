@@ -7,7 +7,7 @@ import glob
 from logging import Logger
 import subprocess
 
-from utils import argument_parser, init_logger, utilities
+from analysegnss.utils import argument_parser, init_logger, utilities
 
 
 

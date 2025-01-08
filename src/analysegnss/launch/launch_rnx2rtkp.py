@@ -2,16 +2,16 @@
 
 import argparse
 import datetime
+import logging
 import os
 import polars as pl
 import sys
 import subprocess
 
-from config import ERROR_CODES
-from gnss import gnss_dt
-import logging
-from sbf.sbf_class import SBF
-from utils import argument_parser, init_logger, utilities
+from analysegnss.config import ERROR_CODES
+from analysegnss.gnss import gnss_dt
+from analysegnss.sbf.sbf_class import SBF
+from analysegnss.utils import argument_parser, init_logger, utilities
 
 
 def rnx2rtkp_ppk(

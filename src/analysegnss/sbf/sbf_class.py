@@ -12,10 +12,10 @@ import numpy as np
 import polars as pl
 import utm
 
-from config import ERROR_CODES
-from gnss.gnss_dt import gpsms2dt
-from sbf import sbf_constants as sbfc
-from utils.utilities import locate, str_red, str_yellow
+from analysegnss.config import ERROR_CODES
+from analysegnss.gnss.gnss_dt import gpsms2dt
+from analysegnss.sbf import sbf_constants as sbfc
+from analysegnss.utils.utilities import locate, str_red, str_yellow
 
 
 @dataclass
