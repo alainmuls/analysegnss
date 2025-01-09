@@ -51,11 +51,12 @@ ERROR_CODES = {
     "E_SBF_OBJECT": 45,
     "E_NO_RINEX_OBS": 46,
     "E_NO_RINEX_NAV": 47,
+    "E_SIGNALTYPE_MISMATCH": 48,
     "E_PROCESS": 90,
     "E_FAILURE": 99,
 }
 
-GNSS_DICT = {
+DICT_GNSS = {
     "G": "GPS",
     "R": "Glonass",
     "E": "Galileo",
@@ -63,4 +64,60 @@ GNSS_DICT = {
     # "S": "SBAS",
     # "I": "IRNSS",
     # "Z": "QZSS",
+}
+
+
+DICT_SIGNAL_TYPES = {
+    0: {"type": "L1CA", "gnss": "GPS", "freq": 1575.42e3, "code": "1C"},
+    1: {"type": "L1P", "gnss": "GPS", "freq": 1575.42e3, "code": "1W"},
+    2: {"type": "L2P", "gnss": "GPS", "freq": 1227.60e3, "code": "2W"},
+    3: {"type": "L2C", "gnss": "GPS", "freq": 1227.60e3, "code": "2L"},
+    4: {"type": "L5", "gnss": "GPS", "freq": 1176.45e3, "code": "5Q"},
+    5: {"type": "L1C", "gnss": "GPS", "freq": 1575.42e3, "code": "1L"},
+    6: {"type": "L1CA", "gnss": "QZSS", "freq": 1575.42e3, "code": "1C"},
+    7: {"type": "L2C", "gnss": "QZSS", "freq": 1227.60e3, "code": "2L"},
+    8: {
+        "type": "L1CA",
+        "gnss": "GLONASS",
+        "freq": "1602.00E3+(FreqNr-8)*9/16",
+        "code": "1C",
+    },
+    9: {
+        "type": "L1P",
+        "gnss": "GLONASS",
+        "freq": "1602.00E3+(FreqNr-8)*9/16",
+        "code": "1P",
+    },
+    10: {
+        "type": "L2P",
+        "gnss": "GLONASS",
+        "freq": "1246.00E3+(FreqNr-8)*7/16",
+        "code": "2P",
+    },
+    11: {
+        "type": "L2CA",
+        "gnss": "GLONASS",
+        "freq": "1246.00E3+(FreqNr-8)*7/16",
+        "code": "2C",
+    },
+    12: {"type": "L3", "gnss": "GLONASS", "freq": 1202.025e3, "code": "3Q"},
+    13: {"type": "B1C", "gnss": "BeiDou", "freq": 1575.42e3, "code": "1P"},
+    14: {"type": "B2a", "gnss": "BeiDou", "freq": 1176.45e3, "code": "5P"},
+    15: {"type": "L5", "gnss": "NavIC/IRNSS", "freq": 1176.45e3, "code": "5A"},
+    17: {"type": "E1 (L1BC)", "gnss": "Galileo", "freq": 1575.42e3, "code": "1C"},
+    19: {"type": "E3 (E3BC)", "gnss": "Galileo", "freq": 1278.75e3, "code": "6C"},
+    20: {"type": "E5a", "gnss": "Galileo", "freq": 1176.45e3, "code": "5Q"},
+    21: {"type": "E5b", "gnss": "Galileo", "freq": 1207.14e3, "code": "7Q"},
+    22: {"type": "E5 AltBoc", "gnss": "Galileo", "freq": 1191.795e3, "code": "8Q"},
+    23: {"type": "LBand", "gnss": "MSS", "freq": "L-bandE3 beam speciﬁc", "code": "NA"},
+    24: {"type": "L1CA", "gnss": "SBAS", "freq": 1575.42e3, "code": "1C"},
+    25: {"type": "L5", "gnss": "SBAS", "freq": 1176.45e3, "code": "5I"},
+    26: {"type": "L5", "gnss": "QZSS", "freq": 1176.45e3, "code": "5Q"},
+    27: {"type": "L6", "gnss": "QZSS", "freq": 1278.7528e3, "code": ""},
+    28: {"type": "B1I", "gnss": "BeiDou", "freq": 1561.098e3, "code": "2I"},
+    29: {"type": "B2I", "gnss": "BeiDou", "freq": 1207.14e3, "code": "7I"},
+    30: {"type": "B3I", "gnss": "BeiDou", "freq": 1268.52e3, "code": "6I"},
+    32: {"type": "L1C", "gnss": "QZSS", "freq": 1575.42e3, "code": "1L"},
+    33: {"type": "L1S", "gnss": "QZSS", "freq": 1575.42e3, "code": "1Z"},
+    34: {"type": "B2b", "gnss": "BeiDou", "freq": 1207.14e3, "code": "7D"},
 }
