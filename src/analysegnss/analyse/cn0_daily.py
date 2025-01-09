@@ -15,10 +15,10 @@ import sys
 import polars as pl
 from rich import print
 
-from analysegnss.config import ERROR_CODES, GNSS_DICT, rich_console
+from analysegnss.config import ERROR_CODES, DICT_GNSS, rich_console
 from analysegnss.CSV.CSV_class import GNSS_CSV
 from analysegnss.utils import argument_parser, init_logger
-from analysegnss.utils.utilities import str_green, str_yellow
+from analysegnss.utils.utilities import str_red
 
 
 def cn0_analyse(argv: list):
@@ -35,20 +35,31 @@ def cn0_analyse(argv: list):
     args_parsed = argument_parser.argument_parser_cn0_daily(
         args=argv[1:], script_name=os.path.basename(__file__)
     )
-    print(args_parsed)
+    # print(args_parsed)
 
     # create the file/console logger
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
     logger.info(f"Parsed arguments: {args_parsed}")
 
     # create the CSV_OBS object
-    cvs_obs = GNSS_CSV(
-        csv_fn=args_parsed.obs_fn,
-        GNSS=args_parsed.gnss,
-        interval=args_parsed.interval,
-        logger=logger,
-    )
-    print(cvs_obs)
+    try:
+        cvs_obs = GNSS_CSV(
+            csv_fn=args_parsed.obs_fn,
+            GNSS=args_parsed.gnss,
+            interval=args_parsed.interval,
+            signal_type=args_parsed.sigtype,
+            logger=logger,
+        )
+    except ValueError as e:
+        logger.error(f"Error: {str_red(e)}")
+        sys.exit(ERROR_CODES["E_SIGNALTYPE_MISMATCH"])
+
+    print(f"cvs_obs = {cvs_obs}")
+
+    # read the CSV file in a polars DataFrame
+    df_cn0 = cvs_obs.csv_df()
+    with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
+        print(f"df_cn0 = {df_cn0}")
 
 
 def main():

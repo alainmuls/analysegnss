@@ -1,20 +1,14 @@
-import datetime
-import glob
 import logging
 import os
-import subprocess
 import sys
 from dataclasses import dataclass, field
 
-import numpy as np
 import polars as pl
-import utm
 from rich import print
 
-from analysegnss.config import ERROR_CODES, GNSS_DICT, rich_console
-from analysegnss.gnss.gnss_dt import gpsms2dt
-from analysegnss.sbf import sbf_constants as sbfc
-from analysegnss.utils.utilities import locate, str_red, str_yellow
+from analysegnss.config import ERROR_CODES, DICT_GNSS, rich_console, DICT_SIGNAL_TYPES
+
+from analysegnss.utils.utilities import str_red
 
 
 @dataclass
@@ -24,10 +18,10 @@ class GNSS_CSV:
     # end_time: datetime.time = field(default=None)
     GNSS: str = field(default="G")
     interval: float = field(default=10.0)
+    signal_type: str = field(default="1C")
 
     logger: logging.Logger = field(default=None)
     _console_loglevel: int = field(default=logging.ERROR)
-    # rich_console: Console = field(default=console)
 
     def __post_init__(self):
         self.validate_file()
@@ -35,6 +29,7 @@ class GNSS_CSV:
         # self.validate_end_time()
         self.validate_gnss()
         self.validate_interval()
+        self.validate_signal_type()
         self.validate_logger_level()
 
     def validate_file(self):
@@ -112,18 +107,18 @@ class GNSS_CSV:
             ValueError: when GNSS system is not in the list of GNSS systems (GREC)
         """
         # check whether the selected GNSS system is in the list of GNSS systems (GREC, or GNSS_DICT)
-        if self.GNSS not in GNSS_DICT.keys():
+        if self.GNSS not in DICT_GNSS.keys():
             if self.logger:
                 self.logger.error(
-                    f"Invalid GNSS system {self.GNSS}: not in {GNSS_DICT.keys()}."
+                    f"Invalid GNSS system {self.GNSS}: not in {''.join(DICT_GNSS.keys())}."
                 )
             raise ValueError(
-                f"Invalid GNSS system {self.GNSS}: not in {GNSS_DICT.keys()}."
+                f"Invalid GNSS system {self.GNSS}: not in {''.join(DICT_GNSS.keys())}."
             )
         else:
             if self.logger:
                 self.logger.info(
-                    f"GNSS system {GNSS_DICT[self.GNSS]} ({self.GNSS}) validated successfully."
+                    f"GNSS system {DICT_GNSS[self.GNSS]} ({self.GNSS}) validated successfully."
                 )
 
     def validate_interval(self):
@@ -132,7 +127,7 @@ class GNSS_CSV:
         If `interval` is not one of 0.1, 0.2 0.5, 1, 2, 5, 10, ...
         it logs an error message and raises a `ValueError`.
         """
-        VALID_SEQUENCE = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 300]
+        VALID_SEQUENCE = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 30, 60, 300]
 
         if not self.interval in VALID_SEQUENCE:
             if self.logger:
@@ -145,6 +140,39 @@ class GNSS_CSV:
         else:
             if self.logger:
                 self.logger.info(f"Interval {self.interval} validated successfully.")
+
+    def validate_signal_type(self):
+        """
+        Validates the `signal_type` attribute  against the list of valid signal types
+        in DICT_SIGNAL_TYPES
+        """
+        # get the name of the GNSS system from DICT_GNSS
+        self._gnss_name = DICT_GNSS[self.GNSS]
+
+        # get from the DICT_SIGNAL_TYPES the list of valid signal types which
+        # are in the "code" field for selected GNSS system
+        valid_signal_types = [
+            DICT_SIGNAL_TYPES[key]["code"]
+            for key in DICT_SIGNAL_TYPES.keys()
+            if not key in [23, 27] and DICT_SIGNAL_TYPES[key]["gnss"] == self._gnss_name
+        ]
+        print(f"valid_signal_types: {valid_signal_types}")
+
+        # check whether the selected signal type is in the list of valid signal types
+        if self.signal_type not in valid_signal_types:
+            if self.logger:
+                self.logger.error(
+                    f"Invalid signal type {self.signal_type}: not in {valid_signal_types}."
+                )
+            raise ValueError(
+                f"Invalid signal type {self.signal_type}: not in {valid_signal_types}"
+                f" for {self._gnss_name}."
+            )
+        else:
+            if self.logger:
+                self.logger.info(
+                    f"Signal type {self.signal_type} validated successfully."
+                )
 
     def validate_logger_level(self):
         if self.logger is not None:
@@ -161,3 +189,42 @@ class GNSS_CSV:
                 "Console log level set to "
                 + f"{str_red(logging.getLevelName(self._console_loglevel))}"
             )
+
+    def read_csv(self):
+        """
+        Reads the CSV file and returns a DataFrame.
+        """
+        if self.logger:
+            self.logger.info(f"Reading CSV file {self.csv_fn}")
+
+        with rich_console.status("Reading CSV file...", spinner="dots"):
+            df = pl.read_csv(self.csv_fn)
+
+    def csv_df(self):
+        """reads the CSV file and returns a polars DataFrame
+
+        It uses the information for the selected GNSS, signal type and interval
+        """
+        if self.logger:
+            self.logger.info(f"Reading CSV file {self.csv_fn}")
+
+        # Convert interval from seconds to milliseconds
+        interval_ms = self.interval * 1000
+        print(f"interval_ms: {interval_ms}")
+
+        with rich_console.status("Reading CSV file...", spinner="dots"):
+            # Start with lazy reading
+            self.csv_df = pl.scan_csv(self.csv_fn)
+
+            # Chain all operations in a lazy manner
+            self.csv_df = (
+                self.csv_df.filter(
+                    (pl.col("GNSS") == self.GNSS)
+                    & (pl.col("sigt") == self.signal_type)
+                    & (
+                        pl.col("TOW") % interval_ms == 0
+                    )  # Keep only rows that are exact multiples
+                )
+            ).collect()
+
+        return self.csv_df
