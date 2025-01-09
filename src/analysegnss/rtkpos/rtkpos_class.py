@@ -9,7 +9,7 @@ from typing import Tuple
 import polars as pl
 import utm
 
-from analysegnss.config import ERROR_CODES, GEOID_PATH
+from analysegnss.config import ERROR_CODES, GEOID_PATH, rich_console
 from analysegnss.gnss import geoid
 from analysegnss.gnss.gnss_dt import gpsms2dt
 from analysegnss.utils.utilities import str_red
@@ -266,115 +266,115 @@ class Rtkpos:
             pl.DataFrame: dataframe with added information
         """
 
-        # add date-time and PRN (as str) to the dataframe
-        if "WNc" in df_pos.columns and "TOW(s)" in df_pos.columns:
-            if self.logger is not None:
-                self.logger.info("\tadding datetime to the dataframe")
-            df_pos = df_pos.with_columns(
-                pl.struct(["WNc", "TOW(s)"])
-                .apply(
-                    lambda x: gpsms2dt(x["WNc"], x["TOW(s)"] * 1000),
-                    return_dtype=datetime.datetime,
-                )
-                .alias("DT")
-            ).lazy()
+        with rich_console.status("Collecting and adjusting data", spinner="point"):
 
-        # add UTM coordinates
-        if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
-            if self.logger is not None:
-                self.logger.info("\tadding UTM coordinates to the dataframe")
+            # add date-time and PRN (as str) to the dataframe
+            if "WNc" in df_pos.columns and "TOW(s)" in df_pos.columns:
+                if self.logger is not None:
+                    self.logger.info("\tadding datetime to the dataframe")
+                df_pos = df_pos.with_columns(
+                    pl.struct(["WNc", "TOW(s)"])
+                    .apply(
+                        lambda x: gpsms2dt(x["WNc"], x["TOW(s)"] * 1000),
+                        return_dtype=datetime.datetime,
+                    )
+                    .alias("DT")
+                ).lazy()
 
-            # Function to convert lat/lon in degrees to UTM
-            def latlon_to_utm(lat, lon):
-                easting, northing, _, _ = utm.from_latlon(lat, lon)
-                return {"easting": easting, "northing": northing}
+            # add UTM coordinates
+            if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
+                if self.logger is not None:
+                    self.logger.info("\tadding UTM coordinates to the dataframe")
 
-            # Apply the conversion function lazily using map_elements with specified return_dtype
-            df_pos = df_pos.with_columns(
-                pl.struct(["latitude(deg)", "longitude(deg)"])
-                .apply(
-                    lambda row: latlon_to_utm(
-                        row["latitude(deg)"], row["longitude(deg)"]
-                    ),
-                    return_dtype=pl.Struct(
-                        [
-                            pl.Field("easting", pl.Float64),
-                            pl.Field("northing", pl.Float64),
-                        ]
-                    ),
-                )
-                .alias("utm_coords")
-            ).lazy()
+                # Function to convert lat/lon in degrees to UTM
+                def latlon_to_utm(lat, lon):
+                    easting, northing, _, _ = utm.from_latlon(lat, lon)
+                    return {"easting": easting, "northing": northing}
 
-            # Extract the UTM.East and UTM.North from the computed struct
-            df_pos = df_pos.with_columns(
-                [
-                    pl.col("utm_coords").struct.field("easting").alias("UTM.E"),
-                    pl.col("utm_coords").struct.field("northing").alias("UTM.N"),
-                ]
-            ).lazy()
+                # Apply the conversion function lazily using map_elements with specified return_dtype
+                df_pos = df_pos.with_columns(
+                    pl.struct(["latitude(deg)", "longitude(deg)"])
+                    .apply(
+                        lambda row: latlon_to_utm(
+                            row["latitude(deg)"], row["longitude(deg)"]
+                        ),
+                        return_dtype=pl.Struct(
+                            [
+                                pl.Field("easting", pl.Float64),
+                                pl.Field("northing", pl.Float64),
+                            ]
+                        ),
+                    )
+                    .alias("utm_coords")
+                ).lazy()
 
-            # Drop intermediate columns
-            df_pos = df_pos.drop(["utm_coords"]).lazy()
+                # Extract the UTM.East and UTM.North from the computed struct
+                df_pos = df_pos.with_columns(
+                    [
+                        pl.col("utm_coords").struct.field("easting").alias("UTM.E"),
+                        pl.col("utm_coords").struct.field("northing").alias("UTM.N"),
+                    ]
+                ).lazy()
 
-        # add geoid undulation and orthometric height
-        if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
-            if self.logger is not None:
-                self.logger.info(
-                    "\tadding geoid undulation & orthometric height to the dataframe"
-                )
-            # initialise the geodheight class
-            """
-            Initializes a GeoidHeight object with the specified geoid model file.
-            
-            Args:
-                geoid_file (str): The path to the geoid model file (e.g. GEOID_PATH).
-            
-            Returns:
-                GeoidHeight: An instance of the GeoidHeight class initialized with the specified geoid model.
-            """
-            gh_model = geoid.GeoidHeight(GEOID_PATH)
+                # Drop intermediate columns
+                df_pos = df_pos.drop(["utm_coords"]).lazy()
 
-            df_pos = df_pos.with_columns(
-                pl.struct(["latitude(deg)", "longitude(deg)"])
-                .apply(
-                    lambda x: gh_model.get(
-                        x["latitude(deg)"], x["longitude(deg)"], gh_model
-                    ),
-                    return_dtype=pl.Float64,
-                )
-                .alias("undulation")
-            ).lazy()
+            # add geoid undulation and orthometric height
+            if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
+                if self.logger is not None:
+                    self.logger.info(
+                        "\tadding geoid undulation & orthometric height to the dataframe"
+                    )
+                # initialise the geodheight class
+                """
+                Initializes a GeoidHeight object with the specified geoid model file.
+                
+                Args:
+                    geoid_file (str): The path to the geoid model file (e.g. GEOID_PATH).
+                
+                Returns:
+                    GeoidHeight: An instance of the GeoidHeight class initialized with the specified geoid model.
+                """
+                gh_model = geoid.GeoidHeight(GEOID_PATH)
 
-            df_pos = df_pos.with_columns(
-                pl.struct(["height(m)", "undulation"])
-                .apply(
-                    lambda x: x["height(m)"] - x["undulation"], return_dtype=pl.Float64
-                )
-                .alias("orthoH")
-            ).lazy()
+                df_pos = df_pos.with_columns(
+                    pl.struct(["latitude(deg)", "longitude(deg)"])
+                    .apply(
+                        lambda x: gh_model.get(
+                            x["latitude(deg)"], x["longitude(deg)"], gh_model
+                        ),
+                        return_dtype=pl.Float64,
+                    )
+                    .alias("undulation")
+                ).lazy()
 
-        if self.logger is not None:
-            self.logger.info(f"\tcollecting the dataframe. {str_red('Be patient.')}")
+                df_pos = df_pos.with_columns(
+                    pl.struct(["height(m)", "undulation"])
+                    .apply(
+                        lambda x: x["height(m)"] - x["undulation"],
+                        return_dtype=pl.Float64,
+                    )
+                    .alias("orthoH")
+                ).lazy()
 
-        try:
-            df_pos = df_pos.collect()
-        except pl.exceptions.ComputeError as e:
-            sys.stderr.write(
-                f"""{str_red("""
-                \r[ERROR] Probably a dtype error.
-                \rCheck if RTKlib date time is set to WkNr/TOW and not HMS.
-                """)}
-            """
-            )
-            if self.logger is not None:
-                self.logger.error(
-                    f"""
-                    \r Error collecting dataframe: {e}\n
-                    \rProbably a dtype error.
+            try:
+                df_pos = df_pos.collect()
+            except pl.exceptions.ComputeError as e:
+                sys.stderr.write(
+                    f"""{str_red("""
+                    \r[ERROR] Probably a dtype error.
                     \rCheck if RTKlib date time is set to WkNr/TOW and not HMS.
+                    """)}
                 """
                 )
-            sys.exit(ERROR_CODES["E_FAILURE"])
+                if self.logger is not None:
+                    self.logger.error(
+                        f"""
+                        \r Error collecting dataframe: {e}\n
+                        \rProbably a dtype error.
+                        \rCheck if RTKlib date time is set to WkNr/TOW and not HMS.
+                    """
+                    )
+                sys.exit(ERROR_CODES["E_FAILURE"])
 
         return df_pos

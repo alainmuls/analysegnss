@@ -7,7 +7,7 @@ import sys
 import polars as pl
 from rich import print
 
-from analysegnss.config import ERROR_CODES, GNSS_DICT, console
+from analysegnss.config import ERROR_CODES, GNSS_DICT, rich_console
 from analysegnss.rinex.rinex_obs_class import RINEX_OBS
 from analysegnss.utils import argument_parser, init_logger
 from analysegnss.utils.utilities import str_green, str_yellow
@@ -38,7 +38,7 @@ def rnxobs_csv(argv: list):
             rnxobs_fn=args_parsed.obs_fn,
             gnss=args_parsed.gnss,
             logger=logger,
-            console=console,
+            # console=rich_console,
         )
     except Exception as e:
         if logger is not None:

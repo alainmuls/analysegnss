@@ -6,7 +6,7 @@ from io import StringIO
 import polars as pl
 from rich import print
 
-from analysegnss.config import GNSS_DICT
+from analysegnss.config import GNSS_DICT, rich_console
 from analysegnss.rinex.rinex_class import RINEX
 from analysegnss.utils.utilities import str_green
 
@@ -115,7 +115,7 @@ class RINEX_OBS(RINEX):
         # Run gfzrnx and capture output
         try:
             # add a spinner while waiting for the conversion to complete
-            with self.console.status(
+            with rich_console.status(
                 "Please wait - Loading observations...", spinner="point"
             ):
 
@@ -192,7 +192,7 @@ class RINEX_OBS(RINEX):
 
                 output_buffer.close()
 
-            self.console.print("\n")
+            rich_console.print("\n")
 
             return result_dfs
 
@@ -218,7 +218,7 @@ class RINEX_OBS(RINEX):
         csv_rows = []
 
         # add a spinner while waiting for the conversion to complete
-        with self.console.status(
+        with rich_console.status(
             "Please wait - converting to dataframe...", spinner="point"
         ):
             for gnss_type, df in result_dfs.items():

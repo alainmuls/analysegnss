@@ -11,7 +11,7 @@ import polars as pl
 import utm
 from rich import print
 
-from analysegnss.config import ERROR_CODES, console
+from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.gnss.gnss_dt import gpsms2dt
 from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.utils.utilities import locate, str_red, str_yellow
@@ -25,7 +25,7 @@ class SBF:
 
     logger: logging.Logger = field(default=None)
     _console_loglevel: int = field(default=logging.ERROR)
-    rich_console: Console = field(default=console)
+    # rich_console: Console = field(default=console)
 
     def __post_init__(self):
         self.validate_file()
@@ -158,20 +158,20 @@ class SBF:
         if self.logger:
             self.logger.debug(f"... running: {str_yellow(' '.join(cmd_bin2asc))}")
 
-        try:
-            with self.rich_console.status(
-                f"[bold green]Converting SBF ({lst_sbfblocks}) to CSV files...",
-                spinner="point",
-            ):
+        with rich_console.status(
+            f"[bold green]Converting SBF ({lst_sbfblocks}) to CSV files...",
+            spinner="point",
+        ):
+            try:
                 process = subprocess.run(cmd_bin2asc)
-        except Exception as e:
-            sys.stderr.write(f"{process} Error: {e}\n")
-            if self.logger:
-                self.logger.error(
-                    f"\t... subprocess {str_yellow(' '.join(cmd_bin2asc))} return exit code"
-                    f"\t... {str_red(e)}. Program exits."
-                )
-            sys.exit(ERROR_CODES["E_PROCESS"])
+            except Exception as e:
+                sys.stderr.write(f"{process} Error: {e}\n")
+                if self.logger:
+                    self.logger.error(
+                        f"\t... subprocess {str_yellow(' '.join(cmd_bin2asc))} return exit code"
+                        f"\t... {str_red(e)}. Program exits."
+                    )
+                sys.exit(ERROR_CODES["E_PROCESS"])
 
         # find created files
         bin2asc_fns = {}
@@ -192,7 +192,7 @@ class SBF:
             keep_cols = self.used_columns(sbf_block)
             # print(f"list(keep_cols.keys()) = \n{list(keep_cols.keys())}")
 
-            with self.rich_console.status(
+            with rich_console.status(
                 f"[bold green]Reading from CSV file ({sbf_block})...",
                 spinner="point",
             ):

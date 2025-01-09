@@ -5,7 +5,7 @@ from io import StringIO
 import polars as pl
 
 from analysegnss.rinex.rinex_class import RINEX
-from analysegnss.config import GNSS_DICT
+from analysegnss.config import GNSS_DICT, rich_console
 import analysegnss.rinex.rinex_column_names as rcn
 from analysegnss.utils.utilities import str_green, str_red, str_yellow
 
@@ -119,7 +119,7 @@ class RINEX_NAV(RINEX):
             if self.logger is not None:
                 self.logger.debug(f"Processing GNSS: {other_gnss}")
             # add a spinner while waiting for the conversion to complete
-            with self.console.status(
+            with rich_console.status(
                 "Please wait - Processing GNSS:...", spinner="point"
             ):
                 # process GEC systems without Glonass
@@ -129,7 +129,7 @@ class RINEX_NAV(RINEX):
                 gec_nav_dict = self._gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
                 gnss_nav_dict.update(gec_nav_dict)
 
-            self.console.print(f"GNSS {other_gnss} processed successfully.")
+            rich_console.print(f"GNSS {other_gnss} processed successfully.")
 
         # Add GLONASS separately if present
         if has_glonass:
@@ -143,7 +143,7 @@ class RINEX_NAV(RINEX):
             if self.logger is not None:
                 self.logger.debug("Processing GNSS: R")
             # add a spinner while waiting for the conversion to complete
-            with self.console.status(
+            with rich_console.status(
                 "Please wait - Processing GNSS R:...", spinner="point"
             ):
                 gfzrnx_args.extend(["-satsys", "R"])
@@ -151,7 +151,7 @@ class RINEX_NAV(RINEX):
                 # Process GLONASS separately
                 r_nav_dict = self._gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
                 gnss_nav_dict.update(r_nav_dict)
-            self.console.print(f"GNSS {has_glonass} processed successfully.")
+            rich_console.print(f"GNSS {has_glonass} processed successfully.")
 
         return gnss_nav_dict
 
