@@ -10,9 +10,8 @@ import numpy as np
 import polars as pl
 import utm
 from rich import print
-from rich.console import Console
 
-from analysegnss.config import ERROR_CODES
+from analysegnss.config import ERROR_CODES, console
 from analysegnss.gnss.gnss_dt import gpsms2dt
 from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.utils.utilities import locate, str_red, str_yellow
@@ -26,7 +25,7 @@ class SBF:
 
     logger: logging.Logger = field(default=None)
     _console_loglevel: int = field(default=logging.ERROR)
-    rich_console: Console = field(default=Console())
+    rich_console: Console = field(default=console)
 
     def __post_init__(self):
         self.validate_file()
@@ -150,10 +149,6 @@ class SBF:
         if self.end_time is not None:
             cmd_bin2asc.append("-e")
             cmd_bin2asc.append(self.end_time.strftime("%H:%M:%S"))
-
-        # # add logging level to cmd_bin2asc when self._console_loglevel is DEBUG
-        # if self._console_loglevel == logging.DEBUG:
-        #     cmd_bin2asc.append("-v")
 
         for sbf_block in lst_sbfblocks:
             cmd_bin2asc.append("-m")

@@ -10,9 +10,8 @@ import numpy as np
 import polars as pl
 import utm
 from rich import print
-from rich.console import Console
 
-from analysegnss.config import ERROR_CODES, GNSS_DICT
+from analysegnss.config import ERROR_CODES, GNSS_DICT, console
 from analysegnss.gnss.gnss_dt import gpsms2dt
 from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.utils.utilities import locate, str_red, str_yellow
@@ -28,7 +27,7 @@ class GNSS_CSV:
 
     logger: logging.Logger = field(default=None)
     _console_loglevel: int = field(default=logging.ERROR)
-    rich_console: Console = field(default=Console())
+    rich_console: Console = field(default=console)
 
     def __post_init__(self):
         self.validate_file()

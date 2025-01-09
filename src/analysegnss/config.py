@@ -1,4 +1,8 @@
 import os
+from rich.console import Console
+
+# console to use when an operation lasts some time to inform user
+console = Console()
 
 # Get the directory of the config file
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

@@ -13,10 +13,9 @@ import os
 import sys
 
 import polars as pl
-from rich.console import Console
 from rich import print
 
-from analysegnss.config import ERROR_CODES, GNSS_DICT
+from analysegnss.config import ERROR_CODES, GNSS_DICT, console
 from analysegnss.CSV.CSV_class import GNSS_CSV
 from analysegnss.utils import argument_parser, init_logger
 from analysegnss.utils.utilities import str_green, str_yellow
@@ -41,9 +40,6 @@ def cn0_analyse(argv: list):
     # create the file/console logger
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
     logger.info(f"Parsed arguments: {args_parsed}")
-
-    # create a console logger
-    console = Console()
 
     # create the CSV_OBS object
     cvs_obs = GNSS_CSV(

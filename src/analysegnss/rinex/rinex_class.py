@@ -4,9 +4,7 @@ import os
 import sys
 from dataclasses import dataclass, field
 
-from rich.console import Console
-
-from analysegnss.config import GNSS_DICT
+from analysegnss.config import GNSS_DICT, console
 from analysegnss.utils.utilities import locate, str_red
 
 
@@ -28,7 +26,7 @@ class RINEX:
     def __post_init__(self):
         # Add this at the start of post_init
         if self.console is None:
-            self.console = Console()
+            self.console = console
 
         self.validate_gnss()
         self.validate_start_time()
