@@ -7,7 +7,7 @@ import sys
 import polars as pl
 from rich import print
 
-from analysegnss.config import ERROR_CODES, GNSS_DICT, rich_console
+from analysegnss.config import ERROR_CODES, DICT_GNSS, rich_console
 from analysegnss.rinex.rinex_obs_class import RINEX_OBS
 from analysegnss.utils import argument_parser, init_logger
 from analysegnss.utils.utilities import str_green, str_yellow
@@ -51,7 +51,7 @@ def rnxobs_csv(argv: list):
     with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
         for gnss, tabobs_df in tabobs_dfs.items():
             logger.debug(
-                f"Converted RINEX observation file for {str_green(GNSS_DICT[gnss])} to tabular observation file: \n{tabobs_df}"
+                f"Converted RINEX observation file for {str_green(DICT_GNSS[gnss])} to tabular observation file: \n{tabobs_df}"
             )
 
     # convert the tabular observations to csv format like rtcm3_parser MSM5/7 does
@@ -75,7 +75,7 @@ def rnxobs_csv(argv: list):
         logger.warning(f"Saved CSV file: {str_green(csv_fn)}")
 
     if rnxobs._console_loglevel > logging.WARNING:
-        gnss_list = [GNSS_DICT[gnss] for gnss in args_parsed.gnss]
+        gnss_list = [DICT_GNSS[gnss] for gnss in args_parsed.gnss]
         print(f"Created for {gnss_list}: {csv_fn}")
 
 

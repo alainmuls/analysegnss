@@ -7,7 +7,7 @@ import sys
 import polars as pl
 from rich import print
 
-from analysegnss.config import ERROR_CODES, GNSS_DICT, rich_console
+from analysegnss.config import ERROR_CODES, DICT_GNSS, rich_console
 from analysegnss.rinex.rinex_nav_class import RINEX_NAV
 from analysegnss.utils import argument_parser, init_logger
 from analysegnss.utils.utilities import str_green, str_yellow
@@ -60,14 +60,14 @@ def rnxnav_csv(argv: list):
 
     # convert each GNSS / Navigation type dataframe to CSV file
     for (gnss, nav_type), nav_df in gnss_nav_dict.items():
-        csv_fn = f"{rnxnav_dir}/{os.path.basename(rnxnav_fn).split('.')[0]}_{GNSS_DICT[gnss]}_{nav_type}.csv"
+        csv_fn = f"{rnxnav_dir}/{os.path.basename(rnxnav_fn).split('.')[0]}_{DICT_GNSS[gnss]}_{nav_type}.csv"
         if logger:
             logger.warning(
-                f"Created for {str_green(GNSS_DICT[gnss])}-{str_green(nav_type)}: {str_yellow(csv_fn)}"
+                f"Created for {str_green(DICT_GNSS[gnss])}-{str_green(nav_type)}: {str_yellow(csv_fn)}"
             )
 
         if rnxnav._console_loglevel > logging.WARNING:
-            print(f"Created for {GNSS_DICT[gnss]}-{nav_type}: {csv_fn}")
+            print(f"Created for {DICT_GNSS[gnss]}-{nav_type}: {csv_fn}")
 
         nav_df.write_csv(
             csv_fn,

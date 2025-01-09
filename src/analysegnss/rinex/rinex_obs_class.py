@@ -6,7 +6,7 @@ from io import StringIO
 import polars as pl
 from rich import print
 
-from analysegnss.config import GNSS_DICT, rich_console
+from analysegnss.config import DICT_GNSS, rich_console
 from analysegnss.rinex.rinex_class import RINEX
 from analysegnss.utils.utilities import str_green
 
@@ -187,7 +187,7 @@ class RINEX_OBS(RINEX):
 
                         if self.logger:
                             self.logger.info(
-                                f"Created dataframe for system {str_green(GNSS_DICT[sys])} with {str_green(len(df))} observations"
+                                f"Created dataframe for system {str_green(DICT_GNSS[sys])} with {str_green(len(df))} observations"
                             )
 
                 output_buffer.close()

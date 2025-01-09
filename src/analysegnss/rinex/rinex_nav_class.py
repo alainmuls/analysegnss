@@ -5,7 +5,7 @@ from io import StringIO
 import polars as pl
 
 from analysegnss.rinex.rinex_class import RINEX
-from analysegnss.config import GNSS_DICT, rich_console
+from analysegnss.config import DICT_GNSS, rich_console
 import analysegnss.rinex.rinex_column_names as rcn
 from analysegnss.utils.utilities import str_green, str_red, str_yellow
 
@@ -268,7 +268,7 @@ class RINEX_NAV(RINEX):
                     tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
                 ):
                     self.logger.debug(
-                        f"tabnav_df[{str_green(GNSS_DICT[gnss])}, {str_green(nav_type)}] = \n{tabnav_df}"
+                        f"tabnav_df[{str_green(DICT_GNSS[gnss])}, {str_green(nav_type)}] = \n{tabnav_df}"
                     )
 
             # replace the tabnav_df on nav_dict after having renamed the columns

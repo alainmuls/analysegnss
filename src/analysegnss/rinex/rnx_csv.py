@@ -8,7 +8,7 @@ from rich import print
 
 import analysegnss.rinex.rnxnav_csv as rnxnav_csv
 import analysegnss.rinex.rnxobs_csv as rnxobs_csv
-from analysegnss.config import ERROR_CODES, GNSS_DICT
+from analysegnss.config import ERROR_CODES, DICT_GNSS
 from analysegnss.rinex.rinex_obs_class import RINEX_OBS
 from analysegnss.utils import argument_parser, init_logger
 

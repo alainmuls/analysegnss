@@ -4,7 +4,7 @@ import os
 import sys
 from dataclasses import dataclass, field
 
-from analysegnss.config import GNSS_DICT, rich_console
+from analysegnss.config import DICT_GNSS, rich_console
 from analysegnss.utils.utilities import locate, str_red
 
 
@@ -56,11 +56,11 @@ class RINEX:
         gnss_list = list(self.gnss.upper())
 
         # Check if each character is in GNSS_DICT
-        invalid_systems = [sys for sys in gnss_list if sys not in GNSS_DICT]
+        invalid_systems = [sys for sys in gnss_list if sys not in DICT_GNSS]
 
         if invalid_systems:
             error_msg = f"Invalid GNSS system(s): {','.join(invalid_systems)}. "
-            f"Valid systems are: {','.join(GNSS_DICT.keys())}"
+            f"Valid systems are: {','.join(DICT_GNSS.keys())}"
             if self.logger:
                 self.logger.error(error_msg)
             raise ValueError(error_msg)
