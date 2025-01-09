@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 import polars as pl
 from rich import print
 
-from analysegnss.config import ERROR_CODES, DICT_GNSS, rich_console, DICT_SIGNAL_TYPES
+from analysegnss.config import ERROR_CODES, DICT_GNSS, DICT_SIGNAL_TYPES
 
 from analysegnss.utils.utilities import str_red
 
@@ -14,6 +14,7 @@ from analysegnss.utils.utilities import str_red
 @dataclass
 class GNSS_CSV:
     csv_fn: str = field(default=None)
+    # csv_fns: list = field(default_factory=list)
     # start_time: datetime.time = field(default=None)
     # end_time: datetime.time = field(default=None)
     GNSS: str = field(default="G")
@@ -22,6 +23,7 @@ class GNSS_CSV:
 
     logger: logging.Logger = field(default=None)
     _console_loglevel: int = field(default=logging.ERROR)
+    _gnss_name: str = field(default=None)
 
     def __post_init__(self):
         self.validate_file()
@@ -156,16 +158,16 @@ class GNSS_CSV:
             for key in DICT_SIGNAL_TYPES.keys()
             if not key in [23, 27] and DICT_SIGNAL_TYPES[key]["gnss"] == self._gnss_name
         ]
-        print(f"valid_signal_types: {valid_signal_types}")
+        print(f"valid_signal_types[{self.GNSS}]: {valid_signal_types}")
 
         # check whether the selected signal type is in the list of valid signal types
         if self.signal_type not in valid_signal_types:
             if self.logger:
                 self.logger.error(
-                    f"Invalid signal type {self.signal_type}: not in {valid_signal_types}."
+                    f"Invalid signal type {self.signal_type} for {self._gnss_name}: not in {valid_signal_types}."
                 )
             raise ValueError(
-                f"Invalid signal type {self.signal_type}: not in {valid_signal_types}"
+                f"Invalid signal type {self.signal_type} for {self._gnss_name}: not in {valid_signal_types}"
                 f" for {self._gnss_name}."
             )
         else:
@@ -197,10 +199,9 @@ class GNSS_CSV:
         if self.logger:
             self.logger.info(f"Reading CSV file {self.csv_fn}")
 
-        with rich_console.status("Reading CSV file...", spinner="dots"):
-            df = pl.read_csv(self.csv_fn)
+        df = pl.read_csv(self.csv_fn)
 
-    def csv_df(self):
+    def csv_gnss_sigt_df(self):
         """reads the CSV file and returns a polars DataFrame
 
         It uses the information for the selected GNSS, signal type and interval
@@ -210,21 +211,33 @@ class GNSS_CSV:
 
         # Convert interval from seconds to milliseconds
         interval_ms = self.interval * 1000
-        print(f"interval_ms: {interval_ms}")
+        # print(f"interval_ms: {interval_ms}")
 
-        with rich_console.status("Reading CSV file...", spinner="dots"):
-            # Start with lazy reading
-            self.csv_df = pl.scan_csv(self.csv_fn)
+        # Start with lazy reading
+        csv_df = pl.scan_csv(self.csv_fn)
 
-            # Chain all operations in a lazy manner
-            self.csv_df = (
-                self.csv_df.filter(
-                    (pl.col("GNSS") == self.GNSS)
-                    & (pl.col("sigt") == self.signal_type)
-                    & (
-                        pl.col("TOW") % interval_ms == 0
-                    )  # Keep only rows that are exact multiples
-                )
-            ).collect()
+        # Chain all operations in a lazy manner
+        csv_df = csv_df.filter(
+            (pl.col("GNSS") == self.GNSS)
+            & (pl.col("sigt") == self.signal_type)
+            & (
+                pl.col("TOW") % interval_ms == 0
+            )  # Keep only rows that are exact multiples
+        )
 
-        return self.csv_df
+        return csv_df.collect()
+
+    # def process_multiple_days(
+    #     self, csv_files: list, output_file: str
+    # ):
+    #     # Process each file
+    #     results = []
+    #     for csv_file in csv_files:
+    #         daily_results = analyze_cn0_values(csv_file, gnss, signal)
+    #         results.append(daily_results)
+
+    #     # Combine all results
+    #     combined_df = pl.concat(results)
+
+    #     # Sort by epoch and save to file
+    #     combined_df.sort("epoch").write_csv(output_file)
