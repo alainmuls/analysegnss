@@ -1,5 +1,5 @@
 # Standard library imports
-import logging
+import logging as logging
 from logging.handlers import TimedRotatingFileHandler
 import os
 from sys import stderr

@@ -44,18 +44,20 @@ ERROR_CODES = {
     "E_FILE_NOT_READABLE": 42,
     "E_NO_QUAL": 43,
     "E_NO_SBF_BLOCK": 44,
-    "ERROR_SBF_OBJECT": 45,
+    "E_SBF_OBJECT": 45,
     "E_FILE_EMPTY": 46,
+    "E_NO_RINEX_OBS": 46,
+    "E_NO_RINEX_NAV": 47,
     "E_PROCESS": 90,
     "E_FAILURE": 99,
 }
 
 GNSS_DICT = {
     "G": "GPS",
-    "E": "Galileo",
     "R": "Glonass",
-    "B": "Beidou",
-    "S": "SBAS",
-    "I": "IRNSS",
-    "Z": "QZSS",
+    "E": "Galileo",
+    "C": "Beidou",
+    # "S": "SBAS",
+    # "I": "IRNSS",
+    # "Z": "QZSS",
 }

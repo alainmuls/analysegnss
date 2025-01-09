@@ -8,8 +8,9 @@ import shutil
 import subprocess
 import sys
 
-# Third-party imports
+# Third party imports
 import numpy as np
+import polars as pl
 from termcolor import colored
 
 # Local application imports
@@ -238,7 +239,7 @@ def locate(prog: str) -> str:
         sys.stderr.write(
             f"Executable {str_red(prog)} not found in path."
             f"\n\tplease install {str_red(prog)}\n\tor adjust"
-            f" your path:\n\t{str_red(os.environ['PATH'])}.\n"
+            f" your path:\n\t{os.environ['PATH']}.\n"
         )
         sys.exit(ERROR_CODES["E_MISSING_BIN"])
 
@@ -289,3 +290,22 @@ def bin_nibble(val):
     b = bin(val)[2:]
     new_b = "_".join([b[::-1][i : i + 4][::-1] for i in range(0, len(b), 4)][::-1])
     return "".join(["0"] * (4 - len(b) % 4 if len(b) % 4 != 0 else 0) + [new_b])
+
+
+def combine_dfs(dfs: dict) -> pl.DataFrame:
+    """Combines  related dataframes on DateTime column
+
+    Args:
+        dfs (dict): Dictionary of PVT dataframes
+
+    Returns:
+        pl.DataFrame: Combined dataframe with all PVT information
+    """
+    # Start with first dataframe
+    combined_df = list(dfs.values())[0]
+
+    # Join with remaining dataframes on DT column
+    for df in list(dfs.values())[1:]:
+        combined_df = combined_df.join(df, on="DT", how="outer")
+
+    return combined_df

@@ -3,7 +3,6 @@
 # Standard library imports
 import os
 import sys
-from logging import Logger
 
 # Third-party imports
 import polars as pl
@@ -14,6 +13,7 @@ from analysegnss.config import ERROR_CODES
 from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.sbf.sbf_class import SBF
 from analysegnss.utils import argument_parser, init_logger
+from analysegnss.utils.utilities import combine_dfs
 
 
 def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:
@@ -27,32 +27,34 @@ def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:
     qual_analysis = []
     total_obs = geod_df.shape[0]
     for qual, qual_data in geod_df.group_by("Type"):
-        qual_analysis.append(
-            [
-                sbfc.dict_sbf_pvtmode[qual]["desc"],
-                qual_data.shape[0],
-                round(qual_data.shape[0]/total_obs*100,2)
-            ]
-        )
+        if qual in sbfc.DICT_SBF_PVTMODE:
+            qual_analysis.append(
+                [
+                    sbfc.DICT_SBF_PVTMODE[qual]["desc"],
+                    qual_data.shape[0],
+                    round(qual_data.shape[0] / total_obs * 100, 2),
+                ]
+            )
 
     qual_tabular = tabulate(
         qual_analysis,
         headers=["PNT Mode", "Count", "Percentage"],
         tablefmt="fancy_outline",
     )
-    #print(f"\nAnalysis of the quality of the position data\n{qual_tabular}")
 
     if logger is not None:
-        logger.info(f"Quality analysis:\n{qual_tabular}")
+        logger.debug(f"Quality analysis:\n{qual_tabular}")
 
     return qual_analysis
 
-def rtk_pvtgeod(argv: list) -> pl.DataFrame:
+
+def rtk_pvtgeod(argv: list) -> dict:
     """
     Convert PVT Geodetic2 SBF block to dataframe and analyse quality of data
-
+    Args:
+        argv (list): list of arguments
     Returns:
-        pl.DataFrame: PVT Geodetic2 dataframe
+        dict: dict with dataframe for each selected SBF block
     """
     # get the name of this script for naming the logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
@@ -66,43 +68,83 @@ def rtk_pvtgeod(argv: list) -> pl.DataFrame:
 
     # create a SBF class object
     try:
-        sbf = SBF(
-            sbf_fn=args_parsed.sbf_ifn, logger=logger
-        )
+        sbf = SBF(sbf_fn=args_parsed.sbf_ifn, logger=logger)
     except Exception as e:
         logger.error(f"Error creating SBF object: {e}")
-        sys.exit(ERROR_CODES["ERROR_SBF_OBJECT"])
+        sys.exit(ERROR_CODES["E_SBF_OBJECT"])
 
     if not args_parsed.sbf2asc:
-        # extract the PVT Geodetic2 block from SBF file
-        df_geod = sbf.bin2asc_dataframe(lst_sbfblocks=["PVTGeodetic2"], archive=args_parsed.archive)["PVTGeodetic2"]
+        if args_parsed.sd:
+            # extract the PVT Geodetic2 block from SBF file and its covariance elements
+            dfs_pvt = sbf.bin2asc_dataframe(
+                lst_sbfblocks=["PVTGeodetic2", "PosCovGeodetic1"]
+            )
+
+            if "PosCovGeodetic1" in dfs_pvt:
+                # drop the rows where the covariances "Cov_latlat [m²]" etc are not available
+                dfs_pvt["PosCovGeodetic1"] = (
+                    pl.DataFrame(dfs_pvt["PosCovGeodetic1"])
+                    .lazy()
+                    .filter(
+                        ~pl.col("Cov_latlat [m²]").is_null()
+                        & ~pl.col("Cov_lonlon [m²]").is_null()
+                        & ~pl.col("Cov_hgthgt [m²]").is_null()
+                    )
+                    .collect()
+                )
+
+                dfs_pvt["PosSDgeodetic"] = sbf.convert_Cov2SD(
+                    dfs_pvt["PosCovGeodetic1"]
+                )
+                # remove the covariance matrix from dfs_pvt
+                dfs_pvt.pop("PosCovGeodetic1")
+
+            # merge the RTK position dataframes on the DT column
+            df_pvt = combine_dfs(dfs_pvt)
+            # Drop the column
+            if "DT_right" in df_pvt.columns:
+                df_pvt = df_pvt.drop("DT_right")
+
+            # with pl.Config(
+            #     tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+            # ):
+            #     print(f"[bold green]{df_pvt}")
+
+        else:  # only use the PVTGeodetic, no StdDev required
+            # extract the PVT Geodetic2 block from SBF file
+            df_pvt = sbf.bin2asc_dataframe(
+                lst_sbfblocks=["PVTGeodetic2"], archive=args_parsed.archive
+            )["PVTGeodetic2"]
+
+        with pl.Config(
+            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+        ):
+            logger.debug(f"  df_pvt: \n{df_pvt}")
 
         # analyse the quality of the solution
-        quality_analysis(geod_df=df_geod, logger=logger)
+        quality_analysis(geod_df=df_pvt, logger=logger)
 
-        with pl.Config(tbl_cols=-1):
-            logger.debug(f"df_geod: \n{df_geod}")
+        return df_pvt
 
-        return df_geod
-
-    else:
-        df_geod = sbf.sbf2asc_dataframe(lst_sbfblocks=["PVTGeodetic2"], archive=args_parsed.archive)[
-            "PVTGeodetic2"
+    else:  # conversion using sbf2asc
+        df_pvt = sbf.sbf2asc_dataframe(
+            lst_sbfblocks=["PVTGeodetic2"], archive=args_parsed.archive
+        )["PVTGeodetic2"]
+        df_poscov = sbf.sbf2asc_dataframe(lst_sbfblocks=["PosCovGeodetic1"])[
+            "PosCovGeodetic1"
         ]
-        with pl.Config(tbl_cols=-1):
-            print(f"df_geod: \n{df_geod}")
-            logger.info(f"df_geod: \n{df_geod}")
+        with pl.Config(
+            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+        ):
+            print(f"df_poscov: \n{df_pvt}")
+            logger.info(f"df_poscov: \n{df_pvt}")
 
-    return df_geod
+        return df_pvt
 
 
 def main():
-    
     geod_df = rtk_pvtgeod(argv=sys.argv)
 
-    if geod_df is not None:
-        with pl.Config(tbl_cols=-1):
-            print(geod_df)  
 
 if __name__ == "__main__":
     main()

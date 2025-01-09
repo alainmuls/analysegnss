@@ -1,5 +1,5 @@
 # dict containing the PVT modes
-dict_sbf_pvtmode = {
+DICT_SBF_PVTMODE = {
     0: dict(desc="No PVT available", color="black"),
     1: dict(desc="Stand-Alone PVT", color="cornflowerblue"),
     2: dict(desc="Differential PVT", color="darkcyan"),
@@ -14,7 +14,7 @@ dict_sbf_pvtmode = {
 }
 
 # dict containing the PVT errors
-dict_sbf_pvterror = {
+DICT_SBF_PVTERROR = {
     0: "No Error",
     1: "Not enough measurements",
     2: "Not enough ephemerides available",
@@ -29,7 +29,7 @@ dict_sbf_pvterror = {
 }
 
 # list with intervals for outputting SBF messages
-lst_sbf_interval = [
+LST_SBF_INTERVAL = [
     0.01,
     0.02,
     0.04,
@@ -58,7 +58,7 @@ def closest(lst: list, value: float):
     return lst[min(range(len(lst)), key=lambda i: abs(lst[i] - value))]
 
 
-dict_signal_types = {
+DICT_SIGNAL_TYPES = {
     0: {"type": "L1CA", "gnss": "GPS", "freq": 1575.42e3, "code": "1C"},
     1: {"type": "L1P", "gnss": "GPS", "freq": 1575.42e3, "code": "1W"},
     2: {"type": "L2P", "gnss": "GPS", "freq": 1227.60e3, "code": "2W"},

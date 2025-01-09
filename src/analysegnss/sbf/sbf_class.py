@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Standard library imports
 import datetime
 import glob
@@ -14,6 +12,8 @@ from dataclasses import dataclass, field
 import numpy as np
 import polars as pl
 import utm
+from rich import print
+from rich.console import Console
 
 # Local application imports
 from analysegnss.config import ERROR_CODES
@@ -24,12 +24,13 @@ from analysegnss.utils.utilities import locate, str_red, str_yellow
 
 @dataclass
 class SBF:
-    sbf_fn: str
+    sbf_fn: str = field(default=None)
     start_time: datetime.time = field(default=None)
     end_time: datetime.time = field(default=None)
 
     logger: logging.Logger = field(default=None)
     _console_loglevel: int = field(default=logging.ERROR)
+    rich_console: Console = field(default=Console())
 
     def __post_init__(self):
         self.validate_file()
@@ -38,7 +39,6 @@ class SBF:
         self.validate_logger_level()
 
     def validate_file(self):
-
         if not os.path.isfile(self.sbf_fn):
             if self.logger:
                 self.logger.error(f"File does not exist: {self.sbf_fn}")
@@ -111,11 +111,11 @@ class SBF:
                     # self._console_loglevel = logging.getLevelName(handler.level)
                     self._console_loglevel = handler.level
 
-            self.logger.info(
+            self.logger.debug(
                 "Console log level set to "
                 + f"{str_red(logging.getLevelName(self._console_loglevel))}"
             )
-
+            
     def archive_file(self, fn: str, dest_dir: str):
         """
         archive_file archives the created ascii files.
@@ -158,7 +158,7 @@ class SBF:
             self.logger.error(
                 f"Error moving file {fn} to archive directory {dest}: {e}"
             )
-
+            
     def bin2asc_dataframe(self, lst_sbfblocks: list, archive: str) -> dict:
         """
         bin2asc_dataframe converts binary SBF to CVS files for the sbfblocks in
@@ -179,7 +179,7 @@ class SBF:
         if self.logger:
             self.logger.info(
                 f"{str_yellow(run_bin2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files "
-                f"and importing into dataframes for SBF blocks\n{str_yellow(' '.join(lst_sbfblocks))}"
+                f"and importing into dataframes for SBF blocks: {str_yellow(' '.join(lst_sbfblocks))}"
             )
 
         # create options for bin2asc
@@ -193,14 +193,17 @@ class SBF:
             "-r",
             "-t",
         ]
-        # "-b",
-        # self.epoch_start.strftime("%H:%M:%S"),
-        # "-e",
-        # self.epoch_end.strftime("%H:%M:%S"),
 
-        # add logging level to cmd_bin2asc when self._console_loglevel is DEBUG
-        if self._console_loglevel == logging.DEBUG:
-            cmd_bin2asc.append("-v")
+        if self.start_time is not None:
+            cmd_bin2asc.append("-b")
+            cmd_bin2asc.append(self.start_time.strftime("%H:%M:%S"))
+        if self.end_time is not None:
+            cmd_bin2asc.append("-e")
+            cmd_bin2asc.append(self.end_time.strftime("%H:%M:%S"))
+
+        # # add logging level to cmd_bin2asc when self._console_loglevel is DEBUG
+        # if self._console_loglevel == logging.DEBUG:
+        #     cmd_bin2asc.append("-v")
 
         for sbf_block in lst_sbfblocks:
             cmd_bin2asc.append("-m")
@@ -211,9 +214,13 @@ class SBF:
             self.logger.debug(f"... running: {str_yellow(' '.join(cmd_bin2asc))}")
 
         try:
-            process = subprocess.run(cmd_bin2asc)
+            with self.rich_console.status(
+                f"[bold green]Converting SBF ({lst_sbfblocks}) to CSV files...",
+                spinner="point",
+            ):
+                process = subprocess.run(cmd_bin2asc)
         except Exception as e:
-            self.logger.info(f"{process} Error: {e}")
+            sys.stderr.write(f"{process} Error: {e}\n")
             if self.logger:
                 self.logger.error(
                     f"\t... subprocess {str_yellow(' '.join(cmd_bin2asc))} return exit code"
@@ -231,7 +238,7 @@ class SBF:
 
         # iterate over the CVS files and convert them to dataframe
         for sbf_block, bin2asc_fn in bin2asc_fns.items():
-
+                        
             # check if bin2asc_fn of sbf block is empty
             if len(bin2asc_fn) == 0:
                 if self.logger:
@@ -247,7 +254,19 @@ class SBF:
                 # remove unused columns
                 keep_cols = self.used_columns(sbf_block)
                 # self.logger.info(f"list(keep_cols.keys()) = \n{list(keep_cols.keys())}")
+                if self.logger:
+                    self.logger.debug(
+                        f"\t... converting {str_yellow(bin2asc_fn[0])} to dataframe"
+                    )
 
+                # remove unused columns
+                keep_cols = self.used_columns(sbf_block)
+                # print(f"list(keep_cols.keys()) = \n{list(keep_cols.keys())}")
+
+                with self.rich_console.status(
+                    f"[bold green]Reading from CSV file ({sbf_block})...",
+                    spinner="point",
+                ):
                 sbf_df = pl.read_csv(
                     source=bin2asc_fn[0],
                     separator=",",
@@ -263,7 +282,6 @@ class SBF:
                 sbf_df = self.add_columns(block_df=sbf_df)
 
                 sbf_dfs[sbf_block] = sbf_df
-
                 # archiving the converted sbf file
                 if not archive == None:
                     self.archive_file(fn=bin2asc_fn[0], dest_dir=archive)
@@ -334,7 +352,7 @@ class SBF:
         try:
             process = subprocess.run(cmd_sbf2asc)
         except Exception as e:
-            self.logger.info(f"{process} Error: {e}")
+            sys.stderr.write(f"{process} Error: {e}\n")
             self.logger.error(
                 f"\t... subprocess {str_yellow(' '.join(cmd_sbf2asc))} return exit code"
                 f"\t... {str_red(e)}. Program exits."
@@ -353,7 +371,6 @@ class SBF:
 
         # iterate over the CVS files and convert them to dataframe
         for sbf_block, sbf2asc_fn in sbf2asc_fns.items():
-
             # check if bin2asc_fn of sbf block is empty
             if len(sbf2asc_fn) == 0:
                 if self.logger:
@@ -366,14 +383,24 @@ class SBF:
                         f"\t... converting {str_yellow(sbf2asc_fn[0])} to dataframe"
                     )
 
-                # REMOVING WHITESPACES from the file name
-                sed_cmd = r"sed 's/[[:blank:]]\{1,\}/,/g'"
-                sed_cmd = sed_cmd + f" {sbf2asc_fn[0]}"
-                # self.logger.info(f"sed_cmd = {sed_cmd}")
-                content = os.popen(sed_cmd).read()
+                # REMOVING WHITESPACES from the file content
+                # sed_cmd = r"sed 's/[[:blank:]]\{1,\}/,/g'"
+                # sed_cmd = sed_cmd + f" {sbf2asc_fn[0]}"
+                # # print(f"sed_cmd = {sed_cmd}")
+                # content = os.popen(sed_cmd).read()
+                # with open(sbf2asc_fn[0], "w") as fd:
+                #     fd.write(content)
+
+                with open(sbf2asc_fn[0], "r") as f:
+                    lines = []
+                    for line in f:
+                        processed_line = ",".join(line.split())
+                        lines.append(processed_line)
+                    content = "\n".join(lines)
+
                 with open(sbf2asc_fn[0], "w") as fd:
                     fd.write(content)
-
+                # remove unused columns
                 sbf_df = pl.DataFrame()
 
                 try:
@@ -403,9 +430,8 @@ class SBF:
                 sbf_dfs[sbf_block] = sbf_df
 
                 if self.logger:
-                    self.logger.info(f"succesfully created  dataframe for {sbf_block}")
+                    self.logger.info(f"successfully created  dataframe for {sbf_block}")
                     self.logger.info(sbf_dfs[sbf_block])
-
                 if not archive == None:
                     # Archive the created files
                     self.archive_file(fn=sbf2asc_fn[0], dest_dir=archive)
@@ -427,14 +453,14 @@ class SBF:
         Returns:
             pl.DataFrame: dataframe with datetime and PRN columns added if possible
         """
-        # self.logger.info(f"block_df = \n{block_df}")
+        # print(f"block_df = \n{block_df}")
         # remove the rows where 'Type' equals 0 (no PVT available)
         if self.logger:
             self.logger.debug("\tremoving rows with no PVT solution")
 
         if "Type" in block_df.columns:
             block_df = block_df.filter(pl.col("Type") != 0).lazy()
-            # self.logger.info(f"block_df = \n{block_df}")
+            # print(f"block_df = \n{block_df}")
 
         # add date-time and PRN (as str) to the dataframe
         if "WNc [w]" in block_df.columns and "TOW [0.001 s]" in block_df.columns:
@@ -561,19 +587,6 @@ class SBF:
                 "L_cycles [cyc]",
             ]
         elif sbf_block == "PVTGeodetic2":
-            # ['TOW [0.001 s]', 'WNc [w]', 'Type', 'AutoBase', 'Flag2D', 'Error',
-            # 'Latitude [rad]', 'Longitude [rad]', 'Height [m]', 'Undulation',
-            # 'Vn [m/s]', 'Ve [m/s]', 'Vu [m/s]', 'COG [°]',
-            # 'RxClkBias [ms]', 'RxClkDrift [ppm]', 'TimeSystem', 'Datum',
-            # 'NrSV', 'LC', 'FC', 'I', 'AI', 'PA',
-            # 'RtkBaseType', 'ReferenceID', 'MeanCorrAge [0.01 s]',
-            # 'SignalInfo', 'RAIM integrity flag', 'Integrity failed',
-            # 'Storm Flag', 'Accuracy limit exceeded', 'NrBases',
-            # 'SeedAge [s]', 'SeedType', 'Latency [0.0001 s]',
-            # 'HAccuracy [0.01 m]', 'VAccuracy [0.01 m]', 'Misc',
-            # 'Baseline', 'Phase center variation', 'SIGIL',
-            # 'RTCMV', 'PPVTAge', 'ARPMarkerOffset']
-
             # dict of your column names keyed by dtype
             col_types = {
                 pl.Float64: [
@@ -656,6 +669,7 @@ class SBF:
                 "DeltaLS [s]",
             ]
         elif sbf_block == "PosCovGeodetic1":
+            # dict of your column names keyed by dtype
             col_types = {
                 pl.Float32: [
                     "Cov_latlat [m²]",
@@ -710,6 +724,35 @@ class SBF:
 
         return keep_cols
 
+    def convert_Cov2SD(self, df_cov: pl.DataFrame) -> pl.DataFrame:
+        """Convert covariance matrix to standard deviation
+
+        Args:
+            df_cov (pl.DataFrame): df with covariance diagonal elements
+
+        Returns:
+            pl.DataFrame: df with standard deviations
+        """
+        # Define column name mapping
+        rename_map = {
+            "Cov_latlat [m²]": "SD_lat [m]",
+            "Cov_lonlon [m²]": "SD_lon [m]",
+            "Cov_hgthgt [m²]": "SD_hgt [m]",
+        }
+
+        return (
+            df_cov.lazy()
+            .with_columns(
+                [
+                    (pl.col(col) ** 0.5).alias(rename_map.get(col, col))
+                    for col in rename_map.keys()
+                ]
+            )
+            .drop(rename_map.keys())
+            # .drop(["TOW [0.001 s]", "WNc [w]"])
+            .collect()
+        )
+
     def sbf2asc_convert_sbfblock(self, sbf_block: str) -> str:
         """This looks up which sbf2asc argument belongs to which sbfblock
 
@@ -756,6 +799,9 @@ class SBF:
         Returns:
             list of correct column names for each sbfblocks
         """
+        print(
+            "sbf2asc is chosen as sbf converter. Looking up corresponding column names for each sbf block"
+        )
         self.logger.info(
             "sbf2asc is chosen as sbf converter. Looking up corresponding column names for each sbf block"
         )
