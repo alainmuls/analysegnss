@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import sys
-from datetime import datetime, timedelta, time
+# Standard library imports
 import bisect
+from datetime import datetime, time, timedelta
 from math import isnan
+import sys
+from typing import Tuple
 
 __author__ = "amuls"
 
@@ -67,7 +69,7 @@ def gnss2dt(week: int, tow: float) -> datetime:
         date_before_leaps = _GPS_EPOCH + timedelta(seconds=week * _SECS_IN_WEEK + tow)
         return date_before_leaps
 
-def dt2gnss(dt: str, dt_format: str) -> tuple:
+def dt2gnss(dt: str, dt_format: str) -> Tuple[int, float]:
     """
     This converts a dateetime instance to GPS week number and time of week
     
@@ -75,7 +77,7 @@ def dt2gnss(dt: str, dt_format: str) -> tuple:
         dt (datetime): datetime object
         dt_format (str): datetime format (e.g. "%Y-%m-%d %H:%M:%S")
     returns:
-        tuple: GPS week number and time of week
+        Tuple[int, float]: GPS week number and time of week
     """
 
     dt_obj = datetime.strptime(dt, dt_format)

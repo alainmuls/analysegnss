@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+
+# Standard library imports
 import datetime
 import glob
 import logging
@@ -7,11 +10,12 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 
-
+# Third-party imports
 import numpy as np
 import polars as pl
 import utm
 
+# Local application imports
 from analysegnss.config import ERROR_CODES
 from analysegnss.gnss.gnss_dt import gpsms2dt
 from analysegnss.sbf import sbf_constants as sbfc
@@ -382,7 +386,7 @@ class SBF:
                 except Exception as e:
                     if self.logger:
                         self.logger.error(f"Error reading file {sbf2asc_fn[0]}: {e}")
-                except polars.exceptions.NoDataError as e:
+                except pl.exceptions.NoDataError as e:
                     if self.logger:
                         self.logger.error(f"Empty file {sbf2asc_fn[0]}: {e}")
 

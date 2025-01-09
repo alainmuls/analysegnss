@@ -1,9 +1,11 @@
-import matplotlib.pyplot as plt
+# Standard library imports
+import logging
+
+# Third-party imports
 import plotly.graph_objects as go
 import polars as pl
-import logging as logging
 
-
+# Local application imports
 from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.rtkpos import rtk_constants as rtkc
 

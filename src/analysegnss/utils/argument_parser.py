@@ -1,8 +1,11 @@
+# Standard library imports
 import argparse
 import os
 
+# Third-party imports
 import argcomplete
 
+# Local application imports
 from analysegnss.utils.utilities import str_yellow
 
 

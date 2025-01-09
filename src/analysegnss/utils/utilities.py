@@ -1,15 +1,18 @@
 #!/usr/bin:env python
 
+# Standard library imports
+from datetime import date, datetime, timedelta
 import logging
 import os
 import shutil
 import subprocess
 import sys
-from datetime import date, datetime, timedelta
 
+# Third-party imports
 import numpy as np
 from termcolor import colored
 
+# Local application imports
 from analysegnss.config import ERROR_CODES
 
 __author__ = "amuls"

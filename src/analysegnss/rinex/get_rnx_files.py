@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 
+# Standard library imports
 import argparse
-import os 
-import sys
 import glob
-from logging import Logger
+import os 
 import subprocess
+import sys
+from logging import Logger
 
-from analysegnss.utils import argument_parser, init_logger, utilities
-
-
+# Local application imports
+from analysegnss.config import ERROR_CODES
+from analysegnss.utils import argument_parser, init_logger
 
 """
 Creates rinex files from raw/binary data files (such as Septentrio SBF files)
-Idea is the extend this to more file formats in the future (UBX (u-blox), RTCM3)
+Idea is to extend this to more file formats in the future (UBX (u-blox), RTCM3)
 """
-
 
 def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> str:
     """

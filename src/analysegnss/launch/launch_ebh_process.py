@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 
 import argparse
 import os
@@ -6,17 +6,15 @@ from datetime import datetime
 import sys
 import glob
 from logging import Logger
-import subprocess
 
 from analysegnss.config import ERROR_CODES
 from analysegnss.gnss import gnss_dt
 from analysegnss.launch.launch_rnx2rtkp import rnx2rtkp_ppk
-from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.utils import argument_parser, init_logger, utilities
-import analysegnss.scripts.ebh.get_ebh_timings
+from analysegnss.scripts.ebh.get_ebh_timings import get_ebh_timings
 from analysegnss.sbf.get_base_xyz_from_sbf import get_base_coord_from_sbf
-import analysegnss.scripts.ebh.ebh_lines
-import analysegnss.rinex.get_rnx_files
+from analysegnss.scripts.ebh.ebh_lines import ebh_lines
+from analysegnss.rinex import get_rnx_files
 
 """
 This script orchestrates the complete EBH (Equivalent Bump Height) processing workflow.

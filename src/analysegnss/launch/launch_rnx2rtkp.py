@@ -1,16 +1,18 @@
 #! /usr/bin/env python
 
+# Standard library imports
 import argparse
 import datetime
 import logging
 import os
-import polars as pl
-import sys
 import subprocess
+import sys
 
+# Third-party imports
+import polars as pl
+
+# Local application imports
 from analysegnss.config import ERROR_CODES
-from analysegnss.gnss import gnss_dt
-from analysegnss.sbf.sbf_class import SBF
 from analysegnss.utils import argument_parser, init_logger, utilities
 
 

@@ -1,24 +1,24 @@
 #!/usr/bin/env python
 
+# Standard library imports
 import argparse
 import os
 import re
 import sys
 from logging import Logger
-from math import atan2, degrees, sqrt, fabs
+from math import atan2, degrees, fabs, sqrt
 
-
+# Third-party imports
 import polars as pl
 from tabulate import tabulate
 
+# Local application imports
 from analysegnss.config import ERROR_CODES
-import analysegnss.rtkpos.ppk_rnx2rtkp
-import analysegnss.sbf.rtk_pvtgeod
 from analysegnss.gnss.gnss_dt import gnss2dt
-from analysegnss.rtkpos import rtk_constants as rtkc
-from analysegnss.rtkpos.rtkpos_class import Rtkpos
+from analysegnss.rtkpos.ppk_rnx2rtkp import rtkp_pos, quality_analysis
+from analysegnss.sbf.rtk_pvtgeod import rtk_pvtgeod
 from analysegnss.utils import argument_parser, init_logger
-from analysegnss.utils.utilities import str_yellow, str_red
+from analysegnss.utils.utilities import str_red, str_yellow
 
 
 def get_ppk_dataframe(parsed_args: argparse.Namespace, logger: Logger) -> pl.DataFrame:
@@ -44,7 +44,7 @@ def get_ppk_dataframe(parsed_args: argparse.Namespace, logger: Logger) -> pl.Dat
 
     logger.debug(f"ppk_rnx2rtkp_args = {ppk_rnx2rtkp_args}")
 
-    df_pos = ppk_rnx2rtkp.rtkp_pos(argv=ppk_rnx2rtkp_args)
+    df_pos = rtkp_pos(argv=ppk_rnx2rtkp_args)
 
     return df_pos
 
@@ -390,7 +390,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
         # Checking quality of each ebh line for ppk and rtk result.
         # This info is needed to decide whether rtk or ppk quality is sufficient for ASSUR
         if hasattr(parsed_args, "pos_ifn") and parsed_args.pos_ifn:
-            qual_ebh_lines[ebh_key] = ppk_rnx2rtkp.quality_analysis(
+            qual_ebh_lines[ebh_key] = quality_analysis(
                 ebh_assur_line, logger=logger
             )
             logger.info(

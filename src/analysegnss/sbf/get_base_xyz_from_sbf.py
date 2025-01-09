@@ -1,18 +1,22 @@
 #! /usr/bin/env python
 
+# Standard library imports
 import argparse
 import datetime
 import os
-import polars as pl
 import sys
 from logging import Logger
+from typing import Tuple
 
-from analysegnss.gnss import gnss_dt
+# Third-party imports
+import polars as pl
+
+# Local application imports
 from analysegnss.sbf.sbf_class import SBF
-from analysegnss.utils import argument_parser, init_logger, utilities
+from analysegnss.utils import argument_parser, init_logger
 
 
-def get_base_coord_from_sbf(parsed_args: argparse.Namespace, logger: Logger) -> tuple:
+def get_base_coord_from_sbf(parsed_args: argparse.Namespace, logger: Logger) -> Tuple[float, float, float]:
     """
     This function extracts the base station coordinates from the BaseStation1 SBF block.
     Which is logged on the rover which received diffcorr from the basestation.
@@ -22,7 +26,7 @@ def get_base_coord_from_sbf(parsed_args: argparse.Namespace, logger: Logger) -> 
     datetime (str): date time instance of the base station coordinates [YYYY-MM-DD_HH:MM:SS.s]
 
     return:
-    base_coord (tuple): base station coordinates (X, Y, Z)
+    base_coord (Tuple[float, float, float]): base station coordinates (X, Y, Z)
     """
     logger.debug("Creating SBF object from SBF file")
     if parsed_args.sbf_ifn:

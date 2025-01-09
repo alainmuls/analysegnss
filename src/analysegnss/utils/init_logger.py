@@ -1,8 +1,11 @@
-import logging as logging
+# Standard library imports
+import logging
 from logging.handlers import TimedRotatingFileHandler
 import os
-from analysegnss.utils.utilities import str_green
 from sys import stderr
+
+# Local application imports
+from analysegnss.utils.utilities import str_green
 
 
 class ColorFormatter(logging.Formatter):

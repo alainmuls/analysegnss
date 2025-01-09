@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 
+# Standard library imports
 import json
 import os
 import sys
 from logging import Logger
 
+# Third-party imports
 import polars as pl
 from tabulate import tabulate
 
-# import globalvars
-from analysegnss.plots import plot_utm
+# Local application imports
 from analysegnss.rtkpos import rtk_constants as rtkc
 from analysegnss.rtkpos.rtkpos_class import Rtkpos
 from analysegnss.utils import argument_parser, init_logger

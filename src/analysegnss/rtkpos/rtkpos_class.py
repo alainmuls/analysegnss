@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+
+# Standard library imports
 import datetime
 import json
 import logging
@@ -6,15 +9,16 @@ import sys
 from dataclasses import dataclass, field
 from typing import Tuple
 
+# Third-party imports
 import polars as pl
 import utm
 
+# Local application imports
 from analysegnss.config import ERROR_CODES, GEOID_PATH
 from analysegnss.gnss import geoid
-
-# import globalvars
 from analysegnss.gnss.gnss_dt import gpsms2dt
 from analysegnss.utils.utilities import str_red
+
 
 
 @dataclass

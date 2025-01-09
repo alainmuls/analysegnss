@@ -1,14 +1,19 @@
 #!/usr/bin/env python
 
+# Standard library imports
 import os
+import subprocess
 import sys
+from logging import Logger
 
+# Third-party imports
 import polars as pl
 
-import analysegnss.rtkpos.ppk_rnx2rtkp
-import analysegnss.sbf.rtk_pvtgeod
+# Local application imports
 from analysegnss.config import ERROR_CODES
 from analysegnss.plots import plot_utm
+from analysegnss.rtkpos.ppk_rnx2rtkp import rtkp_pos
+from analysegnss.sbf.rtk_pvtgeod import rtk_pvtgeod
 from analysegnss.utils import argument_parser, init_logger
 
 #TODO split function. If extracted rtk/ppk dataframe/csv already exist there is no need to redo calculation
@@ -36,7 +41,7 @@ def rtkppk_plot(argv: list):
         pos_fn_value = argv[pos_fn_index + 1]
 
         ppk_rnx2rtkp_args = ["ppk_rnx2rtkp.py", "--pos_ifn", pos_fn_value]
-        df_pos = ppk_rnx2rtkp.rtkp_pos(argv=ppk_rnx2rtkp_args)
+        df_pos = rtkp_pos(argv=ppk_rnx2rtkp_args)
 
         # select the columns needed for the plot
         df_utm = df_pos.select(["DT", "Q", "ns", "UTM.E", "UTM.N", "orthoH"])
@@ -59,7 +64,7 @@ def rtkppk_plot(argv: list):
         sbf_fn_value = argv[sbf_fn_index + 1]
 
         rtk_pvtgeod_args = ["rtk_pvtgeod.py", "--sbf_ifn", sbf_fn_value]
-        df_rtk = rtk_pvtgeod.rtk_pvtgeod(argv=rtk_pvtgeod_args)
+        df_rtk = rtk_pvtgeod(argv=rtk_pvtgeod_args)
 
         # select the columns needed for the plot
         df_utm = df_rtk.select(["DT", "Type", "NrSV", "UTM.E", "UTM.N", "orthoH"])

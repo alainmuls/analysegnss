@@ -1,16 +1,19 @@
 #! /usr/bin/env python
 
+# Standard library imports
 import argparse
 import os
+import re
 import sys
 from logging import Logger
-import polars as pl
-from datetime import datetime
-import re
 
+# Third-party imports
+import polars as pl
+
+# Local application imports
 from analysegnss.gnss import gnss_dt
 from analysegnss.sbf.sbf_class import SBF
-from analysegnss.utils import argument_parser, init_logger, utilities
+from analysegnss.utils import argument_parser, init_logger
 
 
 def get_SBFcomments(parsed_args: argparse.Namespace, logger: Logger) -> pl.DataFrame:

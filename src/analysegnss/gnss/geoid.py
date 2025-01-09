@@ -1,23 +1,30 @@
 #!/usr/bin/python
 
-# This file is mostly a straight translation of
-# GeographicLib/src/Geoid.cpp from C++ to Python
-# by Kim Vandry <vandry@TZoNE.ORG>
-#
-# /**
-# * \file Geoid.cpp
-# * \brief Implementation for GeographicLib::Geoid class
-# *
-# * Copyright (c) Charles Karney (2009) <charles@karney.com>
-# * and licensed under the LGPL.  For more information, see
-# * http://geographiclib.sourceforge.net/
-# **********************************************************************/
-#
-# Geoid height grade not supported
-
-import os
+# Standard library imports
 import mmap
+import os
 import struct
+import sys
+
+# Third-party imports
+import numpy as np
+
+"""
+This file is mostly a straight translation of
+GeographicLib/src/Geoid.cpp from C++ to Python
+by Kim Vandry <vandry@TZoNE.ORG>
+
+/**
+* \file Geoid.cpp
+* \brief Implementation for GeographicLib::Geoid class
+*
+* Copyright (c) Charles Karney (2009) <charles@karney.com>
+* and licensed under the LGPL.  For more information, see
+* http://geographiclib.sourceforge.net/
+**********************************************************************/
+
+Geoid height grade not supported
+"""
 
 class GeoidBadDataFile(Exception):
     pass
