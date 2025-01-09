@@ -116,7 +116,7 @@ class RINEX_OBS(RINEX):
         try:
             # add a spinner while waiting for the conversion to complete
             with rich_console.status(
-                "Please wait - Loading observations...", spinner="point"
+                "Please wait - Loading observations...", spinner="aesthetic"
             ):
 
                 result = subprocess.run(
@@ -219,7 +219,7 @@ class RINEX_OBS(RINEX):
 
         # add a spinner while waiting for the conversion to complete
         with rich_console.status(
-            "Please wait - converting to dataframe...", spinner="point"
+            "Please wait - converting to dataframe...", spinner="aesthetic"
         ):
             for gnss_type, df in result_dfs.items():
                 # Get frequency/signal combinations

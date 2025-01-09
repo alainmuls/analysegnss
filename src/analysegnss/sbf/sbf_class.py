@@ -160,7 +160,7 @@ class SBF:
 
         with rich_console.status(
             f"[bold green]Converting SBF ({lst_sbfblocks}) to CSV files...",
-            spinner="point",
+            spinner="aesthetic",
         ):
             try:
                 process = subprocess.run(cmd_bin2asc)
@@ -194,7 +194,7 @@ class SBF:
 
             with rich_console.status(
                 f"[bold green]Reading from CSV file ({sbf_block})...",
-                spinner="point",
+                spinner="aesthetic",
             ):
                 sbf_df = pl.read_csv(
                     source=bin2asc_fn[0],

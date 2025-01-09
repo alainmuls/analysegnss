@@ -266,7 +266,7 @@ class Rtkpos:
             pl.DataFrame: dataframe with added information
         """
 
-        with rich_console.status("Collecting and adjusting data", spinner="point"):
+        with rich_console.status("Collecting and adjusting data", spinner="aesthetic"):
 
             # add date-time and PRN (as str) to the dataframe
             if "WNc" in df_pos.columns and "TOW(s)" in df_pos.columns:
