@@ -83,7 +83,7 @@ if __name__ == "__main__":
     # Use first available ephemeris
     eph = gal_nav_data[0]
 
-    # Calculate position at specific time
+    # TODO: check for GAL NAV and BEIDOU NAV D1 & D2
 
     for t in range(eph.toe, eph.toe + 3600, 300):
         x, y, z = eph.compute_satellite_position(t)
