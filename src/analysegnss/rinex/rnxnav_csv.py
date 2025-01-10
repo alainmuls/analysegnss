@@ -54,6 +54,8 @@ def rnxnav_csv(argv: list):
 
     # get directory part and filename without extension part of the RINEX navigation file
     rnxnav_dir, rnxnav_fn = os.path.split(args_parsed.nav_fn)
+    rnxnav_dir = rnxnav_dir or "."
+
     # change to the directory part of the RINEX navigation file in try block
     # so that the CSV file is created in the same directory as the RINEX navigation file
     os.chdir(rnxnav_dir)
