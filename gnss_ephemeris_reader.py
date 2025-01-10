@@ -15,7 +15,10 @@ def read_nav_csv(csv_file):
 
             # Time parameters
             eph.toe = int(float(row["toe"]))
-            eph.toc = int(float(row["toc"]))
+            try:
+                eph.toc = int(float(row["toc"]))
+            except KeyError:
+                eph.toc = int(float(row["GST_TOW"]))
             eph.week = int(float(row["WN"]))
 
             # Clock correction
@@ -31,7 +34,7 @@ def read_nav_csv(csv_file):
             eph.omega = float(row["omega"])
             eph.OMEGA = float(row["OMEGA_0"])
             eph.OMEGA_DOT = float(row["OMEGA_DOT"])
-            eph.i0 = float(row["Io"])
+            eph.i0 = float(row["i0"])
             eph.IDOT = float(row["IDOT"])
 
             # Correction terms
@@ -44,7 +47,10 @@ def read_nav_csv(csv_file):
 
             # Additional info
             eph.prn = row["PRN"]
-            eph.health = float(row["health"])
+            try:
+                eph.health = float(row["health"])
+            except KeyError:
+                eph.health = float(row["E1B_HS"])
 
             ephemerides.append(eph)
 
@@ -53,12 +59,12 @@ def read_nav_csv(csv_file):
 
 if __name__ == "__main__":
     # Read ephemerides from CSV
-    nav_data = read_nav_csv(
+    gps_nav_data = read_nav_csv(
         csv_file="/home/amuls/cylab/TESTDATA/flepos/BERT/RX3/BERT00BEL_R_20243640700_41H_MN_GPS_LNAV.csv"
     )
 
     # Use first available ephemeris
-    eph = nav_data[0]
+    eph = gps_nav_data[0]
 
     # Calculate position at specific time
 
@@ -66,10 +72,22 @@ if __name__ == "__main__":
         x, y, z = eph.compute_satellite_position(t)
 
         print(
-            f"PRN: {eph.prn} at {t}: {x:15.3f}, {y:15.3f}, {z:15.3f} | {np.sqrt(x**2 + y**2 + z**2):15.3f}"
+            f"GPS PRN: {eph.prn} at {t}: {x:15.3f}, {y:15.3f}, {z:15.3f} | {np.sqrt(x**2 + y**2 + z**2):15.3f}"
         )
 
-    # t = eph.toe + 3600  # one hour after toe
-    # x, y, z = eph.compute_satellite_position(t)
+    # Read ephemerides from CSV
+    gal_nav_data = read_nav_csv(
+        csv_file="/home/amuls/cylab/TESTDATA/flepos/BERT/RX3/BERT00BEL_R_20243640700_41H_MN_Galileo_INAV.csv"
+    )
 
-    # print(f"PRN: {eph.prn} at {t}: {x}, {y}, {z} | {np.sqrt(x**2 + y**2 + z**2)}")
+    # Use first available ephemeris
+    eph = gal_nav_data[0]
+
+    # Calculate position at specific time
+
+    for t in range(eph.toe, eph.toe + 3600, 300):
+        x, y, z = eph.compute_satellite_position(t)
+
+        print(
+            f"GAL PRN: {eph.prn} at {t}: {x:15.3f}, {y:15.3f}, {z:15.3f} | {np.sqrt(x**2 + y**2 + z**2):15.3f}"
+        )
