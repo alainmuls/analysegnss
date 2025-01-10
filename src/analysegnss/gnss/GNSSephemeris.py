@@ -2,7 +2,7 @@ import numpy as np
 from datetime import datetime, timedelta
 
 
-class GPSEphemeris:
+class GNSSEphemeris:
     def __init__(self):
         # Satellite identification
         self.prn = None
@@ -37,7 +37,7 @@ class GPSEphemeris:
         self.cic = None  # Cosine inclination
         self.cis = None  # Sine inclination
 
-    def compute_satellite_position(self, t):
+    def compute_satellite_position(self, t: float) -> tuple:
         """
         Compute satellite position at time t
         Args:
@@ -113,15 +113,15 @@ class GPSEphemeris:
     # Create and populate ephemeris object
 
 
-eph = GPSEphemeris()
-eph.prn = 1
-eph.toe = 345600  # Time of ephemeris in seconds of GPS week
-eph.sqrta = 5153.79589081
-eph.e = 0.00223578442819
-# ... set other parameters ...
+# eph = GNSSEphemeris()
+# eph.prn = 1
+# eph.toe = 345600  # Time of ephemeris in seconds of GPS week
+# eph.sqrta = 5153.79589081
+# eph.e = 0.00223578442819
+# # ... set other parameters ...
 
-# Calculate position at specific time
-gps_time = 346800  # GPS seconds of week
-if eph.is_valid(gps_time):
-    x, y, z = eph.compute_satellite_position(gps_time)
-    print(f"Satellite position (ECEF): {x:.2f}, {y:.2f}, {z:.2f} meters")
+# # Calculate position at specific time
+# gps_time = 346800  # GPS seconds of week
+# if eph.is_valid(gps_time):
+#     x, y, z = eph.compute_satellite_position(gps_time)
+#     print(f"Satellite position (ECEF): {x:.2f}, {y:.2f}, {z:.2f} meters")
