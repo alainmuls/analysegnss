@@ -8,15 +8,15 @@ import sys
 from logging import Logger
 from math import atan2, degrees, fabs, sqrt
 
-# Third-party imports
+# Third party imports
 import polars as pl
 from tabulate import tabulate
 
 # Local application imports
 from analysegnss.config import ERROR_CODES
 from analysegnss.gnss.gnss_dt import gnss2dt
-from analysegnss.rtkpos.ppk_rnx2rtkp import rtkp_pos, quality_analysis
-from analysegnss.sbf.rtk_pvtgeod import rtk_pvtgeod
+import analysegnss.rtkpos.ppk_rnx2rtkp as ppk_rnx2rtkp
+import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
 from analysegnss.utils import argument_parser, init_logger
 from analysegnss.utils.utilities import str_red, str_yellow
 
@@ -44,7 +44,7 @@ def get_ppk_dataframe(parsed_args: argparse.Namespace, logger: Logger) -> pl.Dat
 
     logger.debug(f"ppk_rnx2rtkp_args = {ppk_rnx2rtkp_args}")
 
-    df_pos = rtkp_pos(argv=ppk_rnx2rtkp_args)
+    df_pos = ppk_rnx2rtkp.rtkp_pos(argv=ppk_rnx2rtkp_args)
 
     return df_pos
 
@@ -88,10 +88,9 @@ def read_ebh_line_timings(timings_fn: str, logger: Logger) -> dict:
     """
     # check if the timings file is readable
     if not os.path.isfile(timings_fn) or not os.access(timings_fn, os.R_OK):
-        # print(f"File {timings_fn} is not readable")
-        logger.critical(f"File {timings_fn} is not readable. Exiting")
+        #print(f"File {timings_fn} is not readable")
+        logger.error(f"File {timings_fn} is not readable")
         sys.exit(ERROR_CODES["E_FILE_NOT_EXIST"])
-
 
     # Regular expression pattern to match both integers and float values
     pattern = r"\d+\.\d+|\d+"
@@ -123,8 +122,8 @@ def read_ebh_line_timings(timings_fn: str, logger: Logger) -> dict:
     #     print(
     #         f"{line} = {timings[0].strftime('%Y/%m/%d %H:%M:%S')} - {timings[1].strftime('%Y/%m/%d %H:%M:%S')}"
     #     )
-
-
+    
+    
     # check if the timings file is empty
     if not line_timings:
         print(str_red(f"ERROR: File {timings_fn} is empty. Probably no timings key found in SBF comments or sbf comment are modified. Exiting"))
@@ -158,6 +157,7 @@ def ebh_lines_map_angle(
 
         row_start = df_pos.filter(pl.col("DT") == timings[0])
         row_end = df_pos.filter(pl.col("DT") == timings[1])
+
 
         # Checking if dataframe is not empty. The following if clause handles the case when fewer lines are processed (for PPK) than there are key in ebh_timings
         if row_start.is_empty():
@@ -243,11 +243,11 @@ def ebh_line_thin_out(
         logger (Logger): logger object
 
     Returns:
-        pl.DataFrame: thinned out dataframe + only RTK/PPK fixed
+        pl.DataFrame: thinned out dataframe + only RTK/PPK fixed results
     """
 
     logger.info(
-        f"Starting thinning out of ebh line. And only keeping RTK/PPK fixed values"
+        f"Thinning out the dataframe to keep positions every 0.5 meters and only keeps RTK/PPK fixed results"
     )
     # get the UTM coordinates of the first point of the line
     utm_start = df_line.select(["UTM.E", "UTM.N"]).row(index=0)
@@ -282,6 +282,7 @@ def ebh_line_thin_out(
 
     # This is done first by applying the modulo operator of 0.5 on dist0
     df_line = df_line.with_columns(dist0_mod05=pl.col("dist0") % 0.5).lazy()
+
 
     # Then, we calculate the difference between the current value and the previous values
     df_line = df_line.with_columns(dist_mod05_diff=pl.col("dist0_mod05").diff()).lazy()
@@ -390,7 +391,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
         # Checking quality of each ebh line for ppk and rtk result.
         # This info is needed to decide whether rtk or ppk quality is sufficient for ASSUR
         if hasattr(parsed_args, "pos_ifn") and parsed_args.pos_ifn:
-            qual_ebh_lines[ebh_key] = quality_analysis(
+            qual_ebh_lines[ebh_key] = rtk_pvtgeod.quality_analysis(
                 ebh_assur_line, logger=logger
             )
             logger.info(
