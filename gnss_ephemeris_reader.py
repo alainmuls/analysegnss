@@ -3,6 +3,7 @@ import csv
 import numpy as np
 
 from src.analysegnss.gnss.GNSSephemeris import GNSSEphemeris
+from src.analysegnss.config import GPS_BDS_WEEK_DIFF
 
 
 def read_nav_csv(csv_file):
@@ -19,7 +20,10 @@ def read_nav_csv(csv_file):
                 eph.toc = int(float(row["toc"]))
             except KeyError:
                 eph.toc = int(float(row["GST_TOW"]))
-            eph.week = int(float(row["WN"]))
+            try:
+                eph.week = int(float(row["WN"]))
+            except KeyError:
+                eph.week = int(float(row["BDS_WN"]))
 
             # Clock correction
             eph.af0 = float(row["af0"])
@@ -50,7 +54,10 @@ def read_nav_csv(csv_file):
             try:
                 eph.health = float(row["health"])
             except KeyError:
-                eph.health = float(row["E1B_HS"])
+                try:
+                    eph.health = float(row["E1B_HS"])
+                except KeyError:
+                    eph.health = float(row["SatH1"])
 
             ephemerides.append(eph)
 
@@ -58,36 +65,33 @@ def read_nav_csv(csv_file):
 
 
 if __name__ == "__main__":
-    # Read ephemerides from CSV
-    gps_nav_data = read_nav_csv(
-        csv_file="/home/amuls/cylab/TESTDATA/flepos/BERT/RX3/BERT00BEL_R_20243640700_41H_MN_GPS_LNAV.csv"
-    )
+    # ephemeris files to process
+    nav_csv_fns = {
+        "GPS-LNAV": "/home/amuls/cylab/TESTDATA/flepos/BERT/RX3/BERT00BEL_R_20243640700_41H_MN_GPS_LNAV.csv",
+        "GAL_INAV": "/home/amuls/cylab/TESTDATA/flepos/BERT/RX3/BERT00BEL_R_20243640700_41H_MN_Galileo_INAV.csv",
+        #    "GAL_FNAV": "/home/amuls/cylab/TESTDATA/flepos/BERT/RX3/BERT00BEL_R_20243640700_41H_MN_Galileo_FNAV.csv",
+        "BDS_D1": "/home/amuls/cylab/TESTDATA/flepos/BERT/RX3/BERT00BEL_R_20243640700_41H_MN_Beidou_D1.csv",
+        "BDS_D2": "/home/amuls/cylab/TESTDATA/flepos/BERT/RX3/BERT00BEL_R_20243640700_41H_MN_Beidou_D2.csv",
+    }
 
-    # Use first available ephemeris
-    eph = gps_nav_data[0]
+    for nav_type in nav_csv_fns.keys():
+        print(f"\nProcessing {nav_type}")
+        nav_data = read_nav_csv(csv_file=nav_csv_fns[nav_type])
 
-    # Calculate position at specific time
+        # Use first available ephemeris
+        eph = nav_data[0]
 
-    for t in range(eph.toe, eph.toe + 3600, 300):
-        x, y, z = eph.compute_satellite_position(t)
+        # Calculate position at specific time
+        for t in range(eph.toe, eph.toe + 3600, 300):
+            x, y, z = eph.compute_satellite_position(t)
 
-        print(
-            f"GPS PRN: {eph.prn} at {t}: {x:15.3f}, {y:15.3f}, {z:15.3f} | {np.sqrt(x**2 + y**2 + z**2):15.3f}"
-        )
-
-    # Read ephemerides from CSV
-    gal_nav_data = read_nav_csv(
-        csv_file="/home/amuls/cylab/TESTDATA/flepos/BERT/RX3/BERT00BEL_R_20243640700_41H_MN_Galileo_INAV.csv"
-    )
-
-    # Use first available ephemeris
-    eph = gal_nav_data[0]
-
-    # TODO: check for GAL NAV and BEIDOU NAV D1 & D2
-
-    for t in range(eph.toe, eph.toe + 3600, 300):
-        x, y, z = eph.compute_satellite_position(t)
-
-        print(
-            f"GAL PRN: {eph.prn} at {t}: {x:15.3f}, {y:15.3f}, {z:15.3f} | {np.sqrt(x**2 + y**2 + z**2):15.3f}"
-        )
+            if not nav_type.startswith("BDS"):
+                print(
+                    f"{nav_type} PRN: {eph.prn} at {eph.week} {t}: {x:15.3f}, {y:15.3f}, {z:15.3f} |"
+                    f" {np.sqrt(x**2 + y**2 + z**2):15.3f}"
+                )
+            else:
+                print(
+                    f"{nav_type} PRN: {eph.prn} at {eph.week + GPS_BDS_WEEK_DIFF} {t}: {x:15.3f}, {y:15.3f}, {z:15.3f} |"
+                    f" {np.sqrt(x**2 + y**2 + z**2):15.3f} | {eph.week - GPS_BDS_WEEK_DIFF}"
+                )

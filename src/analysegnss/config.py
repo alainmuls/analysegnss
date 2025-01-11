@@ -10,6 +10,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Define the path to the geoid file
 GEOID_PATH = os.path.join(BASE_DIR, "gnss", "geoids", "egm2008-1.pgm")
 
+# week difference between GPS and BDS time
+GPS_BDS_WEEK_DIFF = 1356
 
 # Error codes
 ERROR_CODES = {
