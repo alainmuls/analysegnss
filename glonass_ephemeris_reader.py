@@ -16,7 +16,7 @@ def read_glonass_nav_csv(csv_file):
             # Time parameters
             eph.week = int(float(row["WKNR"]))
             eph.tow = float(row["TOW"])
-            eph.tk = float(row["tk"])
+            eph.tk = int(row["tk"])
 
             # Position and velocity
             eph.x = float(row["X"])
@@ -36,9 +36,9 @@ def read_glonass_nav_csv(csv_file):
             eph.gamma_n = float(row["GammaN"])
 
             # Additional info
-            eph.prn = row["PRN"]
-            eph.freq_num = int(float(row["freqNum"]))
-            eph.health = float(row["health"])
+            eph.prn = int(row["PRN"])
+            eph.freq_num = int(row["freqNum"])
+            eph.health = int(row["health"])
 
             ephemerides.append(eph)
 
@@ -58,10 +58,10 @@ if __name__ == "__main__":
     base_time = eph.tk
     for t in range(0, 3600, 300):  # Calculate for one hour, every 5 minutes
         current_time = base_time + t
-        x, y, z = eph.compute_satellite_position(current_time)
+        x, y, z = eph.runge_kutta4(t=current_time)
 
         print(
             f"GLONASS PRN: {eph.prn} at {eph.week} {current_time}: "
-            f"{x:15.3f}, {y:15.3f}, {z:15.3f} | "
-            f"{np.sqrt(x**2 + y**2 + z**2):15.3f}"
+            f"{x*1000:15.3f}, {y*1000:15.3f}, {z*1000:15.3f} | "
+            f"{np.sqrt(x**2 + y**2 + z**2)*1000:15.3f}"
         )

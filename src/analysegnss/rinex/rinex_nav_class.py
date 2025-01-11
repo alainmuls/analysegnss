@@ -232,10 +232,18 @@ class RINEX_NAV(RINEX):
             # rename the columns of the DataFrame
             tabnav_df.columns = new_columns
 
-            # convert type of column TILE from str to i64
+            print(f"TauN values before casting: {tabnav_df.select('TauN').head()}")
+
+            # convert come columns to better format
             tabnav_df = tabnav_df.with_columns(
-                pl.col("TIME").cast(pl.Int64, strict=False)
+                pl.col("TIME").cast(pl.Int64, strict=False),
+                pl.col("tk").cast(pl.Int64, strict=False),
+                pl.col("TauN").str.strip().cast(pl.Float64, strict=False),
+                pl.col("health").cast(pl.Int32, strict=False),
+                pl.col("freqNum").cast(pl.Int16, strict=False),
+                pl.col("age").cast(pl.Int32, strict=False),
             )
+            print(f"TauN values before casting: {tabnav_df.select('TauN').head()}")
 
             # remove duplicate rows from tabnav_df
             tabnav_df = tabnav_df.unique()
@@ -258,6 +266,7 @@ class RINEX_NAV(RINEX):
                         ),
                     ]
                 )
+                .filter(pl.col("TOW").is_not_null())  # Remove rows where TOW is null
                 .drop(["DATE", "TIME", "#HD", "NAV"])
                 .select(["WKNR", "TOW", pl.all().exclude(["WKNR", "TOW"])])
             )

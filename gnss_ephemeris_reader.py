@@ -93,5 +93,5 @@ if __name__ == "__main__":
             else:
                 print(
                     f"{nav_type} PRN: {eph.prn} at {eph.week + GPS_BDS_WEEK_DIFF} {t}: {x:15.3f}, {y:15.3f}, {z:15.3f} |"
-                    f" {np.sqrt(x**2 + y**2 + z**2):15.3f} | {eph.week - GPS_BDS_WEEK_DIFF}"
+                    f" {np.sqrt(x**2 + y**2 + z**2):15.3f}"
                 )

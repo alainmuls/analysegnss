@@ -11,6 +11,31 @@ class GLONASSEphemeris:
         self.J2 = 1082.63e-6  # Second zonal harmonic
         self.OMEGA_E = 7.292115e-5  # Earth's rotation rate rad/s
 
+        # Time parameters
+        self.week = None
+        self.tow = None
+        self.tk = None
+
+        # Position and velocity and acceleration
+        self.x = None
+        self.y = None
+        self.z = None
+        self.vx = None
+        self.vy = None
+        self.vz = None
+        self.ax = None
+        self.ay = None
+        self.az = None
+
+        # Clock correction
+        self.tau_n = None
+        self.gamma_n = None
+
+        # Additional info
+        self.prn = None
+        self.freq_num = None
+        self.health = None
+
     def compute_acceleration(self, pos):
         x, y, z = pos
         r = np.sqrt(x * x + y * y + z * z)
@@ -32,7 +57,7 @@ class GLONASSEphemeris:
 
     def runge_kutta4(self, t):
         dt = 1.0  # Integration step (1 second)
-        steps = int(abs(t - self.tb))
+        steps = int(abs(t - self.tk))
 
         pos = np.array([self.x, self.y, self.z])
         vel = np.array([self.vx, self.vy, self.vz])

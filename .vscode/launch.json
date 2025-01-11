@@ -119,8 +119,22 @@
             "program": "src/analysegnss/rinex/rnxnav_csv.py",
             "console": "integratedTerminal",
             "args": [
-                "--nav-fn",
+                "--nav_fn",
                 "/home/amuls/cylab/TESTDATA/data2test/data/BRUX00BEL0_GREC.nav",
+                "-vvv",
+                "--gnss",
+                "R",
+            ]
+        },
+        {
+            "name": "Python Debugger: rnxnav_csv BERT00BEL_R_20243640700_41H_MN.rnx",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/analysegnss/rinex/rnxnav_csv.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--nav_fn",
+                "/home/amuls/cylab/TESTDATA/flepos/BERT/RX3/BERT00BEL_R_20243640700_41H_MN.rnx",
                 "-vvv",
                 "--gnss",
                 "R",
