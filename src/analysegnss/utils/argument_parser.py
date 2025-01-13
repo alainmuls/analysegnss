@@ -40,7 +40,7 @@ def argument_parser_rtk(args: list) -> argparse.Namespace:
 
     parser.add_argument(
         "--sd",
-        help="add standard deviation to the plot",
+        help="add standard deviation",
         action="store_true",
         required=False,
         default=False,
@@ -56,7 +56,8 @@ def argument_parser_rtk(args: list) -> argparse.Namespace:
     )
     parser.add_argument(
         "--archive",
-        help="Specify archive's directory name",
+        help="Archives extracted sbf blocks to specified archive's directory name. (full or relative (@sbf_ifn) path) \
+            Default is no archiving.",
         required=False,
         default=None,
         type=str,
@@ -100,7 +101,7 @@ def argument_parser_ppk(args: list) -> argparse.Namespace:
     )
     parser.add_argument(
         "--archive",
-        help="Specify archive's directory name",
+        help="Specify archive's directory name which archives the extracted rnx2rtkp pos file",
         required=False,
         default=None,
         type=str,
@@ -195,7 +196,15 @@ def argument_parser_plot_coords(args: list) -> argparse.Namespace:
         required=False,
         default=False,
     )
-
+    parser.add_argument(
+        "--archive",
+        help="Archives extracted sbf blocks to specified archive's directory name. (full or relative (@sbf_ifn) path) \
+            Default is no archiving.",
+        required=False,
+        default=None,
+        type=str,
+    )
+    
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)

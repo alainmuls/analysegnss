@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Standard library imports
+from logging import Logger
 import os
 import sys
 
@@ -77,7 +78,8 @@ def rtk_pvtgeod(argv: list) -> dict:
         if args_parsed.sd:
             # extract the PVT Geodetic2 block from SBF file and its covariance elements
             dfs_pvt = sbf.bin2asc_dataframe(
-                lst_sbfblocks=["PVTGeodetic2", "PosCovGeodetic1"]
+                lst_sbfblocks=["PVTGeodetic2", "PosCovGeodetic1"],
+                archive=args_parsed.archive,
             )
 
             if "PosCovGeodetic1" in dfs_pvt:
@@ -104,12 +106,7 @@ def rtk_pvtgeod(argv: list) -> dict:
             # Drop the column
             if "DT_right" in df_pvt.columns:
                 df_pvt = df_pvt.drop("DT_right")
-
-            # with pl.Config(
-            #     tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-            # ):
-            #     print(f"[bold green]{df_pvt}")
-
+        
         else:  # only use the PVTGeodetic, no StdDev required
             # extract the PVT Geodetic2 block from SBF file
             df_pvt = sbf.bin2asc_dataframe(
@@ -119,7 +116,7 @@ def rtk_pvtgeod(argv: list) -> dict:
         with pl.Config(
             tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
         ):
-            logger.debug(f"  df_pvt: \n{df_pvt}")
+            logger.info(f"  df_pvt: \n{df_pvt}")
 
         # analyse the quality of the solution
         quality_analysis(geod_df=df_pvt, logger=logger)
@@ -130,14 +127,26 @@ def rtk_pvtgeod(argv: list) -> dict:
         df_pvt = sbf.sbf2asc_dataframe(
             lst_sbfblocks=["PVTGeodetic2"], archive=args_parsed.archive
         )["PVTGeodetic2"]
-        df_poscov = sbf.sbf2asc_dataframe(lst_sbfblocks=["PosCovGeodetic1"])[
-            "PosCovGeodetic1"
-        ]
+
+        # sbf2asc cant read the PosCovGeodetic1 block.Only PosCovCartesian1 is available.
+        df_xyz = sbf.sbf2asc_dataframe(
+            lst_sbfblocks=["PVTCartesian2"], archive=args_parsed.archive
+        )["PVTCartesian2"]
+        if args_parsed.sd:
+            df_xyzcov = sbf.sbf2asc_dataframe(
+                lst_sbfblocks=["PosCovCartesian1"], archive=args_parsed.archive
+            )["PosCovCartesian1"]
+        else:
+            df_xyzcov = None
+
+
         with pl.Config(
             tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
         ):
-            print(f"df_poscov: \n{df_pvt}")
-            logger.info(f"df_poscov: \n{df_pvt}")
+            logger.info(f"df_pvt: \n{df_pvt}")
+            logger.info(f"df_xyz: \n{df_xyz}")
+            if df_xyzcov is not None:
+                logger.info(f"df_xyzcov: \n{df_xyzcov}")
 
         return df_pvt
 

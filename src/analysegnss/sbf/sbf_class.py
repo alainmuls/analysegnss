@@ -159,7 +159,7 @@ class SBF:
                 f"Error moving file {fn} to archive directory {dest}: {e}"
             )
             
-    def bin2asc_dataframe(self, lst_sbfblocks: list, archive: str) -> dict:
+    def bin2asc_dataframe(self, lst_sbfblocks: list, archive = None) -> dict:
         """
         bin2asc_dataframe converts binary SBF to CVS files for the sbfblocks in
         lst_sbfblocks and load these files in dataframes
@@ -267,21 +267,23 @@ class SBF:
                     f"[bold green]Reading from CSV file ({sbf_block})...",
                     spinner="point",
                 ):
-                sbf_df = pl.read_csv(
-                    source=bin2asc_fn[0],
-                    separator=",",
-                    columns=list(keep_cols.keys()),
-                    comment_prefix="#",
-                    has_header=True,
-                    skip_rows_after_header=1,  # Skip 1 row after the header
-                    dtypes=keep_cols,
-                    null_values="NaN",
-                )
+                    sbf_df = pl.read_csv(
+                        source=bin2asc_fn[0],
+                        separator=",",
+                        columns=list(keep_cols.keys()),
+                        comment_prefix="#",
+                        has_header=True,
+                        skip_rows_after_header=1,  # Skip 1 row after the header
+                        dtypes=keep_cols,
+                        null_values="NaN",
+                    )
 
                 # add columns to the dataframe
                 sbf_df = self.add_columns(block_df=sbf_df)
 
                 sbf_dfs[sbf_block] = sbf_df
+               
+                print(f"archive = {archive}")
                 # archiving the converted sbf file
                 if not archive == None:
                     self.archive_file(fn=bin2asc_fn[0], dest_dir=archive)
@@ -295,7 +297,7 @@ class SBF:
 
         return sbf_dfs
 
-    def sbf2asc_dataframe(self, lst_sbfblocks: list, archive: str) -> dict:
+    def sbf2asc_dataframe(self, lst_sbfblocks: list, archive = None) -> dict:
         """
         this definition is analogue to bin2asc and is used to convert the SBF files to dataframes.
         Sbf2asc can be installed on most platforms including OS running on ARM processors (e.g. Raspberry Pi).
@@ -325,7 +327,7 @@ class SBF:
                 f"and importing into dataframes for SBF blocks\n{str_yellow(' '.join(lst_sbfblocks))}"
             )
 
-        # create options for bin2asc
+        # create options for sbf2asc
         cmd_sbf2asc = [
             run_sbf2asc,
             "-f",
@@ -334,9 +336,6 @@ class SBF:
             "-o",
         ]
 
-        # add logging level to cmd_bin2asc when self._console_loglevel is DEBUG
-        if self._console_loglevel == logging.DEBUG:
-            cmd_sbf2asc.append("-v")
 
         for sbf_block in lst_sbfblocks:
             cmd_sbf2asc.append(
@@ -344,6 +343,10 @@ class SBF:
             )  # this comes after the -o argument so a correct output file is created
             sbf2asc_block = self.sbf2asc_convert_sbfblock(sbf_block=sbf_block)
             cmd_sbf2asc.append(sbf2asc_block)
+
+        # add logging level to cmd_sbf2asc when self._console_loglevel is DEBUG
+        if self._console_loglevel == logging.DEBUG:
+            cmd_sbf2asc.append("-v")
 
         # Convert binary to text messages
         if self.logger:
@@ -408,7 +411,7 @@ class SBF:
                         source=sbf2asc_fn[0],
                         has_header=False,
                         separator=",",
-                        new_columns=self.sb2asc_sbfblock_colnames(sbf_block=sbf_block),
+                        new_columns=self.sbf2asc_sbfblock_colnames(sbf_block=sbf_block),
                     )
                 except Exception as e:
                     if self.logger:
@@ -417,7 +420,6 @@ class SBF:
                     if self.logger:
                         self.logger.error(f"Empty file {sbf2asc_fn[0]}: {e}")
 
-                # TODO remove unused columns
 
                 # Drop columns with only zeroes
                 sbf_df = sbf_df.drop(
@@ -442,6 +444,7 @@ class SBF:
                     f"\t... Unable to create dataframes for the provided SBF blocks {str_yellow(lst_sbfblocks)} found. Exiting."
                 )
             sys.exit(ERROR_CODES["E_PROCESS"])
+
         return sbf_dfs
 
     def add_columns(self, block_df: pl.DataFrame) -> pl.DataFrame:
@@ -586,6 +589,31 @@ class SBF:
                 "Doppler_Hz",
                 "L_cycles [cyc]",
             ]
+        elif sbf_block == "PVTCartesian2":
+            # dict of your column names keyed by dtype
+            col_types = {
+                pl.Float64: [
+                    "X [m]",
+                    "Y [m]",
+                    "Z [m]",
+                    "Vx [m/s]",
+                    "Vy [m/s]",
+                    "Vz [m/s]",
+                    "COG [°]",
+                ],
+                pl.UInt32: [
+                    "TOW [0.001 s]",
+                ],
+                pl.UInt16: [
+                    "WNc [w]",
+                    "MeanCorrAge [0.01 s]",
+                ],
+                pl.UInt8: [
+                    "Type",
+                    "Error",
+                    "NrSV",
+                ],
+            }
         elif sbf_block == "PVTGeodetic2":
             # dict of your column names keyed by dtype
             col_types = {
@@ -612,22 +640,6 @@ class SBF:
                     "NrSV",
                 ],
             }
-
-        elif sbf_block == "PVTCartesian2":
-            keep_cols = [
-                "TOW [0.001 s]",
-                "WNc [w]",
-                "Type",
-                "Flag2D",
-                "Error",
-                "X [m]",
-                "Y [m]",
-                "Z [m]",
-                "Undulation [m]",
-                "RxClkBias [ms]",
-                "RxClkDrift [ppm]",
-                "NrSV",
-            ]
         elif sbf_block == "PVTResiduals2":
             keep_cols = [
                 "TOW [0.001 s]",
@@ -668,6 +680,21 @@ class SBF:
                 "UTCSec [s]",
                 "DeltaLS [s]",
             ]
+        elif sbf_block == "PosCovCartesian1":
+            col_types = {
+                pl.Float32: [
+                    "Cov_xx [m²]",
+                    "Cov_yy [m²]",
+                    "Cov_zz [m²]",
+                    "Cov_bb [s²]",
+                ],
+                pl.UInt32: [
+                    "TOW [0.001 s]",
+                ],
+                pl.UInt16: [
+                    "WNc [w]",
+                ],
+            }
         elif sbf_block == "PosCovGeodetic1":
             # dict of your column names keyed by dtype
             col_types = {
@@ -772,7 +799,7 @@ class SBF:
         lookup_sbf_block = {
             "PVTCartesian2": "-p",
             "PVTGeodetic2": "-g",
-            "PosCovGeodetic1": "-c",
+            "PosCovCartesian1": "-c",
         }
 
         try:
@@ -786,7 +813,7 @@ class SBF:
 
         return sbf_block_sbf2asc
 
-    def sb2asc_sbfblock_colnames(self, sbf_block: str) -> list:
+    def sbf2asc_sbfblock_colnames(self, sbf_block: str) -> list:
         """The sbf2asc does not give any header information.
         This function looks up the column names for each sbf block
 
@@ -808,9 +835,44 @@ class SBF:
 
         # TODO this dict needs to be expanded
         sbf_blocks_colnames = {
-            "PosCovGeodetic1": [
+            "PVTCartesian2": [
+                "0",
+                "GPST [s]",
+                "X [m]",
+                "Y [m]",
+                "Z [m]",
+                "Vx [m/s]",
+                "Vy [m/s]",
+                "Vz [m/s]",
+                "RxClockBias [s]",
+                "RxClockDrift [s/s]",
+                "NrSV",
+                "PVT Mode",
+                "MeanCorrAge [0.01 s]",
+                "PVT Error",
+                "COG [°]",
+            ],
+            "PVTGeodetic2": [
+                "-1",
+                "GPST [s]",
+                "Latitude [rad]",
+                "Longitude [rad]",
+                "Height [m]",
+                "Undulation [m]",
+                "Vn [m/s]",
+                "Ve [m/s]",
+                "Vu [m/s]",
+                "ClockBias [s]",
+                "ClockDrift [s/s]",
+                "NrSV",
+                "PVT Mode",
+                "MeanCorrAge [0.01 s]",
+                "PVT Error",
+                "COG [°]",
+            ],
+            "PosCovCartesian1": [
                 "-2",
-                "Time [GPS seconds]",
+                "GPST [s]",
                 "Cov_XX [m²]",
                 "Cov_YY [m²]",
                 "Cov_ZZ [m²]",
