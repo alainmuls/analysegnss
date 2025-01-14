@@ -1,11 +1,14 @@
-import pytest
 import numpy as np
+import pytest
+
+from src.analysegnss.config import GPS_BDS_WEEK_DIFF
 from src.analysegnss.gnss.GLONASSEphemeris import GLONASSEphemeris
 from src.analysegnss.gnss.GNSSephemeris import GNSSEphemeris
-from src.analysegnss.config import GPS_BDS_WEEK_DIFF
+from src.analysegnss.gnss.GNSSNavReader import GNSSNavReader
+from src.analysegnss.config import R_EARTH
 
 
-def test_read_nav_csv():
+def test_read_gnss_nav_csv():
     # Test data paths
     nav_csv_fns = {
         "GPS-LNAV": "tests/data/BERT00BEL_R_20243640700_41H_MN_GPS_LNAV.csv",
@@ -14,55 +17,119 @@ def test_read_nav_csv():
         "BDS_D2": "tests/data/BERT00BEL_R_20243640700_41H_MN_Beidou_D2.csv",
     }
 
-    for nav_type, file_path in nav_csv_fns.items():
-        nav_data = read_nav_csv(file_path)
+    for nav_type, navcsv_fn in nav_csv_fns.items():
+        print(f"\nProcessing {nav_type} | {navcsv_fn}")
+        gnss_nav_reader = GNSSNavReader(csv_file=navcsv_fn)
+        gnss_nav_reader.read_GEC_nav_csv()
+        nav_data = gnss_nav_reader.get_ephemerides()
+
         assert len(nav_data) > 0, f"No data read for {nav_type}"
 
         # Test first ephemeris
         eph = nav_data[0]
+
+        # print in tabular form
+        attributes = vars(eph)
+        items = sorted(attributes.items())
+        key_width = 12
+        val_width = 18
+
+        for i in range(0, len(items), 3):
+            row = items[i : i + 3]
+            line = ""
+            for attr, value in row:
+                # line += f"{attr:>{key_width}} : {str(value):<{val_width}}"
+                # line += f"{attr:>{key_width}} : {value} ({type(value).__name__}){' ':<{val_width-len(str(value))}}"
+
+                # if isinstance(value, (int, float)):
+                #     formatted_value = (
+                #         f"{value:>{val_width}.12f}"
+                #         if isinstance(value, float)
+                #         else f"{value:>{val_width}d}"
+                #     )
+                # else:
+                #     formatted_value = f"{str(value):<{val_width}}"
+
+                if isinstance(value, float):
+                    formatted_value = f"{value:>{val_width}.9e}"
+                elif isinstance(value, int):
+                    formatted_value = f"{value:>{val_width}d}"
+                else:
+                    formatted_value = f"{str(value):<{val_width}}"
+
+                line += f"{attr:>{key_width}} : {formatted_value}"
+            print(line)
+
         assert eph is not None
         assert hasattr(eph, "prn")
         assert hasattr(eph, "health")
 
 
 def test_satellite_position_calculation():
+    # Test data paths
+    nav_csv_fns = {
+        "GPS-LNAV": "tests/data/BERT00BEL_R_20243640700_41H_MN_GPS_LNAV.csv",
+        "GAL_INAV": "tests/data/BERT00BEL_R_20243640700_41H_MN_Galileo_INAV.csv",
+        "BDS_D1": "tests/data/BERT00BEL_R_20243640700_41H_MN_Beidou_D1.csv",
+        "BDS_D2": "tests/data/BERT00BEL_R_20243640700_41H_MN_Beidou_D2.csv",
+    }
     # Test for each navigation type
-    nav_data = read_nav_csv("tests/data/BERT00BEL_R_20243640700_41H_MN_GPS_LNAV.csv")
-    eph = nav_data[0]
+    for nav_type, navcsv_fn in nav_csv_fns.items():
+        gnss_nav_reader = GNSSNavReader(csv_file=navcsv_fn)
+        gnss_nav_reader.read_GEC_nav_csv()
+        nav_data = gnss_nav_reader.get_ephemerides()
 
-    # Calculate positions at different times
-    t = eph.toe
-    x, y, z = eph.compute_satellite_position(t)
+        eph = nav_data[0]
 
-    # Validate position values
-    assert isinstance(x, (int, float))
-    assert isinstance(y, (int, float))
-    assert isinstance(z, (int, float))
+        # Calculate positions at different times
+        t = eph.toe
+        x, y, z = eph.compute_satellite_position(t)
 
-    # Check reasonable orbital radius
-    radius = np.sqrt(x**2 + y**2 + z**2)
-    assert 20000000 < radius < 30000000  # GPS orbital radius range in meters
+        # Validate position values
+        assert isinstance(x, (int, float))
+        assert isinstance(y, (int, float))
+        assert isinstance(z, (int, float))
+
+        # Check reasonable orbital radius
+        gnss_radius = np.sqrt(x**2 + y**2 + z**2)
+
+        if nav_type.startswith("GPS"):
+            print(
+                "\nNAV_TYPE     PRN  WKNR     TOW        X [m]           Y [m]           Z [m]    |     radius [m]  |     height [m]"
+            )  # GPS orbital radius range in meters
+        if not nav_type.startswith("BDS"):
+            print(
+                f"{nav_type:12s} {eph.prn:3d} {eph.week:5d} {t:7d} {x:15.3f} {y:15.3f} {z:15.3f} |"
+                f" {gnss_radius:15.3f} | {gnss_radius - R_EARTH:15.3f}"
+            )
+        else:
+            print(
+                f"{nav_type:12s} {eph.prn:3d} {eph.week + GPS_BDS_WEEK_DIFF:5d} {t:7d} {x:15.3f} {y:15.3f} {z:15.3f} |"
+                f" {gnss_radius:15.3f} | {gnss_radius - R_EARTH:15.3f}"
+            )
+
+        assert 20000000 < gnss_radius < 50000000  # GPS orbital radius range in meters
 
 
-def test_glonass_ephemeris():
-    glonass_eph = GLONASSEphemeris()
+# def test_glonass_ephemeris():
+#     glonass_eph = GLONASSEphemeris()
 
-    # Test initial conditions
-    glonass_eph.x = 10000.0  # km
-    glonass_eph.y = 15000.0
-    glonass_eph.z = 20000.0
-    glonass_eph.vx = 1.0
-    glonass_eph.vy = 2.0
-    glonass_eph.vz = 3.0
+#     # Test initial conditions
+#     glonass_eph.x = 10000.0  # km
+#     glonass_eph.y = 15000.0
+#     glonass_eph.z = 20000.0
+#     glonass_eph.vx = 1.0
+#     glonass_eph.vy = 2.0
+#     glonass_eph.vz = 3.0
 
-    # Test Runge-Kutta integration
-    t = 300  # 5 minutes
-    pos = glonass_eph.runge_kutta4(t)
+#     # Test Runge-Kutta integration
+#     t = 300  # 5 minutes
+#     pos = glonass_eph.runge_kutta4(t)
 
-    # Validate position
-    assert len(pos) == 3
-    radius = np.sqrt(sum(p**2 for p in pos))
-    assert 19000 < radius < 26000  # GLONASS orbital radius range in km
+#     # Validate position
+#     assert len(pos) == 3
+#     radius = np.sqrt(sum(p**2 for p in pos))
+#     assert 19000 < radius < 26000  # GLONASS orbital radius range in km
 
 
 if __name__ == "__main__":

@@ -5,12 +5,6 @@ class GLONASSEphemeris:
     def __init__(self):
         # Previous initialization code...
 
-        # Constants
-        self.GM = 398600.4418  # Earth's gravitational constant km³/s²
-        self.AE = 6378.136  # Earth's radius km
-        self.J2 = 1082.63e-6  # Second zonal harmonic
-        self.OMEGA_E = 7.292115e-5  # Earth's rotation rate rad/s
-
         # Time parameters
         self.week = None
         self.tow = None
