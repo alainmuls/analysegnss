@@ -232,18 +232,32 @@ class RINEX_NAV(RINEX):
             # rename the columns of the DataFrame
             tabnav_df.columns = new_columns
 
-            print(f"TauN values before casting: {tabnav_df.select('TauN').head()}")
+            # print(f"TauN values before casting: {tabnav_df.select('TauN').head()}")
 
-            # convert come columns to better format
-            tabnav_df = tabnav_df.with_columns(
-                pl.col("TIME").cast(pl.Int64, strict=False),
-                pl.col("tk").cast(pl.Int64, strict=False),
-                pl.col("TauN").str.strip().cast(pl.Float64, strict=False),
-                pl.col("health").cast(pl.Int32, strict=False),
-                pl.col("freqNum").cast(pl.Int16, strict=False),
-                pl.col("age").cast(pl.Int32, strict=False),
-            )
-            print(f"TauN values before casting: {tabnav_df.select('TauN').head()}")
+            # # convert come columns to better format
+            # tabnav_df = tabnav_df.with_columns(
+            #     pl.col("TIME").cast(pl.Int64, strict=False),
+            #     pl.col("tk").cast(pl.Int64, strict=False),
+            #     pl.col("TauN").str.strip().cast(pl.Float64, strict=False),
+            #     pl.col("health").cast(pl.Int32, strict=False),
+            #     pl.col("freqNum").cast(pl.Int16, strict=False),
+            #     pl.col("age").cast(pl.Int32, strict=False),
+            # )
+            # print(f"TauN values before casting: {tabnav_df.select('TauN').head()}")
+
+            # Convert columns with null-safe approach
+            columns_to_convert = {
+                "TIME": (pl.col("TIME").cast(pl.Int64, strict=False)),
+                "tk": (pl.col("tk").cast(pl.Int64, strict=False)),
+                "health": (pl.col("health").cast(pl.Int64, strict=False)),
+                "freqNum": (pl.col("freqNum").cast(pl.Int16, strict=False)),
+                "age": (pl.col("age").cast(pl.Int32, strict=False)),
+                "TauN": (pl.col("TauN").str.strip().cast(pl.Float64, strict=False)),
+            }
+
+            for col, col_format in columns_to_convert.items():
+                if col in tabnav_df.columns:
+                    tabnav_df = tabnav_df.with_columns(col_format)
 
             # remove duplicate rows from tabnav_df
             tabnav_df = tabnav_df.unique()
