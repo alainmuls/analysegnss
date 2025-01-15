@@ -6,6 +6,7 @@ from src.analysegnss.gnss.GLONASSEphemeris import GLONASSEphemeris
 from src.analysegnss.gnss.GNSSephemeris import GNSSEphemeris
 from src.analysegnss.gnss.GNSSNavReader import GNSSNavReader
 from src.analysegnss.config import R_EARTH
+from src.analysegnss.gnss.gnss_dt import gnss2dt
 
 
 def test_read_gnss_nav_csv():
@@ -85,6 +86,7 @@ def test_satellite_position_calculation():
 
         # Calculate positions at different times
         t = eph.toe
+        WkNr = eph.week
         x, y, z = eph.compute_satellite_position(t)
 
         # Validate position values
@@ -95,7 +97,7 @@ def test_satellite_position_calculation():
         # Check reasonable orbital radius
         gnss_radius = np.sqrt(x**2 + y**2 + z**2)
 
-        if nav_type.startswith("GPS"):
+        if nav_type.startswith("GPS-LNAV"):
             print(
                 "\nNAV_TYPE     PRN  WKNR     TOW        X [m]           Y [m]           Z [m]    |     radius [m]  |     height [m]"
             )  # GPS orbital radius range in meters
@@ -111,6 +113,64 @@ def test_satellite_position_calculation():
             )
 
         assert 20000000 < gnss_radius < 50000000  # GPS orbital radius range in meters
+
+        if nav_type == "GPS-G16":
+            pos_brdc = []
+            pos_glab = []
+
+            # read the corresponding GPS LNAV ephemeris from CSV file
+            gnss_nav_reader = GNSSNavReader(csv_file=navcsv_fn)
+            gnss_nav_reader.read_GEC_nav_csv()
+            nav_data = gnss_nav_reader.get_ephemerides()
+
+            t = eph.toe
+            WkNr = eph.week
+
+            # read all ines starting with SATPVT from the glab satpos file
+            with open("tests/data/BERT00BEL_R_20243640700_41H_MN_G16.satpos", "r") as f:
+                glab_lines = f.readlines()
+
+            for t in range(eph.toe - 3600, eph.toe + 3600, 300):
+                # convert the GPS Week/TOW to datetime
+                dt = gnss2dt(week=WkNr, tow=t)
+                x, y, z = eph.compute_satellite_position(t)
+
+                pos_brdc.append((WkNr, t, dt, x, y, z))
+                glab_hms = dt.strftime("%H:%M:%S.%f")[:-4]
+                print(glab_hms, x, y, z)
+
+                # search in glab_lines the lines that corresponds to the glab_hms
+                for line in glab_lines:
+                    if glab_hms in line:
+                        # extract fields 10, 11 and 12
+                        # print(line.split()[9])
+                        # print(line.split()[9:12])
+                        x_glab, y_glab, z_glab = map(float, line.split()[9:12])
+                        pos_glab.append((WkNr, t, glab_hms, x_glab, y_glab, z_glab))
+                        break
+
+            # read file ./tests/data/BERT00BEL_R_20243640700_41H_MN_G16_GPS_LNAV.satpos
+            # find the line with timing 12:00:00.00 and extract the position
+            with open("tests/data/BERT00BEL_R_20243640700_41H_MN_G16.satpos", "r") as f:
+                for line in f:
+                    if "12:00:00.00" in line:
+                        # extract fields 10, 11 and 12
+                        # print(line.split()[9])
+                        # print(line.split()[9:12])
+                        x_glab, y_glab, z_glab = map(float, line.split()[9:12])
+                        break
+                    else:
+                        continue
+
+                print(
+                    f"\n{nav_type} {eph.prn} {WkNr} {t}: {x:15.3f} {y:15.3f} {z:15.3f}"
+                    f"\n                        {x_glab:15.3f} {y_glab:15.3f} {z_glab:15.3f}"
+                )
+
+                # assert that the difference between the _ref and _glab coordinates is less than 5mm
+                assert abs(x_glab - x) < 0.005
+                assert abs(y_glab - y) < 0.005
+                assert abs(z_glab - z) < 0.005
 
 
 # def test_glonass_ephemeris():
