@@ -303,7 +303,7 @@ def ebh_line_thin_out(
 
 
 def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
-    """get the ebh_lines from RTK or PPK processing
+    """get the ebh_lines from RTK or PPK processing and write to csv files
 
     Args:
         parsed_args: parsed CLI arguments executed by argparse
