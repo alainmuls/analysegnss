@@ -1,6 +1,8 @@
 import numpy as np
 from datetime import datetime, timedelta
 
+from src.analysegnss.config import GM, OMEGA_EARTH
+
 
 class GNSSEphemeris:
     def __init__(self):
@@ -45,10 +47,6 @@ class GNSSEphemeris:
         Returns:
             x, y, z: ECEF coordinates in meters
         """
-        # Constants
-        MU = 3.986005e14  # Earth's gravitational constant (m^3/s^2)
-        OMEGA_E = 7.2921151467e-5  # Earth's rotation rate (rad/s)
-
         # Semi-major axis
         A = self.sqrta * self.sqrta
 
@@ -56,7 +54,7 @@ class GNSSEphemeris:
         tk = t - self.toe
 
         # Mean motion
-        n0 = np.sqrt(MU / (A * A * A))
+        n0 = np.sqrt(GM / (A * A * A))
         n = n0 + self.dn
 
         # Mean anomaly
@@ -90,7 +88,9 @@ class GNSSEphemeris:
         yk_prime = rk * np.sin(uk)
 
         # Corrected longitude of ascending node
-        OMEGA_k = self.OMEGA + (self.OMEGA_DOT - OMEGA_E) * tk - OMEGA_E * self.toe
+        OMEGA_k = (
+            self.OMEGA + (self.OMEGA_DOT - OMEGA_EARTH) * tk - OMEGA_EARTH * self.toe
+        )
 
         # Earth-fixed coordinates
         x = xk_prime * np.cos(OMEGA_k) - yk_prime * np.cos(ik) * np.sin(OMEGA_k)
