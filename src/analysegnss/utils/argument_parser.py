@@ -903,17 +903,25 @@ def argument_parser_get_rnx_files(args: list) -> argparse.Namespace:
 
     args = parser.parse_args(args)
     
-def argument_parser_gradient_ebhlines(args: list) -> argparse.Namespace:
+def argument_parser_gradient_ebhlines(args: list, script_name: str) -> argparse.Namespace:
     """
     Parses the arguments and creates console/file logger for gradient_ebhlines.py
     """
 
-    baseName = str_yellow(os.path.basename(__file__))
+    baseName = str_yellow(script_name)
 
     help_text = (
         baseName
         + """
-        Parses the arguments and creates console/file logger for gradient_ebhlines.py
+        Calculates the transversal and longitudinal gradient of the runway according to the DATM team
+        and saves the output to a text file.
+        The output contains:
+            - the transversal and longitudinal gradient of the runway
+            - the coordinates of the highest point on the CLine
+            - the centerline coordinates on the lowest threshold
+            - the distance from the lowest threshold to the highest point on the CLine
+            - the slope from the lowest threshold to the highest point on the CLine
+        from the ebh lines csv files
     """
     )
     
@@ -928,15 +936,31 @@ def argument_parser_gradient_ebhlines(args: list) -> argparse.Namespace:
         required=False,
     )
     parser.add_argument(
-        "-dn",
-        "--dir_name",
+        "-id",
+        "--input_dir",
         help="Directory containing the ebh lines csv files",
         type=str,
         required=True,
     )
     parser.add_argument(
+        "-od",
+        "--output_dir",
+        help="Directory to save the output file. (default: input_dir)",
+        type=str,
+        required=False,
+        default=None,
+    )   
+    parser.add_argument(
+        "-ofn",
+        "--output_filename",
+        help="Output filename containing the runway gradient and other information. (default: runway_gradient_information.txt)",
+        type=str,
+        required=False,
+        default="runway_gradient_information.txt",
+    )
+    parser.add_argument(
         "--log_dest",
-        help="Specify log destination directory (full path). Default is /tmp/logs/",
+        help="Specify log destination directory (full path). (Default is /tmp/logs/)",
         type=str,
         required=False,
         default="/tmp/logs/",

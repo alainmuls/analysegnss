@@ -31,7 +31,7 @@ from analysegnss.utils import argument_parser, init_logger
 
 
 # gradient_ebhlines is the main function that calls other functions to get the gradient of the EBH lines
-def gradient_ebhlines(parsed_args: argparse.Namespace, logger: Logger) -> pl.DataFrame:
+def gradient_ebhlines(parsed_args: argparse.Namespace, logger: Logger) -> str:
     """
     Get the gradient of the EBH lines
     This is required that the coordinates of each line are more or less parallel to each other.
@@ -43,12 +43,12 @@ def gradient_ebhlines(parsed_args: argparse.Namespace, logger: Logger) -> pl.Dat
     logger (Logger): Logger object
 
     returns:
-    max_gradient_rwy (float): maximum longitudinal gradient from the lowest threshold to the highest point on the CLine
-    max_transversal_gradient_rwy (float): maximum transversal gradient across the width of the runway
-    highest_point_CL (pl.DataFrame): highest point on the CLine coordinates
-    lowest_threshold (pl.DataFrame): lowest runway threshold coordinates
-    dist_threshold_and_Hpoint_CL (float): distance from the lowest threshold to the highest point on the CLine
-    slope_threshold_to_Hpoint_CL (float): slope from the lowest threshold to the highest point on the CLine
+    gradient_runway_output (str):  string with the 
+                                    longitudinal and transversal gradient information of the runway 
+                                    the coordinates of the highest point on the CLine
+                                    the centerline coordinates on the lowest threshold
+                                    the distance from the lowest threshold to the highest point on the CLine
+                                    the slope from the lowest threshold to the highest point on the CLine
     """
 
     # collect the ebh lines from the directory #TODO get the ebh lines from the ebh_lines.py script?
@@ -64,19 +64,19 @@ def gradient_ebhlines(parsed_args: argparse.Namespace, logger: Logger) -> pl.Dat
     )
 
     # determine the highest gradient from the lowest threshold to the highest point on the CLine
-    max_gradient_rwy, dist_threshold_and_Hpoint_CL, slope_threshold_to_Hpoint_CL = (
+    max_longitudinal_gradient_rwy, dist_threshold_and_Hpoint_CL, slope_threshold_to_Hpoint_CL = (
         gradient_3d(
-            x1=lowest_threshold["UTM.E"].item(),
-            y1=lowest_threshold["UTM.N"].item(),
-            z1=lowest_threshold["orthoH"].item(),
-            x2=highest_point_CL["UTM.E"].item(),
-            y2=highest_point_CL["UTM.N"].item(),
-            z2=highest_point_CL["orthoH"].item(),
+            x1=lowest_threshold[0],
+            y1=lowest_threshold[1],
+            z1=lowest_threshold[2],
+            x2=highest_point_CL[0],
+            y2=highest_point_CL[1],
+            z2=highest_point_CL[2],
             logger=logger,
         )
     )
     logger.info(
-        f"Max LONGITUDINAL gradient from lowest threshold to highest point on the CLine is {max_gradient_rwy} degrees"
+        f"Max LONGITUDINAL gradient from lowest threshold to highest point on the CLine is {max_longitudinal_gradient_rwy} degrees"
     )
     logger.info(
         f"Distance from lowest threshold to highest point on the CLine is {dist_threshold_and_Hpoint_CL} meters"
@@ -93,22 +93,21 @@ def gradient_ebhlines(parsed_args: argparse.Namespace, logger: Logger) -> pl.Dat
     outer_line1, outer_line2 = outermost_lines(ebh_lines=ebh_lines, logger=logger)
     # Determine the max TRANSVERSAL gradient across the width of the runway
     max_transversal_gradient_rwy = max_transversal_gradient(
-        outer_line1=outer_line1, outer_line2=outer_line2, logger=logger
+        outer_line1=ebh_lines[outer_line1], outer_line2=ebh_lines[outer_line2], logger=logger
     )
 
-    logger.info(
-        f"Max TRANSVERSAL gradient across the width of the runway is {max_transversal_gradient_rwy} degrees"
-    )
+    # store the output in a dictionary
+    gradient_runway_output = f"""
+        maximum LONGITUDINAL gradient of the runway (degrees):\t\t\t{max_longitudinal_gradient_rwy:.2f}
+        maximum TRANSVERSAL gradient of the runway (degrees):\t\t\t{max_transversal_gradient_rwy:.2f}\n\n
+        highest point on centerline (UTM.E, UTM.N, orthoH):\t\t\t{highest_point_CL}
+        centerline coordinates on lowest threshold (UTM.E, UTM.N, orthoH):\t{lowest_threshold}\n\n
+        distance from lowest threshold to highest point on centerline (meters):\t{dist_threshold_and_Hpoint_CL:.2f}
+        slope from lowest threshold to highest point on centerline:\t\t{slope_threshold_to_Hpoint_CL:.2f}
+    """
+ 
 
-    return (
-        max_gradient_rwy,
-        max_transversal_gradient_rwy,
-        highest_point_CL,
-        lowest_threshold,
-        dist_threshold_and_Hpoint_CL,
-        slope_threshold_to_Hpoint_CL,
-    )
-
+    return gradient_runway_output
 
 # collect_ebh_lines is a function that collects the ebh lines csv files from a directory
 def collect_ebh_lines(parsed_args: argparse.Namespace, logger: Logger) -> dict:
@@ -124,19 +123,19 @@ def collect_ebh_lines(parsed_args: argparse.Namespace, logger: Logger) -> dict:
     """
 
     # check if the directory exists
-    if not os.path.exists(parsed_args.dir_name):
-        logger.error(f"Directory {parsed_args.dir_name} does not exist")
+    if not os.path.exists(parsed_args.input_dir):
+        logger.error(f"Directory {parsed_args.input_dir} does not exist")
         sys.exit(1)
 
     # get the ebh lines from the directory
     ebh_lines = {}
-    for file in os.listdir(parsed_args.dir_name):
+    for file in os.listdir(parsed_args.input_dir):
         if file.endswith(".csv"):
             logger.info(
-                f"Collecting ebh line {file} from directory {parsed_args.dir_name}"
+                f"Collecting ebh line {file} from directory {parsed_args.input_dir}"
             )
             ebh_lines[file] = pl.read_csv(
-                source=os.path.join(parsed_args.dir_name, file),
+                source=os.path.join(parsed_args.input_dir, file),
                 separator=";",
                 columns=["UTM.E", "UTM.N", "orthoH"],
                 comment_prefix="#",
@@ -146,7 +145,7 @@ def collect_ebh_lines(parsed_args: argparse.Namespace, logger: Logger) -> dict:
             )
             logger.debug(f"Extracted {len(ebh_lines[file])} rows from ebh line {file}")
 
-    logger.info(f"Extracted ebh lines {ebh_lines.keys()} from directory {parsed_args.dir_name}")
+    logger.info(f"Extracted ebh lines {ebh_lines.keys()} from directory {parsed_args.input_dir}")
     
     # select the centerline
     ebh_lines = rename_ebh_line_keys(ebh_lines=ebh_lines, logger=logger)
@@ -185,13 +184,13 @@ def gradient_3d(
     # calculate the distance between the two coordinates aka the slope length
     distance = euclidean_distance(x1, x2, y1, y2, z1, z2)
 
-    logger.info(
+    logger.debug(
         f"Gradient between coordinates ({x1}, {y1}, {z1}) and ({x2}, {y2}, {z2}) is {gradient} degrees"
     )
-    logger.info(
+    logger.debug(
         f"Distance between coordinates ({x1}, {y1}, {z1}) and ({x2}, {y2}, {z2}) is {distance} meters"
     )
-    logger.info(
+    logger.debug(
         f"Slope between coordinates ({x1}, {y1}, {z1}) and ({x2}, {y2}, {z2}) is {slope}"
     )
 
@@ -201,7 +200,7 @@ def gradient_3d(
 # determine the lowest threshold and the highest point on the CLine
 def lowest_rwy_threshold_and_highest_point_CL(
     ebh_line: pl.DataFrame, logger: Logger
-) -> dict:
+) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
     """
     Determine the lowest runway threshold and the highest point on the CLine (DATM specifies CLine as reference line)
 
@@ -217,6 +216,10 @@ def lowest_rwy_threshold_and_highest_point_CL(
     # get the lowest threshold and the highest point on the CLine
     lowest_threshold = ebh_line.filter(pl.col("orthoH") == ebh_line["orthoH"].min())
     highest_point_CL = ebh_line.filter(pl.col("orthoH") == ebh_line["orthoH"].max())
+
+    # convert the lowest threshold and highest point on the CLine to a tuple
+    lowest_threshold = (lowest_threshold["UTM.E"].item(), lowest_threshold["UTM.N"].item(), lowest_threshold["orthoH"].item())
+    highest_point_CL = (highest_point_CL["UTM.E"].item(), highest_point_CL["UTM.N"].item(), highest_point_CL["orthoH"].item())
 
     logger.info(f"Identified the lowest runway threshold with CLine coordinates {lowest_threshold}")
     logger.info(f"Identified the highest point on the CLine with the coordinates {highest_point_CL}")
@@ -245,7 +248,7 @@ def rename_ebh_line_keys(ebh_lines: dict, logger: Logger) -> dict:
         
     return ebh_lines
 
-def outermost_lines(ebh_lines: dict, logger: Logger) -> dict:
+def outermost_lines(ebh_lines: dict, logger: Logger) -> tuple[str, str]:
     """
     Determine the most outermost lines
     This is required that the coordinates of each line are more or less parallel to each other.
@@ -257,13 +260,13 @@ def outermost_lines(ebh_lines: dict, logger: Logger) -> dict:
     logger (Logger): Logger object
 
     returns:
-    outermost_lines (dict): dictionary with the most outermost lines
+    outer_line1, outer_line2 (str): keys of the most outermost lines
     """
 
     # get the first point of each line
-    first_coord = {}
+    first_coords = {}
     for line_name, line_df in ebh_lines.items():
-        first_coord[line_name] = {
+        first_coords[line_name] = {
             "UTM.E": line_df["UTM.E"].head(1).item(),
             "UTM.N": line_df["UTM.N"].head(1).item(),
         }
@@ -273,16 +276,16 @@ def outermost_lines(ebh_lines: dict, logger: Logger) -> dict:
     outer_line1 = None
     outer_line2 = None
 
-    for line1 in first_coord.keys():
-        for line2 in first_coord.keys():
+    for line1 in first_coords.keys():
+        for line2 in first_coords.keys():
             if line1 >= line2:  # Skip duplicate pairs and same line
                 continue
 
             dist = euclidean_distance(
-                x1=first_coord[line1]["UTM.E"],
-                x2=first_coord[line2]["UTM.E"],
-                y1=first_coord[line1]["UTM.N"],
-                y2=first_coord[line2]["UTM.N"],
+                x1=first_coords[line1]["UTM.E"],
+                x2=first_coords[line2]["UTM.E"],
+                y1=first_coords[line1]["UTM.N"],
+                y2=first_coords[line2]["UTM.N"],
             )
 
             if dist > max_dist:
@@ -298,7 +301,7 @@ def outermost_lines(ebh_lines: dict, logger: Logger) -> dict:
 
 
 def max_transversal_gradient(
-    outer_line1: dict, outer_line2: dict, logger: Logger
+    outer_line1: pl.DataFrame, outer_line2: pl.DataFrame, logger: Logger
 ) -> float:
     """
     Determine the maximum transversal gradient between the two lines. 
@@ -307,8 +310,8 @@ def max_transversal_gradient(
     This is to ensure that the gradient is calculated correctly.
 
     args:
-    outer_line1 (dict): dictionary with the first outermost line
-    outer_line2 (dict): dictionary with the second outermost line
+    outer_line1 (pl.DataFrame): dataframe with the first outermost line
+    outer_line2 (pl.DataFrame): dataframe with the second outermost line
     logger (Logger): Logger object
 
     returns:
@@ -317,10 +320,12 @@ def max_transversal_gradient(
 
     # Calculate gradients between corresponding points of the two lines
     max_transversal_gradient = 0
-    for i in range(len(outer_line1)):
-        # Get corresponding points
-        x1, y1, z1 = outer_line1.items.row(i)
-        x2, y2, z2 = outer_line2.items.row(i)
+    # iterate over the number of points in the outermost lines
+    # length of the outermost lines are not the same, thus we need to iterate over the shortest line
+    for i in range(min(len(outer_line1), len(outer_line2))):
+        # Get corresponding points from the polars dataframes
+        x1, y1, z1 = outer_line1.row(i)
+        x2, y2, z2 = outer_line2.row(i)
 
         # Calculate gradient
         gradient, _, _ = gradient_3d(x1, y1, z1, x2, y2, z2, logger)
@@ -356,28 +361,64 @@ def euclidean_distance(
     else:
         return np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
 
+def save_output_to_file(parsed_args: argparse.Namespace, logger: Logger, output: dict) -> str:
+    """
+    Save the output to a text file
+    
+    args:
+    parsed_args (argparse.Namespace): parsed arguments
+    logger (Logger): Logger object
+    output (str): string with the output to be saved to a file
+
+    returns:
+    output_file_path (str): path to the output file
+    """
+    if parsed_args.output_dir is None:
+        # save the output to the same directory as the directory containing the ebh lines
+        output_dir = parsed_args.input_dir
+    else:
+        output_dir = parsed_args.output_dir
+
+
+    # create the output directory if it does not exist
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    output_file_path = os.path.join(output_dir, parsed_args.output_filename)
+    # save the output to a file
+    with open(output_file_path, "w") as f:
+        f.write(output)
+
+    # check if the file exists
+    if not os.path.exists(output_file_path):
+        logger.error(f"Failed to save output to file {output_file_path}")
+        sys.exit(1)
+
+    logger.debug(f"Saved output to file {output_file_path}")
+
+    return output_file_path
 
 def main():
     # fetch script name for logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
     # Parse arguments
     parsed_args = argument_parser.argument_parser_gradient_ebhlines(
-        args=sys.argv[1:]
+        args=sys.argv[1:], script_name=script_name
     )
     # Initialize logger
     logger = init_logger.logger_setup(
         args=parsed_args, base_name=script_name, log_dest=parsed_args.log_dest
     )
 
-    (
-        max_gradient_rwy,
-        max_transversal_gradient_rwy,
-        highest_point_CL,
-        lowest_threshold,
-        dist_threshold_and_Hpoint_CL,
-        slope_threshold_to_Hpoint_CL,
-    ) = gradient_ebhlines(parsed_args=parsed_args, logger=logger)
+    # get the gradient of the runway and store the output in a dictionary
+    gradient_runway_output = gradient_ebhlines(parsed_args=parsed_args, logger=logger)
+    
+    # save the output to a file
+    output_file_path = save_output_to_file(parsed_args=parsed_args, logger=logger, output=gradient_runway_output)
 
-
+    # print the output to the console
+    print(f"Output:\n{gradient_runway_output}\n")
+    print(f"Output file path:\n{output_file_path}\n")
+    
 if __name__ == "__main__":
     main()
