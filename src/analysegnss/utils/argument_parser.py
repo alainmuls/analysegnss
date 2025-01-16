@@ -902,5 +902,46 @@ def argument_parser_get_rnx_files(args: list) -> argparse.Namespace:
     )
 
     args = parser.parse_args(args)
+    
+def argument_parser_gradient_ebhlines(args: list) -> argparse.Namespace:
+    """
+    Parses the arguments and creates console/file logger for gradient_ebhlines.py
+    """
+
+    baseName = str_yellow(os.path.basename(__file__))
+
+    help_text = (
+        baseName
+        + """
+        Parses the arguments and creates console/file logger for gradient_ebhlines.py
+    """
+    )
+    
+    parser = argparse.ArgumentParser(description=help_text)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+        required=False,
+    )
+    parser.add_argument(
+        "-dn",
+        "--dir_name",
+        help="Directory containing the ebh lines csv files",
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
+        "--log_dest",
+        help="Specify log destination directory (full path). Default is /tmp/logs/",
+        type=str,
+        required=False,
+        default="/tmp/logs/",
+    )
+
+    args = parser.parse_args(args)
 
     return args
