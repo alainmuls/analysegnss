@@ -1,4 +1,4 @@
--e git+ssh://git@gitlab.cylab.be/gnss/analysegnss.git@5f3cb93994b430c0102ca9da0230400a9168d993#egg=analysegnss
+-e git+ssh://git@gitlab.cylab.be/gnss/analysegnss.git@c9d648438b7727926bb48528079ca4b61c99fa87#egg=analysegnss
 annotated-types==0.7.0
 argcomplete==3.4.0
 asttokens==2.4.1
