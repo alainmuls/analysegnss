@@ -172,7 +172,7 @@
         },
         {
             "name": "Python: Run Tests",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "pytest",
             "args": [
