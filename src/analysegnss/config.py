@@ -18,6 +18,7 @@ J2 = 1082.63e-6  # Second zonal harmonic
 OMEGA_EARTH = 7.2921151467e-5  # Earth's rotation rate rad/s
 GPS_BDS_WEEK_DIFF = 1356  # week difference between GPS and BDS time
 C84 = 299792458  # Speed of light m/s
+SECS_IN_WEEK = 604800  # seconds in a week
 
 # Error codes
 ERROR_CODES = {
