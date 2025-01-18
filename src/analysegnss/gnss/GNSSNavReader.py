@@ -64,6 +64,8 @@ class GNSSNavReader:
                     except KeyError:
                         eph.health = float(row["SatH1"])
 
+                eph.IODE = int(float(row["IODE"]))
+
                 self.ephemerides.append(eph)
 
     def get_ephemerides(self):

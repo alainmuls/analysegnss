@@ -1,7 +1,7 @@
 import numpy as np
 from datetime import datetime, timedelta
 
-from src.analysegnss.config import GM, OMEGA_EARTH
+from src.analysegnss.config import GM, OMEGA_EARTH, SECS_IN_WEEK
 
 
 class GNSSEphemeris:
@@ -39,14 +39,71 @@ class GNSSEphemeris:
         self.cic = None  # Cosine inclination
         self.cis = None  # Sine inclination
 
+        self.IODE = None  # Issue of Data
+
+    # def compute_satellite_position(self, t: float) -> tuple:
+    #     """
+    #     Compute satellite position at time t
+    #     Args:
+    #         t: GPS time in seconds of week
+    #     Returns:
+    #         x, y, z: ECEF coordinates in meters
+    #     """
+    #     # Semi-major axis
+    #     A = self.sqrta * self.sqrta
+
+    #     # Time from ephemeris reference epoch
+    #     tk = t - self.toe
+    #     if tk > SECS_IN_WEEK / 2:
+    #         tk -= SECS_IN_WEEK
+    #     elif tk < -SECS_IN_WEEK / 2:
+    #         tk += SECS_IN_WEEK
+
+    #     # Mean motion
+    #     n0 = np.sqrt(GM / (A * A * A))
+    #     n = n0 + self.dn
+
+    #     # Mean anomaly
+    #     Mk = self.m0 + n * tk
+
+    #     # Solve Kepler's equation for eccentric anomaly
+    #     Ek = Mk
+    #     for _ in range(10):
+    #         Ek = Mk + self.e * np.sin(Ek)
+
+    #     # True anomaly
+    #     vk = np.arctan2(
+    #         np.sqrt(1.0 - self.e * self.e) * np.sin(Ek), np.cos(Ek) - self.e
+    #     )
+
+    #     # Argument of latitude
+    #     phik = vk + self.omega
+
+    #     # Second harmonic corrections
+    #     duk = self.cus * np.sin(2.0 * phik) + self.cuc * np.cos(2.0 * phik)
+    #     drk = self.crs * np.sin(2.0 * phik) + self.crc * np.cos(2.0 * phik)
+    #     dik = self.cis * np.sin(2.0 * phik) + self.cic * np.cos(2.0 * phik)
+
+    #     # Corrected argument of latitude, radius, and inclination
+    #     uk = phik + duk
+    #     rk = A * (1.0 - self.e * np.cos(Ek)) + drk
+    #     ik = self.i0 + dik + self.IDOT * tk
+
+    #     # Position in orbital plane
+    #     xk_prime = rk * np.cos(uk)
+    #     yk_prime = rk * np.sin(uk)
+
+    #     # Corrected longitude of ascending node
+    #     OMEGA_k = self.OMEGA + (self.OMEGA_DOT - OMEGA_EARTH) * tk - OMEGA_EARTH * t
+
+    #     # Earth-fixed coordinates
+    #     x = xk_prime * np.cos(OMEGA_k) - yk_prime * np.cos(ik) * np.sin(OMEGA_k)
+    #     y = xk_prime * np.sin(OMEGA_k) + yk_prime * np.cos(ik) * np.cos(OMEGA_k)
+    #     z = yk_prime * np.sin(ik)
+
+    #     return x, y, z
+
     def compute_satellite_position(self, t: float) -> tuple:
-        """
-        Compute satellite position at time t
-        Args:
-            t: GPS time in seconds of week
-        Returns:
-            x, y, z: ECEF coordinates in meters
-        """
         # Semi-major axis
         A = self.sqrta * self.sqrta
 
@@ -60,17 +117,15 @@ class GNSSEphemeris:
         # Mean anomaly
         Mk = self.m0 + n * tk
 
-        # Solve Kepler's equation for eccentric anomaly
+        # Eccentric anomaly
         Ek = Mk
         for _ in range(10):
             Ek = Mk + self.e * np.sin(Ek)
 
-        # True anomaly
+        # Position calculation in orbital plane
         vk = np.arctan2(
             np.sqrt(1.0 - self.e * self.e) * np.sin(Ek), np.cos(Ek) - self.e
         )
-
-        # Argument of latitude
         phik = vk + self.omega
 
         # Second harmonic corrections
@@ -78,24 +133,28 @@ class GNSSEphemeris:
         drk = self.crs * np.sin(2.0 * phik) + self.crc * np.cos(2.0 * phik)
         dik = self.cis * np.sin(2.0 * phik) + self.cic * np.cos(2.0 * phik)
 
-        # Corrected argument of latitude, radius, and inclination
+        # Corrected radius, argument of latitude and inclination
         uk = phik + duk
         rk = A * (1.0 - self.e * np.cos(Ek)) + drk
         ik = self.i0 + dik + self.IDOT * tk
 
-        # Position in orbital plane
+        # Positions in orbital plane
         xk_prime = rk * np.cos(uk)
         yk_prime = rk * np.sin(uk)
 
-        # Corrected longitude of ascending node
-        OMEGA_k = (
-            self.OMEGA + (self.OMEGA_DOT - OMEGA_EARTH) * tk - OMEGA_EARTH * self.toe
-        )
+        # Corrected longitude of ascending node with Earth rotation
+        OMEGA_k = self.OMEGA + (self.OMEGA_DOT - OMEGA_EARTH) * tk - OMEGA_EARTH * t
 
-        # Earth-fixed coordinates
-        x = xk_prime * np.cos(OMEGA_k) - yk_prime * np.cos(ik) * np.sin(OMEGA_k)
-        y = xk_prime * np.sin(OMEGA_k) + yk_prime * np.cos(ik) * np.cos(OMEGA_k)
-        z = yk_prime * np.sin(ik)
+        # Earth rotation correction matrix
+        cos_O = np.cos(OMEGA_k)
+        sin_O = np.sin(OMEGA_k)
+        cos_i = np.cos(ik)
+        sin_i = np.sin(ik)
+
+        # Final ECEF coordinates
+        x = xk_prime * cos_O - yk_prime * cos_i * sin_O
+        y = xk_prime * sin_O + yk_prime * cos_i * cos_O
+        z = yk_prime * sin_i
 
         return x, y, z
 
