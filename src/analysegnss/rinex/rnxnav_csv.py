@@ -56,14 +56,15 @@ def rnxnav_csv(argv: list):
         return 1
 
     # get directory part and filename without extension part of the RINEX navigation file
-    rnxnav_dir, rnxnav_fn = os.path.split(args_parsed.nav_fn)
+    rnxnav_dir = os.path.dirname(args_parsed.nav_fn)
+    rnxnav_fn = os.path.basename(args_parsed.nav_fn)
     # change to the directory part of the RINEX navigation file in try block
     # so that the CSV file is created in the same directory as the RINEX navigation file
-    os.chdir(rnxnav_dir)
+    #os.chdir(rnxnav_dir) --> removed as it is not needed and raises an error
 
     # convert each GNSS / Navigation type dataframe to CSV file
     for (gnss, nav_type), nav_df in gnss_nav_dict.items():
-        csv_fn = f"{rnxnav_dir}/{os.path.basename(rnxnav_fn).split('.')[0]}_{GNSS_DICT[gnss]}_{nav_type}.csv"
+        csv_fn = os.path.join(rnxnav_dir, f"{rnxnav_fn.split('.')[0]}_{GNSS_DICT[gnss]}_{nav_type}.csv")
         if logger:
             logger.warning(
                 f"Created for {str_green(GNSS_DICT[gnss])}-{str_green(nav_type)}: {str_yellow(csv_fn)}"

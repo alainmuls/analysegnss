@@ -145,5 +145,20 @@
                 "-vvv",
             ]
         },
+        {
+            "name": "Python: Run Tests",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "tests/test_ephemeris.py",
+                "-v",
+                "-s"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "console": "integratedTerminal"
+        }
     ]
 }
