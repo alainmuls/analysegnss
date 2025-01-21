@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import pandas as pd
 import pytest
 import sys
@@ -133,9 +134,11 @@ def test_satellite_position_calculation():
 
         if nav_type == f"GPS-G{selected_prn}":
 
-            pos_brdc = []
-            pos_glab = []
-
+            pos_brdc_eqdt = [] # list of brdc ephemeris with the date and time as glab ephemeris
+            pos_glab_eqdt = [] # list of glab ephemeris with the date and time as brdc ephemeris
+            pos_brdc = [] # list of all brdc ephemeris
+            pos_glab = [] # list of all glab ephemeris
+            
             # read the corresponding GPS LNAV ephemeris from CSV file
             gnss_nav_reader = GNSSNavReader(csv_file=navcsv_fn)
             gnss_nav_reader.read_GEC_nav_csv()
@@ -154,12 +157,13 @@ def test_satellite_position_calculation():
                 # convert the GPS Week/TOW to datetime
                 dt = gnss2dt(week=WkNr, tow=t)
                 x, y, z = eph.compute_satellite_position(t)
-
-                pos_brdc.append((WkNr, eph.toe, eph.IODE, t, dt, x, y, z))
+                glab_hms = dt.strftime("%H:%M:%S.%f")[:-4]
+                brdc_hms = dt.strftime("%H:%M:%S.%f")[:-4]
+                
+                pos_brdc.append(("brdc", WkNr, t, brdc_hms, eph.IODE, x, y, z))
                 # print(glab_hms, x, y, z)
 
                 # search in glab_lines the lines that corresponds to the glab_hms
-                glab_hms = dt.strftime("%H:%M:%S.%f")[:-4]
                 for line in glab_lines:
                     if glab_hms in line:
                         # extract fields 10, 11 and 12
@@ -167,30 +171,49 @@ def test_satellite_position_calculation():
                         # print(line.split()[9:12])
                         x_glab, y_glab, z_glab = map(float, line.split()[9:12])
                         glab_iode = int(line.split()[17])
-                        pos_glab.append(
-                            (WkNr, t, glab_iode, dt, glab_hms, x_glab, y_glab, z_glab)
-                        )
+                        pos_glab_eqdt.append(("glab", WkNr, t, glab_hms, glab_iode, x_glab, y_glab, z_glab))
+                        pos_brdc_eqdt.append(("brdc", WkNr, t, brdc_hms, eph.IODE, x, y, z))
                         break
 
-            # Create dictionaries with times as keys for easy matching
-            brdc_dict = {pos_brdc[i][4].strftime("%H:%M:%S.%f")[:-4]: pos_brdc[i] for i in range(len(pos_brdc))}
-            glab_dict = {pos_glab[i][3].strftime("%H:%M:%S.%f")[:-4]: pos_glab[i] for i in range(len(pos_glab))}
-            
-            # Find common timestamps
-            common_times = sorted(set(brdc_dict.keys()) & set(glab_dict.keys()))
-            
-            # Print matching entries
-            for time in common_times:
-                brdc = brdc_dict[time]
-                glab = glab_dict[time]
-                print(
-                    f"\n{brdc[0]:5d} {brdc[1]:7d} | {brdc[2]:3d} {brdc[3]:6f} | "
-                    f"{time} | "
-                    f" {brdc[5]:15.3f} {brdc[6]:15.3f} {brdc[7]:15.3f}\n"
-                    f"                {glab[2]:3d}                 {time} | "
-                    f" {glab[5]:15.3f} {glab[6]:15.3f} {glab[7]:15.3f}"
-                )
 
+            # print the pos_brdc and pos_glab satellite position at the same date and time
+            print(
+                    f"Found {len(pos_brdc_eqdt)} positions in the broadcast ephemeris "
+                    f"\nephemeris source: {pos_brdc_eqdt[0][0]} | {pos_brdc_eqdt[0][1]:5d}  {pos_brdc_eqdt[0][2]:7d} | {pos_brdc_eqdt[0][3]} | {pos_brdc_eqdt[0][4]} | "
+                    f" {pos_brdc_eqdt[0][5]:15.3f} {pos_brdc_eqdt[0][6]:15.3f} {pos_brdc_eqdt[0][7]:15.3f}\n"
+                    )
+                    
+            print(
+                f"Found {len(pos_glab_eqdt)} positions in the GLAB ephemeris "
+                f"\nephemeris source: {pos_glab_eqdt[0][0]} | {pos_glab_eqdt[0][1]:5d}  {pos_glab_eqdt[0][2]:7d} | {pos_glab_eqdt[0][3]} | {pos_glab_eqdt[0][4]} | "
+                f" {pos_glab_eqdt[0][5]:15.3f} {pos_glab_eqdt[0][6]:15.3f} {pos_glab_eqdt[0][7]:15.3f}\n"
+            )
+
+
+            # fill pos_glab list with glab_lines dataframe info
+            for line in glab_lines:
+                if line.startswith("SATPVT"):
+                    fields = line.split()
+                    tow = int(float(fields[3]))
+                    glab_hms = fields[4]
+                    x_glab, y_glab, z_glab = map(float, fields[9:12])
+                    glab_iode = int(fields[17])
+                    pos_glab.append(("glab", WkNr, tow, glab_hms, glab_iode, x_glab, y_glab, z_glab))
+
+
+            # make dataframe with merged pos_brdc and pos_glab ephemeris
+            # sort on WkNr and dt
+            df_brdc_glab = pd.DataFrame(pos_brdc + pos_glab, columns=["Ephemeris source", "WkNr", "TOW", "t", "IODE", "X", "Y", "Z"])
+            df_brdc_glab = df_brdc_glab.sort_values(by=["t"])
+            print(df_brdc_glab)
+           
+            # write the dataframe to a csv file
+            #get directory of input file
+            dir_name = os.path.dirname(navcsv_fn)
+            ifn_base = os.path.basename(navcsv_fn)
+            output_fn = os.path.join(dir_name, ifn_base.replace(".csv", "_brdc_glab.csv"))
+            df_brdc_glab.to_csv(output_fn, index=False)
+            print(f"Ephemeris positions calculated from brdc and glab ephemeris written to {output_fn}")
             # # read file ./tests/data/BERT00BEL_R_20243640700_41H_MN_G16_GPS_LNAV.satpos
             # # find the line with timing 12:00:00.00 and extract the position
             # with open("tests/data/BERT00BEL_R_20243640700_41H_MN_G16.satpos", "r") as f:
