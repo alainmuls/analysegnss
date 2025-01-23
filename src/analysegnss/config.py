@@ -13,6 +13,7 @@ GEOID_PATH = os.path.join(BASE_DIR, "gnss", "geoids", "egm2008-1.pgm")
 
 # Constants
 GM = 398600.4418  # Earth's gravitational constant km³/s²
+GM_GPS = 3.986005e14  # GPS gravitational constant m³/s²
 R_EARTH = 6378136  # Earth's radius meter
 J2 = 1082.63e-6  # Second zonal harmonic
 OMEGA_EARTH = 7.2921151467e-5  # Earth's rotation rate rad/s

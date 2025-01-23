@@ -1,7 +1,7 @@
 import numpy as np
 from datetime import datetime, timedelta
 
-from src.analysegnss.config import GM, OMEGA_EARTH, SECS_IN_WEEK
+from src.analysegnss.config import GM_GPS, OMEGA_EARTH, SECS_IN_WEEK
 
 
 class GNSSEphemeris:
@@ -60,7 +60,7 @@ class GNSSEphemeris:
     #         tk += SECS_IN_WEEK
 
     #     # Mean motion
-    #     n0 = np.sqrt(GM / (A * A * A))
+    #     n0 = np.sqrt(GM_GPS / (A * A * A))
     #     n = n0 + self.dn
 
     #     # Mean anomaly
@@ -111,7 +111,7 @@ class GNSSEphemeris:
         tk = t - self.toe
 
         # Mean motion
-        n0 = np.sqrt(GM / (A * A * A))
+        n0 = np.sqrt(GM_GPS / (A * A * A))
         n = n0 + self.dn
 
         # Mean anomaly
