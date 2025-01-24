@@ -23,6 +23,9 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> str:
 
     args:
     parsed_args: parsed_args.sbf_ifn
+    parsed_args: parsed_args.exclude_gnss
+    parsed_args: parsed_args.begin_epoch
+    parsed_args: parsed_args.end_epoch
 
     returns:
     rnx_odir (str): output directory for the RNX files
@@ -32,9 +35,14 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> str:
 
     # Path to sbf2rin shell script
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    sbf2rin_path = os.path.join(current_dir, "scripts/sbf2rin.sh")
+    sbf2rin_path = os.path.join(current_dir, "../scripts/sbf/sbf2rin.sh")
     logger.debug(f"Using sbf2rin.sh full path {sbf2rin_path}")
 
+    # check if sbf_ifn exists
+    if not os.path.exists(parsed_args.sbf_ifn):
+        logger.error(f"SBF file {parsed_args.sbf_ifn} does not exist")
+        sys.exit(ERROR_CODES["E_FILE_NOT_FOUND"])
+        
     # get basename of sbf_ifn without extension
     sbf_basename = os.path.basename(parsed_args.sbf_ifn).split(".")[0]
     # output directory of rinex files
@@ -62,7 +70,9 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> str:
             )
             return rnx_odir
 
-    # define CLI arguments
+
+    # define CLI arguments for sbf2rin.sh
+    
     sbf2rin_args = [
         sbf2rin_path,
         "-f",
@@ -71,20 +81,37 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> str:
         rnx_odir,
     ]
 
+    # extending the arguments with optional arguments if provided in parsed_args
+    ## exclude_gnss argument ##
+    if hasattr(parsed_args, "exclude_gnss"):
+        sbf2rin_args.extend(["-x", parsed_args.exclude_gnss])
+    ## begin_epoch argument ##
+    if hasattr(parsed_args, "begin_epoch"):
+        sbf2rin_args.extend(["-b", parsed_args.begin_epoch])
+    ## end_epoch argument ##
+    if hasattr(parsed_args, "end_epoch"):
+        sbf2rin_args.extend(["-e", parsed_args.end_epoch])
+        
+
     # Run the script
     logger.info(f"Running sbf2rin.sh with arguments: {sbf2rin_args}")
     try:
-        process = subprocess.run(
+        process_out = subprocess.run(
             sbf2rin_args, check=True, text=True, capture_output=True
         )
-        logger.debug(f"Output: {process.stdout}")  # Output from the script
+        logger.debug(f"Output: {process_out.stdout}")  # Output from the script
+        
+        # catch last returned lines which contain the created RINEX files paths
+        rnx_obs_ofn = process_out.stdout.splitlines()[-1:]
+        rnx_nav_ofn = process_out.stdout.splitlines()[-2:-1]
+        
     except subprocess.CalledProcessError as e:
         logger.error(f"sbf2rin failed with error code {e.returncode}")
         sys.exit(ERROR_CODES["E_PROCESS"])
 
-    logger.info(f"Rinex files created in {rnx_odir}")
+    logger.info(f"Created rinex files {rnx_obs_ofn} and {rnx_nav_ofn} in {rnx_odir}")
 
-    return rnx_odir
+    return rnx_obs_ofn, rnx_nav_ofn, rnx_odir
 
 def main():
 
@@ -93,7 +120,7 @@ def main():
     # fetch script name for logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
     # Parse arguments
-    parsed_args = argument_parser.argument_parser_get_rnx_files(args=sys.argv[1:])
+    parsed_args = argument_parser.argument_parser_get_rnx_files(args=sys.argv[1:], script_name=script_name)
     # Initialize logger
     logger = init_logger.logger_setup(
         args=parsed_args, base_name=script_name, log_dest=parsed_args.log_dest

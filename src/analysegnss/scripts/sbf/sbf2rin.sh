@@ -162,6 +162,10 @@ else
     exit 7
 fi
 
+# return the output file paths
+echo "${RNX_OBS_FILE}"
+echo "${RNX_NAV_FILE}"
+
 # cleanup() {
 #     echo "DEBUG: Cleanup function called" >&2
 #     cd "${ORIG_DIR}"

@@ -204,7 +204,7 @@ def argument_parser_plot_coords(args: list) -> argparse.Namespace:
         default=None,
         type=str,
     )
-    
+
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
@@ -482,6 +482,7 @@ def argument_parser_glab_parser(args: list) -> argparse.Namespace:
     args = parser.parse_args(args)
 
     return args
+
 
 def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
     """parses the arguments and creates console/file logger
@@ -861,13 +862,13 @@ def argument_parser_rnx2rtkp_launcher(args: list) -> argparse.Namespace:
     return args
 
 
-def argument_parser_get_rnx_files(args: list) -> argparse.Namespace:
+def argument_parser_get_rnx_files(args: list, script_name: str) -> argparse.Namespace:
     """
     Extracts rinex files from binary files such as Septentrio SBF files
     (Future work: extend this to other file formats such as rtcm3, ubx, etc.)
     """
 
-    baseName = str_yellow(os.path.basename(__file__))
+    baseName = str_yellow(script_name)
 
     help_text = (
         baseName
@@ -902,8 +903,11 @@ def argument_parser_get_rnx_files(args: list) -> argparse.Namespace:
     )
 
     args = parser.parse_args(args)
-    
-def argument_parser_gradient_ebhlines(args: list, script_name: str) -> argparse.Namespace:
+
+
+def argument_parser_gradient_ebhlines(
+    args: list, script_name: str
+) -> argparse.Namespace:
     """
     Parses the arguments and creates console/file logger for gradient_ebhlines.py
     """
@@ -924,7 +928,7 @@ def argument_parser_gradient_ebhlines(args: list, script_name: str) -> argparse.
         from the ebh lines csv files
     """
     )
-    
+
     parser = argparse.ArgumentParser(description=help_text)
     parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
     parser.add_argument(
@@ -949,7 +953,7 @@ def argument_parser_gradient_ebhlines(args: list, script_name: str) -> argparse.
         type=str,
         required=False,
         default=None,
-    )   
+    )
     parser.add_argument(
         "-ofn",
         "--output_filename",
@@ -967,5 +971,78 @@ def argument_parser_gradient_ebhlines(args: list, script_name: str) -> argparse.
     )
 
     args = parser.parse_args(args)
+
+    return args
+
+
+def argument_parser_reformat_sbf_rnx_for_opus(
+    args: list, script_name: str
+) -> argparse.Namespace:
+    """
+    This script checks and reformats rnx files for OPUS processing.
+    The scripts accepts sbf and rnx files.
+    """
+    baseName = str_yellow(script_name)
+
+    help_txt = baseName + " checks and reformats rnx files for OPUS processing."
+
+    parser = argparse.ArgumentParser(description=help_txt)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+    )
+    parser.add_argument(
+        "--log_dest",
+        help="Specify log destination directory (full path). Default is /tmp/logs/",
+        type=str,
+        required=False,
+        default="/tmp/logs/",
+    )
+    
+    # Create mutually exclusive group for rnx_ifn and sbf_ifn (RINEX and SBF Septentrio respectively)
+    group_sbfrnx = parser.add_mutually_exclusive_group(required=True)
+    group_sbfrnx.description = (
+        "Specify either a SBF file (Septentrio) or a RINEX file [required]"
+    )
+    group_sbfrnx.add_argument(
+        "--rnx_ifn",
+        help="input RINEX OBS filename. A RNX OBS file for OPUS processing is automatically created.",
+        type=str,
+    )
+    group_sbfrnx.add_argument(
+        "--sbf_ifn",
+        help="input SBF (Septentrio) filename",
+        type=str,
+    )
+    parser.add_argument(
+        "--OPUS",
+        help="Create additional rnx file for OPUS processing.",
+        required=False,
+        action="store_true",
+    )
+    parser.add_argument(
+        "--gnss",
+        help="OPUS configuration: select which GNSS constellation. GPS = G, Galileo=E, Beidou = C and Glonass = R. For example: GE would be GPS and Gaileo. (default is GE)",
+        required=False,
+        default="GE",
+    )
+    parser.add_argument(
+        "--duration",
+        help="Duration or time span of rinex dataset in seconds. default: 86400",
+        required=False,
+        default=86400,
+    )
+    parser.add_argument(
+        "--epoch_interval",
+        help="Epoch interval. Default: 30 seconds",
+        required=False,
+        default=30,
+    )
+
+    args = parser.parse_args(args[1:])
 
     return args
