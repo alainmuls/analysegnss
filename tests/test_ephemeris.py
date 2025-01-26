@@ -64,7 +64,7 @@ def test_satellite_position_calculation():
         # "BDS_D1": "tests/data/BERT00BEL_R_20243640700_41H_MN_Beidou_D1.csv",
         # "BDS_D2": "tests/data/BERT00BEL_R_20243640700_41H_MN_Beidou_D2.csv",
         # "GPS-G16": "tests/data/BERT00BEL_R_20243640700_41H_MN_G16_GPS_LNAV.csv",
-        "GPS-G16": "tests/data/./BERT00BEL_R_20243640700_41H_MN_G16_LNAV_TEST_GPS_LNAV.csv",
+        "GPS-G16": "tests/data/BERT00BEL_R_20243640700_41H_MN_G16_GPS_LNAV.csv",
     }
     # Test for each navigation type
     for nav_type, navcsv_fn in nav_csv_fns.items():
@@ -109,9 +109,7 @@ def test_satellite_position_calculation():
             t_mid = 128580  # MUST BE A MULTIPLE OF 30s
 
             # read all ines starting with SATPVT from the glab satpos file
-            with open(
-                "tests/data/BERT00BEL_R_20243640700_41H_MN_G16_LNAV_TEST.satpos", "r"
-            ) as f:
+            with open("tests/data/BERT00BEL_R_20243640700_41H_MN_G16.satpos", "r") as f:
                 glab_lines = f.readlines()
 
             for t_cur in range(t_mid - 239 * 30, t_mid + 240 * 30, 30):
