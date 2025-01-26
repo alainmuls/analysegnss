@@ -130,7 +130,7 @@ def test_satellite_position_calculation():
             with open("tests/data/BERT00BEL_R_20243640700_41H_MN_G16.satpos", "r") as f:
                 glab_lines = f.readlines()
 
-            for t in range(eph.toe - 900, eph.toe + 1000, 900):
+            for t in range(eph.toe - 239 * 30, eph.toe + 240 * 30, 30):
                 # convert the GPS Week/TOW to datetime
                 dt = gnss2dt(week=WkNr, tow=t)
                 x, y, z = eph.compute_satellite_position(t)
@@ -153,13 +153,27 @@ def test_satellite_position_calculation():
                         break
 
             for i in range(len(pos_brdc)):
+                dist_brdc = np.sqrt(
+                    (pos_brdc[i][5] + pos_brdc[i][5]) ** 2
+                    + (pos_brdc[i][6] + pos_brdc[i][6]) ** 2
+                    + (pos_brdc[i][7] + pos_brdc[i][7]) ** 2
+                )
+
+                dist_glab = np.sqrt(
+                    (pos_glab[i][5] + pos_glab[i][5]) ** 2
+                    + (pos_glab[i][6] + pos_glab[i][6]) ** 2
+                    + (pos_glab[i][7] + pos_glab[i][7]) ** 2
+                )
+
                 print(
-                    f"\n{pos_brdc[i][0]:5d} {pos_brdc[i][1]:7d} | {pos_brdc[i][2]:3d} {pos_brdc[i][3]:6f} | "
+                    f"{pos_brdc[i][0]:5d} {pos_brdc[i][1]:7d} | {pos_brdc[i][2]:3d} {pos_brdc[i][3]:6f} | "
                     f"{pos_brdc[i][4].strftime("%H:%M:%S.%f")[:-4]} | "
                     f" {pos_brdc[i][5]:15.3f} {pos_brdc[i][6]:15.3f} {pos_brdc[i][7]:15.3f}\n"
                     f"                {pos_glab[i][2]:3d}                 {pos_glab[i][3].strftime("%H:%M:%S.%f")[:-4]} | "
                     f" {pos_glab[i][5]:15.3f} {pos_glab[i][6]:15.3f} {pos_glab[i][7]:15.3f}"
                 )
+
+                assert np.isclose(dist_brdc, dist_glab, atol=1e-3)
 
             # # read file ./tests/data/BERT00BEL_R_20243640700_41H_MN_G16_GPS_LNAV.satpos
             # # find the line with timing 12:00:00.00 and extract the position

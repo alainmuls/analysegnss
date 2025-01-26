@@ -90,16 +90,16 @@ class GNSSEphemeris:
     #     ik = self.i0 + dik + self.IDOT * tk
 
     #     # Position in orbital plane
-    #     xk_prime = rk * np.cos(uk)
-    #     yk_prime = rk * np.sin(uk)
+    #     xk_orbit = rk * np.cos(uk)
+    #     yk_orbit = rk * np.sin(uk)
 
     #     # Corrected longitude of ascending node
     #     OMEGA_k = self.OMEGA + (self.OMEGA_DOT - OMEGA_EARTH) * tk - OMEGA_EARTH * t
 
     #     # Earth-fixed coordinates
-    #     x = xk_prime * np.cos(OMEGA_k) - yk_prime * np.cos(ik) * np.sin(OMEGA_k)
-    #     y = xk_prime * np.sin(OMEGA_k) + yk_prime * np.cos(ik) * np.cos(OMEGA_k)
-    #     z = yk_prime * np.sin(ik)
+    #     x = xk_orbit * np.cos(OMEGA_k) - yk_orbit * np.cos(ik) * np.sin(OMEGA_k)
+    #     y = xk_orbit * np.sin(OMEGA_k) + yk_orbit * np.cos(ik) * np.cos(OMEGA_k)
+    #     z = yk_orbit * np.sin(ik)
 
     #     return x, y, z
 
@@ -120,7 +120,10 @@ class GNSSEphemeris:
         # Eccentric anomaly
         Ek = Mk
         for _ in range(10):
+            E_old = Ek
             Ek = Mk + self.e * np.sin(Ek)
+            if abs(Ek - E_old) < 1e-12:
+                break
 
         # Position calculation in orbital plane
         vk = np.arctan2(
@@ -129,9 +132,12 @@ class GNSSEphemeris:
         phik = vk + self.omega
 
         # Second harmonic corrections
-        duk = self.cus * np.sin(2.0 * phik) + self.cuc * np.cos(2.0 * phik)
-        drk = self.crs * np.sin(2.0 * phik) + self.crc * np.cos(2.0 * phik)
-        dik = self.cis * np.sin(2.0 * phik) + self.cic * np.cos(2.0 * phik)
+        cos_2phik = np.cos(2.0 * phik)
+        sin_2phik = np.sin(2.0 * phik)
+
+        duk = self.cus * sin_2phik + self.cuc * cos_2phik
+        drk = self.crs * sin_2phik + self.crc * cos_2phik
+        dik = self.cis * sin_2phik + self.cic * cos_2phik
 
         # Corrected radius, argument of latitude and inclination
         uk = phik + duk
@@ -139,22 +145,24 @@ class GNSSEphemeris:
         ik = self.i0 + dik + self.IDOT * tk
 
         # Positions in orbital plane
-        xk_prime = rk * np.cos(uk)
-        yk_prime = rk * np.sin(uk)
+        xk_orbit = rk * np.cos(uk)
+        yk_orbit = rk * np.sin(uk)
 
         # Corrected longitude of ascending node with Earth rotation
-        OMEGA_k = self.OMEGA + (self.OMEGA_DOT - OMEGA_EARTH) * tk - OMEGA_EARTH * t
+        OMEGA_k = (
+            self.OMEGA + (self.OMEGA_DOT - OMEGA_EARTH) * tk - OMEGA_EARTH * self.toe
+        )
 
         # Earth rotation correction matrix
-        cos_O = np.cos(OMEGA_k)
-        sin_O = np.sin(OMEGA_k)
-        cos_i = np.cos(ik)
-        sin_i = np.sin(ik)
+        cos_Omega = np.cos(OMEGA_k)
+        sin_Omega = np.sin(OMEGA_k)
+        cos_incl = np.cos(ik)
+        sin_incl = np.sin(ik)
 
         # Final ECEF coordinates
-        x = xk_prime * cos_O - yk_prime * cos_i * sin_O
-        y = xk_prime * sin_O + yk_prime * cos_i * cos_O
-        z = yk_prime * sin_i
+        x = xk_orbit * cos_Omega - yk_orbit * cos_incl * sin_Omega
+        y = xk_orbit * sin_Omega + yk_orbit * cos_incl * cos_Omega
+        z = yk_orbit * sin_incl
 
         return x, y, z
 
