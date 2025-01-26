@@ -41,68 +41,6 @@ class GNSSEphemeris:
 
         self.IODE = None  # Issue of Data
 
-    # def compute_satellite_position(self, t: float) -> tuple:
-    #     """
-    #     Compute satellite position at time t
-    #     Args:
-    #         t: GPS time in seconds of week
-    #     Returns:
-    #         x, y, z: ECEF coordinates in meters
-    #     """
-    #     # Semi-major axis
-    #     A = self.sqrta * self.sqrta
-
-    #     # Time from ephemeris reference epoch
-    #     tk = t - self.toe
-    #     if tk > SECS_IN_WEEK / 2:
-    #         tk -= SECS_IN_WEEK
-    #     elif tk < -SECS_IN_WEEK / 2:
-    #         tk += SECS_IN_WEEK
-
-    #     # Mean motion
-    #     n0 = np.sqrt(GM_GPS / (A * A * A))
-    #     n = n0 + self.dn
-
-    #     # Mean anomaly
-    #     Mk = self.m0 + n * tk
-
-    #     # Solve Kepler's equation for eccentric anomaly
-    #     Ek = Mk
-    #     for _ in range(10):
-    #         Ek = Mk + self.e * np.sin(Ek)
-
-    #     # True anomaly
-    #     vk = np.arctan2(
-    #         np.sqrt(1.0 - self.e * self.e) * np.sin(Ek), np.cos(Ek) - self.e
-    #     )
-
-    #     # Argument of latitude
-    #     phik = vk + self.omega
-
-    #     # Second harmonic corrections
-    #     duk = self.cus * np.sin(2.0 * phik) + self.cuc * np.cos(2.0 * phik)
-    #     drk = self.crs * np.sin(2.0 * phik) + self.crc * np.cos(2.0 * phik)
-    #     dik = self.cis * np.sin(2.0 * phik) + self.cic * np.cos(2.0 * phik)
-
-    #     # Corrected argument of latitude, radius, and inclination
-    #     uk = phik + duk
-    #     rk = A * (1.0 - self.e * np.cos(Ek)) + drk
-    #     ik = self.i0 + dik + self.IDOT * tk
-
-    #     # Position in orbital plane
-    #     xk_orbit = rk * np.cos(uk)
-    #     yk_orbit = rk * np.sin(uk)
-
-    #     # Corrected longitude of ascending node
-    #     OMEGA_k = self.OMEGA + (self.OMEGA_DOT - OMEGA_EARTH) * tk - OMEGA_EARTH * t
-
-    #     # Earth-fixed coordinates
-    #     x = xk_orbit * np.cos(OMEGA_k) - yk_orbit * np.cos(ik) * np.sin(OMEGA_k)
-    #     y = xk_orbit * np.sin(OMEGA_k) + yk_orbit * np.cos(ik) * np.cos(OMEGA_k)
-    #     z = yk_orbit * np.sin(ik)
-
-    #     return x, y, z
-
     def compute_satellite_position(self, t: float) -> tuple:
         # Semi-major axis
         A = self.sqrta * self.sqrta
