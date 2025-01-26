@@ -1,5 +1,6 @@
 import csv
 
+import numpy as np
 from rich import print
 
 from .GNSSephemeris import GNSSEphemeris
@@ -64,7 +65,10 @@ class GNSSNavReader:
                     except KeyError:
                         eph.health = float(row["SatH1"])
 
-                eph.IODE = int(float(row["IODE"]))
+                try:
+                    eph.IODE = int(float(row["IODE"]))
+                except KeyError:
+                    eph.IODE = np.nan
 
                 self.ephemerides.append(eph)
 

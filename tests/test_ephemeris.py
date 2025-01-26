@@ -9,62 +9,62 @@ from src.analysegnss.config import R_EARTH
 from src.analysegnss.gnss.gnss_dt import gnss2dt
 
 
-# def test_read_gnss_nav_csv():
-#     # Test data paths
-#     nav_csv_fns = {
-#         "GPS-LNAV": "tests/data/BERT00BEL_R_20243640700_41H_MN_GPS_LNAV.csv",
-#         "GAL_INAV": "tests/data/BERT00BEL_R_20243640700_41H_MN_Galileo_INAV.csv",
-#         "BDS_D1": "tests/data/BERT00BEL_R_20243640700_41H_MN_Beidou_D1.csv",
-#         "BDS_D2": "tests/data/BERT00BEL_R_20243640700_41H_MN_Beidou_D2.csv",
-#         "GPS-G16": "tests/data/BERT00BEL_R_20243640700_41H_MN_G16_GPS_LNAV.csv",
-#     }
+def test_read_gnss_nav_csv():
+    # Test data paths
+    nav_csv_fns = {
+        "GPS-LNAV": "tests/data/BERT00BEL_R_20243640700_41H_MN_GPS_LNAV.csv",
+        "GAL_INAV": "tests/data/BERT00BEL_R_20243640700_41H_MN_Galileo_INAV.csv",
+        "BDS_D1": "tests/data/BERT00BEL_R_20243640700_41H_MN_Beidou_D1.csv",
+        "BDS_D2": "tests/data/BERT00BEL_R_20243640700_41H_MN_Beidou_D2.csv",
+        "GPS-G16": "tests/data/BERT00BEL_R_20243640700_41H_MN_G16_GPS_LNAV.csv",
+    }
 
-#     for nav_type, navcsv_fn in nav_csv_fns.items():
-#         print(f"\nProcessing {nav_type} | {navcsv_fn}")
-#         gnss_nav_reader = GNSSNavReader(csv_file=navcsv_fn)
-#         gnss_nav_reader.read_GEC_nav_csv()
-#         nav_data = gnss_nav_reader.get_ephemerides()
+    for nav_type, navcsv_fn in nav_csv_fns.items():
+        print(f"\nProcessing {nav_type} | {navcsv_fn}")
+        gnss_nav_reader = GNSSNavReader(csv_file=navcsv_fn)
+        gnss_nav_reader.read_GEC_nav_csv()
+        nav_data = gnss_nav_reader.get_ephemerides()
 
-#         assert len(nav_data) > 0, f"No data read for {nav_type}"
+        assert len(nav_data) > 0, f"No data read for {nav_type}"
 
-#         # Test first ephemeris
-#         eph = nav_data[0]
+        # Test first ephemeris
+        eph = nav_data[0]
 
-#         # print in tabular form
-#         attributes = vars(eph)
-#         items = sorted(attributes.items())
-#         key_width = 12
-#         val_width = 18
+        # print in tabular form
+        attributes = vars(eph)
+        items = sorted(attributes.items())
+        key_width = 12
+        val_width = 18
 
-#         for i in range(0, len(items), 3):
-#             row = items[i : i + 3]
-#             line = ""
-#             for attr, value in row:
-#                 # line += f"{attr:>{key_width}} : {str(value):<{val_width}}"
-#                 # line += f"{attr:>{key_width}} : {value} ({type(value).__name__}){' ':<{val_width-len(str(value))}}"
+        for i in range(0, len(items), 3):
+            row = items[i : i + 3]
+            line = ""
+            for attr, value in row:
+                # line += f"{attr:>{key_width}} : {str(value):<{val_width}}"
+                # line += f"{attr:>{key_width}} : {value} ({type(value).__name__}){' ':<{val_width-len(str(value))}}"
 
-#                 # if isinstance(value, (int, float)):
-#                 #     formatted_value = (
-#                 #         f"{value:>{val_width}.12f}"
-#                 #         if isinstance(value, float)
-#                 #         else f"{value:>{val_width}d}"
-#                 #     )
-#                 # else:
-#                 #     formatted_value = f"{str(value):<{val_width}}"
+                # if isinstance(value, (int, float)):
+                #     formatted_value = (
+                #         f"{value:>{val_width}.12f}"
+                #         if isinstance(value, float)
+                #         else f"{value:>{val_width}d}"
+                #     )
+                # else:
+                #     formatted_value = f"{str(value):<{val_width}}"
 
-#                 if isinstance(value, float):
-#                     formatted_value = f"{value:>{val_width}.9e}"
-#                 elif isinstance(value, int):
-#                     formatted_value = f"{value:>{val_width}d}"
-#                 else:
-#                     formatted_value = f"{str(value):<{val_width}}"
+                if isinstance(value, float):
+                    formatted_value = f"{value:>{val_width}.9e}"
+                elif isinstance(value, int):
+                    formatted_value = f"{value:>{val_width}d}"
+                else:
+                    formatted_value = f"{str(value):<{val_width}}"
 
-#                 line += f"{attr:>{key_width}} : {formatted_value}"
-#             print(line)
+                line += f"{attr:>{key_width}} : {formatted_value}"
+            print(line)
 
-#         assert eph is not None
-#         assert hasattr(eph, "prn")
-#         assert hasattr(eph, "health")
+        assert eph is not None
+        assert hasattr(eph, "prn")
+        assert hasattr(eph, "health")
 
 
 def test_satellite_position_calculation():
@@ -174,29 +174,6 @@ def test_satellite_position_calculation():
                 )
 
                 assert np.isclose(dist_brdc, dist_glab, atol=1e-3)
-
-            # # read file ./tests/data/BERT00BEL_R_20243640700_41H_MN_G16_GPS_LNAV.satpos
-            # # find the line with timing 12:00:00.00 and extract the position
-            # with open("tests/data/BERT00BEL_R_20243640700_41H_MN_G16.satpos", "r") as f:
-            #     for line in f:
-            #         if "12:00:00.00" in line:
-            #             # extract fields 10, 11 and 12
-            #             # print(line.split()[9])
-            #             # print(line.split()[9:12])
-            #             x_glab, y_glab, z_glab = map(float, line.split()[9:12])
-            #             break
-            #         else:
-            #             continue
-
-            #     print(
-            #         f"\n{nav_type} {eph.prn} {WkNr} {t}: {x:15.3f} {y:15.3f} {z:15.3f}"
-            #         f"\n                        {x_glab:15.3f} {y_glab:15.3f} {z_glab:15.3f}"
-            #     )
-
-            #     # assert that the difference between the _ref and _glab coordinates is less than 5mm
-            #     assert abs(x_glab - x) < 0.005
-            #     assert abs(y_glab - y) < 0.005
-            #     assert abs(z_glab - z) < 0.005
 
 
 # def test_glonass_ephemeris():
