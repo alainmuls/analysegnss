@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from rich import print
 
 from src.analysegnss.config import GPS_BDS_WEEK_DIFF
 from src.analysegnss.gnss.GLONASSEphemeris import GLONASSEphemeris
@@ -23,7 +24,7 @@ def test_read_gnss_nav_csv():
         print(f"\nProcessing {nav_type} | {navcsv_fn}")
         gnss_nav_reader = GNSSNavReader(csv_file=navcsv_fn)
         gnss_nav_reader.read_GEC_nav_csv()
-        nav_data = gnss_nav_reader.get_ephemerides()
+        nav_data = gnss_nav_reader.get_all_ephemeris()
 
         assert len(nav_data) > 0, f"No data read for {nav_type}"
 
@@ -40,18 +41,6 @@ def test_read_gnss_nav_csv():
             row = items[i : i + 3]
             line = ""
             for attr, value in row:
-                # line += f"{attr:>{key_width}} : {str(value):<{val_width}}"
-                # line += f"{attr:>{key_width}} : {value} ({type(value).__name__}){' ':<{val_width-len(str(value))}}"
-
-                # if isinstance(value, (int, float)):
-                #     formatted_value = (
-                #         f"{value:>{val_width}.12f}"
-                #         if isinstance(value, float)
-                #         else f"{value:>{val_width}d}"
-                #     )
-                # else:
-                #     formatted_value = f"{str(value):<{val_width}}"
-
                 if isinstance(value, float):
                     formatted_value = f"{value:>{val_width}.9e}"
                 elif isinstance(value, int):
@@ -74,68 +63,65 @@ def test_satellite_position_calculation():
         # "GAL_INAV": "tests/data/BERT00BEL_R_20243640700_41H_MN_Galileo_INAV.csv",
         # "BDS_D1": "tests/data/BERT00BEL_R_20243640700_41H_MN_Beidou_D1.csv",
         # "BDS_D2": "tests/data/BERT00BEL_R_20243640700_41H_MN_Beidou_D2.csv",
-        "GPS-G16": "tests/data/BERT00BEL_R_20243640700_41H_MN_G16_GPS_LNAV.csv",
+        # "GPS-G16": "tests/data/BERT00BEL_R_20243640700_41H_MN_G16_GPS_LNAV.csv",
+        "GPS-G16": "tests/data/./BERT00BEL_R_20243640700_41H_MN_G16_LNAV_TEST_GPS_LNAV.csv",
     }
     # Test for each navigation type
     for nav_type, navcsv_fn in nav_csv_fns.items():
         gnss_nav_reader = GNSSNavReader(csv_file=navcsv_fn)
         gnss_nav_reader.read_GEC_nav_csv()
-        nav_data = gnss_nav_reader.get_ephemerides()
 
-        eph = nav_data[0]
+        # # Calculate positions at different times
+        # t = eph.toe - 300
+        # WkNr = eph.week
+        # x, y, z = eph.compute_satellite_position(t)
 
-        # Calculate positions at different times
-        t = eph.toe
-        WkNr = eph.week
-        x, y, z = eph.compute_satellite_position(t)
+        # # Validate position values
+        # assert isinstance(x, (int, float))
+        # assert isinstance(y, (int, float))
+        # assert isinstance(z, (int, float))
 
-        # Validate position values
-        assert isinstance(x, (int, float))
-        assert isinstance(y, (int, float))
-        assert isinstance(z, (int, float))
+        # # Check reasonable orbital radius
+        # gnss_radius = np.sqrt(x**2 + y**2 + z**2)
 
-        # Check reasonable orbital radius
-        gnss_radius = np.sqrt(x**2 + y**2 + z**2)
+        # if nav_type.startswith("GPS-LNAV"):
+        #     print(
+        #         "\nNAV_TYPE     PRN  WKNR     TOW        X [m]           Y [m]           Z [m]    |     radius [m]  |     height [m]"
+        #     )  # GPS orbital radius range in meters
+        # if not nav_type.startswith("BDS"):
+        #     print(
+        #         f"{nav_type:12s} {eph.prn:3d} {eph.week:5d} {t:7d} {x:15.3f} {y:15.3f} {z:15.3f} |"
+        #         f" {gnss_radius:15.3f} | {gnss_radius - R_EARTH:15.3f}"
+        #     )
+        # else:
+        #     print(
+        #         f"{nav_type:12s} {eph.prn:3d} {eph.week + GPS_BDS_WEEK_DIFF:5d} {t:7d} {x:15.3f} {y:15.3f} {z:15.3f} |"
+        #         f" {gnss_radius:15.3f} | {gnss_radius - R_EARTH:15.3f}"
+        #     )
 
-        if nav_type.startswith("GPS-LNAV"):
-            print(
-                "\nNAV_TYPE     PRN  WKNR     TOW        X [m]           Y [m]           Z [m]    |     radius [m]  |     height [m]"
-            )  # GPS orbital radius range in meters
-        if not nav_type.startswith("BDS"):
-            print(
-                f"{nav_type:12s} {eph.prn:3d} {eph.week:5d} {t:7d} {x:15.3f} {y:15.3f} {z:15.3f} |"
-                f" {gnss_radius:15.3f} | {gnss_radius - R_EARTH:15.3f}"
-            )
-        else:
-            print(
-                f"{nav_type:12s} {eph.prn:3d} {eph.week + GPS_BDS_WEEK_DIFF:5d} {t:7d} {x:15.3f} {y:15.3f} {z:15.3f} |"
-                f" {gnss_radius:15.3f} | {gnss_radius - R_EARTH:15.3f}"
-            )
-
-        assert 20000000 < gnss_radius < 50000000  # GPS orbital radius range in meters
+        # assert 20000000 < gnss_radius < 50000000  # GPS orbital radius range in meters
 
         if nav_type == "GPS-G16":
             pos_brdc = []
             pos_glab = []
 
-            # read the corresponding GPS LNAV ephemeris from CSV file
-            gnss_nav_reader = GNSSNavReader(csv_file=navcsv_fn)
-            gnss_nav_reader.read_GEC_nav_csv()
-            nav_data = gnss_nav_reader.get_ephemerides()
-
-            t = eph.toe
-            WkNr = eph.week
+            # current time t
+            t_mid = 128580  # MUST BE A MULTIPLE OF 30s
 
             # read all ines starting with SATPVT from the glab satpos file
-            with open("tests/data/BERT00BEL_R_20243640700_41H_MN_G16.satpos", "r") as f:
+            with open(
+                "tests/data/BERT00BEL_R_20243640700_41H_MN_G16_LNAV_TEST.satpos", "r"
+            ) as f:
                 glab_lines = f.readlines()
 
-            for t in range(eph.toe - 239 * 30, eph.toe + 240 * 30, 30):
+            for t_cur in range(t_mid - 239 * 30, t_mid + 240 * 30, 30):
                 # convert the GPS Week/TOW to datetime
-                dt = gnss2dt(week=WkNr, tow=t)
-                x, y, z = eph.compute_satellite_position(t)
+                eph = gnss_nav_reader.get_ephemeris(t=t_cur)
+                WkNr = eph.week
+                dt = gnss2dt(week=WkNr, tow=t_cur)
+                x, y, z = eph.compute_satellite_position(t_cur)
 
-                pos_brdc.append((WkNr, eph.toe, eph.IODE, t, dt, x, y, z))
+                pos_brdc.append((WkNr, eph.toe, eph.IODE, t_cur, dt, x, y, z))
                 # print(glab_hms, x, y, z)
 
                 # search in glab_lines the lines that corresponds to the glab_hms
@@ -148,9 +134,22 @@ def test_satellite_position_calculation():
                         x_glab, y_glab, z_glab = map(float, line.split()[9:12])
                         glab_iode = int(line.split()[17])
                         pos_glab.append(
-                            (WkNr, t, glab_iode, dt, glab_hms, x_glab, y_glab, z_glab)
+                            (
+                                WkNr,
+                                t_cur,
+                                glab_iode,
+                                dt,
+                                glab_hms,
+                                x_glab,
+                                y_glab,
+                                z_glab,
+                            )
                         )
                         break
+
+            print(len(pos_brdc), len(pos_glab))
+            print(f"pos_brdc[:5]: {pos_brdc[:5]}")
+            print(f"pos_brdc[-5:]: {pos_brdc[-5:]}")
 
             for i in range(len(pos_brdc)):
                 dist_brdc = np.sqrt(

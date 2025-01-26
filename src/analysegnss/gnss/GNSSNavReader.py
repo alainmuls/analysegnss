@@ -1,6 +1,5 @@
 import csv
 
-import numpy as np
 from rich import print
 
 from .GNSSephemeris import GNSSEphemeris
@@ -68,9 +67,30 @@ class GNSSNavReader:
                 try:
                     eph.IODE = int(float(row["IODE"]))
                 except KeyError:
-                    eph.IODE = np.nan
+                    eph.IODE = None
 
                 self.ephemerides.append(eph)
 
-    def get_ephemerides(self):
+    def get_ephemeris(self, t: float) -> GNSSEphemeris:
+        """get the ephemeris record which has toe closest to the given time
+
+        Args:
+            t (float): time in seconds of week  [0, 604800]
+
+        Returns:
+            GNSSEphemeris: GEC ephemeris record
+        """
+        if not self.ephemerides:
+            return None
+
+        # Find ephemeris with minimum time difference to t
+        closest_eph = min(self.ephemerides, key=lambda x: abs(x.toe - t))
+        return closest_eph
+
+    def get_all_ephemeris(self) -> list[GNSSEphemeris]:
+        """returns all ephemeris read from CSV file
+
+        Returns:
+            list: list of ephemeris records
+        """
         return self.ephemerides
