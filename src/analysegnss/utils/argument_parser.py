@@ -1026,7 +1026,7 @@ def argument_parser_reformat_sbf_rnx_for_opus(
     )
     parser.add_argument(
         "--gnss",
-        help="OPUS configuration: select which GNSS constellation. GPS = G, Galileo=E, Beidou = C and Glonass = R. For example: GE would be GPS and Gaileo. (default is GE)",
+        help="OPUS configuration: select which GNSS constellation. GPS = G, Galileo=E, Beidou = C and Glonass = R. Default is GE",
         required=False,
         default="GE",
     )

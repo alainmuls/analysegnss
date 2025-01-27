@@ -17,7 +17,7 @@ Creates rinex files from raw/binary data files (such as Septentrio SBF files)
 Idea is to extend this to more file formats in the future (UBX (u-blox), RTCM3)
 """
 
-def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> str:
+def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> tuple:
     """
     This function uses sbf2rin.sh to extract RNX files from the provided SBF file. And stores them in a directory named after the SBF file.
 
@@ -43,9 +43,9 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> str:
         logger.error(f"SBF file {parsed_args.sbf_ifn} does not exist")
         sys.exit(ERROR_CODES["E_FILE_NOT_FOUND"])
         
-    # get basename of sbf_ifn without extension
+    # get basename of sbf_ifn without extension --> used for output directory otherwise it saved in the same directory as sbf2rin.sh script
     sbf_basename = os.path.basename(parsed_args.sbf_ifn).split(".")[0]
-    # output directory of rinex files
+    # output directory of rinex files (this dir name will be unique for each SBF file) 
     rnx_odir = os.path.join(os.path.dirname(parsed_args.sbf_ifn), sbf_basename + "_RNX")
 
     # Check if the directory already exists
@@ -68,8 +68,16 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> str:
             logger.warning(
                 f"RNX obs and nav files already exist in {rnx_odir}. Skipping running sbf2rin.sh"
             )
-            return rnx_odir
-
+            rnx_nav_ofp = os.path.join(existing_rnx_files[0], rnx_odir)
+            rnx_obs_ofp = os.path.join(existing_rnx_files[1], rnx_odir)
+           
+            
+            return rnx_obs_ofp, rnx_nav_ofp
+        
+        else: 
+            logger.warning(
+                f"RNX dir {rnx_odir} already exists but no RINEX files found. Overwriting existing directory"
+            )
 
     # define CLI arguments for sbf2rin.sh
     
@@ -77,21 +85,22 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> str:
         sbf2rin_path,
         "-f",
         parsed_args.sbf_ifn,
-        "-r",
-        rnx_odir,
     ]
+    
 
     # extending the arguments with optional arguments if provided in parsed_args
-    ## exclude_gnss argument ##
-    if hasattr(parsed_args, "exclude_gnss"):
-        sbf2rin_args.extend(["-x", parsed_args.exclude_gnss])
+    ## excl_gnss argument ##
+    if hasattr(parsed_args, "excl_gnss"):
+        sbf2rin_args.extend(["-x", parsed_args.excl_gnss])
     ## begin_epoch argument ##
     if hasattr(parsed_args, "begin_epoch"):
         sbf2rin_args.extend(["-b", parsed_args.begin_epoch])
     ## end_epoch argument ##
     if hasattr(parsed_args, "end_epoch"):
         sbf2rin_args.extend(["-e", parsed_args.end_epoch])
-        
+    
+    # extend the arguments with output directory    
+    sbf2rin_args.extend(["-r", rnx_odir]) 
 
     # Run the script
     logger.info(f"Running sbf2rin.sh with arguments: {sbf2rin_args}")
@@ -102,16 +111,19 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> str:
         logger.debug(f"Output: {process_out.stdout}")  # Output from the script
         
         # catch last returned lines which contain the created RINEX files paths
-        rnx_obs_ofn = process_out.stdout.splitlines()[-1:]
-        rnx_nav_ofn = process_out.stdout.splitlines()[-2:-1]
+        rnx_nav_ofn = process_out.stdout.splitlines()[-1:][0]
+        rnx_obs_ofn = process_out.stdout.splitlines()[-2:-1][0]
         
     except subprocess.CalledProcessError as e:
-        logger.error(f"sbf2rin failed with error code {e.returncode}")
+        logger.error(f"sbf2rin failed with error code {e}")
         sys.exit(ERROR_CODES["E_PROCESS"])
 
     logger.info(f"Created rinex files {rnx_obs_ofn} and {rnx_nav_ofn} in {rnx_odir}")
 
-    return rnx_obs_ofn, rnx_nav_ofn, rnx_odir
+    rnx_obs_ofp = os.path.join(rnx_odir, rnx_obs_ofn) # full path to RINEX observation file
+    rnx_nav_ofp = os.path.join(rnx_odir, rnx_nav_ofn) # full path to RINEX navigation file
+
+    return rnx_obs_ofp, rnx_nav_ofp
 
 def main():
 
