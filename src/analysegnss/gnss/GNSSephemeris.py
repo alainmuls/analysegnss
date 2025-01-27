@@ -7,6 +7,7 @@ from src.analysegnss.config import GM_GPS, OMGE_GPS, GM_GAL, OMGE_GAL, GM_BDS, O
 class GNSSEphemeris:
     def __init__(self):
         # Satellite identification
+        self.gnss = None
         self.prn = None
         self.health = None
 
@@ -41,15 +42,15 @@ class GNSSEphemeris:
 
         self.IODE = None  # Issue of Data
 
-    def calculate_GPS_GAL_coordinates(self, gnss: str, t: float) -> tuple:
-        match gnss:
-            case "GPS":
+    def calculate_GPS_GAL_coordinates(self, t: float) -> tuple:
+        match self.gnss:
+            case "G":
                 GM = GM_GPS
                 OMGE = OMGE_GPS
-            case "GAL":
+            case "E":
                 GM = GM_GAL
                 OMGE = OMGE_GAL
-            case "BDS":
+            case "C":
                 GM = GM_BDS
                 OMGE = OMGE_BDS
             case _:
@@ -117,7 +118,7 @@ class GNSSEphemeris:
         z = yk_orbit * sin_incl
 
         # For BDS the coordinates are in the CGCS system, so convert to WGS84
-        if gnss == "BDS":
+        if self.gnss == "C":
             x, y, z = self.transform_cgcs_to_wgs84(x, y, z)
 
         return x, y, z

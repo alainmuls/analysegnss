@@ -110,7 +110,7 @@ def test_satellite_position_calculation():
 
             dt = gnss2dt(week=WkNr, tow=t_cur)
             try:
-                x, y, z = eph.calculate_GPS_GAL_coordinates(t=t_cur, gnss=gnss_prn[:3])
+                x, y, z = eph.calculate_GPS_GAL_coordinates(t=t_cur)
                 pos_brdc.append((WkNr, eph.toe, eph.IODE, t_cur, dt, x, y, z))
             except ValueError as e:
                 print(e)

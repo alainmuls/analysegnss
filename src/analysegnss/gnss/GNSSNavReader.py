@@ -55,6 +55,7 @@ class GNSSNavReader:
                 eph.cis = float(row["Cis"])
 
                 # Additional info
+                eph.gnss = row["S"]
                 eph.prn = int(row["PRN"])
                 try:
                     eph.health = float(row["health"])
