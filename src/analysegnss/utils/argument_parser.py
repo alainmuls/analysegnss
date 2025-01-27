@@ -979,7 +979,8 @@ def argument_parser_reformat_sbf_rnx_for_opus(
     args: list, script_name: str
 ) -> argparse.Namespace:
     """
-    This script checks and reformats rnx files for OPUS processing.
+    This script checks and reformats rnx files for OPUS processing. 
+    Default is 01D duratiom and 30 seconds epoch interval for gnss systems GPS and Galileo.
     The scripts accepts sbf and rnx files.
     """
     baseName = str_yellow(script_name)

@@ -65,12 +65,14 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> tuple:
         if glob.glob(os.path.join(rnx_odir, "*MO.rnx")) and glob.glob(
             os.path.join(rnx_odir, "*MN.rnx")
         ):
+
+            
+            rnx_nav_ofp = os.path.join(rnx_odir, "*MN.rnx")
+            rnx_obs_ofp = os.path.join(rnx_odir, "*MO.rnx")
+            
             logger.warning(
-                f"RNX obs and nav files already exist in {rnx_odir}. Skipping running sbf2rin.sh"
+                f"RNX obs and nav files already exist: {rnx_obs_ofp} and {rnx_nav_ofp}. Skipping running sbf2rin.sh"
             )
-            rnx_nav_ofp = os.path.join(existing_rnx_files[0], rnx_odir)
-            rnx_obs_ofp = os.path.join(existing_rnx_files[1], rnx_odir)
-           
             
             return rnx_obs_ofp, rnx_nav_ofp
         
@@ -78,6 +80,7 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> tuple:
             logger.warning(
                 f"RNX dir {rnx_odir} already exists but no RINEX files found. Overwriting existing directory"
             )
+
 
     # define CLI arguments for sbf2rin.sh
     
