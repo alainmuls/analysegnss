@@ -1,7 +1,7 @@
 import numpy as np
 from datetime import datetime, timedelta
 
-from src.analysegnss.config import GM_GPS, OMEGA_EARTH, SECS_IN_WEEK
+from src.analysegnss.config import GM_GPS, OMGE_GPS, GM_GAL, OMGE_GAL, GM_BDS, OMGE_BDS
 
 
 class GNSSEphemeris:
@@ -41,7 +41,20 @@ class GNSSEphemeris:
 
         self.IODE = None  # Issue of Data
 
-    def compute_satellite_position(self, t: float) -> tuple:
+    def calculate_GPS_GAL_coordinates(self, gnss: str, t: float) -> tuple:
+        match gnss:
+            case "GPS":
+                GM = GM_GPS
+                OMGE = OMGE_GPS
+            case "GAL":
+                GM = GM_GAL
+                OMGE = OMGE_GAL
+            case "BDS":
+                GM = GM_BDS
+                OMGE = OMGE_BDS
+            case _:
+                raise ValueError(f"Unknown GNSS: {gnss}")
+
         # Semi-major axis
         A = self.sqrta * self.sqrta
 
@@ -49,13 +62,13 @@ class GNSSEphemeris:
         tk = t - self.toe
 
         # Mean motion
-        n0 = np.sqrt(GM_GPS / (A * A * A))
+        n0 = np.sqrt(GM / (A * A * A))
         n = n0 + self.dn
 
         # Mean anomaly
         Mk = self.m0 + n * tk
 
-        # Eccentric anomaly
+        # Solve Kepler's equation iteratively
         Ek = Mk
         for _ in range(10):
             E_old = Ek
@@ -64,15 +77,18 @@ class GNSSEphemeris:
                 break
 
         # Position calculation in orbital plane
+        # True anomaly
         vk = np.arctan2(
             np.sqrt(1.0 - self.e * self.e) * np.sin(Ek), np.cos(Ek) - self.e
         )
+        # Argument of latitude
         phik = vk + self.omega
 
         # Second harmonic corrections
         cos_2phik = np.cos(2.0 * phik)
         sin_2phik = np.sin(2.0 * phik)
 
+        # Argument of latitude, Orbit radius and inclination correction
         duk = self.cus * sin_2phik + self.cuc * cos_2phik
         drk = self.crs * sin_2phik + self.crc * cos_2phik
         dik = self.cis * sin_2phik + self.cic * cos_2phik
@@ -87,9 +103,7 @@ class GNSSEphemeris:
         yk_orbit = rk * np.sin(uk)
 
         # Corrected longitude of ascending node with Earth rotation
-        OMEGA_k = (
-            self.OMEGA + (self.OMEGA_DOT - OMEGA_EARTH) * tk - OMEGA_EARTH * self.toe
-        )
+        OMEGA_k = self.OMEGA + (self.OMEGA_DOT - OMGE) * tk - OMGE * self.toe
 
         # Earth rotation correction matrix
         cos_Omega = np.cos(OMEGA_k)
@@ -97,14 +111,18 @@ class GNSSEphemeris:
         cos_incl = np.cos(ik)
         sin_incl = np.sin(ik)
 
-        # Final ECEF coordinates
+        # ECEF coordinates
         x = xk_orbit * cos_Omega - yk_orbit * cos_incl * sin_Omega
         y = xk_orbit * sin_Omega + yk_orbit * cos_incl * cos_Omega
         z = yk_orbit * sin_incl
 
+        # For BDS the coordinates are in the CGCS system, so convert to WGS84
+        if gnss == "BDS":
+            x, y, z = self.transform_cgcs_to_wgs84(x, y, z)
+
         return x, y, z
 
-    def is_valid(self, t):
+    def is_valid(self, t: float) -> bool:
         """
         Check if ephemeris is valid for given time
         Args:
@@ -115,7 +133,35 @@ class GNSSEphemeris:
         time_difference = abs(t - self.toe)
         return time_difference <= 7200  # Valid for ±2 hours
 
-    # Create and populate ephemeris object
+    def transform_cgcs_to_wgs84(
+        self, x: float, y: float, z: float
+    ) -> tuple[float, float, float]:
+        """Transform coordinates from BDS CGCS2000 to WGS84.
+
+        Args:
+            x, y, z: Coordinates in CGCS2000 frame (meters)
+        Returns:
+            tuple: (x, y, z) coordinates in WGS84 frame (meters)
+        """
+        # Translation parameters (meters)
+        dx = -0.99
+        dy = -1.90
+        dz = -0.76
+
+        # Scale parameter (ppb)
+        scale = -0.000069 * 1e-9
+
+        # Rotation parameters (radians)
+        rx = -0.000034 * 4.8481e-6
+        ry = 0.000002 * 4.8481e-6
+        rz = 0.000023 * 4.8481e-6
+
+        # Apply Helmert transformation
+        x_wgs = (1 + scale) * (x + rz * y - ry * z) + dx
+        y_wgs = (1 + scale) * (-rz * x + y + rx * z) + dy
+        z_wgs = (1 + scale) * (ry * x - rx * y + z) + dz
+
+        return (x_wgs, y_wgs, z_wgs)
 
 
 # eph = GNSSEphemeris()
