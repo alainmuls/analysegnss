@@ -164,7 +164,7 @@ beidou_d1_nav_col_descriptions = (
     ("af0", "Satellite Clock Offset"),
     ("af1", "Satellite Clock Drift"),
     ("af2", "Satellite Clock Drift Rate"),
-    ("AODE", "Age of Data Ephemeris"),
+    ("IODE", "Age of Data Ephemeris"),
     ("Crs", "Amplitude of Sine Harmonic Correction Term to Orbit Radius"),
     ("delta_N", "Mean Motion Difference"),
     ("M0", "Mean Anomaly at Reference Time"),
