@@ -149,33 +149,43 @@ def test_satellite_position_calculation():
             with open("tests/data/BERT00BEL_R_20243640700_41H_MN_G16.satpos", "r") as f:
                 glab_lines = f.readlines()
 
-            # cycle through the ephemerides
+            
+            # cycle through the brdc ephemerides
             for eph in nav_data:
-                t = eph.toe
+                
+                # check of eph.toe is not empty or None
+                if not eph.toe or eph.toe == 0:
+                    print(f"eph.toe is empty for PRN {eph.prn}")
+                    continue
+                
+                # create time window around the ephemeris toe [0, +2h] with 10min intervals
+                toe = eph.toe
                 WkNr = eph.week
                 
-                # convert the GPS Week/TOW to datetime
-                dt = gnss2dt(week=WkNr, tow=t)
-                x, y, z = eph.compute_satellite_position(t)
-                glab_hms = dt.strftime("%H:%M:%S.%f")[:-4]
-                brdc_hms = dt.strftime("%H:%M:%S.%f")[:-4]
-                
-                pos_brdc.append(("brdc", WkNr, t, brdc_hms, eph.IODE, x, y, z))
-                # print(glab_hms, x, y, z)
-
-                # search in glab_lines the lines that corresponds to the glab_hms
-                for line in glab_lines:
-                    if glab_hms in line:
-                        # extract fields 10, 11 and 12
-                        # print(line.split()[9])
-                        # print(line.split()[9:12])
-                        x_glab, y_glab, z_glab = map(float, line.split()[9:12])
-                        glab_iode = int(line.split()[17])
-                        pos_glab_eqdt.append(("glab", WkNr, t, glab_hms, glab_iode, x_glab, y_glab, z_glab))
-                        pos_brdc_eqdt.append(("brdc", WkNr, t, brdc_hms, eph.IODE, x, y, z))
-                        break
-
-
+                for tow in range(toe, toe+7200, 600):
+                    # convert the GPS Week/TOW to datetime
+                    print(f"Calculating position for PRN {eph.prn} at WkNr {WkNr} and TOW {tow} and ephtoe {toe} with IODE {eph.IODE}")
+                    dt = gnss2dt(week=WkNr, tow=tow)
+                    x, y, z = eph.compute_satellite_position(tow)
+                    #glab_hms = dt.strftime("%H:%M:%S.%f")[:-4]
+                    brdc_hms = dt.strftime("%H:%M:%S.%f")[:-4]
+                    
+                    pos_brdc.append(("brdc", WkNr, tow, dt, brdc_hms, eph.IODE, x, y, z))
+                    # print(glab_hms, x, y, z)
+                    """
+                    # search in glab_lines the lines that corresponds to the glab_hms
+                    for line in glab_lines:
+                        if glab_hms in line:
+                            # extract fields 10, 11 and 12
+                            # print(line.split()[9])
+                            # print(line.split()[9:12])
+                            x_glab, y_glab, z_glab = map(float, line.split()[9:12])
+                            glab_iode = int(line.split()[17])
+                            pos_glab_eqdt.append(("glab", WkNr, t, glab_hms, glab_iode, x_glab, y_glab, z_glab))
+                            pos_brdc_eqdt.append(("brdc", WkNr, t, brdc_hms, eph.IODE, x, y, z))
+                            break
+                    """
+            """
             # print the pos_brdc and pos_glab satellite position at the same date and time
             print(
                     f"Found {len(pos_brdc_eqdt)} positions in the broadcast ephemeris "
@@ -188,7 +198,7 @@ def test_satellite_position_calculation():
                 f"\nephemeris source: {pos_glab_eqdt[0][0]} | {pos_glab_eqdt[0][1]:5d}  {pos_glab_eqdt[0][2]:7d} | {pos_glab_eqdt[0][3]} | {pos_glab_eqdt[0][4]} | "
                 f" {pos_glab_eqdt[0][5]:15.3f} {pos_glab_eqdt[0][6]:15.3f} {pos_glab_eqdt[0][7]:15.3f}\n"
             )
-
+            """
 
             # fill pos_glab list with glab_lines dataframe info
             for line in glab_lines:
@@ -198,13 +208,16 @@ def test_satellite_position_calculation():
                     glab_hms = fields[4]
                     x_glab, y_glab, z_glab = map(float, fields[9:12])
                     glab_iode = int(fields[17])
-                    pos_glab.append(("glab", WkNr, tow, glab_hms, glab_iode, x_glab, y_glab, z_glab))
+                    WkNr = nav_data[0].week
+                    dt = gnss2dt(week=WkNr, tow=tow)
+
+                    pos_glab.append(("glab", WkNr, tow, dt, glab_hms, glab_iode, x_glab, y_glab, z_glab))
 
 
             # make dataframe with merged pos_brdc and pos_glab ephemeris
             # sort on WkNr and dt
-            df_brdc_glab = pd.DataFrame(pos_brdc + pos_glab, columns=["Ephemeris source", "WkNr", "TOW", "t", "IODE", "X", "Y", "Z"])
-            df_brdc_glab = df_brdc_glab.sort_values(by=["t"])
+            df_brdc_glab = pd.DataFrame(pos_brdc + pos_glab, columns=["Ephemeris source", "WkNr", "TOW", "DT", "hms", "IODE", "X", "Y", "Z"])
+            df_brdc_glab = df_brdc_glab.sort_values(by=["hms"])
             print(df_brdc_glab)
            
             # write the dataframe to a csv file
