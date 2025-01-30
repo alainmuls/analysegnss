@@ -11,7 +11,7 @@ import pynmea2
 from rich.console import Console
 
 # Local application imports
-from utils import argument_parser, init_logger
+from analysegnss.utils import argument_parser, init_logger
 
 @dataclass
 class NMEA:
@@ -39,11 +39,12 @@ class NMEA:
                 except pynmea2.ParseError as e:
                     if self.logger:
                         self.logger.warning(f"Failed to parse line: {line.strip()} - {e}")
-        
+            self.logger.info(f"Successfully parsed {len(messages)} NMEA messages") 
         # write parsed nmea messages to file
         with open(f'{self.nmea_ifn}.nmea', 'w') as file:
             for msg in messages:
                 file.write(f"{msg}\n")
+            self.logger.info(f"Saved parsed NMEA messages to {self.nmea_ifn}.nmea")
         
         return messages
 
@@ -63,7 +64,7 @@ class NMEA:
 
     def get_dataframe(self):
         messages = self.parse_nmea_file()
-        df = self.convert_to_dataframe(messages)
+        df = self.nmea_dataframe(messages)
         return df
 
 
@@ -123,7 +124,7 @@ if __name__ == "__main__":
     script_name = os.path.basename(__file__).split(".")[0]
     
     # parse arguments
-    parsed_args = argument_parser.argument_parser_nmea_class(args=sys.argv[1:])
+    parsed_args = argument_parser_nmea_class(args=sys.argv[1:], script_name=script_name)
     
     logger = init_logger.logger_setup(
         args=parsed_args, base_name=script_name, log_dest='/tmp/logs/'
