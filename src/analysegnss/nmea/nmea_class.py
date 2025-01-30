@@ -1,5 +1,6 @@
 # Standard library imports
 import argparse
+from collections import defaultdict
 from dataclasses import dataclass, field
 import os
 import logging
@@ -38,7 +39,7 @@ class NMEA:
                     messages.append(msg)
                 except pynmea2.ParseError as e:
                     if self.logger:
-                        self.logger.warning(f"Failed to parse line: {line.strip()} - {e}")
+                        self.logger.debug(f"Failed to parse line: {line.strip()} - {e}")
             self.logger.info(f"Successfully parsed {len(messages)} NMEA messages") 
         # write parsed nmea messages to file
         with open(f'{self.nmea_ifn}.nmea', 'w') as file:
@@ -48,19 +49,103 @@ class NMEA:
         
         return messages
 
-    def nmea_dataframe(self, nmea_messages: list):
-        data = []
+    def nmea_dataframe(self, nmea_messages: list) -> pl.DataFrame:
+        """
+        This script collects the NMEA messages and export each field to a dataframe
+        
+        Args:
+            nmea_messages (list): List of NMEA messages
+            
+        Returns:
+            pl.DataFrame: DataFrame containing the collected data from the NMEA messages organized in columns
+        """
+        
+        data_dict = defaultdict(dict) # type of dict that can collect multiple fields for the same timestamp without duplicating it. (acts as a merger) 
+        last_timestamp = None # most NMEA messages do not have a timestamp, so we will have to the use the last timestamp
+        
         for msg in nmea_messages:
+            
+            # get timestamp from nmea message and update last_timstamp
+            timestamp = getattr(msg,"timestamp", last_timestamp)
+            if timestamp is not None:
+                last_timestamp = timestamp
+            
+            # update existing list of dictionaries if timestamp already exists
+            data = data_dict[timestamp]
+             
             if isinstance(msg, pynmea2.types.talker.GGA):
-                data.append({
-                    'timestamp': msg.timestamp,
+                data.update({
+                    'timestamp': timestamp,
                     'latitude': msg.latitude,
                     'longitude': msg.longitude,
                     'altitude': msg.altitude,
                     'num_sats': msg.num_sats,
                     'gps_qual': msg.gps_qual,
                 })
-        return pl.DataFrame(data)
+            elif isinstance(msg, pynmea2.types.talker.RMC):
+                data.update({
+                    'timestamp': timestamp,
+                    'latitude': msg.latitude,
+                    'longitude': msg.longitude,
+                    'speed': msg.spd_over_grnd,
+                    'track': msg.true_course,
+                    'datestamp': msg.datestamp,
+                })
+            elif isinstance(msg, pynmea2.types.talker.GNS):
+                data.update({
+                    'timestamp': timestamp,
+                    'latitude': msg.latitude,
+                    'longitude': msg.longitude,
+                    'altitude': msg.altitude,
+                    'num_sats': msg.num_sats,
+                    'mode': msg.mode_indicator,
+                    'orthoH': msg.altitude,
+                    'undulation': msg.geo_sep,
+                    'age(s)': msg.age_gps_data,
+                })
+            elif isinstance(msg, pynmea2.types.talker.GST):
+                data.update({
+                    'timestamp': timestamp,
+                    'rms_val': msg.rms_val,
+                    'std_major': msg.std_major,
+                    'std_minor': msg.std_minor,
+                    'orientation_a(degrees_from_true_north)': msg.orient,
+                    'sdlat(m)': msg.std_latitude,
+                    'sdlon(m)': msg.std_longitude,
+                    'sdH(m)': msg.std_dev_altitude,
+                })
+            elif isinstance(msg, pynmea2.types.talker.GSA):
+                
+                data.update({
+                    'timestamp': timestamp,
+                    'pdop': msg.pdop,
+                    'hdop': msg.hdop,
+                    'vdop': msg.vdop,
+                })
+            elif isinstance(msg, pynmea2.types.talker.GSV):
+                data.update({
+                    'last_timestamp': timestamp,
+                    'num_messages': msg.num_messages,
+                    'message_num': msg.msg_num,
+                    'nrSVs': msg.num_sv_in_view,
+                })
+            elif isinstance(msg, pynmea2.types.talker.VTG):
+                data.update({
+                    'timestamp': timestamp,
+                })
+                pass
+            elif isinstance(msg, pynmea2.types.talker.ZDA):
+                data.update({
+                    'timestamp': timestamp,
+                    'day': msg.day,
+                    'month': msg.month,
+                    'year': msg.year,
+                })
+            else:
+                self.logger.warning(f"Unknown NMEA message type: {msg}")
+                
+             
+        return pl.DataFrame(list(data_dict.values()))
 
     def get_dataframe(self):
         messages = self.parse_nmea_file()

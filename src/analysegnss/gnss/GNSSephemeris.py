@@ -58,9 +58,10 @@ class GNSSEphemeris:
         # Eccentric anomaly
         Ek = Mk
         for _ in range(10):
-            E_old = Ek
+            E_prev = Ek
+            #print(f"E previous {E_prev} and Ek {Ek}")
             Ek = Mk + self.e * np.sin(Ek)
-            if abs(Ek - E_old) < 1e-10:
+            if abs(Ek - E_prev) < 1e-10:
                 break
 
         # Position calculation in orbital plane

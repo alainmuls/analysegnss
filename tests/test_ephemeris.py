@@ -162,7 +162,7 @@ def test_satellite_position_calculation():
                 toe = eph.toe
                 WkNr = eph.week
                 
-                for tow in range(toe, toe+7200, 600):
+                for tow in range(toe, toe+7200, 300):
                     # convert the GPS Week/TOW to datetime
                     print(f"Calculating position for PRN {eph.prn} at WkNr {WkNr} and TOW {tow} and ephtoe {toe} with IODE {eph.IODE}")
                     dt = gnss2dt(week=WkNr, tow=tow)
