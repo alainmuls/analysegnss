@@ -17,8 +17,9 @@ from rich import print
 
 from analysegnss.config import ERROR_CODES, DICT_GNSS, rich_console
 from analysegnss.CSV.CSV_class import GNSS_CSV
-from analysegnss.utils import argument_parser, init_logger
+from analysegnss.utils import init_logger
 from analysegnss.utils.utilities import str_red
+from analysegnss.utils.argument_parser import argument_parser_cn0_daily
 
 
 def cn0_analyse(argv: list):
@@ -32,7 +33,7 @@ def cn0_analyse(argv: list):
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    args_parsed = argument_parser.argument_parser_cn0_daily(
+    args_parsed = argument_parser_cn0_daily(
         args=argv[1:], script_name=os.path.basename(__file__)
     )
     # print(args_parsed)

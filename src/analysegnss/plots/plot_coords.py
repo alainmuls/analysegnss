@@ -12,7 +12,8 @@ import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
 from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.plots import plot_utm
 from analysegnss.plots.plot_columns import get_utm_columns
-from analysegnss.utils import argument_parser, init_logger
+from analysegnss.utils import init_logger
+from analysegnss.utils.argument_parser import argument_parser_plot_coords
 
 
 def get_origin(parsed_args: list) -> str:
@@ -50,7 +51,7 @@ def plot_coords(argv: list):
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    args_parsed = argument_parser.argument_parser_plot_coords(
+    args_parsed = argument_parser_plot_coords(
         args=argv[1:], script_name=os.path.basename(__file__)
     )
     # print(f"\nParsed arguments: {args_parsed}")
@@ -186,7 +187,7 @@ def plot_coords(argv: list):
             plot_utm.plot_utm_scatter(
                 utm_df=df_utm,
                 origin=origin,
-	            ifn=filename_in,
+                ifn=filename_in,
                 dir_fn=dir_fn,
                 logger=logger,
                 display=args_parsed.display,
@@ -196,7 +197,7 @@ def plot_coords(argv: list):
             plot_utm.plot_utm_height(
                 utm_df=df_utm,
                 origin=origin,
-          		ifn=filename_in,
+                ifn=filename_in,
                 dir_fn=dir_fn,
                 sd=args_parsed.sd,
                 logger=logger,
@@ -207,7 +208,7 @@ def plot_coords(argv: list):
             plot_utm.plot_utm_scatter_mpl(
                 utm_df=df_utm,
                 origin=origin,
-            	ifn=filename_in,
+                ifn=filename_in,
                 dir_fn=dir_fn,
                 logger=logger,
                 display=args_parsed.display,
@@ -217,7 +218,7 @@ def plot_coords(argv: list):
             plot_utm.plot_utm_height_mpl(
                 utm_df=df_utm,
                 origin=origin,
-            ifn=filename_in,
+                ifn=filename_in,
                 dir_fn=dir_fn,
                 sd=args_parsed.sd,
                 logger=logger,

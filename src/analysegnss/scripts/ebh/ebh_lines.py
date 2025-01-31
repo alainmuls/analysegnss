@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-# Standard library imports
 import argparse
 import os
 import re
@@ -8,17 +7,16 @@ import sys
 from logging import Logger
 from math import atan2, degrees, fabs, sqrt
 
-# Third party imports
 import polars as pl
 from tabulate import tabulate
 
-# Local application imports
 from analysegnss.config import ERROR_CODES
 from analysegnss.gnss.gnss_dt import gnss2dt
 import analysegnss.rtkpos.ppk_rnx2rtkp as ppk_rnx2rtkp
 import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
-from analysegnss.utils import argument_parser, init_logger
+from analysegnss.utils import init_logger
 from analysegnss.utils.utilities import str_red, str_yellow
+from analysegnss.utils.argument_parser import argument_parser_ebh_lines
 
 
 def get_ppk_dataframe(parsed_args: argparse.Namespace, logger: Logger) -> pl.DataFrame:
@@ -88,7 +86,7 @@ def read_ebh_line_timings(timings_fn: str, logger: Logger) -> dict:
     """
     # check if the timings file is readable
     if not os.path.isfile(timings_fn) or not os.access(timings_fn, os.R_OK):
-        #print(f"File {timings_fn} is not readable")
+        # print(f"File {timings_fn} is not readable")
         logger.error(f"File {timings_fn} is not readable")
         sys.exit(ERROR_CODES["E_FILE_NOT_EXIST"])
 
@@ -125,7 +123,11 @@ def read_ebh_line_timings(timings_fn: str, logger: Logger) -> dict:
 
     # check if the timings file is empty
     if not line_timings:
-        print(str_red(f"ERROR: File {timings_fn} is empty. Probably no timings key found in SBF comments or sbf comment are modified. Exiting"))
+        print(
+            str_red(
+                f"ERROR: File {timings_fn} is empty. Probably no timings key found in SBF comments or sbf comment are modified. Exiting"
+            )
+        )
         logger.critical(f"File {timings_fn} is empty. Exiting")
         sys.exit(ERROR_CODES["E_FILE_EMPTY"])
 
@@ -164,9 +166,9 @@ def ebh_lines_map_angle(
             )
 
         else:
-        if logger is not None:
-            logger.debug(f"row_start = {row_start}")
-            logger.debug(f"row_end = {row_end}")
+            if logger is not None:
+                logger.debug(f"row_start = {row_start}")
+                logger.debug(f"row_end = {row_end}")
 
         # calculate the map_angle
         map_angle = atan2(
@@ -289,10 +291,10 @@ def ebh_line_thin_out(
         pl.Config.set_tbl_rows(20)
         logger.debug(f"df_line = \n{df_line.collect()}")
         # logger.debug first 30 rows of the dataframe
-        #logger.debug(f"df_line.head(30) = \n{df_line.head(30)}")
+        # logger.debug(f"df_line.head(30) = \n{df_line.head(30)}")
         # thin out the df_line to keep positions every 0.5 meters
         logger.debug(f"df_assur = \n{df_assur.collect()}")
-        #logger.debug(f"df_assur.head(30) = \n{df_assur.head(30)}")
+        # logger.debug(f"df_assur.head(30) = \n{df_assur.head(30)}")
 
     return df_assur.collect()
 
@@ -376,7 +378,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
     # check quality of each ebh line
     # Thin out line, keep RTK/PPK fixed results
     # save in CSV files using ";" as separator
-    #TODO check if ebh lines have the same distances
+    # TODO check if ebh lines have the same distances
     for ebh_key, ebh_assur_line in ebh_assur_lines.items():
         # Checking quality of each ebh line for ppk and rtk result.
         # This info is needed to decide whether rtk or ppk quality is sufficient for ASSUR
@@ -399,8 +401,6 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
             )
 
             # put here function (ebhppk_to_csv) to save dataframes to csv files that can be used for plotting
-
-
 
         # thin out the df_line to keep positions every 0.5 meters and keep only RTK/PPK fixed results
         ebh_assur_line = ebh_line_thin_out(
@@ -429,7 +429,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
 
                 parsed_args.ebh_dest_dir = os.path.join(
                     os.path.dirname(parsed_args.pos_ifn), "EBH_ASSUR"
-        )
+                )
             elif hasattr(parsed_args, "sbf_ifn") and parsed_args.sbf_ifn:
 
                 parsed_args.ebh_dest_dir = os.path.join(
@@ -437,8 +437,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
                 )
 
             else:
-        pass
-
+                pass
 
         # writing ebh assur line to file
         ebh_to_assurfmt(
@@ -484,10 +483,12 @@ def ebh_to_assurfmt(
     print(f"Done writing ebh assur file to {ebh_assur_fp}")
 
 
-def ebhrtk_to_csv(rtk_df: pl.dataframe, rtk_fn: str, dest_dir: str, logger: Logger) -> None:
+def ebhrtk_to_csv(
+    rtk_df: pl.dataframe, rtk_fn: str, dest_dir: str, logger: Logger
+) -> None:
     """
     Write ebh rtk (sourced from sbf) dataframe with UTM coordinates, orthometric H, lat lon coordinates, Datetime, Type and NrSV
-    to csv file. 
+    to csv file.
 
     args:
     rtk_df (pl.DataFrame): RTK dataframe
@@ -497,10 +498,12 @@ def ebhrtk_to_csv(rtk_df: pl.dataframe, rtk_fn: str, dest_dir: str, logger: Logg
     """
 
 
-def ebhppk_to_csv(rtk_df: pl.dataframe, rtk_fn: str, dest_dir: str, logger: Logger) -> None:
+def ebhppk_to_csv(
+    rtk_df: pl.dataframe, rtk_fn: str, dest_dir: str, logger: Logger
+) -> None:
     """
     Write ebh ppk (sourced from sbf) dataframe with UTM coordinates, orthometric H, lat lon coordinates, Datetime, Type and NrSV
-    to csv file. 
+    to csv file.
 
     args:
     rtk_df (pl.DataFrame): RTK dataframe
@@ -508,12 +511,14 @@ def ebhppk_to_csv(rtk_df: pl.dataframe, rtk_fn: str, dest_dir: str, logger: Logg
     dest_dir (str): Path to destination directory
     logger (Logger): Logger object
     """
+
+
 def main():
     # fetch script name for logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    parsed_args = argument_parser.argument_parser_ebh_lines(args=sys.argv[1:])
+    parsed_args = argument_parser_ebh_lines(args=sys.argv[1:])
 
     # create the file/console logger
     logger = init_logger.logger_setup(args=parsed_args, base_name=script_name)

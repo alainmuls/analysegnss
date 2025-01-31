@@ -125,16 +125,18 @@ class SBF:
         """
         # Getting directory of file to archive
         dir_fn = os.path.dirname(fn)
-        dir_fnar = os.path.join(dir_fn, dest_dir)
-        self.logger.debug(f"archive directory of file is {dir_fnar}")
+        dir_archive_ofn = os.path.join(dir_fn, dest_dir)
+        self.logger.debug(f"archive directory of file is {dir_archive_ofn}")
 
         # create directory if it does not exist
-        if not os.path.exists(dir_fnar):
+        if not os.path.exists(dir_archive_ofn):
             try:
-                os.makedirs(dir_fnar, exist_ok=True)
-                self.logger.info(f"Directory {dir_fnar} created.")
+                os.makedirs(dir_archive_ofn, exist_ok=True)
+                self.logger.info(f"Directory {dir_archive_ofn} created.")
             except Exception as e:
-                self.logger.error(f"Error creating archive directory {dir_fnar}: {e}")
+                self.logger.error(
+                    f"Error creating archive directory {dir_archive_ofn}: {e}"
+                )
 
         # extract base name
         fn_base = os.path.basename(fn)
@@ -144,7 +146,7 @@ class SBF:
         fn_time = timestamp + "_" + fn_base
 
         # update destination
-        dest = os.path.join(dir_fnar, fn_time)
+        dest = os.path.join(dir_archive_ofn, fn_time)
 
         # copy file to archive directory
         try:

@@ -1088,7 +1088,7 @@ def argument_parser_sbfmeas2csv(script_name: str, args: list) -> argparse.Namesp
     )
 
     parser.add_argument(
-        "--sbf_fn",
+        "--sbf_ifn",
         help="SBF filename",
         type=str,
         required=True,
