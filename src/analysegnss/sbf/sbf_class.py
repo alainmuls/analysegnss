@@ -158,6 +158,55 @@ class SBF:
                 f"Error moving file {fn} to archive directory {dest}: {e}"
             )
 
+    def get_sbf_blocks(self) -> list:
+        """
+        get_sbf_blocks returns a list of SBF blocks from the SBF file
+        """
+
+        def clean_block_name(text):
+            # Remove " (v1)"
+            text = text.replace(" (v1)", "")
+            # Convert " (v2)" to "2"
+            text = text.replace(" (v2)", "2")
+            return text
+
+        # sbf to CSV conversion utility
+        run_sbfblocks = locate("sbfblocks")
+        # options for sbfblocks
+        cmd_sbfblocks = [run_sbfblocks, "-f", self.sbf_fn, "-E"]
+
+        # run sbfblocks command
+        with rich_console.status(
+            f"[bold green]getting list of SBF blocks in {self.sbf_fn}",
+            spinner="aesthetic",
+        ):
+            try:
+                process = subprocess.run(cmd_sbfblocks)
+            except Exception as e:
+                sys.stderr.write(f"{process} Error: {e}\n")
+                if self.logger:
+                    self.logger.error(
+                        f"\t... subprocess {str_yellow(' '.join(cmd_bin2asc))} return exit code"
+                        f"\t... {str_red(e)}. Program exits."
+                    )
+                sys.exit(ERROR_CODES["E_PROCESS"])
+
+        # read the output of sbfblocks
+        sbfblocks_ifn = self.sbf_fn + ".blocks.txt"
+        with open(sbfblocks_ifn, "r") as f:
+            lines = f.readlines()
+
+        extracted_sbfblocks = []
+        for line in lines:
+            # Find text between "] " and " ="
+            start = line.find("] ") + len("] ")
+            end = line.find(" =")
+            if end != -1:
+                field = line[start:end]
+                extracted_sbfblocks.append(clean_block_name(text=field))
+
+        return extracted_sbfblocks
+
     def bin2asc_dataframe(self, lst_sbfblocks: list, archive=None) -> dict:
         """
         bin2asc_dataframe converts binary SBF to CVS files for the sbfblocks in
@@ -206,6 +255,8 @@ class SBF:
         for sbf_block in lst_sbfblocks:
             cmd_bin2asc.append("-m")
             cmd_bin2asc.append(sbf_block)
+            if sbf_block == "Meas3Ranges":
+                cmd_bin2asc.append("--extractGenMeas")
 
         # Convert binary to text messages
         if self.logger:
@@ -229,7 +280,13 @@ class SBF:
         # find created files
         bin2asc_fns = {}
         for sbf_block in lst_sbfblocks:
-            bin2asc_fns[sbf_block] = glob.glob(rf"{self.sbf_fn}_SBF_{sbf_block}.txt")
+            if sbf_block != "Meas3Ranges":
+                bin2asc_fns[sbf_block] = glob.glob(
+                    rf"{self.sbf_fn}_SBF_{sbf_block}.txt"
+                )
+            else:
+                bin2asc_fns[sbf_block] = glob.glob(rf"{self.sbf_fn}_measurements.txt")
+        print(f"bin2asc_fns: {bin2asc_fns}")
 
         # create dictionary for containing the obtained dataframes
         sbf_dfs = {}
@@ -582,6 +639,20 @@ class SBF:
                 "Doppler_Hz",
                 "L_cycles [cyc]",
             ]
+        elif sbf_block == "Meas3Ranges":
+            # dict of columns to keep and column type
+            col_types = {
+                pl.UInt32: ["TOW [0.001 s]"],
+                pl.UInt16: ["WNc [w]", "SVID"],
+                pl.String: ["SVID", "SignalType"],
+                pl.Float64: [
+                    "PR [m]",
+                    "L [cyc]",
+                    "Doppler [Hz]",
+                    "C/N0 [dB-Hz]",
+                    "LockTime [s]",
+                ],
+            }
         elif sbf_block == "PVTCartesian2":
             # dict of your column names keyed by dtype
             col_types = {
