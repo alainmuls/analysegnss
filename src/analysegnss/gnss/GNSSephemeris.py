@@ -54,7 +54,7 @@ class GNSSEphemeris:
                 GM = GM_BDS
                 OMGE = OMGE_BDS
             case _:
-                raise ValueError(f"Unknown GNSS: {gnss}")
+                raise ValueError(f"Unknown GNSS: {gnss}")  # type: ignore
 
         # Semi-major axis
         A = self.sqrta * self.sqrta

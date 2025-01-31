@@ -15,6 +15,7 @@ setup(
             "ebh_lines=analysegnss.scripts.ebh.ebh_lines:main",
             "glab_parser=analysegnss.glabng.glab_parser:main",
             "cn0_dataframe=analysegnss.analyse.cn0_dataframe:main",
+            "sbfmeas2csv=analysegnss.sbf.sbfmeas2csv:main",
         ]
     },
 )
