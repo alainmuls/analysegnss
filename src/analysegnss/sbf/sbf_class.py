@@ -29,7 +29,6 @@ class SBF:
     logger: logging.Logger = field(default=None)
     _console_loglevel: int = field(default=logging.ERROR)
 
-
     def __post_init__(self):
         self.validate_file()
         self.validate_start_time()
@@ -42,7 +41,7 @@ class SBF:
                 self.logger.error(f"File does not exist: {self.sbf_fn}")
             raise ValueError(f"File does not exist: {self.sbf_fn}")
 
-        #TODO The following sometimes gives a false negative. Needs to be revised.
+        # TODO The following sometimes gives a false negative. Needs to be revised.
         with open(self.sbf_fn, "rb") as f:
             first_two_bytes = f.read(2)
 
@@ -156,8 +155,8 @@ class SBF:
             self.logger.error(
                 f"Error moving file {fn} to archive directory {dest}: {e}"
             )
-            
-    def bin2asc_dataframe(self, lst_sbfblocks: list, archive = None) -> dict:
+
+    def bin2asc_dataframe(self, lst_sbfblocks: list, archive=None) -> dict:
         """
         bin2asc_dataframe converts binary SBF to CVS files for the sbfblocks in
         lst_sbfblocks and load these files in dataframes
@@ -278,10 +277,11 @@ class SBF:
                 sbf_df = self.add_columns(block_df=sbf_df)
 
             sbf_dfs[sbf_block] = sbf_df
-                print(f"archive = {archive}")
-                # archiving the converted sbf file
-                if not archive == None:
-                    self.archive_file(fn=bin2asc_fn[0], dest_dir=archive)
+
+            print(f"archive = {archive}")
+            # archiving the converted sbf file
+            if not archive == None:
+                self.archive_file(fn=bin2asc_fn[0], dest_dir=archive)
 
         if sbf_dfs == {}:
             if self.logger:
@@ -292,7 +292,7 @@ class SBF:
 
         return sbf_dfs
 
-    def sbf2asc_dataframe(self, lst_sbfblocks: list, archive = None) -> dict:
+    def sbf2asc_dataframe(self, lst_sbfblocks: list, archive=None) -> dict:
         """
         this definition is analogue to bin2asc and is used to convert the SBF files to dataframes.
         Sbf2asc can be installed on most platforms including OS running on ARM processors (e.g. Raspberry Pi).
@@ -373,10 +373,10 @@ class SBF:
                         f"\t... no file for {str_yellow({sbf_block})} sbf block found. Continuing to next sbf block."
                     )
             else:
-            if self.logger:
-                self.logger.debug(
-                    f"\t... converting {str_yellow(sbf2asc_fn[0])} to dataframe"
-                )
+                if self.logger:
+                    self.logger.debug(
+                        f"\t... converting {str_yellow(sbf2asc_fn[0])} to dataframe"
+                    )
 
             # REMOVING WHITESPACES from the file content
             # sed_cmd = r"sed 's/[[:blank:]]\{1,\}/,/g'"
@@ -403,7 +403,7 @@ class SBF:
                     source=sbf2asc_fn[0],
                     has_header=False,
                     separator=",",
-                        new_columns=self.sbf2asc_sbfblock_colnames(sbf_block=sbf_block),
+                    new_columns=self.sbf2asc_sbfblock_colnames(sbf_block=sbf_block),
                 )
             except Exception as e:
                 if self.logger:
@@ -550,11 +550,9 @@ class SBF:
         if self.logger:
             self.logger.warning(f"\tcollecting the dataframe. {str_red('Be patient.')}")
 
-		# If an SBF block doesn't contain a column used in this func, 
-		# the collect() will throw an error.
-        if (
-            getattr(block_df, "collect", None) is not None
-        ):  
+        # If an SBF block doesn't contain a column used in this func,
+        # the collect() will throw an error.
+        if getattr(block_df, "collect", None) is not None:
             block_df = block_df.collect()
 
         return block_df
@@ -720,10 +718,7 @@ class SBF:
                 pl.UInt32: [
                     "TOW [0.001 s]",
                 ],
-                pl.UInt16: [
-                    "WNc [w]",
-                    "BaseStationID"
-                ],
+                pl.UInt16: ["WNc [w]", "BaseStationID"],
                 pl.UInt8: [
                     "BaseType",
                     "Source",
@@ -871,7 +866,7 @@ class SBF:
                 "Cov_YY [m²]",
                 "Cov_ZZ [m²]",
                 "Cov_tt [s²]",
-            ]
+            ],
         }
 
         try:
