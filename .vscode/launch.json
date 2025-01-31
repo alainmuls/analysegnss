@@ -177,7 +177,7 @@
             "program": "src/analysegnss/sbf/sbfmeas2csv.py",
             "console": "integratedTerminal",
             "args": [
-                "--sbf_fn",
+                "--sbf_ifn",
                 "/home/amuls/cylab/TESTDATA/analysegnss_data/ROVR187J.23_",
                 "-vvv"
             ]
