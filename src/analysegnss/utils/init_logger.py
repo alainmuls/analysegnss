@@ -1,9 +1,11 @@
+# Standard library imports
 import logging as logging
 from logging.handlers import TimedRotatingFileHandler
 import os
-from utils.utilities import str_green
 from sys import stderr
 
+# Local application imports
+from analysegnss.utils.utilities import str_green
 
 class ColorFormatter(logging.Formatter):
     # color codes
@@ -30,7 +32,7 @@ class ColorFormatter(logging.Formatter):
         return super().format(record)
 
 
-def logger_setup(args: list, base_name: str = "logger") -> logging.Logger:
+def logger_setup(args: list, base_name: str = "logger", log_dest: str = "/tmp/logs/") -> logging.Logger:
     """creates console/time rotating file logger.
     Default logging levels are:
     - for file logging: logging.DEBUG
@@ -41,10 +43,10 @@ def logger_setup(args: list, base_name: str = "logger") -> logging.Logger:
     logger.setLevel(logging.DEBUG)
 
     # always write everything to the rotating log files
-    if not os.path.exists("logs"):
-        os.mkdir("logs")
+    if not os.path.exists(log_dest):
+        os.mkdir(log_dest)
     log_file_handler = TimedRotatingFileHandler(
-        f"logs/{base_name}.log",
+        f"{log_dest}/{base_name}.log",
         when="D",
         interval=1,
         backupCount=20,
@@ -77,7 +79,8 @@ def logger_setup(args: list, base_name: str = "logger") -> logging.Logger:
         logger=logger, console_handler=console_handler, args=args
     )
 
-    logger.warning(f"---------- START of {base_name} ----------")
+    print(f"{str_green(f"---------- START of {base_name} (process logged @ {log_dest}) ----------")}")
+    logger.warning(f"---------- START of {base_name} (process logged @ {log_dest}) ----------")
 
     return logger
 

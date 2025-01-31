@@ -1,4 +1,6 @@
 #!/usr/bin:env python
+
+# Standard library imports
 import logging
 import os
 import shutil
@@ -6,10 +8,13 @@ import subprocess
 import sys
 from datetime import date, datetime, timedelta
 
+# Third party imports
 import numpy as np
+import polars as pl
 from termcolor import colored
 
-from config import ERROR_CODES
+# Local application imports
+from analysegnss.config import ERROR_CODES
 
 __author__ = "amuls"
 
@@ -285,3 +290,22 @@ def bin_nibble(val):
     b = bin(val)[2:]
     new_b = "_".join([b[::-1][i : i + 4][::-1] for i in range(0, len(b), 4)][::-1])
     return "".join(["0"] * (4 - len(b) % 4 if len(b) % 4 != 0 else 0) + [new_b])
+
+
+def combine_dfs(dfs: dict) -> pl.DataFrame:
+    """Combines  related dataframes on DateTime column
+
+    Args:
+        dfs (dict): Dictionary of PVT dataframes
+
+    Returns:
+        pl.DataFrame: Combined dataframe with all PVT information
+    """
+    # Start with first dataframe
+    combined_df = list(dfs.values())[0]
+
+    # Join with remaining dataframes on DT column
+    for df in list(dfs.values())[1:]:
+        combined_df = combined_df.join(df, on="DT", how="outer")
+
+    return combined_df
