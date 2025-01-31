@@ -8,7 +8,7 @@
             "name": "Python Debugger: rtk_pvtgeod Ocotillo rover",
             "type": "debugpy",
             "request": "launch",
-            "program": "rtk_pvtgeod",
+            "program": "src/analysegnss/sbf/rtk_pvtgeod.py",
             "console": "integratedTerminal",
             "args": [
                 "--sbf_fn",
@@ -21,7 +21,7 @@
             "name": "Python Debugger: ppk_rnx2rtkp Keiheuvel 2024/20/01",
             "type": "debugpy",
             "request": "launch",
-            "program": "ppk_rnx2rtkp",
+            "program": "src/analysegnss/rtkpos/ppk_rnx2rtkp.py",
             "console": "integratedTerminal",
             "args": [
                 "--pos_fn",
@@ -33,7 +33,7 @@
             "name": "Python Debugger: rtkppk_plot Keiheuvel 2024/20/01",
             "type": "debugpy",
             "request": "launch",
-            "program": "rtkppk_plot",
+            "program": "src/analysegnss/plots/rtkppk_plot.py",
             "console": "integratedTerminal",
             "args": [
                 "--pos_fn",
@@ -48,7 +48,7 @@
             "name": "Python Debugger: rtkppk_plot Ocotillo",
             "type": "debugpy",
             "request": "launch",
-            "program": "plot_coords",
+            "program": "src/analysegnss/plots/plot_coords.py",
             "console": "integratedTerminal",
             "args": [
                 "--sbf_fn",
@@ -62,7 +62,7 @@
             "name": "Python Debugger: gLABng plot",
             "type": "debugpy",
             "request": "launch",
-            "program": "plot_coords",
+            "program": "src/analysegnss/plots/plot_coords.py",
             "console": "integratedTerminal",
             "args": [
                 "--glab_fn",
@@ -76,7 +76,7 @@
             "name": "Python Debugger: rnxobs_csv Keiheuvel 2024/20/01 (base station)",
             "type": "debugpy",
             "request": "launch",
-            "program": "rnxobs_csv",
+            "program": "src/analysegnss/rinex/rnxobs_csv.py",
             "console": "integratedTerminal",
             "args": [
                 "--obs_fn",
@@ -88,7 +88,7 @@
             "name": "Python Debugger: rnxnav_csv Keiheuvel 2024/20/01 (base station)",
             "type": "debugpy",
             "request": "launch",
-            "program": "rnxnav_csv",
+            "program": "src/analysegnss/rinex/rnxnav_csv.py",
             "console": "integratedTerminal",
             "args": [
                 "--nav_fn",
@@ -102,7 +102,7 @@
             "name": "Python Debugger: rnxnav_csv BRUX (from RTCM)",
             "type": "debugpy",
             "request": "launch",
-            "program": "rnxnav_csv",
+            "program": "src/analysegnss/rinex/rnxnav_csv.py",
             "console": "integratedTerminal",
             "args": [
                 "--nav_fn",
@@ -116,7 +116,7 @@
             "name": "Python Debugger: rnxnav_csv BRUX RTCM 2024/06/14 (?) (rnx converted)",
             "type": "debugpy",
             "request": "launch",
-            "program": "rnxnav_csv",
+            "program": "src/analysegnss/rinex/rnxnav_csv.py",
             "console": "integratedTerminal",
             "args": [
                 "--nav_fn",
@@ -130,7 +130,7 @@
             "name": "Python Debugger: rnxnav_csv BERT00BEL_R_20243640700_41H_MN.rnx",
             "type": "debugpy",
             "request": "launch",
-            "program": "rnxnav_csv",
+            "program": "src/analysegnss/rinex/rnxnav_csv.py",
             "console": "integratedTerminal",
             "args": [
                 "--nav_fn",
@@ -144,7 +144,7 @@
             "name": "Python Debugger: rnx_csv BRUX RTCM 2024/06/14 (?) (rnx converted)",
             "type": "debugpy",
             "request": "launch",
-            "program": "rnx_csv",
+            "program": "src/analysegnss/rinex/rnx_csv.py",
             "console": "integratedTerminal",
             "args": [
                 "--obs_fn",
@@ -160,13 +160,25 @@
             "name": "Python Debugger: glab_parser KMS000BEL_R_20240890943_03H_01S_MO_gal.glab",
             "type": "debugpy",
             "request": "launch",
-            "program": "glab_parser",
+            "program": "src/analysegnss/glabng/glab_parser.py",
             "console": "integratedTerminal",
             "args": [
                 "--glab_fn",
                 "/home/amuls/GNSSData/2024-03-29-schaffen/20240329/glab/KMS000BEL_R_20240890943_03H_01S_MO_gal.glab",
                 "--section",
                 "OUTPUT,SATSEL",
+                "-vvv"
+            ]
+        },
+        {
+            "name": "Python Debugger: sbfmeas2csv ROVR187J.23_",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/analysegnss/sbf/sbfmeas2csv.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--sbf_fn",
+                "/home/amuls/cylab/TESTDATA/analysegnss_data/ROVR187J.23_",
                 "-vvv"
             ]
         },
