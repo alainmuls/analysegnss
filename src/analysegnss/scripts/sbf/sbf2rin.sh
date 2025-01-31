@@ -36,8 +36,11 @@ ORIG_DIR=$(pwd)
 # Add after storing ORIG_DIR
 trap 'cd "${ORIG_DIR}"' EXIT
 
+# get the script name without extension
+SCRIPT_NAME=$(basename "$0" .sh)
+
 # Add at start of script
-LOG_FILE="${ORIG_DIR}/sbf2rin_$(date +%Y%m%d_%H%M%S).log"
+LOG_FILE="${ORIG_DIR}/${SCRIPT_NAME}_$(date +%Y%m%d_%H%M%S).log"
 exec 1> >(tee -a "$LOG_FILE") 2>&1
 
 cleanup() {

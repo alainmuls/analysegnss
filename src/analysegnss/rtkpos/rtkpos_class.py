@@ -12,7 +12,7 @@ import polars as pl
 import utm
 
 # Local application imports
-from analysegnss.config import ERROR_CODES, GEOID_PATH
+from analysegnss.config import ERROR_CODES, GEOID_PATH, rich_console
 from analysegnss.gnss import geoid
 from analysegnss.gnss.gnss_dt import gpsms2dt
 from analysegnss.utils.utilities import str_red
@@ -269,18 +269,19 @@ class Rtkpos:
             pl.DataFrame: dataframe with added information
         """
 
-        # add date-time and PRN (as str) to the dataframe
-        if "WNc" in df_pos.columns and "TOW(s)" in df_pos.columns:
-            if self.logger is not None:
-                self.logger.debug("\tadding datetime to the dataframe")
-            df_pos = df_pos.with_columns(
-                pl.struct(["WNc", "TOW(s)"])
-                .apply(
-                    lambda x: gpsms2dt(x["WNc"], x["TOW(s)"] * 1000),
-                    return_dtype=datetime.datetime,
-                )
-                .alias("DT")
-            ).lazy()
+        with rich_console.status("Collecting and adjusting data", spinner="aesthetic"):
+		    # add date-time and PRN (as str) to the dataframe
+		    if "WNc" in df_pos.columns and "TOW(s)" in df_pos.columns:
+		        if self.logger is not None:
+		            self.logger.debug("\tadding datetime to the dataframe")
+		        df_pos = df_pos.with_columns(
+		            pl.struct(["WNc", "TOW(s)"])
+		            .apply(
+		                lambda x: gpsms2dt(x["WNc"], x["TOW(s)"] * 1000),
+		                return_dtype=datetime.datetime,
+		            )
+		            .alias("DT")
+		        ).lazy()
 
         # add UTM coordinates
         if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
@@ -352,7 +353,8 @@ class Rtkpos:
             df_pos = df_pos.with_columns(
                 pl.struct(["height(m)", "undulation"])
                 .apply(
-                    lambda x: x["height(m)"] - x["undulation"], return_dtype=pl.Float64
+                        lambda x: x["height(m)"] - x["undulation"],
+                        return_dtype=pl.Float64,
                 )
                 .alias("orthoH")
             ).lazy()

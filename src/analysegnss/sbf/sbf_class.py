@@ -13,10 +13,8 @@ import numpy as np
 import polars as pl
 import utm
 from rich import print
-from rich.console import Console
 
-# Local application imports
-from analysegnss.config import ERROR_CODES
+from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.gnss.gnss_dt import gpsms2dt
 from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.utils.utilities import locate, str_red, str_yellow
@@ -30,7 +28,6 @@ class SBF:
 
     logger: logging.Logger = field(default=None)
     _console_loglevel: int = field(default=logging.ERROR)
-    rich_console: Console = field(default=Console())
 
     def __post_init__(self):
         self.validate_file()
@@ -213,20 +210,20 @@ class SBF:
         if self.logger:
             self.logger.debug(f"... running: {str_yellow(' '.join(cmd_bin2asc))}")
 
-        try:
-            with self.rich_console.status(
+        with rich_console.status(
                 f"[bold green]Converting SBF ({lst_sbfblocks}) to CSV files...",
-                spinner="point",
+            spinner="aesthetic",
             ):
+            try:
                 process = subprocess.run(cmd_bin2asc)
-        except Exception as e:
-            sys.stderr.write(f"{process} Error: {e}\n")
-            if self.logger:
-                self.logger.error(
-                    f"\t... subprocess {str_yellow(' '.join(cmd_bin2asc))} return exit code"
-                    f"\t... {str_red(e)}. Program exits."
-                )
-            sys.exit(ERROR_CODES["E_PROCESS"])
+		    except Exception as e:
+		        sys.stderr.write(f"{process} Error: {e}\n")
+		        if self.logger:
+		            self.logger.error(
+		                f"\t... subprocess {str_yellow(' '.join(cmd_bin2asc))} return exit code"
+		                f"\t... {str_red(e)}. Program exits."
+		            )
+		        sys.exit(ERROR_CODES["E_PROCESS"])
 
         # find created files
         bin2asc_fns = {}
@@ -263,9 +260,9 @@ class SBF:
                 keep_cols = self.used_columns(sbf_block)
                 # print(f"list(keep_cols.keys()) = \n{list(keep_cols.keys())}")
 
-                with self.rich_console.status(
+            with rich_console.status(
                     f"[bold green]Reading from CSV file ({sbf_block})...",
-                    spinner="point",
+                spinner="aesthetic",
                 ):
                     sbf_df = pl.read_csv(
                         source=bin2asc_fn[0],
@@ -336,8 +333,7 @@ class SBF:
             "-o",
         ]
 
-
-        for sbf_block in lst_sbfblocks:
+       for sbf_block in lst_sbfblocks:
             cmd_sbf2asc.append(
                 f"{self.sbf_fn}_sbf2asc_{sbf_block}.txt"
             )  # this comes after the -o argument so a correct output file is created
@@ -419,7 +415,6 @@ class SBF:
                 except pl.exceptions.NoDataError as e:
                     if self.logger:
                         self.logger.error(f"Empty file {sbf2asc_fn[0]}: {e}")
-
 
                 # Drop columns with only zeroes
                 sbf_df = sbf_df.drop(
@@ -559,9 +554,11 @@ class SBF:
         if self.logger:
             self.logger.warning(f"\tcollecting the dataframe. {str_red('Be patient.')}")
 
+		# If an SBF block doesn't contain a column used in this func, 
+		# the collect() will throw an error.
         if (
             getattr(block_df, "collect", None) is not None
-        ):  # If an SBF block doesn't contain a column used in this func, the collect() will throw an error.
+        ):  
             block_df = block_df.collect()
 
         return block_df

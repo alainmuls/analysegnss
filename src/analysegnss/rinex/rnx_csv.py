@@ -8,7 +8,7 @@ from rich import print
 
 import analysegnss.rinex.rnxnav_csv as rnxnav_csv
 import analysegnss.rinex.rnxobs_csv as rnxobs_csv
-from analysegnss.config import ERROR_CODES, GNSS_DICT
+from analysegnss.config import ERROR_CODES, DICT_GNSS
 from analysegnss.rinex.rinex_obs_class import RINEX_OBS
 from analysegnss.utils import argument_parser, init_logger
 
@@ -24,7 +24,9 @@ def rnx_csv(argv: list):
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    args_parsed = argument_parser.argument_parser_rnx_csv(args=argv[1:])
+    args_parsed = argument_parser.argument_parser_rnx_csv(
+        args=argv[1:], script_name=os.path.basename(__file__)
+    )
 
     # create the file/console logger
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)

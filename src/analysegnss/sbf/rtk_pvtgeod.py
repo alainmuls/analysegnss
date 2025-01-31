@@ -60,7 +60,9 @@ def rtk_pvtgeod(argv: list) -> dict:
     # get the name of this script for naming the logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
-    args_parsed = argument_parser.argument_parser_rtk(args=argv[1:])
+    args_parsed = argument_parser.argument_parser_rtk(
+        args=argv[1:], script_name=os.path.basename(__file__)
+    )
     # print(f"\nParsed arguments: {args_parsed}")
 
     # create the file/console logger
@@ -107,6 +109,10 @@ def rtk_pvtgeod(argv: list) -> dict:
             if "DT_right" in df_pvt.columns:
                 df_pvt = df_pvt.drop("DT_right")
         
+            # with pl.Config(
+            #     tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+            # ):
+            #     print(f"[bold green]{df_pvt}")
         else:  # only use the PVTGeodetic, no StdDev required
             # extract the PVT Geodetic2 block from SBF file
             df_pvt = sbf.bin2asc_dataframe(

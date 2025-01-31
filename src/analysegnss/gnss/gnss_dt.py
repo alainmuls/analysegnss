@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# Standard library imports
-import bisect
-from datetime import datetime, time, timedelta
-from math import isnan
 import sys
+from datetime import datetime, timedelta, time
+import bisect
+from math import isnan
 from typing import Tuple
 
 __author__ = "amuls"

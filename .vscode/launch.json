@@ -5,56 +5,169 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: rtk_pvtgeod Ocotillo rover hour 'q'",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "rtk_pvtgeod.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--sbf_fn",
-                "./data/1342172q.24_",
-                "-v"
-            ]
-        },
-        {
-            "name": "Python Debugger: rtk_pvtgeod Ocotillo rover hour 'o'",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "rtk_pvtgeod.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--sbf_fn",
-                "./data/1342172o.24_",
-                "-v"
-            ]
-        },
-        {
             "name": "Python Debugger: rtk_pvtgeod Ocotillo rover",
             "type": "debugpy",
             "request": "launch",
-            "program": "rtk_pvtgeod.py",
+            "program": "rtk_pvtgeod",
             "console": "integratedTerminal",
             "args": [
                 "--sbf_fn",
-                "./data/1342172Z.24_",
-                "-v"
+                "/home/amuls/GNSSData/USA_CA_2024/Ocotillo/rover/1342172Z.24_",
+                "-vvv",
+                "--sd",
             ]
         },
         {
-            "name": "Python Debugger: ebh_lines ocotillo rover",
+            "name": "Python Debugger: ppk_rnx2rtkp Keiheuvel 2024/20/01",
             "type": "debugpy",
             "request": "launch",
-            "program": "ebh_lines.py",
+            "program": "ppk_rnx2rtkp",
             "console": "integratedTerminal",
             "args": [
-                "--rtk",
-                "--ebh_fn",
-                "./data/1342172Z.24_",
-                "--timing_fn",
-                "data/ocotillo_timings.txt",
-                "--desc",
-                "ocotillo",
+                "--pos_fn",
+                "/home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rtkp/134200BEL_R_20242751023_01H_10Z_MO.pos",
+                "-vvv"
+            ]
+        },
+        {
+            "name": "Python Debugger: rtkppk_plot Keiheuvel 2024/20/01",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "rtkppk_plot",
+            "console": "integratedTerminal",
+            "args": [
+                "--pos_fn",
+                "/home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rtkp/134200BEL_R_20242751023_01H_10Z_MO.pos",
                 "-vvv",
+                "--display",
+                "--sd",
+                "--mpl",
+            ]
+        },
+        {
+            "name": "Python Debugger: rtkppk_plot Ocotillo",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "plot_coords",
+            "console": "integratedTerminal",
+            "args": [
+                "--sbf_fn",
+                "/home/amuls/GNSSData/USA_CA_2024/Ocotillo/rover/1342172Z.24_",
+                "-vvv",
+                "--display",
+                "--sd",
+            ]
+        },
+        {
+            "name": "Python Debugger: gLABng plot",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "plot_coords",
+            "console": "integratedTerminal",
+            "args": [
+                "--glab_fn",
+                "/home/amuls/GNSSData/2024-03-29-schaffen/20240329/glab/KMS000BEL_R_20240890943_03H_01S_MO_gal.glab",
+                "-vvv",
+                "--display",
+                "--sd",
+            ]
+        },
+        {
+            "name": "Python Debugger: rnxobs_csv Keiheuvel 2024/20/01 (base station)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "rnxobs_csv",
+            "console": "integratedTerminal",
+            "args": [
+                "--obs_fn",
+                "/home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rnx/base00BEL_R_20242751022_01H_05S_MO.rnx",
+                "-vvv",
+            ]
+        },
+        {
+            "name": "Python Debugger: rnxnav_csv Keiheuvel 2024/20/01 (base station)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "rnxnav_csv",
+            "console": "integratedTerminal",
+            "args": [
+                "--nav_fn",
+                "/home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rnx/base00BEL_R_20242751021_01H_MN.rnx",
+                "-vvv",
+                "--gnss",
+                "GREC",
+            ]
+        },
+        {
+            "name": "Python Debugger: rnxnav_csv BRUX (from RTCM)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "rnxnav_csv",
+            "console": "integratedTerminal",
+            "args": [
+                "--nav_fn",
+                "/home/amuls/cylab/TESTDATA/data2test/data/BRUX00BEL0_GREC.nav",
+                "-vvv",
+                "--gnss",
+                "GREC",
+            ]
+        },
+        {
+            "name": "Python Debugger: rnxnav_csv BRUX RTCM 2024/06/14 (?) (rnx converted)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "rnxnav_csv",
+            "console": "integratedTerminal",
+            "args": [
+                "--nav_fn",
+                "/home/amuls/cylab/TESTDATA/data2test/data/BRUX00BEL0_GREC.nav",
+                "-vvv",
+                "--gnss",
+                "R",
+            ]
+        },
+        {
+            "name": "Python Debugger: rnxnav_csv BERT00BEL_R_20243640700_41H_MN.rnx",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "rnxnav_csv",
+            "console": "integratedTerminal",
+            "args": [
+                "--nav_fn",
+                "/home/amuls/cylab/TESTDATA/flepos/BERT/RX3/BERT00BEL_R_20243640700_41H_MN.rnx",
+                "-vvv",
+                "--gnss",
+                "R",
+            ]
+        },
+        {
+            "name": "Python Debugger: rnx_csv BRUX RTCM 2024/06/14 (?) (rnx converted)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "rnx_csv",
+            "console": "integratedTerminal",
+            "args": [
+                "--obs_fn",
+                "/home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rnx/base00BEL_R_20242751022_01H_05S_MO.rnx",
+                "--nav_fn",
+                "/home/amuls/cylab/TESTDATA/data2test/data/BRUX00BEL0_GREC.nav",
+                "-vvv",
+                "--gnss",
+                "GE",
+            ]
+        },
+        {
+            "name": "Python Debugger: glab_parser KMS000BEL_R_20240890943_03H_01S_MO_gal.glab",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "glab_parser",
+            "console": "integratedTerminal",
+            "args": [
+                "--glab_fn",
+                "/home/amuls/GNSSData/2024-03-29-schaffen/20240329/glab/KMS000BEL_R_20240890943_03H_01S_MO_gal.glab",
+                "--section",
+                "OUTPUT,SATSEL",
+                "-vvv"
             ]
         },
         {
@@ -65,7 +178,7 @@
             "args": [
                 "tests/test_ephemeris.py",
                 "-v",
-                "-s"
+                "-s",
             ],
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"

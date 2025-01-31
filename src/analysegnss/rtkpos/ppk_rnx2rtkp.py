@@ -41,7 +41,6 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> list:
         tablefmt="fancy_outline",
     )
 
-
     if logger is not None:
         logger.info(f"Analysis of the quality of the position data\n{qual_tabular}")
 
@@ -60,7 +59,9 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    args_parsed = argument_parser.argument_parser_ppk(args=argv[1:])
+    args_parsed = argument_parser.argument_parser_ppk(
+        args=argv[1:], script_name=os.path.basename(__file__)
+    )
     # print(f"\nParsed arguments: {args_parsed}")
 
     # create the file/console logger

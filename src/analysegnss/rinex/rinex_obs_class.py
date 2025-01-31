@@ -6,7 +6,7 @@ from io import StringIO
 import polars as pl
 from rich import print
 
-from analysegnss.config import GNSS_DICT
+from analysegnss.config import DICT_GNSS, rich_console
 from analysegnss.rinex.rinex_class import RINEX
 from analysegnss.utils.utilities import str_green
 
@@ -115,8 +115,8 @@ class RINEX_OBS(RINEX):
         # Run gfzrnx and capture output
         try:
             # add a spinner while waiting for the conversion to complete
-            with self.console.status(
-                "Please wait - Loading observations...", spinner="point"
+            with rich_console.status(
+                "Please wait - Loading observations...", spinner="aesthetic"
             ):
 
                 result = subprocess.run(
@@ -187,12 +187,12 @@ class RINEX_OBS(RINEX):
 
                         if self.logger:
                             self.logger.info(
-                                f"Created dataframe for system {str_green(GNSS_DICT[sys])} with {str_green(len(df))} observations"
+                                f"Created dataframe for system {str_green(DICT_GNSS[sys])} with {str_green(len(df))} observations"
                             )
 
                 output_buffer.close()
 
-            self.console.print("\n")
+            rich_console.print("\n")
 
             return result_dfs
 
@@ -218,8 +218,8 @@ class RINEX_OBS(RINEX):
         csv_rows = []
 
         # add a spinner while waiting for the conversion to complete
-        with self.console.status(
-            "Please wait - converting to dataframe...", spinner="point"
+        with rich_console.status(
+            "Please wait - converting to dataframe...", spinner="aesthetic"
         ):
             for gnss_type, df in result_dfs.items():
                 # Get frequency/signal combinations
@@ -243,10 +243,26 @@ class RINEX_OBS(RINEX):
                                 "PRN": df["PRN"].str.extract(r"(\d+)").cast(pl.Int16),
                                 "cfreq": f"L{freq}",
                                 "sigt": f"{freq}{sigt}",
-                                "C": df[f"C{freq}{sigt}"],
-                                "L": df[f"L{freq}{sigt}"],
-                                "D": df[f"D{freq}{sigt}"],
-                                "S": df[f"S{freq}{sigt}"].cast(pl.Float32),
+                                "C": (
+                                    pl.Series([None] * len(df))
+                                    if f"C{freq}{sigt}" not in df.columns
+                                    else df[f"C{freq}{sigt}"]
+                                ),
+                                "L": (
+                                    pl.Series([None] * len(df))
+                                    if f"L{freq}{sigt}" not in df.columns
+                                    else df[f"L{freq}{sigt}"]
+                                ),
+                                "D": (
+                                    pl.Series([None] * len(df))
+                                    if f"D{freq}{sigt}" not in df.columns
+                                    else df[f"D{freq}{sigt}"]
+                                ),
+                                "S": (
+                                    pl.Series([None] * len(df))
+                                    if f"S{freq}{sigt}" not in df.columns
+                                    else df[f"S{freq}{sigt}"]
+                                ).cast(pl.Float32),
                             }
                         )
                         .lazy()

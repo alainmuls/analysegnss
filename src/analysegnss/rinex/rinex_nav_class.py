@@ -5,7 +5,7 @@ from io import StringIO
 import polars as pl
 
 from analysegnss.rinex.rinex_class import RINEX
-from analysegnss.config import GNSS_DICT
+from analysegnss.config import DICT_GNSS, rich_console
 import analysegnss.rinex.rinex_column_names as rcn
 from analysegnss.utils.utilities import str_green, str_red, str_yellow
 
@@ -119,8 +119,8 @@ class RINEX_NAV(RINEX):
             if self.logger is not None:
                 self.logger.debug(f"Processing GNSS: {other_gnss}")
             # add a spinner while waiting for the conversion to complete
-            with self.console.status(
-                "Please wait - Processing GNSS:...", spinner="point"
+            with rich_console.status(
+                "Please wait - Processing GNSS:...", spinner="aesthetic"
             ):
                 # process GEC systems without Glonass
                 gfzrnx_args.extend(["-satsys", "".join(other_gnss)])
@@ -129,7 +129,7 @@ class RINEX_NAV(RINEX):
                 gec_nav_dict = self._gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
                 gnss_nav_dict.update(gec_nav_dict)
 
-            self.console.print(f"GNSS {other_gnss} processed successfully.")
+            rich_console.print(f"GNSS {other_gnss} processed successfully.")
 
         # Add GLONASS separately if present
         if has_glonass:
@@ -143,15 +143,15 @@ class RINEX_NAV(RINEX):
             if self.logger is not None:
                 self.logger.debug("Processing GNSS: R")
             # add a spinner while waiting for the conversion to complete
-            with self.console.status(
-                "Please wait - Processing GNSS R:...", spinner="point"
+            with rich_console.status(
+                "Please wait - Processing GNSS R:...", spinner="aesthetic"
             ):
                 gfzrnx_args.extend(["-satsys", "R"])
                 # print(f"GLONASS gfzrnx_args = {' '.join(gfzrnx_args)}")
                 # Process GLONASS separately
                 r_nav_dict = self._gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
                 gnss_nav_dict.update(r_nav_dict)
-            self.console.print(f"GNSS {has_glonass} processed successfully.")
+            rich_console.print(f"GNSS {has_glonass} processed successfully.")
 
         return gnss_nav_dict
 
@@ -232,10 +232,19 @@ class RINEX_NAV(RINEX):
             # rename the columns of the DataFrame
             tabnav_df.columns = new_columns
 
-            # convert type of column TILE from str to i64
-            tabnav_df = tabnav_df.with_columns(
-                pl.col("TIME").cast(pl.Int64, strict=False)
-            )
+            # Convert columns with null-safe approach
+            columns_to_convert = {
+                "TIME": (pl.col("TIME").cast(pl.Int64, strict=False)),
+                "tk": (pl.col("tk").cast(pl.Int64, strict=False)),
+                "health": (pl.col("health").cast(pl.Int64, strict=False)),
+                "freqNum": (pl.col("freqNum").cast(pl.Int16, strict=False)),
+                "age": (pl.col("age").cast(pl.Int32, strict=False)),
+                "TauN": (pl.col("TauN").str.strip().cast(pl.Float64, strict=False)),
+            }
+
+            for col, col_format in columns_to_convert.items():
+                if col in tabnav_df.columns:
+                    tabnav_df = tabnav_df.with_columns(col_format)
 
             # remove duplicate rows from tabnav_df
             tabnav_df = tabnav_df.unique()
@@ -258,6 +267,7 @@ class RINEX_NAV(RINEX):
                         ),
                     ]
                 )
+                .filter(pl.col("TOW").is_not_null())  # Remove rows where TOW is null
                 .drop(["DATE", "TIME", "#HD", "NAV"])
                 .select(["WKNR", "TOW", pl.all().exclude(["WKNR", "TOW"])])
             )
@@ -268,7 +278,7 @@ class RINEX_NAV(RINEX):
                     tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
                 ):
                     self.logger.debug(
-                        f"tabnav_df[{str_green(GNSS_DICT[gnss])}, {str_green(nav_type)}] = \n{tabnav_df}"
+                        f"tabnav_df[{str_green(DICT_GNSS[gnss])}, {str_green(nav_type)}] = \n{tabnav_df}"
                     )
 
             # replace the tabnav_df on nav_dict after having renamed the columns
