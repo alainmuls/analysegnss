@@ -1111,6 +1111,14 @@ def argument_parser_sbfmeas2csv(script_name: str, args: list) -> argparse.Namesp
         default="GE",
     )
 
+    parser.add_argument(
+        "--archive",
+        help="Archives extracted sbf blocks to specified archive's directory name. (full or relative (@sbf_ifn) path) \
+            Default is no archiving.",
+        required=False,
+        default=None,
+        type=str,
+    )
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
