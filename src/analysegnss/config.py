@@ -75,6 +75,7 @@ ERROR_CODES = {
     "E_NO_RINEX_NAV": 47,
     "E_SIGNALTYPE_MISMATCH": 48,
     "E_WRONG_GNSS": 49,
+    "E_SBF_BLOCKS": 50,
     "E_PROCESS": 90,
     "E_FAILURE": 99,
 }
