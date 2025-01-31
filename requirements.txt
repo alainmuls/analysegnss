@@ -26,10 +26,6 @@ pydantic==2.7.4
 pydantic_core==2.18.4
 Pygments==2.18.0
 pyparsing==3.1.2
-PyQt5==5.15.11
-PyQt5-Qt5==5.15.16
-PyQt5_sip==12.16.1
-pytest==8.3.4
 python-dateutil==2.9.0.post0
 pytz==2024.1
 rich==13.9.4

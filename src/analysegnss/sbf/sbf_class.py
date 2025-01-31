@@ -1,11 +1,14 @@
+# Standard library imports
 import datetime
 import glob
 import logging
 import os
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
 
+# Third-party imports
 import numpy as np
 import polars as pl
 import utm
@@ -25,7 +28,7 @@ class SBF:
 
     logger: logging.Logger = field(default=None)
     _console_loglevel: int = field(default=logging.ERROR)
-    # rich_console: Console = field(default=console)
+
 
     def __post_init__(self):
         self.validate_file()
@@ -39,6 +42,7 @@ class SBF:
                 self.logger.error(f"File does not exist: {self.sbf_fn}")
             raise ValueError(f"File does not exist: {self.sbf_fn}")
 
+        #TODO The following sometimes gives a false negative. Needs to be revised.
         with open(self.sbf_fn, "rb") as f:
             first_two_bytes = f.read(2)
 
@@ -47,12 +51,14 @@ class SBF:
                 self.logger.error(
                     f'Invalid file type, first two bytes must be "$@" for file: {self.sbf_fn}'
                 )
+        """
             raise ValueError(
                 f'File type is not valid, first two bytes must be "$@": {self.sbf_fn}'
             )
+        """
 
         if self.logger:
-            self.logger.info(f"File validated successfully: {self.sbf_fn}")
+            self.logger.debug(f"File validated successfully: {self.sbf_fn}")
 
     def validate_start_time(self):
         if self.start_time is not None:
@@ -66,12 +72,12 @@ class SBF:
                 )
             else:
                 if self.logger:
-                    self.logger.info(
+                    self.logger.debug(
                         f"Start time {self.start_time} validated successfully."
                     )
         else:
             if self.logger:
-                self.logger.info("No start time specified.")
+                self.logger.debug("No start time specified.")
 
     def validate_end_time(self):
         if self.end_time is not None:
@@ -85,12 +91,12 @@ class SBF:
                 )
             else:
                 if self.logger:
-                    self.logger.info(
+                    self.logger.debug(
                         f"end time {self.end_time} validated successfully."
                     )
         else:
             if self.logger:
-                self.logger.info("No end time specified.")
+                self.logger.debug("No end time specified.")
 
     def validate_logger_level(self):
         if self.logger is not None:
@@ -103,12 +109,55 @@ class SBF:
                     # self._console_loglevel = logging.getLevelName(handler.level)
                     self._console_loglevel = handler.level
 
-            self.logger.info(
+            self.logger.debug(
                 "Console log level set to "
                 + f"{str_red(logging.getLevelName(self._console_loglevel))}"
             )
 
-    def bin2asc_dataframe(self, lst_sbfblocks: list) -> dict:
+    def archive_file(self, fn: str, dest_dir: str):
+        """
+        archive_file archives the created ascii files.
+        It copies the source to the archiving destination and adds a timestamp.
+
+        args:
+        fn: file name to archive
+        dest_dir: name of archive directory
+
+        """
+        # Getting directory of file to archive
+        dir_fn = os.path.dirname(fn)
+        dir_fnar = os.path.join(dir_fn, dest_dir)
+        self.logger.debug(f"archive directory of file is {dir_fnar}")
+
+        # create directory if it does not exist
+        if not os.path.exists(dir_fnar):
+            try:
+                os.makedirs(dir_fnar, exist_ok=True)
+                self.logger.info(f"Directory {dir_fnar} created.")
+            except Exception as e:
+                self.logger.error(f"Error creating archive directory {dir_fnar}: {e}")
+
+        # extract base name
+        fn_base = os.path.basename(fn)
+
+        # Get timestamp
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+        fn_time = timestamp + "_" + fn_base
+
+        # update destination
+        dest = os.path.join(dir_fnar, fn_time)
+
+        # copy file to archive directory
+        try:
+            shutil.copy2(fn, dest)
+            self.logger.info(f"Succesfully archived file {fn} to {dest}")
+
+        except Exception as e:
+            self.logger.error(
+                f"Error moving file {fn} to archive directory {dest}: {e}"
+            )
+            
+    def bin2asc_dataframe(self, lst_sbfblocks: list, archive = None) -> dict:
         """
         bin2asc_dataframe converts binary SBF to CVS files for the sbfblocks in
         lst_sbfblocks and load these files in dataframes
@@ -149,6 +198,9 @@ class SBF:
         if self.end_time is not None:
             cmd_bin2asc.append("-e")
             cmd_bin2asc.append(self.end_time.strftime("%H:%M:%S"))
+        # # add logging level to cmd_bin2asc when self._console_loglevel is DEBUG
+        # if self._console_loglevel == logging.DEBUG:
+        #     cmd_bin2asc.append("-v")
 
         for sbf_block in lst_sbfblocks:
             cmd_bin2asc.append("-m")
@@ -183,6 +235,21 @@ class SBF:
 
         # iterate over the CVS files and convert them to dataframe
         for sbf_block, bin2asc_fn in bin2asc_fns.items():
+            # check if bin2asc_fn of sbf block is empty
+            if len(bin2asc_fn) == 0:
+                if self.logger:
+                    self.logger.warning(
+                        f"\t... no file for {str_yellow({sbf_block})} sbf block found. Continuing to next sbf block."
+                    )
+            else:
+                if self.logger:
+                    self.logger.debug(
+                        f"\t... converting {str_yellow(bin2asc_fn[0])} to dataframe"
+                    )
+
+                # remove unused columns
+                keep_cols = self.used_columns(sbf_block)
+                # self.logger.info(f"list(keep_cols.keys()) = \n{list(keep_cols.keys())}")
             if self.logger:
                 self.logger.debug(
                     f"\t... converting {str_yellow(bin2asc_fn[0])} to dataframe"
@@ -211,10 +278,21 @@ class SBF:
                 sbf_df = self.add_columns(block_df=sbf_df)
 
             sbf_dfs[sbf_block] = sbf_df
+                print(f"archive = {archive}")
+                # archiving the converted sbf file
+                if not archive == None:
+                    self.archive_file(fn=bin2asc_fn[0], dest_dir=archive)
+
+        if sbf_dfs == {}:
+            if self.logger:
+                self.logger.error(
+                    f"\t... Unable to create dataframes for the provided SBF blocks {str_yellow(lst_sbfblocks)} found. Exiting."
+                )
+            sys.exit(ERROR_CODES["E_PROCESS"])
 
         return sbf_dfs
 
-    def sbf2asc_dataframe(self, lst_sbfblocks: list) -> dict:
+    def sbf2asc_dataframe(self, lst_sbfblocks: list, archive = None) -> dict:
         """
         this definition is analogue to bin2asc and is used to convert the SBF files to dataframes.
         Sbf2asc can be installed on most platforms including OS running on ARM processors (e.g. Raspberry Pi).
@@ -231,14 +309,19 @@ class SBF:
             dict of sbfblocks and corresponding dataframes
         """
         # sbf to CSV conversion utility
-        run_sbf2asc = "/home/base/Programs_BaseStation/sbf2asc/sbf2asc"
+        run_sbf2asc = locate("sbf2asc")
+        if run_sbf2asc is None:
+            self.logger.error(
+                f"sbf2asc not found in PATH. Please install sbf2asc. Program exits."
+            )
+            sys.exit(ERROR_CODES["E_PROCESS"])
         if self.logger:
             self.logger.info(
                 f"{str_yellow(run_sbf2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files "
                 f"and importing into dataframes for SBF blocks\n{str_yellow(' '.join(lst_sbfblocks))}"
             )
 
-        # create options for bin2asc
+        # create options for sbf2asc
         cmd_sbf2asc = [
             run_sbf2asc,
             "-f",
@@ -247,16 +330,15 @@ class SBF:
             "-o",
         ]
 
-        # add logging level to cmd_bin2asc when self._console_loglevel is DEBUG
-        if self._console_loglevel == logging.DEBUG:
-            cmd_sbf2asc.append("-v")
-
         for sbf_block in lst_sbfblocks:
             cmd_sbf2asc.append(
                 f"{self.sbf_fn}_sbf2asc_{sbf_block}.txt"
             )  # this comes after the -o argument so a correct output file is created
             sbf2asc_block = self.sbf2asc_convert_sbfblock(sbf_block=sbf_block)
             cmd_sbf2asc.append(sbf2asc_block)
+        # add logging level to cmd_sbf2asc when self._console_loglevel is DEBUG
+        if self._console_loglevel == logging.DEBUG:
+            cmd_sbf2asc.append("-v")
 
         # Convert binary to text messages
         if self.logger:
@@ -284,6 +366,13 @@ class SBF:
 
         # iterate over the CVS files and convert them to dataframe
         for sbf_block, sbf2asc_fn in sbf2asc_fns.items():
+            # check if bin2asc_fn of sbf block is empty
+            if len(sbf2asc_fn) == 0:
+                if self.logger:
+                    self.logger.warning(
+                        f"\t... no file for {str_yellow({sbf_block})} sbf block found. Continuing to next sbf block."
+                    )
+            else:
             if self.logger:
                 self.logger.debug(
                     f"\t... converting {str_yellow(sbf2asc_fn[0])} to dataframe"
@@ -314,7 +403,7 @@ class SBF:
                     source=sbf2asc_fn[0],
                     has_header=False,
                     separator=",",
-                    new_columns=self.sb2asc_sbfblock_colnames(sbf_block=sbf_block),
+                        new_columns=self.sbf2asc_sbfblock_colnames(sbf_block=sbf_block),
                 )
             except Exception as e:
                 if self.logger:
@@ -322,8 +411,6 @@ class SBF:
             except pl.exceptions.NoDataError as e:
                 if self.logger:
                     self.logger.error(f"Empty file {sbf2asc_fn[0]}: {e}")
-
-            # TODO remove unused columns
 
             # Drop columns with only zeroes
             sbf_df = sbf_df.drop(
@@ -338,6 +425,16 @@ class SBF:
             if self.logger:
                 self.logger.info(f"successfully created  dataframe for {sbf_block}")
                 self.logger.info(sbf_dfs[sbf_block])
+                if not archive == None:
+                    # Archive the created files
+                    self.archive_file(fn=sbf2asc_fn[0], dest_dir=archive)
+
+        if sbf_dfs == {}:
+            if self.logger:
+                self.logger.error(
+                    f"\t... Unable to create dataframes for the provided SBF blocks {str_yellow(lst_sbfblocks)} found. Exiting."
+                )
+            sys.exit(ERROR_CODES["E_PROCESS"])
 
         return sbf_dfs
 
@@ -353,7 +450,7 @@ class SBF:
         # print(f"block_df = \n{block_df}")
         # remove the rows where 'Type' equals 0 (no PVT available)
         if self.logger:
-            self.logger.info("\tremoving rows with no PVT solution")
+            self.logger.debug("\tremoving rows with no PVT solution")
 
         if "Type" in block_df.columns:
             block_df = block_df.filter(pl.col("Type") != 0).lazy()
@@ -362,7 +459,7 @@ class SBF:
         # add date-time and PRN (as str) to the dataframe
         if "WNc [w]" in block_df.columns and "TOW [0.001 s]" in block_df.columns:
             if self.logger:
-                self.logger.info("\tadding datetime column to the dataframe")
+                self.logger.debug("\tadding datetime column to the dataframe")
             block_df = block_df.with_columns(
                 pl.struct(["WNc [w]", "TOW [0.001 s]"])
                 .map_elements(
@@ -375,7 +472,7 @@ class SBF:
         # add date-time and PRN (as str) to the dataframe
         if "SVID" in block_df.columns:
             if self.logger:
-                self.logger.info("\tadding PRN column to the dataframe")
+                self.logger.debug("\tadding PRN column to the dataframe")
             block_df = block_df.with_columns(
                 pl.struct(["SVID"])
                 .map_elements(
@@ -390,7 +487,7 @@ class SBF:
             and "Longitude [rad]" in block_df.columns
         ):
             if self.logger:
-                self.logger.info("\tadding UTM coordinates to the dataframe")
+                self.logger.debug("\tadding UTM coordinates to the dataframe")
 
             # Function to convert lat/lon in degrees to UTM
             def latlon_to_utm(lat, lon):
@@ -440,7 +537,7 @@ class SBF:
         # add orthometric height to the dataframe
         if "Height [m]" in block_df.columns and "Undulation [m]" in block_df.columns:
             if self.logger:
-                self.logger.info("\tadding orthometric height to the dataframe")
+                self.logger.debug("\tadding orthometric height to the dataframe")
             block_df = block_df.with_columns(
                 pl.struct(["Height [m]", "Undulation [m]"])
                 .apply(
@@ -453,7 +550,14 @@ class SBF:
         if self.logger:
             self.logger.warning(f"\tcollecting the dataframe. {str_red('Be patient.')}")
 
-        return block_df.collect()
+		# If an SBF block doesn't contain a column used in this func, 
+		# the collect() will throw an error.
+        if (
+            getattr(block_df, "collect", None) is not None
+        ):  
+            block_df = block_df.collect()
+
+        return block_df
 
     def used_columns(self, sbf_block: str) -> list:
         """returns the column names we use when extracting a SBF block from the SBF file
@@ -478,6 +582,31 @@ class SBF:
                 "Doppler_Hz",
                 "L_cycles [cyc]",
             ]
+        elif sbf_block == "PVTCartesian2":
+            # dict of your column names keyed by dtype
+            col_types = {
+                pl.Float64: [
+                    "X [m]",
+                    "Y [m]",
+                    "Z [m]",
+                    "Vx [m/s]",
+                    "Vy [m/s]",
+                    "Vz [m/s]",
+                    "COG [°]",
+                ],
+                pl.UInt32: [
+                    "TOW [0.001 s]",
+                ],
+                pl.UInt16: [
+                    "WNc [w]",
+                    "MeanCorrAge [0.01 s]",
+                ],
+                pl.UInt8: [
+                    "Type",
+                    "Error",
+                    "NrSV",
+                ],
+            }
         elif sbf_block == "PVTGeodetic2":
             # dict of your column names keyed by dtype
             col_types = {
@@ -504,22 +633,6 @@ class SBF:
                     "NrSV",
                 ],
             }
-
-        elif sbf_block == "PVTCartesian2":
-            keep_cols = [
-                "TOW [0.001 s]",
-                "WNc [w]",
-                "Type",
-                "Flag2D",
-                "Error",
-                "X [m]",
-                "Y [m]",
-                "Z [m]",
-                "Undulation [m]",
-                "RxClkBias [ms]",
-                "RxClkDrift [ppm]",
-                "NrSV",
-            ]
         elif sbf_block == "PVTResiduals2":
             keep_cols = [
                 "TOW [0.001 s]",
@@ -560,6 +673,21 @@ class SBF:
                 "UTCSec [s]",
                 "DeltaLS [s]",
             ]
+        elif sbf_block == "PosCovCartesian1":
+            col_types = {
+                pl.Float32: [
+                    "Cov_xx [m²]",
+                    "Cov_yy [m²]",
+                    "Cov_zz [m²]",
+                    "Cov_bb [s²]",
+                ],
+                pl.UInt32: [
+                    "TOW [0.001 s]",
+                ],
+                pl.UInt16: [
+                    "WNc [w]",
+                ],
+            }
         elif sbf_block == "PosCovGeodetic1":
             # dict of your column names keyed by dtype
             col_types = {
@@ -576,13 +704,44 @@ class SBF:
                 ],
             }
 
+        elif sbf_block == "Comment1":
+            col_types = {
+                pl.UInt32: [
+                    "TOW [0.001 s]",
+                ],
+                pl.UInt16: [
+                    "WNc [w]",
+                    "CommentLn",
+                ],
+                pl.Utf8: ["Comment"],
+            }
+        elif sbf_block == "BaseStation1":
+            col_types = {
+                pl.UInt32: [
+                    "TOW [0.001 s]",
+                ],
+                pl.UInt16: [
+                    "WNc [w]",
+                    "BaseStationID"
+                ],
+                pl.UInt8: [
+                    "BaseType",
+                    "Source",
+                    "Datum",
+                ],
+                pl.Float64: [
+                    "X [m]",
+                    "Y [m]",
+                    "Z [m]",
+                ],
+            }
         keep_cols = {}
         for dtype, columns in col_types.items():
             for col in columns:
                 keep_cols[col] = dtype
 
         if self.logger is not None:
-            self.logger.info(f"Keeping columns: \n{keep_cols}")
+            self.logger.debug(f"Keeping columns: \n{keep_cols}")
 
         return keep_cols
 
@@ -634,7 +793,7 @@ class SBF:
         lookup_sbf_block = {
             "PVTCartesian2": "-p",
             "PVTGeodetic2": "-g",
-            "PosCovGeodetic1": "-c",
+            "PosCovCartesian1": "-c",
         }
 
         try:
@@ -648,7 +807,7 @@ class SBF:
 
         return sbf_block_sbf2asc
 
-    def sb2asc_sbfblock_colnames(self, sbf_block: str) -> list:
+    def sbf2asc_sbfblock_colnames(self, sbf_block: str) -> list:
         """The sbf2asc does not give any header information.
         This function looks up the column names for each sbf block
 
@@ -670,9 +829,44 @@ class SBF:
 
         # TODO this dict needs to be expanded
         sbf_blocks_colnames = {
-            "PosCovGeodetic1": [
+            "PVTCartesian2": [
+                "0",
+                "GPST [s]",
+                "X [m]",
+                "Y [m]",
+                "Z [m]",
+                "Vx [m/s]",
+                "Vy [m/s]",
+                "Vz [m/s]",
+                "RxClockBias [s]",
+                "RxClockDrift [s/s]",
+                "NrSV",
+                "PVT Mode",
+                "MeanCorrAge [0.01 s]",
+                "PVT Error",
+                "COG [°]",
+            ],
+            "PVTGeodetic2": [
+                "-1",
+                "GPST [s]",
+                "Latitude [rad]",
+                "Longitude [rad]",
+                "Height [m]",
+                "Undulation [m]",
+                "Vn [m/s]",
+                "Ve [m/s]",
+                "Vu [m/s]",
+                "ClockBias [s]",
+                "ClockDrift [s/s]",
+                "NrSV",
+                "PVT Mode",
+                "MeanCorrAge [0.01 s]",
+                "PVT Error",
+                "COG [°]",
+            ],
+            "PosCovCartesian1": [
                 "-2",
-                "Time [GPS seconds]",
+                "GPST [s]",
                 "Cov_XX [m²]",
                 "Cov_YY [m²]",
                 "Cov_ZZ [m²]",

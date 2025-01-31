@@ -1,3 +1,4 @@
+# Standard library imports
 import datetime
 import json
 import logging
@@ -6,9 +7,11 @@ import sys
 from dataclasses import dataclass, field
 from typing import Tuple
 
+# Third-party imports
 import polars as pl
 import utm
 
+# Local application imports
 from analysegnss.config import ERROR_CODES, GEOID_PATH, rich_console
 from analysegnss.gnss import geoid
 from analysegnss.gnss.gnss_dt import gpsms2dt
@@ -250,7 +253,7 @@ class Rtkpos:
         if self.logger is not None:
             self.logger.debug(f"column names = \n{col_names}")
             # self.logger.info(f"info_processing = \n{info_processing}")
-            self.logger.info(
+            self.logger.debug(
                 f"Processing info:\n{json.dumps(info_processing, indent=4)}"
             )
 
@@ -267,11 +270,10 @@ class Rtkpos:
         """
 
         with rich_console.status("Collecting and adjusting data", spinner="aesthetic"):
-
             # add date-time and PRN (as str) to the dataframe
             if "WNc" in df_pos.columns and "TOW(s)" in df_pos.columns:
                 if self.logger is not None:
-                    self.logger.info("\tadding datetime to the dataframe")
+		            self.logger.debug("\tadding datetime to the dataframe")
                 df_pos = df_pos.with_columns(
                     pl.struct(["WNc", "TOW(s)"])
                     .apply(
@@ -284,7 +286,7 @@ class Rtkpos:
             # add UTM coordinates
             if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
                 if self.logger is not None:
-                    self.logger.info("\tadding UTM coordinates to the dataframe")
+                self.logger.debug("\tadding UTM coordinates to the dataframe")
 
                 # Function to convert lat/lon in degrees to UTM
                 def latlon_to_utm(lat, lon):
@@ -322,7 +324,7 @@ class Rtkpos:
             # add geoid undulation and orthometric height
             if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
                 if self.logger is not None:
-                    self.logger.info(
+                self.logger.debug(
                         "\tadding geoid undulation & orthometric height to the dataframe"
                     )
                 # initialise the geodheight class
@@ -356,6 +358,8 @@ class Rtkpos:
                     )
                     .alias("orthoH")
                 ).lazy()
+		    if self.logger is not None:
+		        self.logger.info(f"\tcollecting the dataframe. {str_red('Be patient.')}")
 
             try:
                 df_pos = df_pos.collect()

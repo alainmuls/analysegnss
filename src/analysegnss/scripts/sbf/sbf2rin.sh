@@ -164,3 +164,16 @@ else
     echo -e "\e[1;31mError: Failed to create navigation file\e[0m"
     exit 7
 fi
+
+# return the output file paths
+echo "${RNX_OBS_FILE}"
+echo "${RNX_NAV_FILE}"
+
+# cleanup() {
+#     echo "DEBUG: Cleanup function called" >&2
+#     cd "${ORIG_DIR}"
+#     if [ "${CONVERSION_SUCCESS:-false}" = true ] && [ -f "${LOG_FILE}" ]; then
+#         echo "DEBUG: Removing log file ${LOG_FILE}" >&2
+#         rm -f "${LOG_FILE}"
+#     fi
+# }

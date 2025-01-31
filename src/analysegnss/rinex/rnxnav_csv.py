@@ -7,7 +7,7 @@ import sys
 import polars as pl
 from rich import print
 
-from analysegnss.config import ERROR_CODES, DICT_GNSS, rich_console
+from analysegnss.config import ERROR_CODES, DICT_GNSS
 from analysegnss.rinex.rinex_nav_class import RINEX_NAV
 from analysegnss.utils import argument_parser, init_logger
 from analysegnss.utils.utilities import str_green, str_yellow

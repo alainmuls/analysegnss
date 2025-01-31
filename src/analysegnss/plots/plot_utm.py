@@ -1,6 +1,8 @@
+# Standard library imports
 import logging as logging
 import os
 
+# Third-party imports
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,10 +13,11 @@ from matplotlib.ticker import FormatStrFormatter
 from plotly.subplots import make_subplots
 from rich import print
 
+# Local application imports
 from analysegnss.plots import discrete_colors as dc
 from analysegnss.plots.plot_columns import get_utm_columns
 from analysegnss.plots.plot_fonts import MatplotlibFonts, PlotlyFonts
-from analysegnss.config import rich_console
+
 
 
 # Create a custom formatter that splits date and time
@@ -26,7 +29,7 @@ class CustomDateFormatter(mdates.DateFormatter):
 def plot_utm_scatter(
     utm_df: pl.DataFrame,
     origin: str,
-    fn: str,
+    ifn: str,
     dir_fn: str,
     logger: logging.Logger = None,
     display: bool = False,
@@ -37,7 +40,7 @@ def plot_utm_scatter(
     Args:
         utm_df (pl.DataFrame): Polars DataFrame containing the UTM coordinates.
         origin (str): Origin of the plot ('RTK' or 'PPK').
-        fn (str): name of file used
+        ifn (str): name of file used
         dir_fn (str): directory of the file
         logger (logging.Logger): Logger object for logging.
     Returns:
@@ -74,7 +77,7 @@ def plot_utm_scatter(
     fig.update_layout(
         plot_bgcolor="white",
         font=dict(color="#909497"),  # , size=14),
-        title=dict(text=f"{fn} - {origin}"),  # , font=dict(size=18)),
+        title=dict(text=f"{ifn} - {origin}"),  # , font=dict(size=18)),
         xaxis=dict(
             title=cols.east,
             linecolor="#909497",
@@ -111,8 +114,8 @@ def plot_utm_scatter(
     if not os.path.exists(os.path.join(dir_fn, "plots")):
         os.makedirs(os.path.join(dir_fn, "plots"))
 
-    fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_scatter.html")
-    # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_scatter.html")
+    fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_scatter.html")
+    # fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_scatter.html")
     fig.write_html(fn_plot)
     print(f"Plot saved to {fn_plot}")
 
@@ -120,7 +123,7 @@ def plot_utm_scatter(
 def plot_utm_height(
     utm_df: pl.DataFrame,
     origin: str,
-    fn: str,
+    ifn: str,
     dir_fn: str,
     sd: bool = False,
     logger: logging.Logger = None,
@@ -131,7 +134,7 @@ def plot_utm_height(
     Args:
         utm_df (pl.DataFrame): df with coordinates, standard deviation and time
         origin (str): origin of the plot ('RTK' or 'PPK' or 'gLAB').
-        fn (str): name of file used
+        ifn (str): name of file used
         dir_fn (str): directory of the file
         sd (bool): display the standard deviation if true
         logger (logging.Logger, optional): logger. Defaults to None.
@@ -248,7 +251,7 @@ def plot_utm_height(
         width=1024,
         showlegend=True,
         plot_bgcolor="white",
-        title=dict(text=f"{fn} - {origin}"),  # , font=dict(size=18)),
+        title=dict(text=f"{ifn} - {origin}"),  # , font=dict(size=18)),
         yaxis_tickformat=",.2f",
         yaxis2_tickformat=",.2f",
         yaxis3_tickformat=",.2f",
@@ -291,17 +294,17 @@ def plot_utm_height(
     if not os.path.exists(os.path.join(dir_fn, "plots")):
         os.makedirs(os.path.join(dir_fn, "plots"))
 
-    # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}.svg")
+    # fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}.svg")
     # fig.write_image(fn_plot, width=1024, height=600)
 
     if not sd:
-        fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu.html")
-        # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu.html")
-        # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu.svg")
+        fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_enu.html")
+        # fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_enu.html")
+        # fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_enu.svg")
     else:
-        fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu_sd.html")
-        # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu_sd.html")
-        # fn_plot = os.path.join(dir_fn, "plots", f"{fn.replace('.', '_')}_enu_sd.svg")
+        fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_enu_sd.html")
+        # fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_enu_sd.html")
+        # fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_enu_sd.svg")
 
     fig.write_html(fn_plot)
     print(f"Plot saved to {fn_plot}")
@@ -310,7 +313,7 @@ def plot_utm_height(
 def plot_utm_scatter_mpl(
     utm_df: pl.DataFrame,
     origin: str,
-    fn: str,
+    ifn: str,
     dir_fn: str,
     logger: logging.Logger = None,
     display: bool = False,
@@ -387,7 +390,7 @@ def plot_utm_scatter_mpl(
 
     ax.set_xlabel(cols.east)
     ax.set_ylabel(cols.north)
-    ax.set_title(f"{fn} - {origin}")
+    ax.set_title(f"{ifn} - {origin}")
     ax.grid(True, linestyle="--", alpha=0.7)
     ax.set_aspect("equal")
 
@@ -406,7 +409,7 @@ def plot_utm_scatter_mpl(
     plots_dir = os.path.join(dir_fn, "plots")
     os.makedirs(plots_dir, exist_ok=True)
 
-    fn_plot = os.path.join(plots_dir, f"{fn.replace('.', '_')}_scatter_mpl.png")
+    fn_plot = os.path.join(plots_dir, f"{ifn.replace('.', '_')}_scatter_mpl.png")
     fig.savefig(fn_plot, bbox_inches="tight", dpi=300)
     print(f"Plot saved to {fn_plot}")
 
@@ -416,7 +419,7 @@ def plot_utm_scatter_mpl(
 def plot_utm_height_mpl(
     utm_df: pl.DataFrame,
     origin: str,
-    fn: str,
+    ifn: str,
     dir_fn: str,
     sd: bool = False,
     logger: logging.Logger = None,
@@ -427,7 +430,7 @@ def plot_utm_height_mpl(
     Args:
         utm_df (pl.DataFrame): df with coordinates, standard deviation and time
         origin (str): origin of the plot ('RTK' or 'PPK' or 'gLAB')
-        fn (str): name of file used
+        ifn (str): name of file used
         dir_fn (str): directory of the file
         sd (bool): display the standard deviation if true
         logger (logging.Logger, optional): logger. Defaults to None.
@@ -507,7 +510,7 @@ def plot_utm_height_mpl(
     ax1.legend(markerscale=8, loc="best")
 
     # Set title for entire figure
-    fig.suptitle(f"{fn} - {origin}")
+    fig.suptitle(f"{ifn} - {origin}")
 
     plt.tight_layout()
 
@@ -520,7 +523,7 @@ def plot_utm_height_mpl(
 
     # Save plot
     suffix = "_enu_sd" if sd else "_enu"
-    fn_plot = os.path.join(plots_dir, f"{fn.replace('.', '_')}{suffix}_mpl.png")
+    fn_plot = os.path.join(plots_dir, f"{ifn.replace('.', '_')}{suffix}_mpl.png")
     fig.savefig(fn_plot, bbox_inches="tight", dpi=300)
     print(f"Plot saved to {fn_plot}")
 

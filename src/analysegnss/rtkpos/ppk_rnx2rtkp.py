@@ -1,20 +1,22 @@
 #!/usr/bin/env python
 
+# Standard library imports
 import json
 import os
 import sys
 from logging import Logger
 
+# Third-party imports
 import polars as pl
 from tabulate import tabulate
 
-# import globalvars
+# Local application imports
 from analysegnss.rtkpos import rtk_constants as rtkc
 from analysegnss.rtkpos.rtkpos_class import Rtkpos
 from analysegnss.utils import argument_parser, init_logger
 
 
-def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> None:
+def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> list:
     """display the quality analysis
 
     Args:
@@ -29,7 +31,7 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> None:
             [
                 rtkc.DICT_RTK_PVTMODE[qual[0]]["desc"],
                 qual_data.shape[0],
-                f"{qual_data.shape[0]/total_obs*100:.2f}",
+                round(qual_data.shape[0]/total_obs*100,2),
             ]
         )
 
@@ -39,11 +41,10 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> None:
         tablefmt="fancy_outline",
     )
 
-    print(f"\nAnalysis of the quality of the position data\n{qual_tabular}")
-
     if logger is not None:
-        logger.warning(f"\n{qual_tabular}")
+        logger.info(f"Analysis of the quality of the position data\n{qual_tabular}")
 
+    return qual_analysis
 
 def rtkp_pos(argv: list) -> pl.DataFrame:
     """analyses the rnx2rtkp output file and extracts the position information
@@ -67,18 +68,18 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
     logger.debug(f"Parsed arguments: {args_parsed}")
 
-    # create a SBF class object
+    # create a RTKlib pos class object
     try:
         rtkpos = Rtkpos(
-            pos_fn=args_parsed.pos_fn, logger=logger
-        )  # start_time=datetime.time(12, 30),
+            pos_fn=args_parsed.pos_ifn, logger=logger
+        ) 
     except Exception as e:
         logger.error(f"Error creating RTKPos object: {e}")
         sys.exit(1)
 
     # read the CVS position file into polars dataframe
     info_processing, pos_df = rtkpos.read_pos_file()
-    print(f"Processing info:\n{json.dumps(info_processing, indent=4)}")
+    logger.debug(f"Processing info:\n{json.dumps(info_processing, indent=4)}")
 
     # analyse the quality of the solution
     quality_analysis(df_pos=pos_df, logger=logger)

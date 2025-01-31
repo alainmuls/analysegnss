@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 
+# Standard library imports
+from logging import Logger
 import os
 import sys
 
+# Third-party imports
 import polars as pl
 from tabulate import tabulate
 
+# Local application imports
 from analysegnss.config import ERROR_CODES
 from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.sbf.sbf_class import SBF
@@ -13,7 +17,7 @@ from analysegnss.utils import argument_parser, init_logger
 from analysegnss.utils.utilities import combine_dfs
 
 
-def quality_analysis(geod_df: pl.DataFrame, logger) -> None:
+def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:
     """display the quality analysis
 
     Args:
@@ -29,7 +33,7 @@ def quality_analysis(geod_df: pl.DataFrame, logger) -> None:
                 [
                     sbfc.DICT_SBF_PVTMODE[qual]["desc"],
                     qual_data.shape[0],
-                    f"{qual_data.shape[0]/total_obs*100:.2f}",
+                    round(qual_data.shape[0] / total_obs * 100, 2),
                 ]
             )
 
@@ -38,10 +42,11 @@ def quality_analysis(geod_df: pl.DataFrame, logger) -> None:
         headers=["PNT Mode", "Count", "Percentage"],
         tablefmt="fancy_outline",
     )
-    print(f"\nAnalysis of the quality of the position data\n{qual_tabular}")
 
     if logger is not None:
-        logger.warning(f"Quality analysis:\n{qual_tabular}")
+        logger.debug(f"Quality analysis:\n{qual_tabular}")
+
+    return qual_analysis
 
 
 def rtk_pvtgeod(argv: list) -> dict:
@@ -62,13 +67,11 @@ def rtk_pvtgeod(argv: list) -> dict:
 
     # create the file/console logger
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
-    logger.info(f"Parsed arguments: {args_parsed}")
+    logger.debug(f"Parsed arguments: {args_parsed}")
 
     # create a SBF class object
     try:
-        sbf = SBF(
-            sbf_fn=args_parsed.sbf_fn, logger=logger
-        )  # start_time=datetime.time(12, 30),
+        sbf = SBF(sbf_fn=args_parsed.sbf_ifn, logger=logger)
     except Exception as e:
         logger.error(f"Error creating SBF object: {e}")
         sys.exit(ERROR_CODES["E_SBF_OBJECT"])
@@ -77,7 +80,8 @@ def rtk_pvtgeod(argv: list) -> dict:
         if args_parsed.sd:
             # extract the PVT Geodetic2 block from SBF file and its covariance elements
             dfs_pvt = sbf.bin2asc_dataframe(
-                lst_sbfblocks=["PVTGeodetic2", "PosCovGeodetic1"]
+                lst_sbfblocks=["PVTGeodetic2", "PosCovGeodetic1"],
+                archive=args_parsed.archive,
             )
 
             if "PosCovGeodetic1" in dfs_pvt:
@@ -112,9 +116,9 @@ def rtk_pvtgeod(argv: list) -> dict:
 
         else:  # only use the PVTGeodetic, no StdDev required
             # extract the PVT Geodetic2 block from SBF file
-            df_pvt = sbf.bin2asc_dataframe(lst_sbfblocks=["PVTGeodetic2"])[
-                "PVTGeodetic2"
-            ]
+            df_pvt = sbf.bin2asc_dataframe(
+                lst_sbfblocks=["PVTGeodetic2"], archive=args_parsed.archive
+            )["PVTGeodetic2"]
 
         with pl.Config(
             tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
@@ -127,16 +131,29 @@ def rtk_pvtgeod(argv: list) -> dict:
         return df_pvt
 
     else:  # conversion using sbf2asc
-        df_poscov = sbf.sbf2asc_dataframe(lst_sbfblocks=["PosCovGeodetic1"])[
-            "PosCovGeodetic1"
-        ]
+        df_pvt = sbf.sbf2asc_dataframe(
+            lst_sbfblocks=["PVTGeodetic2"], archive=args_parsed.archive
+        )["PVTGeodetic2"]
+
+        # sbf2asc cant read the PosCovGeodetic1 block.Only PosCovCartesian1 is available.
+        df_xyz = sbf.sbf2asc_dataframe(
+            lst_sbfblocks=["PVTCartesian2"], archive=args_parsed.archive
+        )["PVTCartesian2"]
+        if args_parsed.sd:
+            df_xyzcov = sbf.sbf2asc_dataframe(
+                lst_sbfblocks=["PosCovCartesian1"], archive=args_parsed.archive
+            )["PosCovCartesian1"]
+        else:
+            df_xyzcov = None
         with pl.Config(
             tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
         ):
-            print(f"df_poscov: \n{df_poscov}")
-            logger.info(f"df_poscov: \n{df_poscov}")
+            logger.info(f"df_pvt: \n{df_pvt}")
+            logger.info(f"df_xyz: \n{df_xyz}")
+            if df_xyzcov is not None:
+                logger.info(f"df_xyzcov: \n{df_xyzcov}")
 
-        return None
+        return df_pvt
 
 
 def main():

@@ -4,7 +4,7 @@ import os
 import sys
 from dataclasses import dataclass, field
 
-from analysegnss.config import DICT_GNSS, rich_console
+from analysegnss.config import DICT_GNSS
 from analysegnss.utils.utilities import locate, str_red
 
 
