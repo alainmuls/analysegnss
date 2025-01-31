@@ -3,7 +3,7 @@ DICT_SBF_PVTMODE = {
     0: dict(desc="No PVT available", color="black"),
     1: dict(desc="Stand-Alone PVT", color="cornflowerblue"),
     2: dict(desc="Differential PVT", color="darkcyan"),
-    3: dict(desc="Fixed location", color="drakgreen"),
+    3: dict(desc="Fixed location", color="darkgreen"),
     4: dict(desc="RTK with ﬁxed ambiguities", color="green"),
     5: dict(desc="RTK with ﬂoat ambiguities", color="orange"),
     6: dict(desc="SBAS aided PVT", color="deepskyblue"),
