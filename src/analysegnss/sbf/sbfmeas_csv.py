@@ -59,11 +59,18 @@ def sbfmeas2csv(argv: list):
     print(f"meas3_present: {meas3_present}")
     if meas3_present:
         logger.debug("Converting measurements using Meas3 blocks")
-        sbf.bin2asc_dataframe(
+        meas_df = sbf.bin2asc_dataframe(
             lst_sbfblocks=["Meas3Ranges"], archive=args_parsed.archive
         )
 
-    print(f"args_parsed: {args_parsed}")
+    # print the DataFrame
+    with pl.Config(
+        tbl_cols=-1, tbl_rows=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
+    ):
+        for key in meas_df.keys():
+            print(f"key: {key}")
+            print(meas_df[key].head())
+            print(meas_df[key].tail())
 
 
 def main():

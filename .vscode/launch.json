@@ -174,7 +174,7 @@
             "name": "Python Debugger: sbfmeas2csv ROVR187J.23_",
             "type": "debugpy",
             "request": "launch",
-            "program": "src/analysegnss/sbf/sbfmeas2csv.py",
+            "program": "src/analysegnss/sbf/sbfmeas_csv.py",
             "console": "integratedTerminal",
             "args": [
                 "--sbf_ifn",

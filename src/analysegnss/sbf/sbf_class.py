@@ -151,7 +151,7 @@ class SBF:
         # copy file to archive directory
         try:
             shutil.copy2(fn, dest)
-            self.logger.info(f"Succesfully archived file {fn} to {dest}")
+            self.logger.info(f"Successfully archived file {fn} to {dest}")
 
         except Exception as e:
             self.logger.error(
@@ -186,7 +186,7 @@ class SBF:
                 sys.stderr.write(f"{process} Error: {e}\n")
                 if self.logger:
                     self.logger.error(
-                        f"\t... subprocess {str_yellow(' '.join(cmd_bin2asc))} return exit code"
+                        f"\t... subprocess {str_yellow(' '.join(cmd_sbfblocks))} return exit code"
                         f"\t... {str_red(e)}. Program exits."
                     )
                 sys.exit(ERROR_CODES["E_PROCESS"])
@@ -322,6 +322,7 @@ class SBF:
                 spinner="aesthetic",
             ):
                 sbf_df = pl.read_csv(
+                    # TODO: Why [0]?
                     source=bin2asc_fn[0],
                     separator=",",
                     columns=list(keep_cols.keys()),
@@ -535,7 +536,8 @@ class SBF:
             block_df = block_df.with_columns(
                 pl.struct(["SVID"])
                 .map_elements(
-                    lambda x: sbfc.ssnerr_prn2str(prn=x["SVID"]), return_dtype=pl.Utf8
+                    lambda x: sbfc.ssnerr_prn2str(prn=x["SVID"]),
+                    return_dtype=pl.Utf8,
                 )
                 .alias("PRN")
             ).lazy()
@@ -606,9 +608,6 @@ class SBF:
                 .alias("orthoH")
             ).lazy()
 
-        if self.logger:
-            self.logger.warning(f"\tcollecting the dataframe. {str_red('Be patient.')}")
-
         # If an SBF block doesn't contain a column used in this func,
         # the collect() will throw an error.
         if getattr(block_df, "collect", None) is not None:
@@ -642,9 +641,9 @@ class SBF:
         elif sbf_block == "Meas3Ranges":
             # dict of columns to keep and column type
             col_types = {
-                pl.UInt32: ["TOW [0.001 s]"],
-                pl.UInt16: ["WNc [w]", "SVID"],
-                pl.String: ["SVID", "SignalType"],
+                pl.Float32: ["TOW [s]"],
+                pl.UInt16: ["WNc [w]", "LockTime [s]"],
+                pl.String: ["SVID", "SignalType", "Antenna ID"],
                 pl.Float64: [
                     "PR [m]",
                     "L [cyc]",
