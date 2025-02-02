@@ -672,7 +672,7 @@ def argument_parser_get_base_coord(args: list) -> argparse.Namespace:
 
 
 def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
-    """Launches the appropiate functions to calculate the ebh_lines from the sbf_ifn file
+    """Launches the appropriate functions to calculate the ebh_lines from the sbf_ifn file
     from which it retrievers the correct timings,
     decides whether the RTK or PPK solution has a sufficient quality,
     and finally outputs correct ASSUR formatted files for each ebh line.
@@ -682,7 +682,7 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
     help_text = (
         baseName
         + """
-        Launches the appropiate functions to calculate the ebh_lines from the sbf_ifn file
+        Launches the appropriate functions to calculate the ebh_lines from the sbf_ifn file
         from which it retrievers the correct timings,
         decides whether the RTK or PPK solution has a sufficient quality,
         and finally outputs correct ASSUR formatted files for each ebh line.
@@ -991,7 +991,7 @@ def argument_parser_reformat_sbf_rnx_for_opus(
 ) -> argparse.Namespace:
     """
     This script checks and reformats rnx files for OPUS processing.
-    Default is 01D duratiom and 30 seconds epoch interval for gnss systems GPS and Galileo.
+    Default is 01D duration and 30 seconds epoch interval for gnss systems GPS and Galileo.
     The scripts accepts sbf and rnx files.
     """
     baseName = str_yellow(script_name)
