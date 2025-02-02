@@ -7,7 +7,8 @@ import polars as pl
 from rich import print
 
 from analysegnss.glabng.glabng_class import GLABNG
-from analysegnss.utils import argument_parser, init_logger
+from analysegnss.utils import init_logger
+from analysegnss.utils.argument_parser import argument_parser_glab_parser
 
 
 def parse_glab_section(
@@ -49,7 +50,7 @@ def glab_parser(argv: list) -> dict[str, pl.DataFrame]:
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    args_parsed = argument_parser.argument_parser_glab_parser(
+    args_parsed = argument_parser_glab_parser(
         args=argv[1:], script_name=os.path.basename(__file__)
     )
 

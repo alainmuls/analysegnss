@@ -9,8 +9,9 @@ from rich import print
 
 from analysegnss.config import ERROR_CODES, DICT_GNSS
 from analysegnss.rinex.rinex_nav_class import RINEX_NAV
-from analysegnss.utils import argument_parser, init_logger
+from analysegnss.utils import init_logger
 from analysegnss.utils.utilities import str_green, str_yellow
+from analysegnss.utils.argument_parser import argument_parser_rnxnav_csv
 
 
 def rnxnav_csv(argv: list):
@@ -24,7 +25,7 @@ def rnxnav_csv(argv: list):
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    args_parsed = argument_parser.argument_parser_rnxnav_csv(
+    args_parsed = argument_parser_rnxnav_csv(
         args=argv[1:], script_name=os.path.basename(__file__)
     )
 
