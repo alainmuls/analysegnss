@@ -98,16 +98,16 @@ def ssnerr_prn2str(prn: str) -> str:
     try:
         iprn = int(prn)
         if (iprn >= 1) & (iprn <= 37):
-            return f"G{iprn:02.0f}"
+            return f"G{iprn:02d}"
         elif (iprn >= 38) & (iprn <= 61):
-            return f"R{iprn - 37:02.0f}"
+            return f"R{iprn - 37:02d}"
         elif (iprn >= 71) & (iprn <= 106):
-            return f"E{iprn - 70:02.0f}"
+            return f"E{iprn - 70:02d}"
         elif (iprn >= 141) & (iprn <= 180):
-            return f"B{iprn - 140:02.0f}"
+            return f"B{iprn - 140:02d}"
         elif (iprn >= 120) & (iprn <= 138):
-            return f"S{iprn:03.0f}"
+            return f"S{iprn:03d}"
         else:
-            return f"X{iprn:03.0f}"
+            return f"X{iprn:03d}"
     except ValueError:
         return prn
