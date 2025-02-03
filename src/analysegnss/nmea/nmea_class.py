@@ -2,6 +2,7 @@
 import argparse
 from collections import defaultdict
 from dataclasses import dataclass, field
+import datetime
 import os
 import logging
 import sys
@@ -33,38 +34,44 @@ class NMEA:
                 self.logger.error(f"File does not exist: {self.nmea_ifn}")
             raise ValueError(f"File does not exist: {self.nmea_ifn}")
 
-    def parse_nmea_file(self):
-        messages = []
+    def parse_nmea_file(self) -> list:
+        """
+        This script parses all the NMEA messages from a (log) file an and returns a list of NMEA messages
+
+        args:
+            nmea_ifn (str): input file name that contains NMEA messages
+        returns:
+            list: a list containing the parsed NMEA messages
+        """
+        nmea_messages = []
         nrfailed_parsed_lines = 0
         with open(self.nmea_ifn, "r") as file:
             for line in file:
                 try:
                     msg = pynmea2.parse(line)
-                    messages.append(msg)
+                    nmea_messages.append(msg)
                 except pynmea2.ParseError as e:
                     if self.logger:
                         nrfailed_parsed_lines += 1
                         # self.logger.debug(f"Failed to parse line: {line.strip()} - {e}")
             self.logger.info(
-                f"Successfully parsed {len(messages)} NMEA messages out of {len(messages) + nrfailed_parsed_lines} lines"
+                f"Successfully parsed {len(nmea_messages)} NMEA messages out of {len(nmea_messages) + nrfailed_parsed_lines} lines"
             )
         # write parsed nmea messages to file
         with open(f"{self.nmea_ifn}.nmea", "w") as file:
-            for msg in messages:
+            for msg in nmea_messages:
                 file.write(f"{msg}\n")
             self.logger.info(f"Saved parsed NMEA messages to {self.nmea_ifn}.nmea")
 
-        return messages
+        return nmea_messages
 
-    def nmea_dataframe(self, nmea_messages: list) -> pl.DataFrame:
+    def collect_nmea_values(self) -> list[dict]:
         """
-        This script collects the NMEA messages and export each field to a dataframe
-
-        Args:
-            nmea_messages (list): List of NMEA messages
+        This script collects the NMEA message values and exports them to a list of dictionaries which are sorted by timestamp
 
         Returns:
-            pl.DataFrame: DataFrame containing the collected data from the NMEA messages organized in columns
+            list: a list containing the collected data/values from the NMEA messages in dict format for each timestamp. Key of each dict is the timestamp.
+                Easily Convertible to Polars DataFrame by running pl.DataFrame(list)
         """
 
         data_dict = defaultdict(
@@ -72,7 +79,7 @@ class NMEA:
         )  # type of dict that can collect multiple fields for the same timestamp without duplicating it. (acts as a merger)
         last_timestamp = None  # most NMEA messages do not have a timestamp, so we will have to the use the last timestamp
 
-        for msg in nmea_messages:
+        for msg in self.parse_nmea_file():
 
             # get timestamp from nmea message and update last_timstamp
             timestamp = getattr(msg, "timestamp", last_timestamp)
@@ -82,7 +89,7 @@ class NMEA:
             # update existing list of dictionaries if timestamp already exists
             msg_entry = data_dict[timestamp]
 
-            #TODO cast msg to correct dtype
+            # TODO cast msg to correct dtype
             # Eventhough the timestamp is already saved as the key, we still store it also as a value for easier converion to dataframe
             if isinstance(msg, pynmea2.types.talker.RMC):
                 msg_entry.update(
@@ -168,11 +175,41 @@ class NMEA:
                     }
                 )
             else:
-                self.logger.warning(f"Unknown NMEA message type: {msg}")
+                if self.logger:
+                    self.logger.warning(f"Unknown NMEA message type: {msg}")
 
-        return pl.DataFrame(list(data_dict.values()))
+        # loop through first 5 entries in data_dict
+        for i, (key, value) in enumerate(data_dict.items()):
+            if i < 5:
+                self.rich_console.print(
+                    f"The NMEA message at timestamp {key} is: {value}"
+                )
 
-    def add_df_column(self, nmea_df: pl.DataFrame) -> pl.DataFrame:
+        return list(data_dict.values())
+
+    def get_nmea_dataframe(self) -> pl.DataFrame:
+        """
+        Creates a Polars DataFrame from the collected NMEA messages
+
+        Args:
+            nmea_messages (list): List of dictionaries containing the NMEA message values
+
+        Returns:
+            nmea_df( pl.DataFrame): DataFrame containing the NMEA message values organized in columns for each timestamp
+        """
+
+        # parse the NMEA file
+        self.parse_nmea_file()
+        # collect the NMEA values
+        collected_nmea_values = self.collect_nmea_values()
+        # create a DataFrame with the NMEA values per timestamp
+        nmea_df = pl.DataFrame(collected_nmea_values)
+        # add columns datatime and UTM coordinates if possible
+        nmea_df = self.add_df_columns(nmea_df=nmea_df)
+
+        return nmea_df
+
+    def add_df_columns(self, nmea_df: pl.DataFrame) -> pl.DataFrame:
         """
         Check if a datetime anf UTM columns can be added to the nmea DataFrame. (note: height in NMEA messages is always orthometric (MSL))
 
@@ -188,37 +225,46 @@ class NMEA:
                 "Trying to add datetime, UTM and orthoH columns to the NMEA parsed DataFrame"
             )
 
-        if "datestamp" in nmea_df.columns and "timestamp" in nmea_df.columns:
+        # remove invalid PNT where GNSS quality equals 0
+        if "pvt_qual" in nmea_df.columns:
             if self.logger:
-                self.logger.debug(
-                    "Adding datetime column to the NMEA parsed DataFrame"
-                )
+                self.logger.debug("Removing invalid PNT where GNSS quality equals 0")
+            nmea_df = nmea_df.filter(pl.col("pvt_qual") != 0).lazy()
+
+        
+        if "datestamp" in nmea_df.columns and "timestamp" in nmea_df.columns:
+            
+            # remove datestamp and timestamp columns with value None
+            if self.logger:
+                self.logger.debug("Removing datestamp and timestamp columns with value None")
+            nmea_df = nmea_df.filter(pl.col("datestamp").is_not_null()).lazy()
+            nmea_df = nmea_df.filter(pl.col("timestamp").is_not_null()).lazy()
+            
+            if self.logger:
+                self.logger.debug("Adding datetime column to the NMEA parsed DataFrame")
             nmea_df = nmea_df.with_columns(
-                pl.col(
-                    "datetime",
-                    pl.col("datestamp").cast(pl.Date32)
-                    + pl.col("timestamp").cast(pl.Time64),
-                )
-                .cast(pl.Datetime)
+                pl.struct(["datestamp", "timestamp"])
+                .map_elements(
+                    lambda row: datetime.datetime.combine(row["datestamp"], row["timestamp"]),
+                    return_dtype=datetime.datetime,
+                    )
                 .alias("DT")
             ).lazy()
-            
+
         # add UTM coordinates
         if "latitude(deg)" in nmea_df.columns and "longitude(deg)" in nmea_df.columns:
             if self.logger:
-                self.logger.debug(
-                    "Adding UTM coordinates to the NMEA parsed DataFrame"
-                )
-                
+                self.logger.debug("Adding UTM coordinates to the NMEA parsed DataFrame")
+
             # Function to convert lat/lon in degrees to UTM
             def latlon_to_utm(lat, lon):
                 easting, northing, _, _ = utm.from_latlon(lat, lon)
                 return {"easting": easting, "northing": northing}
 
             # Apply the conversion function lazily using map_elements with specified return_dtype
-            df_nmea = df_nmea.with_columns(
+            nmea_df = nmea_df.with_columns(
                 pl.struct(["latitude(deg)", "longitude(deg)"])
-                .apply(
+                .map_elements(
                     lambda row: latlon_to_utm(
                         row["latitude(deg)"], row["longitude(deg)"]
                     ),
@@ -232,19 +278,29 @@ class NMEA:
                 .alias("utm_coords")
             ).lazy()
 
-        #TODO orthoH column is already present in the NMEA messages, however, it can't be interesting to double check if it is correct
-                
-        # cast nmea gnss mode/type to gnss 
+        # TODO orthoH column is already present in the NMEA messages, however, it can't be interesting to double check if it is correct
+
+        # cast nmea gnss mode/type to gnss
+
+        if (
+            getattr(nmea_df, "collect", None) is not None
+        ):  # catches the error when none of the above it called for lazy operation
+            with self.rich_console.status(
+                "[bold green]Adding columns to the NMEA DataFrame...", spinner="dots"
+            ):
+                if self.logger:
+                    self.logger.warning(
+                        f"Collecting the dataframe. Be patient, this may take a while..."
+                    )
+
+                nmea_df = nmea_df.collect()
+
         return nmea_df
 
+    def rich_print_dataframe(self, row_crop: int = 50):
 
-
-    def get_dataframe(self):
-        messages = self.parse_nmea_file()
-        df = self.nmea_dataframe(messages)
-        return df
-
-    def rich_print_dataframe(self, df: pl.DataFrame, row_crop: int = 50):
+        # get nmea dataframe
+        df = self.get_nmea_dataframe()
         # Table is imported from rich.table
         table = Table(title="NMEA DataFrame (first 50 rows)")
 
@@ -318,10 +374,9 @@ if __name__ == "__main__":
     logger = init_logger.logger_setup(
         args=parsed_args, base_name=script_name, log_dest="/tmp/logs/"
     )
-    nmea_parser = NMEA(nmea_ifn=parsed_args.nmea_ifn, logger=logger)
-    df = nmea_parser.get_dataframe()
+    nmea_data = NMEA(nmea_ifn=parsed_args.nmea_ifn, logger=logger)
 
     # write df to csv file
-    # df.write_csv(f"{parsed_args.nmea_ifn}_df.csv")
+    #df_nmea_data.write_csv(f"{parsed_args.nmea_ifn}_df.csv")
 
-    nmea_parser.rich_print_dataframe(df)
+    nmea_data.rich_print_dataframe()

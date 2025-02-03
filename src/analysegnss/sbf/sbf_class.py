@@ -283,8 +283,7 @@ class SBF:
 
                 sbf_dfs[sbf_block] = sbf_df
                
-                print(f"archive = {archive}")
-                # archiving the converted sbf file
+                # archiving the converted sbf files in ASCII format
                 if not archive == None:
                     self.archive_file(fn=bin2asc_fn[0], dest_dir=archive)
 
