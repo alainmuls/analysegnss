@@ -58,18 +58,18 @@ RNX_DIR="."
 EXCL_GNSS="RSCJI"
 
 while true; do
-  case "$1" in
-    -h|--help)          usage; ;;
-    -f|--file)          SBF_FN="$2" ; shift ;;
-    -x|--excl_GNSS)     EXCL_GNSS="$2" ; shift ;;
-    -b|--begin_epoch)   BEGIN_EPOCH="$2" ; shift ;;
-    -e|--end_epoch)     END_EPOCH="$2" ; shift ;;
-    -r|--rnx_dir)       RNX_DIR="$2" ; shift ;;
-    -v|--verbose)       VERBOSE=true ;;
-    --)                 shift ; break ;;
-    *)                  echo "unknown option: $1" ; exit 1 ;;
-  esac
-  shift
+    case "$1" in
+        -h|--help)          usage; ;;
+        -f|--file)          SBF_FN="$2" ; shift ;;
+        -x|--excl_GNSS)     EXCL_GNSS="$2" ; shift ;;
+        -b|--begin_epoch)   BEGIN_EPOCH="$2" ; shift ;;
+        -e|--end_epoch)     END_EPOCH="$2" ; shift ;;
+        -r|--rnx_dir)       RNX_DIR="$2" ; shift ;;
+        -v|--verbose)       VERBOSE=true ;;
+        --)                 shift ; break ;;
+        *)                  echo "unknown option: $1" ; exit 1 ;;
+    esac
+    shift
 done
 
 if [ $# -ne 0 ]; then

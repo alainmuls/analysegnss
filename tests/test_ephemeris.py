@@ -4,8 +4,7 @@ import pytest
 from rich import print
 
 from src.analysegnss.config import GPS_BDS_WEEK_DIFF
-# from src.analysegnss.gnss.GLONASSEphemeris import GLONASSEphemeris
-# from src.analysegnss.gnss.GNSSephemeris import GNSSEphemeris
+
 from src.analysegnss.gnss.GNSSNavReader import GNSSNavReader
 from src.analysegnss.gnss.gnss_dt import gnss2dt
 from src.analysegnss.config import ERROR_CODES
@@ -84,9 +83,9 @@ def test_satellite_position_calculation():
         t_mid = data_info["t_mid"]
         satpos_ifn = data_info["satpos_ifn"]
         print(f"  Processing {cvs_ifn} | {t_mid} | {satpos_ifn}")
-            
+
         gnss_nav_reader = GNSSNavReader(csv_file=cvs_ifn)
-            gnss_nav_reader.read_GEC_nav_csv()
+        gnss_nav_reader.read_GEC_nav_csv()
 
         pos_brdc = []
         pos_glab = []
@@ -96,10 +95,9 @@ def test_satellite_position_calculation():
 
         # read all ines starting with SATPOS from the glab satpos file
         with open(satpos_ifn, "r") as f:
-                glab_lines = f.readlines()
+            glab_lines = f.readlines()
         # print(glab_lines)
 
-            
         for t_cur in range(t_mid - 239 * 30, t_mid + 240 * 30, 600):
             # convert the GPS Week/TOW to datetime
             eph = gnss_nav_reader.get_ephemeris(t=t_cur)
@@ -107,7 +105,7 @@ def test_satellite_position_calculation():
                 WkNr = eph.week + GPS_BDS_WEEK_DIFF
             else:
                 WkNr = eph.week
-                
+
             dt = gnss2dt(week=WkNr, tow=t_cur)
             try:
                 x, y, z = eph.calculate_GPS_GAL_coordinates(t=t_cur)
@@ -115,17 +113,18 @@ def test_satellite_position_calculation():
             except ValueError as e:
                 print(e)
                 sys.exit(ERROR_CODES["E_WRONG_GNSS"])
-                    
-                    # print(glab_hms, x, y, z)
-                    # search in glab_lines the lines that corresponds to the glab_hms
+
+            # print(glab_hms, x, y, z)
+
+            # search in glab_lines the lines that corresponds to the glab_hms
             glab_hms = dt.strftime("%H:%M:%S.%f")[:-4]
-                    for line in glab_lines:
-                        if glab_hms in line:
-                            # extract fields 10, 11 and 12
-                            # print(line.split()[9])
-                            # print(line.split()[9:12])
-                            x_glab, y_glab, z_glab = map(float, line.split()[9:12])
-                            glab_iode = int(line.split()[17])
+            for line in glab_lines:
+                if glab_hms in line:
+                    # extract fields 10, 11 and 12
+                    # print(line.split()[9])
+                    # print(line.split()[9:12])
+                    x_glab, y_glab, z_glab = map(float, line.split()[9:12])
+                    glab_iode = int(line.split()[17])
                     pos_glab.append(
                         (
                             WkNr,
@@ -136,9 +135,8 @@ def test_satellite_position_calculation():
                             x_glab,
                             y_glab,
                             z_glab,
+                        )
                     )
-                    
-            )
                     break
 
         print("=" * 80)
@@ -160,7 +158,7 @@ def test_satellite_position_calculation():
             dist_glab = np.sqrt(
                 pos_glab[i][5] ** 2 + pos_glab[i][6] ** 2 + pos_glab[i][7] ** 2
             )
-           
+
             print(
                 f"{pos_brdc[i][0]:5d} {pos_brdc[i][1]:7d} | {pos_brdc[i][2]:3d} {pos_brdc[i][3]:6.0f} | "
                 f"{pos_brdc[i][4].strftime("%H:%M:%S.%f")[:-4]} | "

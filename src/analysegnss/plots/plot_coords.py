@@ -12,7 +12,8 @@ import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
 from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.plots import plot_utm
 from analysegnss.plots.plot_columns import get_utm_columns
-from analysegnss.utils import argument_parser, init_logger
+from analysegnss.utils import init_logger
+from analysegnss.utils.argument_parser import argument_parser_plot_coords
 
 
 def get_origin(parsed_args: list) -> str:
@@ -50,7 +51,7 @@ def plot_coords(argv: list):
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    args_parsed = argument_parser.argument_parser_plot_coords(
+    args_parsed = argument_parser_plot_coords(
         args=argv[1:], script_name=os.path.basename(__file__)
     )
     # print(f"\nParsed arguments: {args_parsed}")

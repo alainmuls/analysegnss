@@ -38,8 +38,8 @@ if [ $# -eq 0 ]; then
 fi
 
 if [ $? -ne 0 ]; then
-  echo "getopt error"
-  exit 2
+    echo "getopt error"
+    exit 2
 fi
 
 eval set -- "${OPTIONS}"

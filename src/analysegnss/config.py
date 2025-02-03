@@ -17,7 +17,6 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Define the path to the geoid file
 GEOID_PATH = os.path.join(BASE_DIR, "gnss", "geoids", "egm2008-1.pgm")
 
-
 # Constants
 # Earth's gravitational constant
 RE_GLO = 6378136.0  # type: ignore # radius of earth (m)            ref [2]
@@ -39,6 +38,7 @@ SECS_IN_WEEK = 604800  # seconds in a week
 
 # speed of light
 C84 = 299792458  # Speed of light m/s
+
 # Error codes
 ERROR_CODES = {
     "E_SUCCESS": 0,

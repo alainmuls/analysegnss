@@ -54,13 +54,14 @@ class GNSSEphemeris:
                 GM = GM_BDS
                 OMGE = OMGE_BDS
             case _:
-                raise ValueError(f"Unknown GNSS: {gnss}")
+                raise ValueError(f"Unknown GNSS: {gnss}")  # type: ignore
 
         # Semi-major axis
         A = self.sqrta * self.sqrta
 
         # Time from ephemeris reference epoch
         tk = t - self.toe
+
         # Mean motion
         n0 = np.sqrt(GM / (A * A * A))
         n = n0 + self.dn
@@ -101,7 +102,7 @@ class GNSSEphemeris:
         # Positions in orbital plane
         xk_orbit = rk * np.cos(uk)
         yk_orbit = rk * np.sin(uk)
-        
+
         # Corrected longitude of ascending node with Earth rotation
         OMEGA_k = self.OMEGA + (self.OMEGA_DOT - OMGE) * tk - OMGE * self.toe
 
@@ -115,13 +116,12 @@ class GNSSEphemeris:
         x = xk_orbit * cos_Omega - yk_orbit * cos_incl * sin_Omega
         y = xk_orbit * sin_Omega + yk_orbit * cos_incl * cos_Omega
         z = yk_orbit * sin_incl
-        
+
         # For BDS the coordinates are in the CGCS system, so convert to WGS84
         if self.gnss == "C":
             x, y, z = self.transform_cgcs_to_wgs84(x, y, z)
-       
-        return x, y, z
 
+        return x, y, z
 
     def is_valid(self, t: float) -> bool:
         """

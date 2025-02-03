@@ -84,7 +84,7 @@ def dt2gnss(dt: str, dt_format: str) -> Tuple[int, float]:
     wn, tow = divmod(gps_seconds, _SECS_IN_WEEK)
     
     return wn, tow
-    
+
 def gpsms2dt(week: int, towms: float) -> datetime:
     """
     :param week: GPS week number, i.e. 1866

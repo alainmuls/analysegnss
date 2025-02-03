@@ -14,6 +14,7 @@
 # **********************************************************************/
 #
 # Geoid height grade not supported
+
 import os
 import mmap
 import struct

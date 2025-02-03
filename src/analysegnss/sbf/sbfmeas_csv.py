@@ -65,7 +65,7 @@ def sbfmeas2csv(argv: list):
 
     # print the DataFrame
     for key, key_df in meas_df.items():
-        print(f"dataframe for {key}")
+        print(f"Dataframe for {key}")
         print(key_df)
         logger.debug(f"dataframe for {key}: \n{key_df}")
 
