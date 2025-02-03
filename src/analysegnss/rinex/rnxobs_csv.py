@@ -48,21 +48,15 @@ def rnxobs_csv(argv: list):
 
     # convert RINEX observation file to CSV file using gfzrnx to tabular observations
     tabobs_dfs = rnxobs.gfzrnx_tabobs()
-    with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
-        for gnss, tabobs_df in tabobs_dfs.items():
-            logger.debug(
-                f"Converted RINEX observation file for {str_green(DICT_GNSS[gnss])} to tabular observation file: \n{tabobs_df}"
-            )
+    for gnss, tabobs_df in tabobs_dfs.items():
+        logger.debug(
+            f"Converted RINEX observation file for {str_green(DICT_GNSS[gnss])} to tabular observation file: \n{tabobs_df}"
+        )
 
     # convert the tabular observations to csv format like rtcm3_parser MSM5/7 does
     csv_df = rnxobs.tabobs_to_csv(result_dfs=tabobs_dfs)
     if logger is not None:
-        with pl.Config(
-            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-        ):
-            logger.warning(
-                f"Converted tabular observation file to CSV file: \n{csv_df}"
-            )
+        logger.warning(f"Converted tabular observation file to CSV file: \n{csv_df}")
 
     # save the CSV file
     if args_parsed.csv_fn is not None:

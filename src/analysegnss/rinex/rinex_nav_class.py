@@ -195,9 +195,6 @@ class RINEX_NAV(RINEX):
         df_all_nav = pl.read_csv(
             StringIO(result.stdout), has_header=False, separator=",", skip_rows=1
         )
-        # with pl.Config(
-        #     tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-        # ):
         #     self.logger.debug(
         #         f"Converted RINEX navigation file to tabular navigation file for "
         #         f"{str_green(', '.join([GNSS_DICT[gnss] for gnss in self.gnss]))}: \n"
@@ -216,9 +213,6 @@ class RINEX_NAV(RINEX):
         # obtained tabular navigation files for selected GNSS systems, process each GNSS sub-DataFrame
         for (gnss, nav_type), tabnav_df in nav_dict.items():
             # if self.logger is not None:
-            #     with pl.Config(
-            #         tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-            #     ):
             #         self.logger.debug(
             #             f"Correcting headers of navigation dataframe for "
             #             f"{str_green(GNSS_DICT[gnss])} - {str_green(nav_type)}: \n"
@@ -248,10 +242,7 @@ class RINEX_NAV(RINEX):
 
             # remove duplicate rows from tabnav_df
             tabnav_df = tabnav_df.unique()
-            with pl.Config(
-                tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-            ):
-                print(f"tabnav_df = \n{tabnav_df}")
+            self.logger.debug(f"tabnav_df = \n{tabnav_df}")
 
             # adjust the DATE/TIME to get WKNR and TOW columns
             tabnav_df = (
@@ -274,12 +265,9 @@ class RINEX_NAV(RINEX):
 
             # sent to logger
             if self.logger is not None:
-                with pl.Config(
-                    tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-                ):
-                    self.logger.debug(
-                        f"tabnav_df[{str_green(DICT_GNSS[gnss])}, {str_green(nav_type)}] = \n{tabnav_df}"
-                    )
+                self.logger.debug(
+                    f"tabnav_df[{str_green(DICT_GNSS[gnss])}, {str_green(nav_type)}] = \n{tabnav_df}"
+                )
 
             # replace the tabnav_df on nav_dict after having renamed the columns
             nav_dict[(gnss, nav_type)] = tabnav_df

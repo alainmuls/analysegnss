@@ -110,21 +110,13 @@ def rtk_pvtgeod(argv: list) -> dict:
             if "DT_right" in df_pvt.columns:
                 df_pvt = df_pvt.drop("DT_right")
 
-            # with pl.Config(
-            #     tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-            # ):
-            #     print(f"[bold green]{df_pvt}")
-
         else:  # only use the PVTGeodetic, no StdDev required
             # extract the PVT Geodetic2 block from SBF file
             df_pvt = sbf.bin2asc_dataframe(
                 lst_sbfblocks=["PVTGeodetic2"], archive=args_parsed.archive
             )["PVTGeodetic2"]
 
-        with pl.Config(
-            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-        ):
-            logger.info(f"  df_pvt: \n{df_pvt}")
+        logger.info(f"  df_pvt: \n{df_pvt}")
 
         # analyse the quality of the solution
         quality_analysis(geod_df=df_pvt, logger=logger)
@@ -146,13 +138,11 @@ def rtk_pvtgeod(argv: list) -> dict:
             )["PosCovCartesian1"]
         else:
             df_xyzcov = None
-        with pl.Config(
-            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-        ):
-            logger.info(f"df_pvt: \n{df_pvt}")
-            logger.info(f"df_xyz: \n{df_xyz}")
-            if df_xyzcov is not None:
-                logger.info(f"df_xyzcov: \n{df_xyzcov}")
+
+        logger.info(f"df_pvt: \n{df_pvt}")
+        logger.info(f"df_xyz: \n{df_xyz}")
+        if df_xyzcov is not None:
+            logger.info(f"df_xyzcov: \n{df_xyzcov}")
 
         return df_pvt
 

@@ -19,7 +19,6 @@ from analysegnss.plots.plot_columns import get_utm_columns
 from analysegnss.plots.plot_fonts import MatplotlibFonts, PlotlyFonts
 
 
-
 # Create a custom formatter that splits date and time
 class CustomDateFormatter(mdates.DateFormatter):
     def __init__(self, fmt="%Y-%m-%d\n%H:%M:%S"):
@@ -47,10 +46,7 @@ def plot_utm_scatter(
         None
     """
     if logger is not None:
-        with pl.Config(
-            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-        ):
-            logger.info(f"utm_df = \n{utm_df}")
+        logger.info(f"utm_df = \n{utm_df}")
 
     # get the correct column names according to the origin
     cols = get_utm_columns(origin)
@@ -140,10 +136,7 @@ def plot_utm_height(
         logger (logging.Logger, optional): logger. Defaults to None.
     """
     if logger is not None:
-        with pl.Config(
-            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-        ):
-            logger.info(f"utm_df = \n{utm_df}")
+        logger.info(f"utm_df = \n{utm_df}")
 
     # get the correct column names according to the origin
     cols = get_utm_columns(origin)

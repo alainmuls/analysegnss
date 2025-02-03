@@ -64,12 +64,7 @@ def cn0_analyse(argv: list):
         df_cn0 = df_cn0.lazy().drop(["C", "L", "D"]).collect()
 
     # print the DataFrame
-    with pl.Config(
-        tbl_cols=-1, tbl_rows=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-    ):
-        # print(f"df_cn0 = {df_cn0}")
-        print(f"df_cn0.head() = {df_cn0.head(n=15)}")
-        print(f"df_cn0.tail() = {df_cn0.tail(n=15)}")
+    print(f"df_cn0 = {df_cn0}")
 
     # Group by epoch and calculate CN0 statistics
     df_mean_cn0 = (
@@ -83,8 +78,7 @@ def cn0_analyse(argv: list):
         .sort(["WKNR", "TOW"])
     )
 
-    with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
-        print((f"df_mean_cn0 = {df_mean_cn0}"))
+    print((f"df_mean_cn0 = {df_mean_cn0}"))
 
     # # Ensure both dataframes have the same time columns
     # df_all_cn0 = df_cn0.join(
@@ -94,8 +88,7 @@ def cn0_analyse(argv: list):
     # ).sort(
     #     ["WKNR", "TOW"]
     # )  # Keep everything nicely ordered
-    # with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
-    #     print((f"df_all_cn0 = {df_all_cn0}"))
+    # print((f"df_all_cn0 = {df_all_cn0}"))
 
     # TEST START
     import matplotlib

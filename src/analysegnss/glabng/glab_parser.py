@@ -31,7 +31,6 @@ def parse_glab_section(
     # parse the OUTPUT section of glab file
     glab_dfs = glab.glab_dataframe(lst_sections=section)
 
-    # with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
     #     for section, df_section in glab_dfs.items():
     #         print(f"dataframe from [green][bold]{section}[/bold][/green] section")
     #         print(df_section)
@@ -69,10 +68,10 @@ def glab_parser(argv: list) -> dict[str, pl.DataFrame]:
 
 def main():
     dfs_glab = glab_parser(argv=sys.argv)
-    with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
-        for section, df_section in dfs_glab.items():
-            print(f"dataframe from [green][bold]{section}[/bold][/green] section")
-            print(df_section)
+
+    for section, df_section in dfs_glab.items():
+        print(f"dataframe from [green][bold]{section}[/bold][/green] section")
+        print(df_section)
 
 
 if __name__ == "__main__":

@@ -350,9 +350,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
         logger.error("No processing type selected or no input file provided. EXITING.")
         sys.exit(ERROR_CODES["E_FILE_NOT_EXIST"])
 
-    with pl.Config(tbl_cols=-1):
-        logger.debug(df_pos)
-        # print(df_pos)
+    logger.debug(df_pos)
 
     # read the timings for the ebh_lines
     ebh_timings = read_ebh_line_timings(

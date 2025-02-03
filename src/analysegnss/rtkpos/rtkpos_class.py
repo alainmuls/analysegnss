@@ -159,9 +159,6 @@ class Rtkpos:
         # add columns to the dataframe
         pos_df = self.add_columns(df_pos=pos_df)
 
-        # with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
-        #     print(f"pos_df = \n{pos_df.collect()}")
-
         return processing_info, pos_df
 
     def rtkpos_schema(self) -> dict:

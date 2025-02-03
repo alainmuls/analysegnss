@@ -106,15 +106,12 @@ def plot_coords(argv: list):
             ]
             dfs_glab = glab_parser.glab_parser(argv=glab_parser_args)
 
-            with pl.Config(
-                tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-            ):
-                for section, df_section in dfs_glab.items():
-                    if section == "OUTPUT":
-                        print(
-                            f"dataframe from [green][bold]{section}[/bold][/green] section"
-                        )
-                        print(df_section)
+            for section, df_section in dfs_glab.items():
+                if section == "OUTPUT":
+                    print(
+                        f"dataframe from [green][bold]{section}[/bold][/green] section"
+                    )
+                    print(df_section)
 
             df_origin = dfs_glab["OUTPUT"]
 
@@ -158,12 +155,9 @@ def plot_coords(argv: list):
             ]
         )
     # select the columns needed for the plot
-    with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
-        print(f"=====================\ndf_utm = \n{df_utm}\n=====================")
-
-    with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
-        if logger is not None:
-            logger.info(f"df_utm = \n{df_utm}")
+    print(f"=====================\ndf_utm = \n{df_utm}\n=====================")
+    if logger is not None:
+        logger.info(f"df_utm = \n{df_utm}")
 
     # find filename and directory from the position file
     # ifn_full = args_parsed.pos_ifn if args_parsed.pos_ifn else args_parsed.sbf_ifn
