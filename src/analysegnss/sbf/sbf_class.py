@@ -226,7 +226,7 @@ class SBF:
         run_bin2asc = locate("bin2asc")
         if self.logger:
             self.logger.info(
-                f"{str_yellow(run_bin2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files "
+                f"{str_yellow(run_bin2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files\n"
                 f"and importing into dataframes for SBF blocks: {str_yellow(' '.join(lst_sbfblocks))}"
             )
 
@@ -313,15 +313,6 @@ class SBF:
 
                 # remove unused columns
                 keep_cols = self.used_columns(sbf_block)
-                # self.logger.info(f"list(keep_cols.keys()) = \n{list(keep_cols.keys())}")
-                if self.logger:
-                    self.logger.debug(
-                        f"\t... converting {str_yellow(bin2asc_fn)} to dataframe"
-                    )
-
-                # remove unused columns
-                keep_cols = self.used_columns(sbf_block)
-                # print(f"list(keep_cols.keys()) = \n{list(keep_cols.keys())}")
 
                 print(f"{bin2asc_fn = }")
                 # read csv file into dataframe
@@ -553,9 +544,11 @@ class SBF:
 
         # add date-time and PRN (as str) to the dataframe
         if (
-            "SVID" in block_df.columns
-            and not block_df.select(pl.col("SVID")).dtypes[0] == pl.String
+            "SVID"
+            in block_df.columns
+            # and not block_df.select(pl.col("SVID")).dtypes[0] == pl.String
         ):
+            # TODO: correct the int into string or vice versa
             if self.logger:
                 self.logger.debug("\tadding PRN column to the dataframe")
             block_df = block_df.with_columns(
@@ -566,9 +559,9 @@ class SBF:
                 )
                 .alias("PRN")
             ).lazy()
-        else:
-            # rename the column to PRN
-            block_df = block_df.rename({"SVID": "PRN"}).lazy()
+        # else:
+        #     # rename the column to PRN
+        #     block_df = block_df.rename({"SVID": "PRN"}).lazy()
 
         # add UTM coordinates
         if (
@@ -653,24 +646,30 @@ class SBF:
                 list: column names we use
         """
         if sbf_block == "MeasEpoch2":
-            keep_cols = [
-                "TOW [0.001 s]",
-                "WNc [w]",
-                "CumClkJumps [0.001 s]",
-                "SVID",
-                "MeasType",
-                "LockTime [s]",
-                "SignalType",
-                "CN0_dBHz [dB-Hz]",
-                "PR_m [m]",
-                "Doppler_Hz",
-                "L_cycles [cyc]",
-            ]
+            col_types = {
+                pl.UInt32: [
+                    "TOW [0.001 s]",
+                ],
+                pl.UInt16: [
+                    "WNc [w]",
+                    "MeasType",
+                    "Antenna ID",
+                    "SignalType",
+                    "LockTime [s]",
+                ],
+                pl.String: ["SVID"],
+                pl.Float64: [
+                    "CN0_dBHz [dB-Hz]",
+                    "PR_m [m]",
+                    "Doppler_Hz",
+                    "L_cycles [cyc]",
+                ],
+            }
         elif sbf_block == "Meas3Ranges":
             # dict of columns to keep and column type
             col_types = {
                 pl.Float32: ["TOW [s]"],
-                pl.UInt16: ["WNc [w]"],  # , "LockTime [s]"
+                pl.UInt16: ["WNc [w]", "LockTime [s]"],
                 pl.String: ["SVID", "SignalType", "Antenna ID"],
                 pl.Float64: [
                     "PR [m]",
