@@ -321,6 +321,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
         # print(
         #    f"Dataframe obtained from {str_yellow('PPK')} processing of {str_yellow(parsed_args.pos_ifn)}"
         # )
+
         df_pos = pos_df.select(
             [
                 "DT",
@@ -359,8 +360,10 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
 
     # calculate the map_angle for each ebh_line
     ebh_lines_map_angle(df_pos=df_pos, ebh_timings=ebh_timings, logger=logger)
+
     # only keep the ebh_timings rows that have the calculated angle timings[2]
     ebh_timings = {key: value for key, value in ebh_timings.items() if len(value) == 3}
+
     for ebh_key, timings in ebh_timings.items():
         logger.info(
             f"{ebh_key:9s}: {timings[0].strftime('%Y/%m/%d %H:%M:%S')}"

@@ -127,8 +127,8 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
     help_txt = (
         baseName
         + """: Plot UTM scatter and line plots from data files.
-        
-        Note: The plotting options --sbf_fn, --pos_fn, and --glib_fn are mutually exclusive. 
+
+        Note: The plotting options --sbf_fn, --pos_fn, and --glib_fn are mutually exclusive.
         You must choose exactly one of these options."""
     )
 

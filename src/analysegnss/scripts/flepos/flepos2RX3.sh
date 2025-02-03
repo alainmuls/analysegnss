@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 # Script to convert FLEPOS data to RX3 format
 
 # Add proper error handling

@@ -177,47 +177,47 @@ def plot_coords(argv: list):
     # plot the UTM and orthoH coordinates
     if args_parsed.mpl == False:
         with rich_console.status(f"Creating UTM scatter plot.\t", spinner="aesthetic"):
-            # use plotly for creating html plots
-            plot_utm.plot_utm_scatter(
-                utm_df=df_utm,
-                origin=origin,
-                ifn=filename_in,
-                dir_fn=dir_fn,
-                logger=logger,
-                display=args_parsed.display,
-            )
+		    # use plotly for creating html plots
+		    plot_utm.plot_utm_scatter(
+		        utm_df=df_utm,
+		        origin=origin,
+		        ifn=filename_in,
+		        dir_fn=dir_fn,
+		        logger=logger,
+		        display=args_parsed.display,
+		    )
 
         with rich_console.status(f"Creating NEU vs DT plot.\t", spinner="aesthetic"):
-            plot_utm.plot_utm_height(
-                utm_df=df_utm,
-                origin=origin,
-                ifn=filename_in,
-                dir_fn=dir_fn,
-                sd=args_parsed.sd,
-                logger=logger,
-                display=args_parsed.display,
-            )
+		    plot_utm.plot_utm_height(
+		        utm_df=df_utm,
+		        origin=origin,
+		        ifn=filename_in,
+		        dir_fn=dir_fn,
+		        sd=args_parsed.sd,
+		        logger=logger,
+		        display=args_parsed.display,
+		    )
     else:
         with rich_console.status(f"Creating UTM scatter plot.\t", spinner="aesthetic"):
-            plot_utm.plot_utm_scatter_mpl(
-                utm_df=df_utm,
-                origin=origin,
-                ifn=filename_in,
-                dir_fn=dir_fn,
-                logger=logger,
-                display=args_parsed.display,
-            )
+		    plot_utm.plot_utm_scatter_mpl(
+		        utm_df=df_utm,
+		        origin=origin,
+		        ifn=filename_in,
+		        dir_fn=dir_fn,
+		        logger=logger,
+		        display=args_parsed.display,
+		    )
 
         with rich_console.status(f"Creating NEU vs DT plot.\t", spinner="aesthetic"):
-            plot_utm.plot_utm_height_mpl(
-                utm_df=df_utm,
-                origin=origin,
-                ifn=filename_in,
-                dir_fn=dir_fn,
-                sd=args_parsed.sd,
-                logger=logger,
-                display=args_parsed.display,
-            )
+		    plot_utm.plot_utm_height_mpl(
+		        utm_df=df_utm,
+		        origin=origin,
+		        ifn=filename_in,
+		        dir_fn=dir_fn,
+		        sd=args_parsed.sd,
+		        logger=logger,
+		        display=args_parsed.display,
+		    )
 
 
 def main():

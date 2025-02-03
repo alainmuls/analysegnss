@@ -5,8 +5,6 @@ from rich import print
 
 from src.analysegnss.config import GPS_BDS_WEEK_DIFF
 
-# from src.analysegnss.gnss.GLONASSEphemeris import GLONASSEphemeris
-# from src.analysegnss.gnss.GNSSephemeris import GNSSEphemeris
 from src.analysegnss.gnss.GNSSNavReader import GNSSNavReader
 from src.analysegnss.gnss.gnss_dt import gnss2dt
 from src.analysegnss.config import ERROR_CODES

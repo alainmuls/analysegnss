@@ -51,10 +51,10 @@ class SBF:
                     f'Invalid file type, first two bytes must be "$@" for file: {self.sbf_fn}'
                 )
         """
-            raise ValueError(
-                f'File type is not valid, first two bytes must be "$@": {self.sbf_fn}'
-            )
-        """
+			raise ValueError(
+				f'File type is not valid, first two bytes must be "$@": {self.sbf_fn}'
+			)
+		"""
 
         if self.logger:
             self.logger.debug(f"File validated successfully: {self.sbf_fn}")
@@ -213,14 +213,14 @@ class SBF:
         lst_sbfblocks and load these files in dataframes
 
         Arguments:
-            lst_sbfblocks: list of SBF blocks to convert to a dataframe
-            (Remark; sbfblocks starting with Meas3... are not decoded using bin2asc)
+                lst_sbfblocks: list of SBF blocks to convert to a dataframe
+                (Remark; sbfblocks starting with Meas3... are not decoded using bin2asc)
 
         Raises:
-            Exception when the bin2asc program fails
+                Exception when the bin2asc program fails
 
         Returns:
-            dict of sbfblocks and corresponding dataframes
+                dict of sbfblocks and corresponding dataframes
         """
         # sbf to CSV conversion utility
         run_bin2asc = locate("bin2asc")
@@ -248,6 +248,7 @@ class SBF:
         if self.end_time is not None:
             cmd_bin2asc.append("-e")
             cmd_bin2asc.append(self.end_time.strftime("%H:%M:%S"))
+
         # # add logging level to cmd_bin2asc when self._console_loglevel is DEBUG
         # if self._console_loglevel == logging.DEBUG:
         #     cmd_bin2asc.append("-v")
@@ -365,14 +366,14 @@ class SBF:
         This is not the case for bin2asc
 
         Arguments:
-            lst_sbfblocks: list of SBF blocks to convert to a dataframe
-            (Remark; sbfblocks starting with Meas3... are not decoded using bin2asc)
+                lst_sbfblocks: list of SBF blocks to convert to a dataframe
+                (Remark; sbfblocks starting with Meas3... are not decoded using bin2asc)
 
         Raises:
-            Exception when the bin2asc program fails
+                Exception when the bin2asc program fails
 
         Returns:
-            dict of sbfblocks and corresponding dataframes
+                dict of sbfblocks and corresponding dataframes
         """
         # sbf to CSV conversion utility
         run_sbf2asc = locate("sbf2asc")
@@ -381,6 +382,7 @@ class SBF:
                 f"sbf2asc not found in PATH. Please install sbf2asc. Program exits."
             )
             sys.exit(ERROR_CODES["E_PROCESS"])
+
         if self.logger:
             self.logger.info(
                 f"{str_yellow(run_sbf2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files "
@@ -402,6 +404,7 @@ class SBF:
             )  # this comes after the -o argument so a correct output file is created
             sbf2asc_block = self.sbf2asc_convert_sbfblock(sbf_block=sbf_block)
             cmd_sbf2asc.append(sbf2asc_block)
+
         # add logging level to cmd_sbf2asc when self._console_loglevel is DEBUG
         if self._console_loglevel == logging.DEBUG:
             cmd_sbf2asc.append("-v")
@@ -508,10 +511,10 @@ class SBF:
         """checks if we can create a datetime,PRN, UTM columns in the dataframe
 
         Args:
-            block_df (pl.DataFrame): dataframe corresponding to a SBF block
+                block_df (pl.DataFrame): dataframe corresponding to a SBF block
 
         Returns:
-            pl.DataFrame: dataframe with datetime and PRN columns added if possible
+                pl.DataFrame: dataframe with datetime and PRN columns added if possible
         """
         # print(f"block_df = \n{block_df}")
         # remove the rows where 'Type' equals 0 (no PVT available)
@@ -644,10 +647,10 @@ class SBF:
         """returns the column names we use when extracting a SBF block from the SBF file
 
         Args:
-            sbf_block (str): the SBF block we are extracting
+                sbf_block (str): the SBF block we are extracting
 
         Returns:
-            list: column names we use
+                list: column names we use
         """
         if sbf_block == "MeasEpoch2":
             keep_cols = [
@@ -797,7 +800,6 @@ class SBF:
                     "WNc [w]",
                 ],
             }
-
         elif sbf_block == "Comment1":
             col_types = {
                 pl.UInt32: [
@@ -840,10 +842,10 @@ class SBF:
         """Convert covariance matrix to standard deviation
 
         Args:
-            df_cov (pl.DataFrame): df with covariance diagonal elements
+                df_cov (pl.DataFrame): df with covariance diagonal elements
 
         Returns:
-            pl.DataFrame: df with standard deviations
+                pl.DataFrame: df with standard deviations
         """
         # Define column name mapping
         rename_map = {
@@ -869,10 +871,10 @@ class SBF:
         """This looks up which sbf2asc argument belongs to which sbfblock
 
         Arguments:
-            lst_sbfblocks: list of SBF blocks to convert to a dataframe
+                lst_sbfblocks: list of SBF blocks to convert to a dataframe
 
         Returns:
-            str of correspond sbfblock argument for sbf2asc cli program
+                str of correspond sbfblock argument for sbf2asc cli program
         """
 
         if self.logger is not None:
@@ -903,13 +905,13 @@ class SBF:
         This function looks up the column names for each sbf block
 
         Arguments:
-            lst_sbfblocks: list of SBF blocks to convert to a dataframe
+                lst_sbfblocks: list of SBF blocks to convert to a dataframe
 
         Raises:
-            Exception when the sbf2asc program fails
+                Exception when the sbf2asc program fails
 
         Returns:
-            list of correct column names for each sbfblocks
+                list of correct column names for each sbfblocks
         """
         print(
             "sbf2asc is chosen as sbf converter. Looking up corresponding column names for each sbf block"

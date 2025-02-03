@@ -243,7 +243,6 @@ class RINEX_OBS(RINEX):
                                 "PRN": df["PRN"].str.extract(r"(\d+)").cast(pl.Int16),
                                 "cfreq": f"L{freq}",
                                 "sigt": f"{freq}{sigt}",
-
                                 "C": (
                                     pl.Series([None] * len(df))
                                     if f"C{freq}{sigt}" not in df.columns

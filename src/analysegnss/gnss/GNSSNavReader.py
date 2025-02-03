@@ -66,7 +66,7 @@ class GNSSNavReader:
                         eph.health = float(row["SatH1"])
 
                 try:
-                    eph.IODE = int(float(row["IODE"]))
+                eph.IODE = int(float(row["IODE"]))
                 except KeyError:
                     eph.IODE = None
 
