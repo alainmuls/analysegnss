@@ -46,10 +46,7 @@ def plot_utm_scatter(
         None
     """
     if logger is not None:
-        with pl.Config(
-            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-        ):
-            logger.info(f"utm_df = \n{utm_df}")
+        logger.info(f"utm_df = \n{utm_df}")
 
     # get the correct column names according to the origin
     cols = get_utm_columns(origin)
@@ -139,10 +136,7 @@ def plot_utm_height(
         logger (logging.Logger, optional): logger. Defaults to None.
     """
     if logger is not None:
-        with pl.Config(
-            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-        ):
-            logger.info(f"utm_df = \n{utm_df}")
+        logger.info(f"utm_df = \n{utm_df}")
 
     # get the correct column names according to the origin
     cols = get_utm_columns(origin)
