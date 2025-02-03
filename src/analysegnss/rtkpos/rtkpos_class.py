@@ -270,7 +270,7 @@ class Rtkpos:
             # add date-time and PRN (as str) to the dataframe
             if "WNc" in df_pos.columns and "TOW(s)" in df_pos.columns:
                 if self.logger is not None:
-		            self.logger.debug("\tadding datetime to the dataframe")
+                    self.logger.debug("\tadding datetime to the dataframe")
                 df_pos = df_pos.with_columns(
                     pl.struct(["WNc", "TOW(s)"])
                     .apply(
@@ -283,7 +283,7 @@ class Rtkpos:
             # add UTM coordinates
             if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
                 if self.logger is not None:
-                self.logger.debug("\tadding UTM coordinates to the dataframe")
+                    self.logger.debug("\tadding UTM coordinates to the dataframe")
 
                 # Function to convert lat/lon in degrees to UTM
                 def latlon_to_utm(lat, lon):
@@ -321,7 +321,7 @@ class Rtkpos:
             # add geoid undulation and orthometric height
             if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
                 if self.logger is not None:
-                self.logger.debug(
+                    self.logger.debug(
                         "\tadding geoid undulation & orthometric height to the dataframe"
                     )
                 # initialise the geodheight class
@@ -355,8 +355,10 @@ class Rtkpos:
                     )
                     .alias("orthoH")
                 ).lazy()
-		    if self.logger is not None:
-		        self.logger.info(f"\tcollecting the dataframe. {str_red('Be patient.')}")
+            if self.logger is not None:
+                self.logger.info(
+                    f"\tcollecting the dataframe. {str_red('Be patient.')}"
+                )
 
             try:
                 df_pos = df_pos.collect()

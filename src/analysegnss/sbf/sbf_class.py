@@ -283,13 +283,17 @@ class SBF:
             if sbf_block != "Meas3Ranges":
                 bin2asc_fns[sbf_block] = glob.glob(
                     rf"{self.sbf_fn}_SBF_{sbf_block}.txt"
-                )
+                )[0]
             else:
-                bin2asc_fns[sbf_block] = glob.glob(rf"{self.sbf_fn}_measurements.txt")
+                bin2asc_fns[sbf_block] = glob.glob(rf"{self.sbf_fn}_measurements.txt")[
+                    0
+                ]
         print(f"bin2asc_fns: {bin2asc_fns}")
 
         # create dictionary for containing the obtained dataframes
         sbf_dfs = {}
+
+        print(f"{bin2asc_fns = }")
 
         # iterate over the CVS files and convert them to dataframe
         for sbf_block, bin2asc_fn in bin2asc_fns.items():
@@ -297,51 +301,53 @@ class SBF:
             if len(bin2asc_fn) == 0:
                 if self.logger:
                     self.logger.warning(
-                        f"\t... no file for {str_yellow({sbf_block})} sbf block found. Continuing to next sbf block."
+                        f"\t... no file for {str_yellow({sbf_block})} sbf block found. "
+                        f"Continuing to next sbf block."
                     )
             else:
                 if self.logger:
                     self.logger.debug(
-                        f"\t... converting {str_yellow(bin2asc_fn[0])} to dataframe"
+                        f"\t... converting {str_yellow(bin2asc_fn)} to dataframe"
                     )
 
                 # remove unused columns
                 keep_cols = self.used_columns(sbf_block)
                 # self.logger.info(f"list(keep_cols.keys()) = \n{list(keep_cols.keys())}")
-            if self.logger:
-                self.logger.debug(
-                    f"\t... converting {str_yellow(bin2asc_fn[0])} to dataframe"
-                )
+                if self.logger:
+                    self.logger.debug(
+                        f"\t... converting {str_yellow(bin2asc_fn)} to dataframe"
+                    )
 
-            # remove unused columns
-            keep_cols = self.used_columns(sbf_block)
-            # print(f"list(keep_cols.keys()) = \n{list(keep_cols.keys())}")
+                # remove unused columns
+                keep_cols = self.used_columns(sbf_block)
+                # print(f"list(keep_cols.keys()) = \n{list(keep_cols.keys())}")
 
-            with rich_console.status(
-                f"[bold green]Reading from CSV file ({sbf_block})...",
-                spinner="aesthetic",
-            ):
-                sbf_df = pl.read_csv(
-                    # TODO: Why [0]?
-                    source=bin2asc_fn[0],
-                    separator=",",
-                    columns=list(keep_cols.keys()),
-                    comment_prefix="#",
-                    has_header=True,
-                    skip_rows_after_header=1,  # Skip 1 row after the header
-                    dtypes=keep_cols,
-                    null_values="NaN",
-                )
+                print(f"{bin2asc_fn = }")
+                # read csv file into dataframe
+                with rich_console.status(
+                    f"[bold green]Reading from CSV file ({sbf_block})...",
+                    spinner="aesthetic",
+                ):
+                    sbf_df = pl.read_csv(
+                        source=bin2asc_fn,
+                        separator=",",
+                        columns=list(keep_cols.keys()),
+                        comment_prefix="#",
+                        has_header=True,
+                        skip_rows_after_header=1,  # Skip 1 row after the header
+                        dtypes=keep_cols,
+                        null_values="NaN",
+                    )
 
-                # add columns to the dataframe
-                sbf_df = self.add_columns(block_df=sbf_df)
+                    # add columns to the dataframe
+                    sbf_df = self.add_columns(block_df=sbf_df)
 
-            sbf_dfs[sbf_block] = sbf_df
+                sbf_dfs[sbf_block] = sbf_df
 
-            print(f"archive = {archive}")
-            # archiving the converted sbf file
-            if not archive == None:
-                self.archive_file(fn=bin2asc_fn[0], dest_dir=archive)
+                # print(f"archive = {archive}")
+                # archiving the converted sbf file
+                if not archive == None:
+                    self.archive_file(fn=bin2asc_fn, dest_dir=archive)
 
         if sbf_dfs == {}:
             if self.logger:
@@ -530,7 +536,23 @@ class SBF:
             ).lazy()
 
         # add date-time and PRN (as str) to the dataframe
-        if "SVID" in block_df.columns:
+        if "WNc [w]" in block_df.columns and "TOW [s]" in block_df.columns:
+            if self.logger:
+                self.logger.debug("\tadding datetime column to the dataframe")
+            block_df = block_df.with_columns(
+                pl.struct(["WNc [w]", "TOW [s]"])
+                .map_elements(
+                    lambda x: gpsms2dt(week=x["WNc [w]"], towms=x["TOW [s]"]),
+                    return_dtype=pl.Datetime,
+                )
+                .alias("DT")
+            ).lazy()
+
+        # add date-time and PRN (as str) to the dataframe
+        if (
+            "SVID" in block_df.columns
+            and not block_df.select(pl.col("SVID")).dtypes[0] == pl.String
+        ):
             if self.logger:
                 self.logger.debug("\tadding PRN column to the dataframe")
             block_df = block_df.with_columns(
@@ -541,6 +563,9 @@ class SBF:
                 )
                 .alias("PRN")
             ).lazy()
+        else:
+            # rename the column to PRN
+            block_df = block_df.rename({"SVID": "PRN"}).lazy()
 
         # add UTM coordinates
         if (
@@ -642,14 +667,13 @@ class SBF:
             # dict of columns to keep and column type
             col_types = {
                 pl.Float32: ["TOW [s]"],
-                pl.UInt16: ["WNc [w]", "LockTime [s]"],
+                pl.UInt16: ["WNc [w]"],  # , "LockTime [s]"
                 pl.String: ["SVID", "SignalType", "Antenna ID"],
                 pl.Float64: [
                     "PR [m]",
                     "L [cyc]",
                     "Doppler [Hz]",
                     "C/N0 [dB-Hz]",
-                    "LockTime [s]",
                 ],
             }
         elif sbf_block == "PVTCartesian2":
