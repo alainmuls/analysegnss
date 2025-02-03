@@ -64,13 +64,9 @@ def sbfmeas2csv(argv: list):
         )
 
     # print the DataFrame
-    with pl.Config(
-        tbl_cols=-1, tbl_rows=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-    ):
-        for key in meas_df.keys():
-            print(f"key: {key}")
-            print(meas_df[key].head())
-            print(meas_df[key].tail())
+    for key, key_df in meas_df.items():
+        print(f"Dataframe for {key}")
+        print(key_df)
 
 
 def main():
