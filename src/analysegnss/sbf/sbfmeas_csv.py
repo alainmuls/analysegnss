@@ -57,11 +57,19 @@ def sbfmeas2csv(argv: list):
     # Check if all required blocks are present
     meas3_present = all(block in sbf_blocks for block in required_blocks)
     print(f"meas3_present: {meas3_present}")
-    if meas3_present:
+    if meas3_present and False:
         logger.debug("Converting measurements using Meas3 blocks")
         meas_df = sbf.bin2asc_dataframe(
             lst_sbfblocks=["Meas3Ranges"], archive=args_parsed.archive
         )
+    elif "MeasEpoch2" in sbf_blocks:
+        logger.debug("Converting measurements using MeasEpoch2 block")
+        meas_df = sbf.bin2asc_dataframe(
+            lst_sbfblocks=["MeasEpoch2"], archive=args_parsed.archive
+        )
+    else:
+        logger.error("No Meas3 or MeasEpoch2 blocks found in SBF file. Exiting.")
+        sys.exit(ERROR_CODES["E_SBF_BLOCKS"])
 
     # print the DataFrame
     for key, key_df in meas_df.items():
