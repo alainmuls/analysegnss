@@ -17,7 +17,10 @@ from analysegnss.utils.utilities import str_red, str_green
 
 
 def convert_meas3_csv(
-    df_meas: dict, parsed_args: argparse.Namespace, logger: logging.Logger = None
+    df_meas: dict,
+    parsed_args: argparse.Namespace,
+    origin: str,
+    logger: logging.Logger = None,
 ) -> None:
     """converts the Meas3 dataframe to CSV file similar to those created by rtcm3_parser.py
 
@@ -43,7 +46,7 @@ def convert_meas3_csv(
     # create the CSV dataframe
     df_csv = (
         df_meas["Meas3Ranges"]
-        .filter(pl.col("Antenna ID") != "main")
+        .filter(pl.col("Antenna ID").str.to_lowercase() == "main")
         .with_columns(
             [
                 pl.col("SignalType")
@@ -56,7 +59,7 @@ def convert_meas3_csv(
                 .str.to_uppercase()
                 .map_dict(signal_mapping)
                 .alias("sigt"),
-                pl.col("PRN").str.slice(-2).cast(pl.UInt16).alias("PRN"),
+                pl.col("PRN").str.slice(-2).alias("PRN"),
                 (pl.col("TOW [s]") * 1000).cast(pl.UInt32).alias("TOW"),
             ]
         )
@@ -122,6 +125,97 @@ def convert_meas3_csv(
     except ColumnNotFoundError:
         df_csv = df_csv.drop("SignalType ")
 
+    convert_dataframe_csv(
+        df_csv=df_csv, parsed_args=parsed_args, origin=origin, logger=logger
+    )
+
+
+def convert_meas_epoch2_csv(
+    df_meas: dict,
+    parsed_args: argparse.Namespace,
+    origin: str,
+    logger: logging.Logger = None,
+) -> None:
+    """converts the MeasEpoch2 dataframe to CSV file similar to those created by rtcm3_parser.py
+
+    Args:
+        df_meas (dict): dict with key=sbf_block, and value the dataframe
+        parsed_args (argparse.Namespace): parsed arguments
+        logger (Logging.logger): logger object
+
+    # Returns:
+    #     pl.DataFrame: converted dataframe
+    """
+    # check that Key "MeasEpoch2" is in the dictionary
+    if "MeasEpoch2" not in df_meas.keys():
+        raise ValueError("Key 'MeasEpoch2' not in dataframe dictionary")
+
+    print(df_meas)
+
+    # Create mapping dictionary from MeasType to code
+    sigtype_mapping = {k: v["code"] for k, v in DICT_SIGNAL_TYPES.items()}
+    # Create mapping dictionary from MeasType to code
+    signal_mapping = {k: v["type"][:2] for k, v in DICT_SIGNAL_TYPES.items()}
+    # Convert parsed_args.gnss string into a list of characters to match
+    gnss_list = list(parsed_args.gnss)
+
+    # Add the mapping in the DataFrame operations and perform filter and rename operations
+    df_csv = (
+        df_meas["MeasEpoch2"]
+        .filter(pl.col("Antenna ID") == 0)
+        .with_columns(
+            [
+                pl.col("MeasType").map_dict(sigtype_mapping).alias("sigt"),
+                pl.col("SignalType").map_dict(signal_mapping).alias("cfreq"),
+                pl.col("PRN")
+                .str.slice(length=1, offset=0)
+                .cast(pl.String)
+                .alias("GNSS"),
+                pl.col("PRN").str.slice(-2).alias("PRN"),
+            ],
+        )
+        .filter(pl.col("GNSS").is_in(gnss_list))
+        .rename(
+            {
+                "WNc [w]": "WKNR",
+                "PR_m [m]": "C",
+                "L_cycles [cyc]": "L",
+                "Doppler_Hz": "D",
+                "CN0_dBHz [dB-Hz]": "S",
+                "LockTime [s]": "locktime",
+                "TOW [0.001 s]": "TOW",
+            }
+        )
+        .drop(["MeasType", "Antenna ID", "SignalType"])
+        .select(
+            [
+                "GNSS",
+                "WKNR",
+                "TOW",
+                "PRN",
+                "cfreq",
+                "sigt",
+                "C",
+                "L",
+                "D",
+                "S",
+                "locktime",
+            ]
+        )
+        .lazy()
+    ).collect()
+
+    convert_dataframe_csv(
+        df_csv=df_csv, parsed_args=parsed_args, origin=origin, logger=logger
+    )
+
+
+def convert_dataframe_csv(
+    df_csv: pl.DataFrame,
+    parsed_args: argparse.Namespace,
+    origin: str,
+    logger: logging.Logger = None,
+) -> None:
     # sort the entries based on WKNR and TOW
     df_csv = df_csv.sort(["WKNR", "TOW"])
 
@@ -142,7 +236,7 @@ def convert_meas3_csv(
             print(f"CSV file written to [bold green]{parsed_args.csv_ofn}[/bold green]")
         else:
             # change the "." into "_" and add _meas.csv to sbf_ifn
-            csv_ofn = parsed_args.sbf_ifn.replace(".", "_") + "_meas.csv"
+            csv_ofn = parsed_args.sbf_ifn.replace(".", "_") + f"_{origin}.csv"
             df_csv.write_csv(csv_ofn)
             if logger is not None:
                 logger.info(f"CSV file written to {str_green(csv_ofn)}")
@@ -197,13 +291,15 @@ def sbfmeas2csv(argv: list):
     # Check if all required blocks are present
     meas3_present = all(block in sbf_blocks for block in required_blocks)
     # print(f"meas3_present: {meas3_present}")
-    if meas3_present:  # and False:
+    if meas3_present and False:
         logger.debug("Converting measurements using Meas3 blocks")
         meas_df = sbf.bin2asc_dataframe(
             lst_sbfblocks=["Meas3Ranges"], archive=args_parsed.archive
         )
         try:
-            convert_meas3_csv(df_meas=meas_df, parsed_args=args_parsed, logger=logger)
+            convert_meas3_csv(
+                df_meas=meas_df, parsed_args=args_parsed, origin="meas3", logger=logger
+            )
         except ValueError as e:
             logger.error(e)
             sys.exit(ERROR_CODES["E_FAILURE"])
@@ -213,6 +309,17 @@ def sbfmeas2csv(argv: list):
         meas_df = sbf.bin2asc_dataframe(
             lst_sbfblocks=["MeasEpoch2"], archive=args_parsed.archive
         )
+        try:
+            convert_meas_epoch2_csv(
+                df_meas=meas_df,
+                parsed_args=args_parsed,
+                origin="measepoch2",
+                logger=logger,
+            )
+        except ValueError as e:
+            logger.error(e)
+            sys.exit(ERROR_CODES["E_FAILURE"])
+
     else:
         logger.error("No Meas3 or MeasEpoch2 blocks found in SBF file. Exiting.")
         sys.exit(ERROR_CODES["E_SBF_BLOCKS"])
