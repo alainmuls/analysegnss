@@ -1,5 +1,4 @@
 # Standard library imports
-import argparse
 from collections import defaultdict
 from dataclasses import dataclass, field
 import datetime
@@ -15,8 +14,11 @@ from rich.console import Console
 import utm
 
 # Local application imports
-from analysegnss.utils import argument_parser, init_logger
+from analysegnss.utils.utilities import sf64, si64
 
+#TODO Only NMEA RMC contains the datestamp, so if this message is not present, the datetime can not be generated
+#   This should raise an error or warning and enable the user to add the date manually
+#   The NMEA ZDA message also contains the date, however day, month and year are in separate fields ...
 
 @dataclass
 class NMEA:
@@ -106,7 +108,8 @@ class NMEA:
             # update existing list of dictionaries if timestamp already exists
             msg_entry = data_dict[timestamp]
 
-            # TODO cast msg to correct dtype
+            # pynmea2 doesn't always cast the values to the correct dtype, so some values need to be manually casted
+            # we cast the values to the correct dtype now during the nmea data collection because we don't know which NMEA messages are available
             # Eventhough the timestamp is already saved as the key, we still store it also as a value for easier converion to dataframe
             if isinstance(msg, pynmea2.types.talker.RMC):
                 msg_entry.update(
@@ -126,10 +129,10 @@ class NMEA:
                         "latitude(deg)": msg.latitude,
                         "longitude(deg)": msg.longitude,
                         "orthoH": msg.altitude,
-                        "undulation": msg.geo_sep,
-                        "num_sats": msg.num_sats,
-                        "pvt_qual": msg.gps_qual,
-                        "age(s)": msg.age_gps_data,
+                        "undulation": sf64(msg.geo_sep),
+                        "num_sats": si64(msg.num_sats),
+                        "pvt_qual": si64(msg.gps_qual),
+                        "age(s)": sf64(msg.age_gps_data),
                     }
                 )
             elif isinstance(msg, pynmea2.types.talker.GNS):
@@ -139,22 +142,22 @@ class NMEA:
                         "latitude(deg)": msg.latitude,
                         "longitude(deg)": msg.longitude,
                         "orthoH": msg.altitude,
-                        "undulation": msg.geo_sep,
-                        "num_sats": msg.num_sats,
-                        "age(s)": msg.age_gps_data,
+                        "undulation": sf64(msg.geo_sep),
+                        "num_sats": si64(msg.num_sats),
+                        "age(s)": sf64(msg.age_gps_data),
                     }
                 )
             elif isinstance(msg, pynmea2.types.talker.GST):
                 msg_entry.update(
                     {
                         "timestamp": timestamp,
-                        "rms_val": msg.rms_val,
-                        "std_major(m)": msg.std_major,
-                        "std_minor(m)": msg.std_minor,
-                        "orientation_a(degrees_from_true_north)": msg.orient,
-                        "sdlat(m)": msg.std_latitude,
-                        "sdlon(m)": msg.std_longitude,
-                        "sdH(m)": msg.std_dev_altitude,
+                        "rms_val": sf64(msg.rms_val),
+                        "std_major(m)": sf64(msg.std_major),
+                        "std_minor(m)": sf64(msg.std_minor),
+                        "orientation_a(degrees_from_true_north)": sf64(msg.orient),
+                        "sdlat(m)": sf64(msg.std_latitude),
+                        "sdlon(m)": sf64(msg.std_longitude),
+                        "sdH(m)": sf64(msg.std_dev_altitude),
                     }
                 )
             elif isinstance(msg, pynmea2.types.talker.GSA):
@@ -162,9 +165,9 @@ class NMEA:
                 msg_entry.update(
                     {
                         "timestamp": timestamp,
-                        "pdop": msg.pdop,
-                        "hdop": msg.hdop,
-                        "vdop": msg.vdop,
+                        "pdop": sf64(msg.pdop),
+                        "hdop": sf64(msg.hdop),
+                        "vdop": sf64(msg.vdop),
                     }
                 )
             elif isinstance(msg, pynmea2.types.talker.GSV):
@@ -200,7 +203,7 @@ class NMEA:
             
             # loop through first 5 entries in data_dict
             for i, (key, value) in enumerate(data_dict.items()):
-                if i < 5:
+                if i < 10:
                     self.rich_console.print(
                         f"The NMEA message at timestamp {key} is: {value}"
                     )
@@ -351,71 +354,3 @@ class NMEA:
                     
                     
         return nmea_df
-
-
-def argument_parser_nmea_class(args: list, script_name: str) -> argparse.Namespace:
-    """
-    Parses the arguments and creates console/file logger for nmea_class.py
-    """
-
-    baseName = script_name
-
-    help_text = (
-        baseName
-        + """
-        Parses NMEA strings from a file and saves the output to a
-        The output contains:
-            - the NMEA strings
-            - the NMEA strings split into their individual components
-    """
-    )
-
-    parser = argparse.ArgumentParser(description=help_text)
-    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="count",
-        default=None,
-        help="verbose level... repeat up to three times.",
-        required=False,
-    )
-    parser.add_argument(
-        "--log_dest",
-        help="Specify log destination directory (full path). (Default is /tmp/logs/)",
-        type=str,
-        required=False,
-        default="/tmp/logs/",
-    )
-    ############################################
-    parser.add_argument(
-        "-ifn",
-        "--nmea_ifn",
-        help="Input file name that contain NMEA messages.",
-        type=str,
-        required=True,
-    )
-
-    args = parser.parse_args(args)
-
-    return args
-
-
-# Example usage
-if __name__ == "__main__":
-    # get name of script
-    script_name = os.path.basename(__file__).split(".")[0]
-
-    # parse arguments
-    parsed_args = argument_parser_nmea_class(args=sys.argv[1:], script_name=script_name)
-
-    logger = init_logger.logger_setup(
-        args=parsed_args, base_name=script_name, log_dest="/tmp/logs/"
-    )
-    nmea_data = NMEA(nmea_ifn=parsed_args.nmea_ifn, logger=logger)
-
-    # write df to csv file
-    #df_nmea_data.write_csv(f"{parsed_args.nmea_ifn}_df.csv")
-
-    nmea_df = nmea_data.get_nmea_dataframe()
-    print(nmea_df)
