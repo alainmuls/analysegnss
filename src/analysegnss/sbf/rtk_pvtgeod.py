@@ -39,7 +39,7 @@ def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:
 
     qual_tabular = tabulate(
         qual_analysis,
-        headers=["PNT Mode", "Count", "Percentage"],
+        headers=["PNT Mode", "Count", "Percentage (count/all_obs)"],
         tablefmt="fancy_outline",
     )
 

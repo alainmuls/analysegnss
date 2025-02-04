@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable, Dict
 
+from analysegnss.nmea import nmea_constants as nmeac
 from analysegnss.rtkpos import rtk_constants as rtkc
 from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.glabng import glab_constants as glabc
@@ -60,6 +61,17 @@ COLUMN_MAPPINGS: Dict[str, UTMColumns] = {
         sdu="sd.U",
         nrSVN="#SVs",
     ),
+    "NMEA": UTMColumns(
+        east="UTM.E",
+        north="UTM.N",
+        height="orthoH",
+        time="DT",
+        quality_mapping=UTMQualityMapping("pvt_qual", rtkc.DICT_RTK_PVTMODE),
+        sde="sde(m)",
+        sdn="sdn(m)",
+        sdu="sdu(m)",
+        nrSVN="num_sats",
+    )
     # "GLABNG": UTMColumns(
     #     east="delta.E",
     #     north="delta.N",

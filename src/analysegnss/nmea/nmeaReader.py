@@ -9,14 +9,47 @@ import sys
 # Third party imports
 import polars as pl
 from rich import print
+from tabulate import tabulate
 
 # Local application imports
 from analysegnss.nmea import nmea_constants as nmeac
 from analysegnss.nmea.nmea_class import NMEA
 from analysegnss.utils import argument_parser, init_logger
 
+def quality_analysis(df_pvt: pl.DataFrame, logger: logging.Logger = None) -> list:
+    """display the quality analysis
 
-def nmeaReader(parsed_args: argparse.Namespace, logger: logging.Logger) -> pl.DataFrame:
+    Args:
+        df (pl.DataFrame): dataframe containing the PNT solution
+        logger (logging.Logger): logger object
+    """
+    # analysis of the quality of the position data
+    qual_analysis = []
+    total_obs = df_pvt.shape[0]
+    for qual, qual_data in df_pvt.group_by(["pvt_qual"]):
+        qual_analysis.append(
+            [
+                nmeac.DICT_NMEA_PVT_QUALITY[qual[0]]["desc"],
+                qual_data.shape[0],
+                round(qual_data.shape[0]/total_obs*100,2),
+            ]
+        )
+
+    qual_tabular = tabulate(
+        qual_analysis,
+        headers=["PNT Mode", "Count", "Percentage (count/all_obs)"],
+        tablefmt="fancy_outline",
+    )
+    
+    if logger is not None:
+        logger.info(f"Analysis of the quality of the position data\n{qual_tabular}")
+
+    print(f"Quality analysis:\n{qual_tabular}")
+    
+    return qual_analysis
+
+
+def nmeaReader(parsed_args: argparse.Namespace, logger: logging.Logger) -> tuple[pl.DataFrame, list]:
     """Read the ascii file with NMEA data and return a dataframe with extracted NMEA data
     and optionally write the dataframe to a csv file
 
@@ -28,6 +61,7 @@ def nmeaReader(parsed_args: argparse.Namespace, logger: logging.Logger) -> pl.Da
 
     Returns:
         pl.DataFrame: NMEA dataframe
+        list: quality analysis
     """
     # Create NMEA object    
     nmea_data = NMEA(nmea_ifn=parsed_args.nmea_ifn, logger=logger)
@@ -35,10 +69,18 @@ def nmeaReader(parsed_args: argparse.Namespace, logger: logging.Logger) -> pl.Da
     # get the NMEA dataframe
     nmea_df = nmea_data.get_nmea_dataframe()
     
-    # print the NMEA dataframe
-    print(nmea_df)
+    # do quality analysis
+    qual_analysis = quality_analysis(df_pvt=nmea_df, logger=logger)
     
-    return nmea_df
+    if nmea_data._console_loglevel <= logging.INFO:
+        # print number of observations
+        logger.info(f"Number of observations extracted from the NMEA messages: {nmea_df.shape[0]}")
+        print(f"Number of observations extracted from the NMEA messages: {nmea_df.shape[0]}")
+    
+    print(f"NMEA dataframe:\n{nmea_df}")
+    logger.info(f"NMEA dataframe:\n{nmea_df}")
+     
+    return nmea_df, qual_analysis
 
 def write_nmea_df(nmea_df: pl.DataFrame, ofn: str, logger: logging.Logger) -> None:
     """Write the NMEA dataframe to a csv file
