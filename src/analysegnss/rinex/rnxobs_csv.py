@@ -50,7 +50,8 @@ def rnxobs_csv(argv: list):
     tabobs_dfs = rnxobs.gfzrnx_tabobs()
     for gnss, tabobs_df in tabobs_dfs.items():
         logger.debug(
-            f"Converted RINEX observation file for {str_green(DICT_GNSS[gnss])} to tabular observation file: \n{tabobs_df}"
+            f"Converted RINEX observation file for {str_green(DICT_GNSS[gnss]["name"])} "
+            f"to tabular observation file: \n{tabobs_df}"
         )
 
     # convert the tabular observations to csv format like rtcm3_parser MSM5/7 does

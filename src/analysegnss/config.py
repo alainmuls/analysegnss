@@ -88,10 +88,10 @@ ERROR_CODES = {
 }
 
 DICT_GNSS = {
-    "G": "GPS",
-    "R": "Glonass",
-    "E": "Galileo",
-    "C": "Beidou",
+    "G": {"name": "GPS", "abbrev": "GPS"},
+    "R": {"name": "Glonass", "abbrev": "GLO"},
+    "E": {"name": "Galileo", "abbrev": "GAL"},
+    "C": {"name": "Beidou", "abbrev": "BDS"},
     # "S": "SBAS",
     # "I": "IRNSS",
     # "Z": "QZSS",

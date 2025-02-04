@@ -126,7 +126,7 @@ def cn0_analyse(argv: list):
 
     # Add title and grid
     plt.title(
-        f"CN0 Values and Number of PRNs Over Time - {DICT_GNSS[args_parsed.gnss]}"
+        f"CN0 Values and Number of PRNs Over Time - {DICT_GNSS[args_parsed.gnss]["name"]}"
         f" {args_parsed.sigtype}"
     )
     ax1.grid(True)

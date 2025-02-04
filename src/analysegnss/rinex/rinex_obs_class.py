@@ -187,7 +187,8 @@ class RINEX_OBS(RINEX):
 
                         if self.logger:
                             self.logger.info(
-                                f"Created dataframe for system {str_green(DICT_GNSS[sys])} with {str_green(len(df))} observations"
+                                f"Created dataframe for system {str_green(DICT_GNSS[sys]["name"])} "
+                                f"with {str_green(len(df))} observations"
                             )
 
                 output_buffer.close()

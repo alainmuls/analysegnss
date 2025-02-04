@@ -120,7 +120,7 @@ class GNSS_CSV:
         else:
             if self.logger:
                 self.logger.info(
-                    f"GNSS system {DICT_GNSS[self.GNSS]} ({self.GNSS}) validated successfully."
+                    f"GNSS system {DICT_GNSS[self.GNSS]["name"]} ({self.GNSS}) validated successfully."
                 )
 
     def validate_interval(self):
@@ -149,7 +149,7 @@ class GNSS_CSV:
         in DICT_SIGNAL_TYPES
         """
         # get the name of the GNSS system from DICT_GNSS
-        self._gnss_name = DICT_GNSS[self.GNSS]
+        self._gnss_name = DICT_GNSS[self.GNSS]["name"]
 
         # get from the DICT_SIGNAL_TYPES the list of valid signal types which
         # are in the "code" field for selected GNSS system

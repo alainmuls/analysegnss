@@ -266,7 +266,7 @@ class RINEX_NAV(RINEX):
             # sent to logger
             if self.logger is not None:
                 self.logger.debug(
-                    f"tabnav_df[{str_green(DICT_GNSS[gnss])}, {str_green(nav_type)}] = \n{tabnav_df}"
+                    f"tabnav_df[{str_green(DICT_GNSS[gnss]["name"])}, {str_green(nav_type)}] = \n{tabnav_df}"
                 )
 
             # replace the tabnav_df on nav_dict after having renamed the columns
