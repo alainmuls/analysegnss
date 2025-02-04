@@ -1096,7 +1096,7 @@ def argument_parser_sbfmeas2csv(script_name: str, args: list) -> argparse.Namesp
     )
 
     parser.add_argument(
-        "--csv_fn",
+        "--csv_ofn",
         help="CSV observation filename (defaults to filename with extension csv)",
         type=str,
         required=False,
