@@ -13,7 +13,7 @@ from analysegnss.config import DICT_GNSS, DICT_SIGNAL_TYPES, ERROR_CODES
 from analysegnss.sbf.sbf_class import SBF
 from analysegnss.utils import init_logger
 from analysegnss.utils.argument_parser import argument_parser_sbfmeas2csv
-from analysegnss.utils.utilities import str_red
+from analysegnss.utils.utilities import str_red, str_green
 
 
 def convert_meas3_csv(
@@ -126,20 +126,28 @@ def convert_meas3_csv(
     df_csv = df_csv.sort(["WKNR", "TOW"])
 
     if logger is not None:
-        logger.debug("Intermediate dataframe 'df_csv'")
-        logger.debug(df_csv)
+        logger.info("Intermediate dataframe 'df_csv'")
+        logger.info(df_csv)
 
     if parsed_args.verbose is not None and parsed_args.verbose > 0:
-        print("Dataframe 'df_csv':")
+        print("Intermediate dataframe 'df_csv':")
         print(df_csv)
 
     try:
         if parsed_args.csv_ofn is not None:
             df_csv.write_csv(parsed_args.csv_ofn)
+            if logger is not None:
+                logger.info(f"CSV file written to {str_green(parsed_args.csv_ofn)}")
+
+            print(f"CSV file written to [bold green]{parsed_args.csv_ofn}[/bold green]")
         else:
             # change the "." into "_" and add _meas.csv to sbf_ifn
             csv_ofn = parsed_args.sbf_ifn.replace(".", "_") + "_meas.csv"
             df_csv.write_csv(csv_ofn)
+            if logger is not None:
+                logger.info(f"CSV file written to {str_green(csv_ofn)}")
+
+            print(f"CSV file written to [bold green]{csv_ofn}[/bold green]")
     except IOError as e:
         raise IOError(f"Failed to write CSV file {csv_ofn}: {e}")
     except (ComputeError, SchemaError, ValueError) as e:
