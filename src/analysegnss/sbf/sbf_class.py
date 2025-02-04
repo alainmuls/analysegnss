@@ -289,12 +289,9 @@ class SBF:
                 bin2asc_fns[sbf_block] = glob.glob(rf"{self.sbf_fn}_measurements.txt")[
                     0
                 ]
-        print(f"bin2asc_fns: {bin2asc_fns}")
 
         # create dictionary for containing the obtained dataframes
         sbf_dfs = {}
-
-        print(f"{bin2asc_fns = }")
 
         # iterate over the CVS files and convert them to dataframe
         for sbf_block, bin2asc_fn in bin2asc_fns.items():
@@ -314,7 +311,6 @@ class SBF:
                 # remove unused columns
                 keep_cols = self.used_columns(sbf_block)
 
-                print(f"{bin2asc_fn = }")
                 # read csv file into dataframe
                 with rich_console.status(
                     f"[bold green]Reading from CSV file ({sbf_block})...",
@@ -548,7 +544,6 @@ class SBF:
             in block_df.columns
             # and not block_df.select(pl.col("SVID")).dtypes[0] == pl.String
         ):
-            # TODO: correct the int into string or vice versa
             if self.logger:
                 self.logger.debug("\tadding PRN column to the dataframe")
             block_df = block_df.with_columns(
@@ -559,6 +554,7 @@ class SBF:
                 )
                 .alias("PRN")
             ).lazy()
+            block_df = block_df.drop(["SVID"]).lazy()
         # else:
         #     # rename the column to PRN
         #     block_df = block_df.rename({"SVID": "PRN"}).lazy()
