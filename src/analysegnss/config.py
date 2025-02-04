@@ -6,7 +6,7 @@ from rich.console import Console
 # console to use when an operation lasts some time to inform user
 rich_console = Console()
 
-# general constants for printing ploars dataframes
+# general constants for printing polars dataframes
 Config.set_tbl_cols(-1)
 Config.set_float_precision(3)
 Config.set_tbl_cell_numeric_alignment("RIGHT")
