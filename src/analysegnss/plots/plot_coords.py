@@ -7,6 +7,7 @@ import polars as pl
 from rich import print
 
 import analysegnss.glabng.glab_parser as glab_parser
+import analysegnss.nmea.nmeaReader as nmeaReader
 import analysegnss.rtkpos.ppk_rnx2rtkp as ppk_rnx2rtkp
 import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
 from analysegnss.config import ERROR_CODES
@@ -25,12 +26,12 @@ def get_origin(parsed_args: list) -> str:
         tuple[str, str]: origin and filename
     """
     # set the origin of the coordinates
-    file_handlers = {"pos_ifn": "PPK", "sbf_ifn": "RTK", "glab_ifn": "GLABNG"}
+    file_handlers = {"pos_ifn": "PPK", "sbf_ifn": "RTK", "glab_ifn": "GLABNG", "nmea_ifn": "NMEA", "csv_ifn": "PNT_CSV"}
 
     # Get the first non-None filename and its attribute name
     file_attr = next(
         attr
-        for attr in ["pos_ifn", "sbf_ifn", "glab_ifn"]
+        for attr in ["pos_ifn", "sbf_ifn", "glab_ifn", "nmea_ifn", "csv_ifn"]
         if getattr(parsed_args, attr) is not None
     )
     # filename = getattr(parsed_args, file_attr)
@@ -114,6 +115,16 @@ def plot_coords(argv: list):
                         print(df_section)
 
             df_origin = dfs_glab["OUTPUT"]
+
+
+        case "NMEA":
+            # create the NMEA dataframe by calling nmeaReader.py
+
+            df_origin, qual_analysis = nmeaReader.nmeaReader(parsed_args=args_parsed, logger=logger)
+
+        case "PNT_CSV":
+            # create a PNT_CSV dataframe by reading PNT_CSV file written by nmeaReader.py, rtk_pvtgeod.py, ppk_rnx2rtkp.py or glab_parser.py
+            df_origin = pl.read_csv(args_parsed.csv_ifn)
 
         case _:
             logger.error(f"Invalid origin: {origin}")
@@ -220,6 +231,8 @@ def plot_coords(argv: list):
 
 
 def main():
+    
+    
     df_utm = plot_coords(argv=sys.argv)  # type: ignore
 
 

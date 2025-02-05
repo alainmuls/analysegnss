@@ -66,12 +66,26 @@ COLUMN_MAPPINGS: Dict[str, UTMColumns] = {
         north="UTM.N",
         height="orthoH",
         time="DT",
-        quality_mapping=UTMQualityMapping("pvt_qual", rtkc.DICT_RTK_PVTMODE),
-        sde="sde(m)",
-        sdn="sdn(m)",
-        sdu="sdu(m)",
+        quality_mapping=UTMQualityMapping("pvt_qual", nmeac.DICT_NMEA_PVT_QUALITY),
+        #sde="sdlon(m)", #TODO convert sdlon to sdE (if region is small: (omtrek_aarde/360)*sdlon = sde). Or use PROJ lib
+        #sdn="sdlat(m)",
+        sdu="sdH(m)",
         nrSVN="num_sats",
-    )
+    ),
+    # TODO problem is that pvt_qual dict differs between all solution types. A fix could be to use a general pvt_qual dict for all.
+    # This can be achieved by mapping the pvt_qual values to a general pvt_qual  dict in
+    "PNT_CSV": UTMColumns(
+        east="UTM.E",
+        north="UTM.N",
+        height="orthoH",
+        time="DT",
+        quality_mapping=UTMQualityMapping("mode", nmeac.DICT_NMEA_PVT_QUALITY),
+        #sde="sdlon(m)",
+        #sdn="sdlat(m)",
+        sdu="sdH",
+        nrSVN="num_sats",
+    ),
+    
     # "GLABNG": UTMColumns(
     #     east="delta.E",
     #     north="delta.N",

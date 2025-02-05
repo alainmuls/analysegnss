@@ -167,6 +167,16 @@ def argument_parser_plot_coords(args: list) -> argparse.Namespace:
         help="input gLABng filename",
         type=str,
     )
+    group.add_argument(
+        "--nmea_ifn",
+        help="input NMEA filename",
+        type=str,
+    )
+    group.add_argument(
+        "--csv_ifn",
+        help="input CSV filename",
+        type=str,
+    )
 
     parser.add_argument(
         "--sd",
