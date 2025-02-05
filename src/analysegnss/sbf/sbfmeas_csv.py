@@ -291,7 +291,7 @@ def sbfmeas2csv(argv: list):
     # Check if all required blocks are present
     meas3_present = all(block in sbf_blocks for block in required_blocks)
     # print(f"meas3_present: {meas3_present}")
-    if meas3_present and False:
+    if meas3_present:
         logger.debug("Converting measurements using Meas3 blocks")
         meas_df = sbf.bin2asc_dataframe(
             lst_sbfblocks=["Meas3Ranges"], archive=args_parsed.archive
