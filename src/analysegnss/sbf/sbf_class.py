@@ -18,7 +18,10 @@ from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.gnss.gnss_dt import gpsms2dt
 from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.utils.utilities import locate, str_red, str_yellow
-from analysegnss.sbf.sbf_blocks_polars import SBF_BLOCK_COLUMNS
+from analysegnss.sbf.sbf_blocks_polars import (
+    SBF_BLOCK_COLUMNS_BIN2ASC,
+    SBF_BLOCK_COLUMNS_SBF2ASC,
+)
 
 
 @dataclass
@@ -642,12 +645,12 @@ class SBF:
         Returns:
                 list: column names we use
         """
-        if sbf_block not in SBF_BLOCK_COLUMNS:
+        if sbf_block not in SBF_BLOCK_COLUMNS_BIN2ASC:
             if self.logger:
                 self.logger.error(f"Unknown SBF block type: {sbf_block}")
             return {}
 
-        col_types = SBF_BLOCK_COLUMNS[sbf_block]
+        col_types = SBF_BLOCK_COLUMNS_BIN2ASC[sbf_block]
         keep_cols = {}
 
         for dtype, columns in col_types.items():
@@ -741,55 +744,8 @@ class SBF:
             "sbf2asc is chosen as sbf converter. Looking up corresponding column names for each sbf block"
         )
 
-        # TODO this dict needs to be expanded
-        sbf_blocks_colnames = {
-            "PVTCartesian2": [
-                "0",
-                "GPST [s]",
-                "X [m]",
-                "Y [m]",
-                "Z [m]",
-                "Vx [m/s]",
-                "Vy [m/s]",
-                "Vz [m/s]",
-                "RxClockBias [s]",
-                "RxClockDrift [s/s]",
-                "NrSV",
-                "PVT Mode",
-                "MeanCorrAge [0.01 s]",
-                "PVT Error",
-                "COG [°]",
-            ],
-            "PVTGeodetic2": [
-                "-1",
-                "GPST [s]",
-                "Latitude [rad]",
-                "Longitude [rad]",
-                "Height [m]",
-                "Undulation [m]",
-                "Vn [m/s]",
-                "Ve [m/s]",
-                "Vu [m/s]",
-                "ClockBias [s]",
-                "ClockDrift [s/s]",
-                "NrSV",
-                "PVT Mode",
-                "MeanCorrAge [0.01 s]",
-                "PVT Error",
-                "COG [°]",
-            ],
-            "PosCovCartesian1": [
-                "-2",
-                "GPST [s]",
-                "Cov_XX [m²]",
-                "Cov_YY [m²]",
-                "Cov_ZZ [m²]",
-                "Cov_tt [s²]",
-            ],
-        }
-
         try:
-            sbf_block_colnames = sbf_blocks_colnames[sbf_block]
+            sbf_block_colnames = SBF_BLOCK_COLUMNS_SBF2ASC[sbf_block]
             if self.logger:
                 self.logger.info(
                     f"Returning sbf block {sbf_block} corresponding column names {sbf_block_colnames} for sbf2asc"
