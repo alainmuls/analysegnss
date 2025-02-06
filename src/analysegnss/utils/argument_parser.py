@@ -572,12 +572,12 @@ def argument_parser_cn0_daily(script_name: str, args: list) -> argparse.Namespac
     return args
 
 
-def argument_parser_get_ebh_timings(args: list) -> argparse.Namespace:
+def argument_parser_get_ebh_timings(script_name: str, args: list) -> argparse.Namespace:
     """
     Extracts the timestamps from the SBF file and saves them to a file.
     This file is formatted for ebh_lines.py
     """
-    baseName = str_yellow(os.path.basename(__file__))
+    baseName = str_yellow(script_name)
 
     help_txt = (
         baseName
@@ -635,9 +635,9 @@ def argument_parser_get_ebh_timings(args: list) -> argparse.Namespace:
     return args
 
 
-def argument_parser_get_base_coord(args: list) -> argparse.Namespace:
+def argument_parser_get_base_coord(script_name: str, args: list) -> argparse.Namespace:
     "Gets the base coordinates from a SBF file using the sbf_class"
-    baseName = str_yellow(os.path.basename(__file__))
+    baseName = str_yellow(script_name)
     help_text = (
         baseName
         + """
@@ -681,13 +681,13 @@ def argument_parser_get_base_coord(args: list) -> argparse.Namespace:
     return args
 
 
-def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
+def argument_parser_ebh_process_launcher(script_name: str, args: list) -> argparse.Namespace:
     """Launches the appropriate functions to calculate the ebh_lines from the sbf_ifn file
     from which it retrievers the correct timings,
     decides whether the RTK or PPK solution has a sufficient quality,
     and finally outputs correct ASSUR formatted files for each ebh line.
     """
-    baseName = str_yellow(os.path.basename(__file__))
+    baseName = str_yellow(script_name)
 
     help_text = (
         baseName
@@ -777,12 +777,12 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
     return args
 
 
-def argument_parser_rnx2rtkp_launcher(args: list) -> argparse.Namespace:
+def argument_parser_rnx2rtkp_launcher(script_name: str, args: list) -> argparse.Namespace:
     """
     Parses the arguments and creates console/file logger for launch_ppk_rnx2rtkp.py
     """
 
-    baseName = str_yellow(os.path.basename(__file__))
+    baseName = str_yellow(script_name)
 
     help_text = (
         baseName

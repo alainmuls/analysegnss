@@ -241,7 +241,6 @@ def do_ppk_by_decision(
 
     ppk_pos_ofn = ""
 
-
     match ebh_qual_decision:
         case "ALL-EBH-OK":
             logger.info(
@@ -473,7 +472,7 @@ def main():
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     parsed_args = argument_parser.argument_parser_ebh_process_launcher(
-        args=sys.argv[1:]
+        script_name=script_name, args=sys.argv[1:]
     )
 
     # create the file/console logger
@@ -483,6 +482,7 @@ def main():
     logger.info(f"Parsed arguments: {parsed_args}")
 
     ebh_process_launcher(parsed_args=parsed_args, logger=logger)
+
 
 if __name__ == "__main__":
 

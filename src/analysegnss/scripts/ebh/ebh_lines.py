@@ -519,7 +519,7 @@ def main():
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    parsed_args = argument_parser_ebh_lines(args=sys.argv[1:])
+    parsed_args = argument_parser_ebh_lines(script_name=script_name, args=sys.argv[1:])
 
     # create the file/console logger
     logger = init_logger.logger_setup(args=parsed_args, base_name=script_name)
