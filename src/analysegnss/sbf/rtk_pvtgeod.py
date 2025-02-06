@@ -13,8 +13,9 @@ from tabulate import tabulate
 from analysegnss.config import ERROR_CODES
 from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.sbf.sbf_class import SBF
-from analysegnss.utils import argument_parser, init_logger
+from analysegnss.utils import init_logger
 from analysegnss.utils.utilities import combine_dfs
+from analysegnss.utils.argument_parser import argument_parser_rtk
 
 
 def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:
@@ -39,7 +40,7 @@ def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:
 
     qual_tabular = tabulate(
         qual_analysis,
-        headers=["PNT Mode", "Count", "Percentage (count/all_obs)"],
+        headers=["PNT Mode", "Count", "Percentage"],
         tablefmt="fancy_outline",
     )
 
@@ -60,7 +61,9 @@ def rtk_pvtgeod(argv: list) -> dict:
     # get the name of this script for naming the logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
-    args_parsed = argument_parser.argument_parser_rtk(args=argv[1:])
+    args_parsed = argument_parser_rtk(
+        args=argv[1:], script_name=os.path.basename(__file__)
+    )
     # print(f"\nParsed arguments: {args_parsed}")
 
     # create the file/console logger
@@ -106,17 +109,14 @@ def rtk_pvtgeod(argv: list) -> dict:
             # Drop the column
             if "DT_right" in df_pvt.columns:
                 df_pvt = df_pvt.drop("DT_right")
-        
+
         else:  # only use the PVTGeodetic, no StdDev required
             # extract the PVT Geodetic2 block from SBF file
             df_pvt = sbf.bin2asc_dataframe(
                 lst_sbfblocks=["PVTGeodetic2"], archive=args_parsed.archive
             )["PVTGeodetic2"]
 
-        with pl.Config(
-            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-        ):
-            logger.info(f"  df_pvt: \n{df_pvt}")
+        logger.info(f"  df_pvt: \n{df_pvt}")
 
         # analyse the quality of the solution
         quality_analysis(geod_df=df_pvt, logger=logger)
@@ -139,14 +139,10 @@ def rtk_pvtgeod(argv: list) -> dict:
         else:
             df_xyzcov = None
 
-
-        with pl.Config(
-            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-        ):
-            logger.info(f"df_pvt: \n{df_pvt}")
-            logger.info(f"df_xyz: \n{df_xyz}")
-            if df_xyzcov is not None:
-                logger.info(f"df_xyzcov: \n{df_xyzcov}")
+        logger.info(f"df_pvt: \n{df_pvt}")
+        logger.info(f"df_xyz: \n{df_xyz}")
+        if df_xyzcov is not None:
+            logger.info(f"df_xyzcov: \n{df_xyzcov}")
 
         return df_pvt
 

@@ -12,7 +12,6 @@ from matplotlib import dates as mdates
 from matplotlib.ticker import FormatStrFormatter
 from plotly.subplots import make_subplots
 from rich import print
-from rich.console import Console
 
 # Local application imports
 from analysegnss.plots import discrete_colors as dc
@@ -113,11 +112,7 @@ def plot_utm_scatter(
 
     fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_scatter.html")
     # fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_scatter.html")
-    # create a console logger
-    console = Console()
-    with console.status(f"Saving plot to {fn_plot}", spinner="point"):
-        # fig.write_image(fn_plot, width=1024, height=600)
-        fig.write_html(fn_plot)
+    fig.write_html(fn_plot)
     print(f"Plot saved to {fn_plot}")
 
 
@@ -141,10 +136,7 @@ def plot_utm_height(
         logger (logging.Logger, optional): logger. Defaults to None.
     """
     if logger is not None:
-        with pl.Config(
-            tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-        ):
-            logger.info(f"utm_df = \n{utm_df}")
+        logger.info(f"utm_df = \n{utm_df}")
 
     # get the correct column names according to the origin
     cols = get_utm_columns(origin)
@@ -307,11 +299,7 @@ def plot_utm_height(
         # fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_enu_sd.html")
         # fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_enu_sd.svg")
 
-    # create a console logger
-    console = Console()
-    with console.status(f"Saving plot to {fn_plot}", spinner="point"):
-        # fig.write_image(fn_plot, width=1024, height=600)
-        fig.write_html(fn_plot)
+    fig.write_html(fn_plot)
     print(f"Plot saved to {fn_plot}")
 
 

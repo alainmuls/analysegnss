@@ -7,7 +7,6 @@ from sys import stderr
 # Local application imports
 from analysegnss.utils.utilities import str_green
 
-
 class ColorFormatter(logging.Formatter):
     # color codes
     cyan = "\x1b[36;20m"
@@ -81,7 +80,7 @@ def logger_setup(args: list, base_name: str = "logger", log_dest: str = "/tmp/lo
     )
 
     print(f"{str_green(f"---------- START of {base_name} (process logged @ {log_dest}) ----------")}")
-    logger.info(f"---------- START of {base_name} (process logged @ {log_dest}) ----------")
+    logger.warning(f"---------- START of {base_name} (process logged @ {log_dest}) ----------")
 
     return logger
 

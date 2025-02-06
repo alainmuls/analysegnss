@@ -4,9 +4,7 @@ import os
 import sys
 from dataclasses import dataclass, field
 
-from rich.console import Console
-
-from analysegnss.config import GNSS_DICT
+from analysegnss.config import DICT_GNSS
 from analysegnss.utils.utilities import locate, str_red
 
 
@@ -23,12 +21,12 @@ class RINEX:
     _console_loglevel: int = field(
         default=logging.ERROR, metadata={"help": "console log level"}
     )
-    console: Console = field(default=None, metadata={"help": "console object"})
+    # console: Console = field(default=None, metadata={"help": "console object"})
 
     def __post_init__(self):
         # Add this at the start of post_init
-        if self.console is None:
-            self.console = Console()
+        # if self.console is None:
+        #     self.console = console
 
         self.validate_gnss()
         self.validate_start_time()
@@ -58,11 +56,11 @@ class RINEX:
         gnss_list = list(self.gnss.upper())
 
         # Check if each character is in GNSS_DICT
-        invalid_systems = [sys for sys in gnss_list if sys not in GNSS_DICT]
+        invalid_systems = [sys for sys in gnss_list if sys not in DICT_GNSS]
 
         if invalid_systems:
             error_msg = f"Invalid GNSS system(s): {','.join(invalid_systems)}. "
-            f"Valid systems are: {','.join(GNSS_DICT.keys())}"
+            f"Valid systems are: {','.join(DICT_GNSS.keys())}"
             if self.logger:
                 self.logger.error(error_msg)
             raise ValueError(error_msg)

@@ -10,8 +10,8 @@ from rich import print
 from analysegnss.utils.utilities import str_yellow
 
 
-def argument_parser_rtk(args: list) -> argparse.Namespace:
-    """parses the arguments and creates console/file logger
+def argument_parser_rtk(script_name: str, args: list) -> argparse.Namespace:
+    """parses the arguments
 
     Args:
         argv (list): list of arguments
@@ -19,7 +19,7 @@ def argument_parser_rtk(args: list) -> argparse.Namespace:
     Returns:
         argparse.Namespace: parsed arguments
     """
-    baseName = str_yellow(os.path.basename(__file__))
+    baseName = str_yellow(script_name)
 
     help_txt = baseName + " analysis of SBF data"
 
@@ -70,8 +70,8 @@ def argument_parser_rtk(args: list) -> argparse.Namespace:
     return args
 
 
-def argument_parser_ppk(args: list) -> argparse.Namespace:
-    """parses the arguments  and creates console/file logger
+def argument_parser_ppk(script_name: str, args: list) -> argparse.Namespace:
+    """parses the arguments and creates console/file logger
 
     Args:
         argv (list): list of arguments
@@ -79,7 +79,7 @@ def argument_parser_ppk(args: list) -> argparse.Namespace:
     Returns:
         argparse.Namespace: parsed arguments
     """
-    baseName = str_yellow(os.path.basename(__file__))
+    baseName = str_yellow(script_name)
 
     help_txt = baseName + " analysis of rnx2rtkp position file"
 
@@ -113,7 +113,7 @@ def argument_parser_ppk(args: list) -> argparse.Namespace:
     return args
 
 
-def argument_parser_plot_coords(args: list) -> argparse.Namespace:
+def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namespace:
     """Parses the arguments for plotting the UTM coordinates (evt with standard deviation)
 
     Args:
@@ -122,13 +122,13 @@ def argument_parser_plot_coords(args: list) -> argparse.Namespace:
     Returns:
         argparse.Namespace: parsed arguments
     """
-    baseName = str_yellow(os.path.basename(__file__))
+    baseName = str_yellow(script_name)
 
     help_txt = (
         baseName
         + """: Plot UTM scatter and line plots from data files.
-        
-        Note: The plotting options --sbf_fn, --pos_fn, and --glib_fn are mutually exclusive. 
+
+        Note: The plotting options --sbf_fn, --pos_fn, and --glib_fn are mutually exclusive.
         You must choose exactly one of these options."""
     )
 
@@ -223,7 +223,7 @@ def argument_parser_plot_coords(args: list) -> argparse.Namespace:
     return args
 
 
-def argument_parser_rnxnav_csv(args: list) -> argparse.Namespace:
+def argument_parser_ebh_lines(script_name: str, args: list) -> argparse.Namespace:
     """parses the arguments
 
     Args:
@@ -232,278 +232,7 @@ def argument_parser_rnxnav_csv(args: list) -> argparse.Namespace:
     Returns:
         argparse.Namespace: parsed arguments
     """
-    baseName = str_yellow(os.path.basename(__file__))
-
-    help_txt = (
-        baseName
-        + " Convert RINEX observation file to CSV file similar to those created by rtcm3_parser.py"
-    )
-
-    # create the parser for command line arguments
-    parser = argparse.ArgumentParser(description=help_txt)
-    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="count",
-        default=None,
-        help="verbose level... repeat up to three times.",
-    )
-
-    parser.add_argument(
-        "--rnx_fn",
-        help="RINEX observation filename",
-        type=str,
-        required=True,
-        default=None,
-    )
-
-    parser.add_argument(
-        "--csv_fn",
-        help="CSV observation filename (defaults to extension csv instead of rnx)",
-        type=str,
-        required=False,
-        default=None,
-    )
-
-    parser.add_argument(
-        "--gnss",
-        help="GNSS systems to convert (default: GE, select between G, R, E, C)",
-        type=str,
-        required=False,
-        default="GE",
-    )
-
-    # allow argument completion
-    argcomplete.autocomplete(parser)
-    args = parser.parse_args(args)
-
-    return args
-
-
-def argument_parser_rnxobs_csv(args: list) -> argparse.Namespace:
-    """parses the arguments
-
-    Args:
-        argv (list): list of arguments
-
-    Returns:
-        argparse.Namespace: parsed arguments
-    """
-    baseName = str_yellow(os.path.basename(__file__))
-
-    help_txt = (
-        baseName
-        + " Convert RINEX observation file to CSV file similar to those created by rtcm3_parser.py"
-    )
-
-    # create the parser for command line arguments
-    parser = argparse.ArgumentParser(description=help_txt)
-    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="count",
-        default=None,
-        help="verbose level... repeat up to three times.",
-    )
-
-    parser.add_argument(
-        "--obs_fn",
-        help="RINEX observation filename",
-        type=str,
-        required=True,
-        default=None,
-    )
-
-    parser.add_argument(
-        "--csv_fn",
-        help="CSV observation filename (defaults to filename with extension csv)",
-        type=str,
-        required=False,
-        default=None,
-    )
-
-    parser.add_argument(
-        "--gnss",
-        help="GNSS systems to convert (default: GE, select between G, R, E, C)",
-        type=str,
-        required=False,
-        default="GE",
-    )
-
-    # allow argument completion
-    argcomplete.autocomplete(parser)
-    args = parser.parse_args(args)
-
-    return args
-
-
-def argument_parser_rnxnav_csv(args: list) -> argparse.Namespace:
-    """parses the arguments
-
-    Args:
-        argv (list): list of arguments
-
-    Returns:
-        argparse.Namespace: parsed arguments
-    """
-    baseName = str_yellow(os.path.basename(__file__))
-
-    help_txt = (
-        baseName
-        + " Convert RINEX navigation file to CSV file similar to those created by rtcm3_parser.py"
-    )
-
-    # create the parser for command line arguments
-    parser = argparse.ArgumentParser(description=help_txt)
-    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="count",
-        default=None,
-        help="verbose level... repeat up to three times.",
-    )
-
-    parser.add_argument(
-        "--nav_fn",
-        help="RINEX navigation filename",
-        type=str,
-        required=True,
-        default=None,
-    )
-
-    parser.add_argument(
-        "--gnss",
-        help="GNSS systems to convert (default: GE, select between G, R, E, C)",
-        type=str,
-        required=False,
-        default="GE",
-    )
-
-    # allow argument completion
-    argcomplete.autocomplete(parser)
-    args = parser.parse_args(args)
-
-    return args
-
-
-def argument_parser_rnx_csv(args: list) -> argparse.Namespace:
-    """parses the arguments
-
-    Args:
-        argv (list): list of arguments
-
-    Returns:
-        argparse.Namespace: parsed arguments
-    """
-    baseName = str_yellow(os.path.basename(__file__))
-
-    help_txt = (
-        baseName
-        + " Convert RINEX Obs & Nav file to CSV file similar to those created by rtcm3_parser.py"
-    )
-
-    # create the parser for command line arguments
-    parser = argparse.ArgumentParser(description=help_txt)
-    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="count",
-        default=None,
-        help="verbose level... repeat up to three times.",
-    )
-
-    parser.add_argument(
-        "--obs_fn",
-        help="RINEX observation filename",
-        type=str,
-        required=True,
-        default=None,
-    )
-
-    parser.add_argument(
-        "--nav_fn",
-        help="RINEX navigation filename",
-        type=str,
-        required=True,
-        default=None,
-    )
-
-    parser.add_argument(
-        "--gnss",
-        help="GNSS systems to convert (default: GE, select between G, R, E, C)",
-        type=str,
-        required=False,
-        default="GE",
-    )
-
-    # allow argument completion
-    argcomplete.autocomplete(parser)
-    args = parser.parse_args(args)
-
-    return args
-
-
-def argument_parser_glab_parser(args: list) -> argparse.Namespace:
-    """parses the arguments
-
-    Args:
-        argv (list): list of arguments
-
-    Returns:
-        argparse.Namespace: parsed arguments
-    """
-    baseName = str_yellow(os.path.basename(__file__))
-
-    help_txt = baseName + " parses the gLAB file."
-
-    # create the parser for command line arguments
-    parser = argparse.ArgumentParser(description=help_txt)
-    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="count",
-        default=None,
-        help="verbose level... repeat up to three times.",
-    )
-
-    parser.add_argument(
-        "--glab_fn",
-        help="gLAB produced file",
-        type=str,
-        required=True,
-        default=None,
-    )
-
-    parser.add_argument(
-        "--section",
-        type=lambda x: [str(item).strip() for item in x.split(",")],
-        help="Comma-separated gLAB sections to parse (default: OUTPUT) (e.g. OUTPUT,SATSEL,INFO)",
-        required=False,
-        default="OUTPUT",
-    )
-
-    # allow argument completion
-    argcomplete.autocomplete(parser)
-    args = parser.parse_args(args)
-
-    return args
-
-
-def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
-    """parses the arguments and creates console/file logger
-
-    Args:
-        argv (list): list of arguments
-
-    Returns:
-        argparse.Namespace: parsed arguments
-    """
-    baseName = str_yellow(os.path.basename(__file__))
+    baseName = str_yellow(script_name)
 
     help_txt = baseName + " extracts the EBH lines from RTK or PPK created dataframe"
 
@@ -552,6 +281,288 @@ def argument_parser_ebh_lines(args: list) -> argparse.Namespace:
         help="input ebh lines timing filename. One of the keys needs to be called CL. The other keys of each track can be freely chosen. e.g. key: Wnc TOWstart, Wnc TOWend",
         type=str,
         required=True,
+    )
+
+    parser.add_argument(
+        "--plot",
+        help="displays plots (default False)",
+        action="store_true",
+        required=False,
+        default=False,
+    )
+
+    # allow argument completion
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args(args)
+
+    return args
+
+
+def argument_parser_rnxobs_csv(script_name: str, args: list) -> argparse.Namespace:
+    """parses the arguments
+
+    Args:
+        argv (list): list of arguments
+
+    Returns:
+        argparse.Namespace: parsed arguments
+    """
+    baseName = str_yellow(script_name)
+
+    help_txt = (
+        baseName
+        + " Convert RINEX observation file to CSV file similar to those created by rtcm3_parser.py"
+    )
+
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_txt)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+    )
+
+    parser.add_argument(
+        "--obs_fn",
+        help="RINEX observation filename",
+        type=str,
+        required=True,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--csv_fn",
+        help="CSV observation filename (defaults to filename with extension csv)",
+        type=str,
+        required=False,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--gnss",
+        help="GNSS systems to convert (default: GE, select between GREC)",
+        type=str,
+        required=False,
+        default="GE",
+    )
+
+    # allow argument completion
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args(args)
+
+    return args
+
+
+def argument_parser_rnxnav_csv(script_name: str, args: list) -> argparse.Namespace:
+    """parses the arguments
+
+    Args:
+        argv (list): list of arguments
+
+    Returns:
+        argparse.Namespace: parsed arguments
+    """
+    baseName = str_yellow(script_name)
+
+    help_txt = (
+        baseName
+        + " Convert RINEX navigation file to CSV file similar to those created by rtcm3_parser.py"
+    )
+
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_txt)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+    )
+
+    parser.add_argument(
+        "--nav_fn",
+        help="RINEX navigation filename",
+        type=str,
+        required=True,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--gnss",
+        help="GNSS systems to convert (default: GE, select between GREC)",
+        type=str,
+        required=False,
+        default="GE",
+    )
+
+    # allow argument completion
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args(args)
+
+    return args
+
+
+def argument_parser_rnx_csv(script_name: str, args: list) -> argparse.Namespace:
+    """parses the arguments
+
+    Args:
+        argv (list): list of arguments
+
+    Returns:
+        argparse.Namespace: parsed arguments
+    """
+    baseName = str_yellow(script_name)
+
+    help_txt = (
+        baseName
+        + " Convert RINEX Obs & Nav file to CSV file similar to those created by rtcm3_parser.py"
+    )
+
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_txt)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+    )
+
+    parser.add_argument(
+        "--obs_fn",
+        help="RINEX observation filename",
+        type=str,
+        required=True,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--nav_fn",
+        help="RINEX navigation filename",
+        type=str,
+        required=True,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--gnss",
+        help="GNSS systems to convert (default: GE, select between GREC)",
+        type=str,
+        required=False,
+        default="GE",
+    )
+
+    # allow argument completion
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args(args)
+
+    return args
+
+
+def argument_parser_glab_parser(script_name: str, args: list) -> argparse.Namespace:
+    """parses the arguments
+
+    Args:
+        argv (list): list of arguments
+
+    Returns:
+        argparse.Namespace: parsed arguments
+    """
+    baseName = str_yellow(script_name)
+
+    help_txt = baseName + " parses the gLAB file."
+
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_txt)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+    )
+
+    parser.add_argument(
+        "--glab_fn",
+        help="gLAB produced file",
+        type=str,
+        required=True,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--section",
+        type=lambda x: [str(item).strip() for item in x.split(",")],
+        help="Comma-separated gLAB sections to parse (default: OUTPUT) (e.g. OUTPUT,SATSEL,INFO)",
+        required=False,
+        default="OUTPUT",
+    )
+
+    # allow argument completion
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args(args)
+
+    return args
+
+
+def argument_parser_cn0_daily(script_name: str, args: list) -> argparse.Namespace:
+    """parses the arguments for cn0_analyse
+    Args:
+        argv (list): list of arguments
+    Returns:
+        argparse.Namespace: parsed arguments
+    """
+    baseName = str_yellow(script_name)
+
+    help_txt = baseName + " analyses the CN0 values from a CSV observation file."
+
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_txt)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+    )
+
+    parser.add_argument(
+        "--obs_fn",
+        help="CSV observation file",
+        type=str,
+        required=True,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--gnss",
+        help="GNSS systems (select one of GREC)",
+        type=str,
+        required=True,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--sigtype",
+        help="signal type (e.g. 1C, 2W, ...)",
+        type=str,
+        required=True,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--interval",
+        help="interval in seconds (default=10s, can be fractional)",
+        type=float,
+        required=False,
+        default=10.0,
     )
 
     # allow argument completion
@@ -671,7 +682,7 @@ def argument_parser_get_base_coord(args: list) -> argparse.Namespace:
 
 
 def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
-    """Launches the appropiate functions to calculate the ebh_lines from the sbf_ifn file
+    """Launches the appropriate functions to calculate the ebh_lines from the sbf_ifn file
     from which it retrievers the correct timings,
     decides whether the RTK or PPK solution has a sufficient quality,
     and finally outputs correct ASSUR formatted files for each ebh line.
@@ -681,9 +692,9 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
     help_text = (
         baseName
         + """
-        Launches the appropiate functions to calculate the ebh_lines from the sbf_ifn file
-        from which it retrievers the correct timings, 
-        decides whether the RTK or PPK solution has a sufficient quality, 
+        Launches the appropriate functions to calculate the ebh_lines from the sbf_ifn file
+        from which it retrievers the correct timings,
+        decides whether the RTK or PPK solution has a sufficient quality,
         and finally outputs correct ASSUR formatted files for each ebh line.
         """
     )
@@ -776,7 +787,7 @@ def argument_parser_rnx2rtkp_launcher(args: list) -> argparse.Namespace:
     help_text = (
         baseName
         + """
-        This program post-processes RINEX observations and navigation files 
+        This program post-processes RINEX observations and navigation files
         and base correction data (RTCM or RNX obs) to obtain PPK, PPP, and SPP solutions using RTKLib.
         At the moment it only supports PPK calculations.
         """
@@ -883,7 +894,7 @@ def argument_parser_get_rnx_files(args: list, script_name: str) -> argparse.Name
     help_text = (
         baseName
         + """
-            Extracts rinex files from Septentrio SBF files 
+            Extracts rinex files from Septentrio SBF files
             (Future work: extend this to other file formats such as rtcm3, ubx, etc.)
         """
     )
@@ -989,8 +1000,8 @@ def argument_parser_reformat_sbf_rnx_for_opus(
     args: list, script_name: str
 ) -> argparse.Namespace:
     """
-    This script checks and reformats rnx files for OPUS processing. 
-    Default is 01D duratiom and 30 seconds epoch interval for gnss systems GPS and Galileo.
+    This script checks and reformats rnx files for OPUS processing.
+    Default is 01D duration and 30 seconds epoch interval for gnss systems GPS and Galileo.
     The scripts accepts sbf and rnx files.
     """
     baseName = str_yellow(script_name)
@@ -1013,7 +1024,7 @@ def argument_parser_reformat_sbf_rnx_for_opus(
         required=False,
         default="/tmp/logs/",
     )
-    
+
     # Create mutually exclusive group for rnx_ifn and sbf_ifn (RINEX and SBF Septentrio respectively)
     group_sbfrnx = parser.add_mutually_exclusive_group(required=True)
     group_sbfrnx.description = (
@@ -1057,6 +1068,73 @@ def argument_parser_reformat_sbf_rnx_for_opus(
     args = parser.parse_args(args[1:])
 
     return args
+
+
+def argument_parser_sbfmeas2csv(script_name: str, args: list) -> argparse.Namespace:
+    """parses the arguments
+
+    Args:
+        argv (list): list of arguments
+
+    Returns:
+        argparse.Namespace: parsed arguments
+    """
+    baseName = str_yellow(script_name)
+
+    help_txt = (
+        baseName
+        + " Convert SBF file to CSV file similar to those created by rtcm3_parser.py"
+    )
+
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_txt)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+    )
+
+    parser.add_argument(
+        "--sbf_ifn",
+        help="SBF filename",
+        type=str,
+        required=True,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--csv_fn",
+        help="CSV observation filename (defaults to filename with extension csv)",
+        type=str,
+        required=False,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--gnss",
+        help="GNSS systems to convert (default: GE, select between GREC)",
+        type=str,
+        required=False,
+        default="GE",
+    )
+
+    parser.add_argument(
+        "--archive",
+        help="Archives extracted sbf blocks to specified archive's directory name. (full or relative (@sbf_ifn) path) \
+            Default is no archiving.",
+        required=False,
+        default=None,
+        type=str,
+    )
+    # allow argument completion
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args(args)
+
+    return args
+
 def argument_parser_nmeaReader(args: list, script_name: str) -> argparse.Namespace:
     """
     Read a file with NMEA data and return a dataframe with extracted NMEA data

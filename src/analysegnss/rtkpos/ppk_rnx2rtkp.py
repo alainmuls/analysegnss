@@ -13,7 +13,8 @@ from tabulate import tabulate
 # Local application imports
 from analysegnss.rtkpos import rtk_constants as rtkc
 from analysegnss.rtkpos.rtkpos_class import Rtkpos
-from analysegnss.utils import argument_parser, init_logger
+from analysegnss.utils import init_logger
+from analysegnss.utils.argument_parser import argument_parser_ppk
 
 
 def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> list:
@@ -31,7 +32,7 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> list:
             [
                 rtkc.DICT_RTK_PVTMODE[qual[0]]["desc"],
                 qual_data.shape[0],
-                round(qual_data.shape[0]/total_obs*100,2),
+                round(qual_data.shape[0] / total_obs * 100, 2),
             ]
         )
 
@@ -41,11 +42,11 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> list:
         tablefmt="fancy_outline",
     )
 
-
     if logger is not None:
         logger.info(f"Analysis of the quality of the position data\n{qual_tabular}")
 
     return qual_analysis
+
 
 def rtkp_pos(argv: list) -> pl.DataFrame:
     """analyses the rnx2rtkp output file and extracts the position information
@@ -60,7 +61,9 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    args_parsed = argument_parser.argument_parser_ppk(args=argv[1:])
+    args_parsed = argument_parser_ppk(
+        args=argv[1:], script_name=os.path.basename(__file__)
+    )
     # print(f"\nParsed arguments: {args_parsed}")
 
     # create the file/console logger
@@ -69,9 +72,7 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
 
     # create a RTKlib pos class object
     try:
-        rtkpos = Rtkpos(
-            pos_fn=args_parsed.pos_ifn, logger=logger
-        ) 
+        rtkpos = Rtkpos(pos_fn=args_parsed.pos_ifn, logger=logger)
     except Exception as e:
         logger.error(f"Error creating RTKPos object: {e}")
         sys.exit(1)
@@ -83,16 +84,14 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
     # analyse the quality of the solution
     quality_analysis(df_pos=pos_df, logger=logger)
 
-    with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
-        logger.debug(f"df_pos = \n{pos_df}")
+    logger.debug(f"df_pos = \n{pos_df}")
 
     return pos_df
 
 
 def main():
     df_rtkpos = rtkp_pos(argv=sys.argv)
-    with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
-        print(df_rtkpos)
+    print(df_rtkpos)
 
 
 if __name__ == "__main__":

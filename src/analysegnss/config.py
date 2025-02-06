@@ -17,15 +17,27 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Define the path to the geoid file
 GEOID_PATH = os.path.join(BASE_DIR, "gnss", "geoids", "egm2008-1.pgm")
 
-
 # Constants
-GM = 398600.4418  # Earth's gravitational constant km³/s²
-R_EARTH = 6378136  # Earth's radius meter
-J2 = 1082.63e-6  # Second zonal harmonic
-OMEGA_EARTH = 7.2921151467e-5  # Earth's rotation rate rad/s
+# Earth's gravitational constant
+RE_GLO = 6378136.0  # type: ignore # radius of earth (m)            ref [2]
+GM_GPS = 3.986005e14  # type: ignore # gravitational constant         ref [1]
+GM_GLO = 3.9860044e14  # type: ignore # gravitational constant         ref [2]
+GM_GAL = 3.986004418e14  # type: ignore # earth gravitational constant   ref [7]
+GM_BDS = 3.986004418e14  # type: ignore # earth gravitational constant   ref [9]
+
+J2_GLO = 1.0826257e-3  # 2nd zonal harmonic of geopot   ref [2]
+
+# Earth's rotation rate
+OMGE_GPS = 7.2921151467e-5  # Earth's rotation rate rad/sOMGE_GLO = 7.292115e-5  # earth angular velocity (rad/s) ref [2]
+OMGE_GAL = 7.2921151467e-5  # earth angular velocity (rad/s) ref [7]
+OMGE_BDS = 7.292115e-5  # earth angular velocity (rad/s) ref [9]
+
+# Timing constants
 GPS_BDS_WEEK_DIFF = 1356  # week difference between GPS and BDS time
-C84 = 299792458  # Speed of light m/s
 SECS_IN_WEEK = 604800  # seconds in a week
+
+# speed of light
+C84 = 299792458  # Speed of light m/s
 
 # Error codes
 ERROR_CODES = {
@@ -69,11 +81,13 @@ ERROR_CODES = {
     "E_NO_RINEX_OBS": 46,
     "E_NO_RINEX_NAV": 47,
     "E_SIGNALTYPE_MISMATCH": 48,
+    "E_WRONG_GNSS": 49,
+    "E_SBF_BLOCKS": 50,
     "E_PROCESS": 90,
     "E_FAILURE": 99,
 }
 
-GNSS_DICT = {
+DICT_GNSS = {
     "G": "GPS",
     "R": "Glonass",
     "E": "Galileo",
