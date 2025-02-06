@@ -12,10 +12,18 @@ from analysegnss.utils.utilities import str_green, str_red, str_yellow
 
 @dataclass
 class RINEX_NAV(RINEX):
-    """class for RINEX navigation files.
+    """RINEX Navigation File Processor
 
     It performs operations on a RINEX navigation file, including reading the file,
     converting it to a tabular format, and writing it to a CSV file.
+
+    Attributes:
+        rnxnav_fn (str): Path to RINEX navigation file
+
+    Examples:
+        >>> nav = RINEX_NAV("path/to/nav.rnx")
+        >>> nav_data = nav.gfzrnx_tabnav()
+
     """
 
     rnxnav_fn: str = field(
