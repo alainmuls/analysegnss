@@ -16,7 +16,7 @@ from analysegnss.plots.plot_columns import get_utm_columns
 from analysegnss.utils import argument_parser, init_logger
 
 
-def get_origin(parsed_args: list) -> str:
+def get_origin(parsed_args: list) -> str: # TODO replace 'origin' naming to 'source'?
     """determines the origin  of the coordinates
 
     Args:
@@ -104,80 +104,84 @@ def plot_coords(argv: list):
             ]
             dfs_glab = glab_parser.glab_parser(argv=glab_parser_args)
 
-            with pl.Config(
-                tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"
-            ):
-                for section, df_section in dfs_glab.items():
-                    if section == "OUTPUT":
-                        print(
-                            f"dataframe from [green][bold]{section}[/bold][/green] section"
-                        )
-                        print(df_section)
+            for section, df_section in dfs_glab.items():
+                if section == "OUTPUT":
+                    print(
+                        f"dataframe from [green][bold]{section}[/bold][/green] section"
+                    )
+                    print(df_section)
 
             df_origin = dfs_glab["OUTPUT"]
 
 
         case "NMEA":
             # create the NMEA dataframe by calling nmeaReader.py
-
             df_origin, qual_analysis = nmeaReader.nmeaReader(parsed_args=args_parsed, logger=logger)
 
         case "PNT_CSV":
             # create a PNT_CSV dataframe by reading PNT_CSV file written by nmeaReader.py, rtk_pvtgeod.py, ppk_rnx2rtkp.py or glab_parser.py
-            df_origin = pl.read_csv(args_parsed.csv_ifn)
+            df_origin = pl.read_csv(args_parsed.csv_ifn, schema_overrides={"DT": pl.Datetime})
 
         case _:
             logger.error(f"Invalid origin: {origin}")
             sys.exit(ERROR_CODES["E_INVALID_ORIGIN"])
 
+    logger.debug(f"print source dataframe:\n{df_origin}")
+    
+    
     # get the utm columns names according to the origin
     utm_columns = get_utm_columns(origin=origin)
-    print(f"utm_columns: {utm_columns}")
-    print(f"type(utm_columns): {type(utm_columns)}")
-
-    print(
+    
+    
+    logger.debug(f"utm_columns: {utm_columns}")
+    logger.debug(f"type(utm_columns): {type(utm_columns)}")
+    logger.debug(
         f"{utm_columns.east} {utm_columns.north} {utm_columns.quality_mapping.columns}"
     )
 
     # create the df_utm dataframe from the dataframe obtained according to each origin
-    if not args_parsed.sd:
-        df_utm = df_origin.select(
-            [
-                utm_columns.time,
-                utm_columns.quality_mapping.columns,
-                utm_columns.nrSVN,
-                utm_columns.east,
-                utm_columns.north,
-                utm_columns.height,
-            ]
-        )
-    else:
-        df_utm = df_origin.select(
-            [
-                utm_columns.time,
-                utm_columns.quality_mapping.columns,
-                utm_columns.nrSVN,
-                utm_columns.east,
-                utm_columns.north,
-                utm_columns.height,
-                utm_columns.sdn,
-                utm_columns.sde,
-                utm_columns.sdu,
-            ]
-        )
+    try:
+        if not args_parsed.sd:
+            df_utm = df_origin.select(
+                [
+                    utm_columns.time,
+                    utm_columns.quality_mapping.columns,
+                    utm_columns.nrSVN,
+                    utm_columns.east,
+                    utm_columns.north,
+                    utm_columns.height,
+                ]
+            )
+        else:
+            df_utm = df_origin.select(
+                [
+                    utm_columns.time,
+                    utm_columns.quality_mapping.columns,
+                    utm_columns.nrSVN,
+                    utm_columns.east,
+                    utm_columns.north,
+                    utm_columns.height,
+                    utm_columns.sdn,
+                    utm_columns.sde,
+                    utm_columns.sdu,
+                ]
+            )
+    except pl.exceptions.ColumnNotFoundError as e: 
+        column_missing = e.args[0]
+        logger.error(f"ERROR: Missing the column |{column_missing}| in the dataframe")
+        sys.exit(1)
+        
     # select the columns needed for the plot
-    with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
-        print(f"=====================\ndf_utm = \n{df_utm}\n=====================")
+    print(f"=====================\ndf_utm = \n{df_utm}\n=====================")
 
-    with pl.Config(tbl_cols=-1, float_precision=3, tbl_cell_numeric_alignment="RIGHT"):
-        if logger is not None:
-            logger.info(f"df_utm = \n{df_utm}")
+    if logger is not None:
+        logger.info(f"df_utm = \n{df_utm}")
 
     # find filename and directory from the position file
     # ifn_full = args_parsed.pos_ifn if args_parsed.pos_ifn else args_parsed.sbf_ifn
     ifn_full = next(
         ifn
-        for ifn in [args_parsed.pos_ifn, args_parsed.sbf_ifn, args_parsed.glab_ifn]
+        for ifn in [args_parsed.pos_ifn, args_parsed.sbf_ifn, args_parsed.glab_ifn, args_parsed.nmea_ifn, args_parsed.csv_ifn]
         if ifn is not None
     )
 
@@ -231,7 +235,6 @@ def plot_coords(argv: list):
 
 
 def main():
-    
     
     df_utm = plot_coords(argv=sys.argv)  # type: ignore
 

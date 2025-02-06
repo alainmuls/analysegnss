@@ -30,14 +30,14 @@ def quality_analysis(df_pvt: pl.DataFrame, logger: logging.Logger = None) -> lis
         qual_analysis.append(
             [
                 nmeac.DICT_NMEA_PVT_QUALITY[qual[0]]["desc"],
-                qual_data.shape[0],
+                f"{qual_data.shape[0]}/{total_obs}",
                 round(qual_data.shape[0]/total_obs*100,2),
             ]
         )
 
     qual_tabular = tabulate(
         qual_analysis,
-        headers=["PNT Mode", "Count", "Percentage (count/all_obs)"],
+        headers=["PNT Mode", "Count", "Percentage"],
         tablefmt="fancy_outline",
     )
     
@@ -108,7 +108,7 @@ def main():
     logger.info(f"Parsed arguments: {args_parsed}")
 
     # call nmeaReader to read NMEA data and return a dataframe
-    nmea_df = nmeaReader(parsed_args=args_parsed, logger=logger)
+    nmea_df, _ = nmeaReader(parsed_args=args_parsed, logger=logger)
    
     # write the NMEA dataframe to a csv file
     if args_parsed.csv_out:

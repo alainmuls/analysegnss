@@ -169,12 +169,12 @@ def argument_parser_plot_coords(args: list) -> argparse.Namespace:
     )
     group.add_argument(
         "--nmea_ifn",
-        help="input NMEA filename",
+        help="input NMEA filename (-sd standard deviation not yet supported!)",
         type=str,
     )
     group.add_argument(
         "--csv_ifn",
-        help="input CSV filename",
+        help="input CSV filename (only csv sourced from nmea DF supported!)",
         type=str,
     )
 
@@ -1063,7 +1063,7 @@ def argument_parser_nmeaReader(args: list, script_name: str) -> argparse.Namespa
     and optionally write the dataframe to a csv file
     """
 
-    baseName = script_name
+    baseName = str_yellow(script_name)
 
     help_text = (
         baseName
