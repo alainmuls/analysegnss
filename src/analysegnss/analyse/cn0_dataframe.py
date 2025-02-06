@@ -16,7 +16,7 @@ import polars as pl
 from rich import print
 
 from analysegnss.config import ERROR_CODES, DICT_GNSS, rich_console
-from analysegnss.CSV.CSV_class import GNSS_CSV
+from analysegnss.csv.csv_class import GNSS_CSV
 from analysegnss.utils import init_logger
 from analysegnss.utils.utilities import str_red
 from analysegnss.utils.argument_parser import argument_parser_cn0_daily

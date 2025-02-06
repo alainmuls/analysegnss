@@ -16,7 +16,9 @@ from analysegnss.sbf.sbf_class import SBF
 from analysegnss.utils import argument_parser, init_logger
 
 
-def get_base_coord_from_sbf(parsed_args: argparse.Namespace, logger: Logger) -> Tuple[float, float, float]:
+def get_base_coord_from_sbf(
+    parsed_args: argparse.Namespace, logger: Logger
+) -> Tuple[float, float, float]:
     """
     This function extracts the base station coordinates from the BaseStation1 SBF block.
     Which is logged on the rover which received diffcorr from the basestation.
@@ -89,7 +91,9 @@ def get_base_coord_from_sbf(parsed_args: argparse.Namespace, logger: Logger) -> 
 
 
 def main():
-
+    """
+    Main function to extract the base station coordinates from the SBF file
+    """
     # fetch script name for logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
     # Parse arguments
@@ -100,6 +104,7 @@ def main():
     )
 
     get_base_coord_from_sbf(parsed_args=parsed_args, logger=logger)
+
 
 if __name__ == "__main__":
     main()
