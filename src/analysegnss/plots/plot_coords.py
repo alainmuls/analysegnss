@@ -7,6 +7,7 @@ import polars as pl
 from rich import print
 
 import analysegnss.glabng.glab_parser as glab_parser
+import analysegnss.nmea.nmeaReader as nmeaReader
 import analysegnss.rtkpos.ppk_rnx2rtkp as ppk_rnx2rtkp
 import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
 from analysegnss.config import ERROR_CODES, rich_console
@@ -50,7 +51,7 @@ def plot_coords(argv: list):
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    args_parsed = argument_parser.argument_parser_plot_coords(args=argv[1:])
+    args_parsed = argument_parser.argument_parser_plot_coords(script_name=script_name, args=argv[1:])
     # print(f"\nParsed arguments: {args_parsed}")
 
     # create the file/console logger
@@ -179,7 +180,7 @@ def plot_coords(argv: list):
     # ifn_full = args_parsed.pos_ifn if args_parsed.pos_ifn else args_parsed.sbf_ifn
     ifn_full = next(
         ifn
-        for ifn in [args_parsed.pos_ifn, args_parsed.sbf_ifn, args_parsed.glab_ifn]
+        for ifn in [args_parsed.pos_ifn, args_parsed.sbf_ifn, args_parsed.glab_ifn, args_parsed.nmea_ifn, args_parsed.csv_ifn]
         if ifn is not None
     )
 
@@ -193,47 +194,47 @@ def plot_coords(argv: list):
     # plot the UTM and orthoH coordinates
     if args_parsed.mpl == False:
         with rich_console.status(f"Creating UTM scatter plot.\t", spinner="aesthetic"):
-		    # use plotly for creating html plots
-		    plot_utm.plot_utm_scatter(
-		        utm_df=df_utm,
-		        origin=origin,
-		        ifn=filename_in,
-		        dir_fn=dir_fn,
-		        logger=logger,
-		        display=args_parsed.display,
-		    )
+        # use plotly for creating html plots
+            plot_utm.plot_utm_scatter(
+                utm_df=df_utm,
+                origin=origin,
+                ifn=filename_in,
+                dir_fn=dir_fn,
+                logger=logger,
+                display=args_parsed.display,
+            )
 
         with rich_console.status(f"Creating NEU vs DT plot.\t", spinner="aesthetic"):
-		    plot_utm.plot_utm_height(
-		        utm_df=df_utm,
-		        origin=origin,
-		        ifn=filename_in,
-		        dir_fn=dir_fn,
-		        sd=args_parsed.sd,
-		        logger=logger,
-		        display=args_parsed.display,
-		    )
+            plot_utm.plot_utm_height(
+            utm_df=df_utm,
+                origin=origin,
+                ifn=filename_in,
+                dir_fn=dir_fn,
+                sd=args_parsed.sd,
+                logger=logger,
+                display=args_parsed.display,
+            )
     else:
         with rich_console.status(f"Creating UTM scatter plot.\t", spinner="aesthetic"):
-		    plot_utm.plot_utm_scatter_mpl(
-		        utm_df=df_utm,
-		        origin=origin,
-		        ifn=filename_in,
-		        dir_fn=dir_fn,
-		        logger=logger,
-		        display=args_parsed.display,
-		    )
+            plot_utm.plot_utm_scatter_mpl(
+                utm_df=df_utm,
+                origin=origin,
+                ifn=filename_in,
+                dir_fn=dir_fn,
+                logger=logger,
+                display=args_parsed.display,
+            )
 
         with rich_console.status(f"Creating NEU vs DT plot.\t", spinner="aesthetic"):
-		    plot_utm.plot_utm_height_mpl(
-		        utm_df=df_utm,
-		        origin=origin,
-		        ifn=filename_in,
-		        dir_fn=dir_fn,
-		        sd=args_parsed.sd,
-		        logger=logger,
-		        display=args_parsed.display,
-		    )
+            plot_utm.plot_utm_height_mpl(
+                utm_df=df_utm,
+                origin=origin,
+                ifn=filename_in,
+                dir_fn=dir_fn,
+                sd=args_parsed.sd,
+                logger=logger,
+                display=args_parsed.display,
+            )
 
 
 def main():
