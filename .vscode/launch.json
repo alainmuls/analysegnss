@@ -71,6 +71,41 @@
                 "PYTHONPATH": "${workspaceFolder}"
             },
             "console": "integratedTerminal"
+        },
+        {
+            "name": "python debugger: plot coordinates nmea",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/analysegnss/plots/plot_coords.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--nmea_ifn",
+                "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-161759-usb-FTDI_FT230X_Basic_UART_DA0150ZY-if00-port0.out",
+                "--title",
+                "GAL_HAS_NMEA_TEST",
+                "--display",
+                "--mpl",
+                "-v",
+
+            ]
+        },
+        {
+            "name": "python debugger: plot coordinates csv (nmea)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/analysegnss/plots/plot_coords.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--csv_ifn",
+                "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-161759-usb-FTDI_FT230X_Basic_UART_DA0150ZY-if00-port0.out_nmea.csv",
+                "--title",
+                "GAL_HAS_NMEA_TEST",
+                "--display",
+                "-v",
+                ]
+    
+    
+
         }
     ]
 }

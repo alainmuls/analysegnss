@@ -80,7 +80,7 @@ def logger_setup(args: list, base_name: str = "logger", log_dest: str = "/tmp/lo
     )
 
     print(f"{str_green(f"---------- START of {base_name} (process logged @ {log_dest}) ----------")}")
-    logger.warning(f"---------- START of {base_name} (process logged @ {log_dest}) ----------")
+    logger.debug(f"---------- START of {base_name} (process logged @ {log_dest}) ----------")
 
     return logger
 
