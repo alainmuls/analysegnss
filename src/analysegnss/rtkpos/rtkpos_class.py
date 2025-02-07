@@ -355,10 +355,10 @@ class Rtkpos:
                     )
                     .alias("orthoH")
                 ).lazy()
-            if self.logger is not None:
-                self.logger.info(
-                    f"\tcollecting the dataframe. {str_red('Be patient.')}"
-                )
+            # if self.logger is not None:
+            #     self.logger.info(
+            #         f"\tcollecting the dataframe. {str_red('Be patient.')}"
+            #     )
 
             try:
                 df_pos = df_pos.collect()

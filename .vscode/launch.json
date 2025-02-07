@@ -11,7 +11,7 @@
             "program": "src/analysegnss/sbf/rtk_pvtgeod.py",
             "console": "integratedTerminal",
             "args": [
-                "--sbf_fn",
+                "--sbf_ifn",
                 "/home/amuls/GNSSData/USA_CA_2024/Ocotillo/rover/1342172Z.24_",
                 "-vvv",
                 "--sd",
@@ -24,19 +24,19 @@
             "program": "src/analysegnss/rtkpos/ppk_rnx2rtkp.py",
             "console": "integratedTerminal",
             "args": [
-                "--pos_fn",
+                "--pos_ifn",
                 "/home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rtkp/134200BEL_R_20242751023_01H_10Z_MO.pos",
                 "-vvv"
             ]
         },
         {
-            "name": "Python Debugger: rtkppk_plot Keiheuvel 2024/20/01",
+            "name": "Python Debugger: plot_coords Keiheuvel 2024/20/01",
             "type": "debugpy",
             "request": "launch",
-            "program": "src/analysegnss/plots/rtkppk_plot.py",
+            "program": "src/analysegnss/plots/plot_coords.py",
             "console": "integratedTerminal",
             "args": [
-                "--pos_fn",
+                "--pos_ifn",
                 "/home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rtkp/134200BEL_R_20242751023_01H_10Z_MO.pos",
                 "-vvv",
                 "--display",
@@ -45,13 +45,13 @@
             ]
         },
         {
-            "name": "Python Debugger: rtkppk_plot Ocotillo",
+            "name": "Python Debugger: plot_coords Ocotillo",
             "type": "debugpy",
             "request": "launch",
             "program": "src/analysegnss/plots/plot_coords.py",
             "console": "integratedTerminal",
             "args": [
-                "--sbf_fn",
+                "--sbf_ifn",
                 "/home/amuls/GNSSData/USA_CA_2024/Ocotillo/rover/1342172Z.24_",
                 "-vvv",
                 "--display",
@@ -65,12 +65,13 @@
             "program": "src/analysegnss/plots/plot_coords.py",
             "console": "integratedTerminal",
             "args": [
-                "--glab_fn",
+                "--glab_ifn",
                 "/home/amuls/GNSSData/2024-03-29-schaffen/20240329/glab/KMS000BEL_R_20240890943_03H_01S_MO_gal.glab",
                 "-vvv",
                 "--display",
                 "--sd",
-                "--plot"
+                "--plot",
+                "--mpl",
             ]
         },
         {
@@ -80,7 +81,7 @@
             "program": "src/analysegnss/rinex/rnxobs_csv.py",
             "console": "integratedTerminal",
             "args": [
-                "--obs_fn",
+                "--obs_ifn",
                 "/home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rnx/base00BEL_R_20242751022_01H_05S_MO.rnx",
                 "-vvv",
             ]
@@ -92,7 +93,7 @@
             "program": "src/analysegnss/rinex/rnxnav_csv.py",
             "console": "integratedTerminal",
             "args": [
-                "--nav_fn",
+                "--nav_ifn",
                 "/home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rnx/base00BEL_R_20242751021_01H_MN.rnx",
                 "-vvv",
                 "--gnss",
@@ -106,7 +107,7 @@
             "program": "src/analysegnss/rinex/rnxnav_csv.py",
             "console": "integratedTerminal",
             "args": [
-                "--nav_fn",
+                "--nav_ifn",
                 "/home/amuls/cylab/TESTDATA/data2test/data/BRUX00BEL0_GREC.nav",
                 "-vvv",
                 "--gnss",
@@ -120,7 +121,7 @@
             "program": "src/analysegnss/rinex/rnxnav_csv.py",
             "console": "integratedTerminal",
             "args": [
-                "--nav_fn",
+                "--nav_ifn",
                 "/home/amuls/cylab/TESTDATA/data2test/data/BRUX00BEL0_GREC.nav",
                 "-vvv",
                 "--gnss",
@@ -134,7 +135,7 @@
             "program": "src/analysegnss/rinex/rnxnav_csv.py",
             "console": "integratedTerminal",
             "args": [
-                "--nav_fn",
+                "--nav_ifn",
                 "/home/amuls/cylab/TESTDATA/flepos/BERT/RX3/BERT00BEL_R_20243640700_41H_MN.rnx",
                 "-vvv",
                 "--gnss",
@@ -148,9 +149,9 @@
             "program": "src/analysegnss/rinex/rnx_csv.py",
             "console": "integratedTerminal",
             "args": [
-                "--obs_fn",
+                "--obs_ifn",
                 "/home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rnx/base00BEL_R_20242751022_01H_05S_MO.rnx",
-                "--nav_fn",
+                "--nav_ifn",
                 "/home/amuls/cylab/TESTDATA/data2test/data/BRUX00BEL0_GREC.nav",
                 "-vvv",
                 "--gnss",
@@ -164,7 +165,7 @@
             "program": "src/analysegnss/glabng/glab_parser.py",
             "console": "integratedTerminal",
             "args": [
-                "--glab_fn",
+                "--glab_ifn",
                 "/home/amuls/GNSSData/2024-03-29-schaffen/20240329/glab/KMS000BEL_R_20240890943_03H_01S_MO_gal.glab",
                 "--section",
                 "OUTPUT,SATSEL",

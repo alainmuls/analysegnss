@@ -479,7 +479,7 @@ def argument_parser_glab_parser(script_name: str, args: list) -> argparse.Namesp
     )
 
     parser.add_argument(
-        "--glab_fn",
+        "--glab_ifn",
         help="gLAB produced file",
         type=str,
         required=True,

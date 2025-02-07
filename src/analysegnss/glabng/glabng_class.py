@@ -16,7 +16,7 @@ from analysegnss.utils.utilities import str_red, str_yellow
 
 @dataclass
 class GLABNG:
-    glab_fn: str = field(default=None)
+    glab_ifn: str = field(default=None)
     start_time: datetime.time = field(default=None)
     end_time: datetime.time = field(default=None)
 
@@ -36,18 +36,18 @@ class GLABNG:
             ValueError: when file doesn't exist or isn't readable
         """
         # Check if file exists and is readable
-        if not os.path.isfile(self.glab_fn) or not os.access(self.glab_fn, os.R_OK):
+        if not os.path.isfile(self.glab_ifn) or not os.access(self.glab_ifn, os.R_OK):
             if self.logger:
                 self.logger.error(
-                    f"File does not exist or is not readable: {str_red(self.glab_fn)}"
+                    f"File does not exist or is not readable: {str_red(self.glab_ifn)}"
                 )
             raise ValueError(
-                f"File does not exist or is not readable: {str_red(self.glab_fn)}"
+                f"File does not exist or is not readable: {str_red(self.glab_ifn)}"
             )
 
         # Check for OUTPUT lines
         has_output_lines = False
-        with open(self.glab_fn, "r") as f:
+        with open(self.glab_ifn, "r") as f:
             for line in f:
                 if line.startswith("OUTPUT"):
                     has_output_lines = True
@@ -56,9 +56,9 @@ class GLABNG:
         if not has_output_lines:
             if self.logger:
                 self.logger.error(
-                    f"File contains no OUTPUT lines: {str_red(self.glab_fn)}"
+                    f"File contains no OUTPUT lines: {str_red(self.glab_ifn)}"
                 )
-            raise ValueError(f"File contains no OUTPUT lines: {str_red(self.glab_fn)}")
+            raise ValueError(f"File contains no OUTPUT lines: {str_red(self.glab_ifn)}")
 
     def validate_start_time(self):
         """
@@ -143,7 +143,7 @@ class GLABNG:
 
         # Check which sections exist in file
         valid_sections = []
-        with open(self.glab_fn, "r") as f:
+        with open(self.glab_ifn, "r") as f:
             lines = f.readlines()
             for section in lst_sections:
                 if any(line.startswith(section) for line in lines):
@@ -151,14 +151,14 @@ class GLABNG:
                 else:
                     if self.logger:
                         self.logger.warning(
-                            f"Section '{str_red(section)}' not found in {str_yellow(self.glab_fn)}, skipping"
+                            f"Section '{str_red(section)}' not found in {str_yellow(self.glab_ifn)}, skipping"
                         )
 
         section_dfs = {}  # dict with glabng section name and dataframe"
         for glab_section in valid_sections:
-            # read the glab_fn file and just use the lines that start with glab_section
+            # read the glab_ifn file and just use the lines that start with glab_section
             section_data = []
-            with open(self.glab_fn, "r") as f:
+            with open(self.glab_ifn, "r") as f:
                 lines = f.readlines()
                 for line in lines:
                     if line.startswith(glab_section):
