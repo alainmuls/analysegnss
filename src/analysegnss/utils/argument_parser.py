@@ -1060,7 +1060,7 @@ def argument_parser_reformat_sbf_rnx_for_opus(
     return args
 
 
-def argument_parser_sbfmeas2csv(script_name: str, args: list) -> argparse.Namespace:
+def argument_parser_sbfmeas_csv(script_name: str, args: list) -> argparse.Namespace:
     """parses the arguments
 
     Args:

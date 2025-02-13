@@ -12,7 +12,7 @@ from rich import print
 from analysegnss.config import DICT_GNSS, DICT_SIGNAL_TYPES, ERROR_CODES
 from analysegnss.sbf.sbf_class import SBF
 from analysegnss.utils import init_logger
-from analysegnss.utils.argument_parser import argument_parser_sbfmeas2csv
+from analysegnss.utils.argument_parser import argument_parser_sbfmeas_csv
 from analysegnss.utils.utilities import str_red, str_green
 
 
@@ -248,7 +248,7 @@ def convert_dataframe_csv(
         raise RuntimeError(f"Error during CSV writing: {e}")
 
 
-def sbfmeas2csv(argv: list):
+def sbfmeas_csv(argv: list):
     """reads SBF file and converts it to CSV file similar
     to those created by rtcm3_parser.py
 
@@ -259,7 +259,7 @@ def sbfmeas2csv(argv: list):
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    args_parsed = argument_parser_sbfmeas2csv(
+    args_parsed = argument_parser_sbfmeas_csv(
         args=argv[1:], script_name=os.path.basename(__file__)
     )
 
@@ -326,7 +326,7 @@ def sbfmeas2csv(argv: list):
 
 
 def main():
-    sbfmeas2csv(argv=sys.argv)
+    sbfmeas_csv(argv=sys.argv)
 
 
 if __name__ == "__main__":

@@ -116,6 +116,9 @@ def rtk_pvtgeod(argv: list) -> dict:
                 lst_sbfblocks=["PVTGeodetic2"], archive=args_parsed.archive
             )["PVTGeodetic2"]
 
+        # fill the null values with NaN
+        df_pvt = df_pvt.fill_null(float('nan'))
+
         logger.info(f"  df_pvt: \n{df_pvt}")
 
         # analyse the quality of the solution
