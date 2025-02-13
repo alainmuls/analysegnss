@@ -208,7 +208,7 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
-    print(f"Parsed arguments: {vars(args)}")
+    # print(f"Parsed arguments: {vars(args)}")
 
     return args
 

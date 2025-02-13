@@ -73,8 +73,9 @@
                 "-vvv",
                 "--display",
                 "--sd",
-                "--plot",
                 "--mpl",
+                "--archive",
+                "/tmp",
             ]
         },
         {
