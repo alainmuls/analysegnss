@@ -340,7 +340,7 @@ class Rtkpos:
                     pl.struct(["latitude(deg)", "longitude(deg)"])
                     .apply(
                         lambda x: gh_model.get(
-                            x["latitude(deg)"], x["longitude(deg)"], gh_model
+                            x["latitude(deg)"], x["longitude(deg)"]
                         ),
                         return_dtype=pl.Float64,
                     )
