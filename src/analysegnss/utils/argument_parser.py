@@ -316,7 +316,7 @@ def argument_parser_rnxobs_csv(script_name: str, args: list) -> argparse.Namespa
     )
 
     parser.add_argument(
-        "--obs_fn",
+        "--obs_ifn",
         help="RINEX observation filename",
         type=str,
         required=True,
@@ -324,7 +324,7 @@ def argument_parser_rnxobs_csv(script_name: str, args: list) -> argparse.Namespa
     )
 
     parser.add_argument(
-        "--csv_fn",
+        "--csv_ofn",
         help="CSV observation filename (defaults to filename with extension csv)",
         type=str,
         required=False,
@@ -374,7 +374,7 @@ def argument_parser_rnxnav_csv(script_name: str, args: list) -> argparse.Namespa
     )
 
     parser.add_argument(
-        "--nav_fn",
+        "--nav_ifn",
         help="RINEX navigation filename",
         type=str,
         required=True,
@@ -424,7 +424,7 @@ def argument_parser_rnx_csv(script_name: str, args: list) -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--obs_fn",
+        "--obs_ifn",
         help="RINEX observation filename",
         type=str,
         required=True,
@@ -432,7 +432,7 @@ def argument_parser_rnx_csv(script_name: str, args: list) -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--nav_fn",
+        "--nav_ifn",
         help="RINEX navigation filename",
         type=str,
         required=True,

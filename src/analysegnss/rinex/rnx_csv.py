@@ -40,8 +40,8 @@ def rnx_csv(argv: list):
     # create the arguments for rnxobs_csv.py
     rnxobs_argv = [
         "rnxobs_csv.py",
-        "--obs_fn",
-        args_parsed.obs_fn,
+        "--obs_ifn",
+        args_parsed.obs_ifn,
         "--gnss",
         args_parsed.gnss,
     ]
@@ -57,8 +57,8 @@ def rnx_csv(argv: list):
     # create the arguments for rnxobs_csv.py
     rnxnav_args = [
         "rnxnav_csv.py",
-        "--nav_fn",
-        args_parsed.nav_fn,
+        "--nav_ifn",
+        args_parsed.nav_ifn,
         "--gnss",
         args_parsed.gnss,
     ]

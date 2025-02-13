@@ -19,40 +19,40 @@ class RINEX_OBS(RINEX):
     converting it to a tabular format, and writing it to a CSV file.
     """
 
-    rnxobs_fn: str = field(
+    rnxobs_ifn: str = field(
         default=None, metadata={"help": "RINEX observation file name"}
     )
 
     def __post_init__(self):
-        # Keep rnxobs_fn separate from parent's rnx_fn
+        # Keep rnxobs_ifn separate from parent's rnx_fn
         super().__post_init__()
-        self.validate_rnxobs_fn()
+        self.validate_rnxobs_ifn()
 
-    def validate_rnxobs_fn(self):
+    def validate_rnxobs_ifn(self):
         """Validates that the RINEX file specified in `self.rnx_fn` exists
         and is a valid RINEX observation file.
         If the file does not exist or is not a valid RINEX observation file,
         it raises a `ValueError` with an appropriate error message,
         and logs the error using the provided `self.logger` object if it is not `None`.
         """
-        if not os.path.isfile(self.rnxobs_fn):
+        if not os.path.isfile(self.rnxobs_ifn):
             if self.logger:
-                self.logger.error(f"File does not exist: {self.rnxobs_fn}")
-            raise ValueError(f"File does not exist: {self.rnxobs_fn}")
+                self.logger.error(f"File does not exist: {self.rnxobs_ifn}")
+            raise ValueError(f"File does not exist: {self.rnxobs_ifn}")
 
         # Validate RINEX file permissions
-        if not os.access(self.rnxobs_fn, os.R_OK):
+        if not os.access(self.rnxobs_ifn, os.R_OK):
             if self.logger:
                 self.logger.error(
-                    f"No read permission for RINEX file: {self.rnxobs_fn}"
+                    f"No read permission for RINEX file: {self.rnxobs_ifn}"
                 )
             raise PermissionError(
-                f"No read permission for RINEX file: {self.rnxobs_fn}"
+                f"No read permission for RINEX file: {self.rnxobs_ifn}"
             )
 
         # check if it is a RINEX observation file
         try:
-            with open(self.rnxobs_fn, "r") as file:
+            with open(self.rnxobs_ifn, "r") as file:
                 # Read the first line of the file
                 first_line = file.readline().strip()
 
@@ -63,10 +63,10 @@ class RINEX_OBS(RINEX):
                 ):
                     if self.logger is not None:
                         self.logger.error(
-                            f"File is not a RINEX observation file: {self.rnxobs_fn}"
+                            f"File is not a RINEX observation file: {self.rnxobs_ifn}"
                         )
                     raise ValueError(
-                        f"File is not a RINEX observation file: {self.rnxobs_fn}"
+                        f"File is not a RINEX observation file: {self.rnxobs_ifn}"
                     )
         except Exception as e:
             if self.logger is not None:
@@ -87,7 +87,7 @@ class RINEX_OBS(RINEX):
             self.gfzrnx_exe,
             "-f",  # overwrite previous version of the output file
             "-finp",
-            self.rnxobs_fn,
+            self.rnxobs_ifn,
             "-tab",
             "-tab_sep",
             ",",

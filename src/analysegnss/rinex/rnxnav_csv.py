@@ -36,7 +36,7 @@ def rnxnav_csv(argv: list):
     # create the RINEX object
     try:
         rnxnav = RINEX_NAV(
-            rnxnav_fn=args_parsed.nav_fn,
+            rnxnav_ifn=args_parsed.nav_ifn,
             gnss=args_parsed.gnss,
             logger=logger,
         )
@@ -54,7 +54,7 @@ def rnxnav_csv(argv: list):
         return 1
 
     # get directory part and filename without extension part of the RINEX navigation file
-    rnxnav_dir, rnxnav_fn = os.path.split(args_parsed.nav_fn)
+    rnxnav_dir, rnxnav_fn = os.path.split(args_parsed.nav_ifn)
     rnxnav_dir = rnxnav_dir or "."
 
     # change to the directory part of the RINEX navigation file in try block
