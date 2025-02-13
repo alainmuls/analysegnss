@@ -397,7 +397,7 @@ def plot_utm_scatter_mpl(
     plt.tight_layout()
 
     if display:
-        plt.show(block=True)
+        plt.draw()
 
     plots_dir = os.path.join(dir_fn, "plots")
     os.makedirs(plots_dir, exist_ok=True)
@@ -406,7 +406,7 @@ def plot_utm_scatter_mpl(
     fig.savefig(fn_plot, bbox_inches="tight", dpi=300)
     print(f"Plot saved to {fn_plot}")
 
-    plt.close(fig)
+    # plt.close(fig)
 
 
 def plot_utm_height_mpl(
@@ -507,9 +507,6 @@ def plot_utm_height_mpl(
 
     plt.tight_layout()
 
-    if display:
-        plt.show(block=True)
-
     # Create plots directory if it doesn't exist
     plots_dir = os.path.join(dir_fn, "plots")
     os.makedirs(plots_dir, exist_ok=True)
@@ -520,4 +517,7 @@ def plot_utm_height_mpl(
     fig.savefig(fn_plot, bbox_inches="tight", dpi=300)
     print(f"Plot saved to {fn_plot}")
 
-    plt.close(fig)
+    if display:
+        plt.draw()
+        
+    # plt.close(fig)

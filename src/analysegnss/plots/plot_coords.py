@@ -3,16 +3,14 @@
 import os
 import sys
 
+import matplotlib.pyplot as plt
 import polars as pl
-
 from rich import print
 
 import analysegnss.glabng.glab_parser as glab_parser
 import analysegnss.rtkpos.ppk_rnx2rtkp as ppk_rnx2rtkp
 import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
-
-from analysegnss.config import ERROR_CODES
-from analysegnss.config import rich_console
+from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.plots import plot_utm
 from analysegnss.plots.plot_columns import get_utm_columns
 from analysegnss.utils import init_logger
@@ -124,12 +122,12 @@ def plot_coords(argv: list):
 
 	# get the utm columns names according to the origin
 	utm_columns = get_utm_columns(origin=origin)
-	print(f"utm_columns: {utm_columns}")
-	print(f"type(utm_columns): {type(utm_columns)}")
+	# print(f"utm_columns: {utm_columns}")
+	# print(f"type(utm_columns): {type(utm_columns)}")
 
-	print(
-		f"{utm_columns.east} {utm_columns.north} {utm_columns.quality_mapping.columns}"
-	)
+	# print(
+	# 	f"{utm_columns.east} {utm_columns.north} {utm_columns.quality_mapping.columns}"
+	# )
 
 	# create the df_utm dataframe from the dataframe obtained according to each origin
 	if not args_parsed.sd:
@@ -158,7 +156,7 @@ def plot_coords(argv: list):
 			]
 		)
 	# select the columns needed for the plot
-	print(f"=====================\ndf_utm = \n{df_utm}\n=====================")
+	# print(f"=====================\ndf_utm = \n{df_utm}\n=====================")
 	if logger is not None:
 		logger.info(f"df_utm = \n{df_utm}")
 
@@ -222,6 +220,9 @@ def plot_coords(argv: list):
 				display=args_parsed.display,
 			)
 
+		if args_parsed.display:
+			with rich_console.status(f"Displaying plots.\t", spinner="aesthetic"):
+				plt.show(block=True)
 
 def main():
 	df_utm = plot_coords(argv=sys.argv)  # type: ignore
