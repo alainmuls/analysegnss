@@ -4,10 +4,12 @@ import os
 import pandas as pd
 import pytest
 import sys
+import numpy as np
+import pytest
+from rich import print
 
 from src.analysegnss.config import GPS_BDS_WEEK_DIFF
-from src.analysegnss.gnss.GLONASSEphemeris import GLONASSEphemeris
-from src.analysegnss.gnss.GNSSephemeris import GNSSEphemeris
+
 from src.analysegnss.gnss.GNSSNavReader import GNSSNavReader
 from src.analysegnss.config import RE_GLO
 from src.analysegnss.gnss.gnss_dt import gnss2dt
@@ -203,22 +205,31 @@ def test_satellite_position_calculation2():
     }
 
     # Test for each navigation type
-    for nav_type, navcsv_fn in nav_csv_fns.items():
-        gnss_nav_reader = GNSSNavReader(csv_file=navcsv_fn)
+    print(data_infos)
+    print(data_infos.keys())
+    print(data_infos.values())
+    for gnss_prn, data_info in data_infos.items():
+        print(f"\nProcessing {gnss_prn}")
+        print(f"  Processing {data_info.keys()}")
+        print(f"  Processing {data_info.values()}")
+        cvs_ifn = data_info["cvs_ifn"]
+        t_mid = data_info["t_mid"]
+        satpos_ifn = data_info["satpos_ifn"]
+        print(f"  Processing {cvs_ifn} | {t_mid} | {satpos_ifn}")
+
+        gnss_nav_reader = GNSSNavReader(csv_file=cvs_ifn)
         gnss_nav_reader.read_GEC_nav_csv()
-        nav_data = gnss_nav_reader.get_ephemerides()
 
-        eph = nav_data[0]
+        pos_brdc = []
+        pos_glab = []
 
-        # Calculate positions at different times
-        t = eph.toe
-        WkNr = eph.week
-        x, y, z = eph.compute_satellite_position(t)
+        # current time t
+        t_mid = (t_mid // 30) * 30
 
-        # Validate position values
-        assert isinstance(x, (int, float))
-        assert isinstance(y, (int, float))
-        assert isinstance(z, (int, float))
+        # read all ines starting with SATPOS from the glab satpos file
+        with open(satpos_ifn, "r") as f:
+            glab_lines = f.readlines()
+        # print(glab_lines)
 
         # Check reasonable orbital radius
         gnss_radius = np.sqrt(x**2 + y**2 + z**2)
@@ -308,19 +319,49 @@ def test_satellite_position_calculation2():
             )
             """
 
-            # fill pos_glab list with glab_lines dataframe info
+            dt = gnss2dt(week=WkNr, tow=t_cur)
+            try:
+                x, y, z = eph.calculate_GPS_GAL_coordinates(t=t_cur)
+                pos_brdc.append((WkNr, eph.toe, eph.IODE, t_cur, dt, x, y, z))
+            except ValueError as e:
+                print(e)
+                sys.exit(ERROR_CODES["E_WRONG_GNSS"])
+
+            # print(glab_hms, x, y, z)
+
+            # search in glab_lines the lines that corresponds to the glab_hms
+            glab_hms = dt.strftime("%H:%M:%S.%f")[:-4]
             for line in glab_lines:
-                if line.startswith("SATPVT"):
-                    fields = line.split()
-                    tow = int(float(fields[3]))
-                    glab_hms = fields[4]
-                    x_glab, y_glab, z_glab = map(float, fields[9:12])
-                    glab_iode = int(fields[17])
-                    WkNr = nav_data[0].week
-                    dt = gnss2dt(week=WkNr, tow=tow)
+                if glab_hms in line:
+                    # extract fields 10, 11 and 12
+                    # print(line.split()[9])
+                    # print(line.split()[9:12])
+                    x_glab, y_glab, z_glab = map(float, line.split()[9:12])
+                    glab_iode = int(line.split()[17])
+                    pos_glab.append(
+                        (
+                            WkNr,
+                            t_cur,
+                            glab_iode,
+                            dt,
+                            glab_hms,
+                            x_glab,
+                            y_glab,
+                            z_glab,
+                        )
+                    )
+                    break
 
-                    pos_glab.append(("glab", WkNr, tow, dt, glab_hms, glab_iode, x_glab, y_glab, z_glab))
+        print("=" * 80)
+        print(f"len(pos_brdc) = {len(pos_brdc)}")
+        print(f"pos_brdc[:1]: {pos_brdc[:1]}")
+        print(f"pos_brdc[-1:]: {pos_brdc[-1:]}")
 
+        print("-" * 80)
+        print(f"len(pos_glab) = {len(pos_glab)}")
+        print(f"pos_glab[:1]: {pos_glab[:1]}")
+        print(f"pos_glab[-1:]: {pos_glab[-1:]}")
+        print("-" * 80)
 
             # make dataframe with merged pos_brdc and pos_glab ephemeris
             # sort on WkNr and dt
@@ -349,15 +390,24 @@ def test_satellite_position_calculation2():
             #         else:
             #             continue
 
-            #     print(
-            #         f"\n{nav_type} {eph.prn} {WkNr} {t}: {x:15.3f} {y:15.3f} {z:15.3f}"
-            #         f"\n                        {x_glab:15.3f} {y_glab:15.3f} {z_glab:15.3f}"
-            #     )
+            dist_glab = np.sqrt(
+                pos_glab[i][5] ** 2 + pos_glab[i][6] ** 2 + pos_glab[i][7] ** 2
+            )
 
-            #     # assert that the difference between the _ref and _glab coordinates is less than 5mm
-            #     assert abs(x_glab - x) < 0.005
-            #     assert abs(y_glab - y) < 0.005
-            #     assert abs(z_glab - z) < 0.005
+            print(
+                f"{pos_brdc[i][0]:5d} {pos_brdc[i][1]:7d} | {pos_brdc[i][2]:3d} {pos_brdc[i][3]:6.0f} | "
+                f"{pos_brdc[i][4].strftime("%H:%M:%S.%f")[:-4]} | "
+                f" {pos_brdc[i][5]:15.3f} {pos_brdc[i][6]:15.3f} {pos_brdc[i][7]:15.3f} | {dist_brdc:15.3f}\n"
+                f"                {pos_glab[i][2]:3d}          {pos_glab[i][3].strftime("%H:%M:%S.%f")[:-4]} | "
+                f" {pos_glab[i][5]:15.3f} {pos_glab[i][6]:15.3f} {pos_glab[i][7]:15.3f} | {dist_glab:15.3f}\n"
+                f"                                            "
+                f"{pos_brdc[i][5] - pos_glab[i][5]:15.3f} {pos_brdc[i][6] - pos_glab[i][6]:15.3f} "
+                f"{pos_brdc[i][7] - pos_glab[i][7]:15.3f} | {dist_brdc - dist_glab:15.3f}"
+            )
+
+            assert np.isclose(dist_brdc, dist_glab, atol=1e-9)
+
+        print("#" * 80)
 
 
 # def test_glonass_ephemeris():

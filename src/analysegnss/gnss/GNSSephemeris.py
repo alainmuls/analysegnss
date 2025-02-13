@@ -100,8 +100,8 @@ class GNSSEphemeris:
         ik = self.i0 + dik + self.IDOT * tk
 
         # Positions in orbital plane
-        xk_prime = rk * np.cos(uk)
-        yk_prime = rk * np.sin(uk)
+        xk_orbit = rk * np.cos(uk)
+        yk_orbit = rk * np.sin(uk)
 
 
         # corrected longitude of ascending node (without accounting for Earth's rotation)
@@ -151,7 +151,6 @@ class GNSSEphemeris:
             x, y, z = self.transform_cgcs_to_wgs84(x, y, z)
        
         return x, y, z
-        """
 
     def is_valid(self, t: float) -> bool:
         """

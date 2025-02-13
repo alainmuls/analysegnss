@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# Standard library imports
-import bisect
-from datetime import datetime, time, timedelta
-from math import isnan
 import sys
+from datetime import datetime, timedelta, time
+import bisect
+from math import isnan
 from typing import Tuple
 
 __author__ = "amuls"
@@ -85,7 +84,7 @@ def dt2gnss(dt: str, dt_format: str) -> Tuple[int, float]:
     wn, tow = divmod(gps_seconds, _SECS_IN_WEEK)
     
     return wn, tow
-    
+
 def gpsms2dt(week: int, towms: float) -> datetime:
     """
     :param week: GPS week number, i.e. 1866

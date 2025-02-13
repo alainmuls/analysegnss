@@ -13,7 +13,8 @@ import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
 from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.plots import plot_utm
 from analysegnss.plots.plot_columns import get_utm_columns
-from analysegnss.utils import argument_parser, init_logger
+from analysegnss.utils import init_logger
+from analysegnss.utils.argument_parser import argument_parser_plot_coords
 
 
 def get_origin(parsed_args: list) -> str: # TODO replace 'origin' naming to 'source'?
