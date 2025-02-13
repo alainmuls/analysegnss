@@ -12,16 +12,16 @@ from dataclasses import dataclass, field
 import numpy as np
 import polars as pl
 import utm
-from rich import print
 
 from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.gnss.gnss_dt import gpsms2dt
 from analysegnss.sbf import sbf_constants as sbfc
-from analysegnss.utils.utilities import locate, str_red, str_yellow
 from analysegnss.sbf.sbf_blocks_polars import (
     SBF_BLOCK_COLUMNS_BIN2ASC,
     SBF_BLOCK_COLUMNS_SBF2ASC,
 )
+from analysegnss.utils.utilities import locate, str_red, str_yellow
+from rich import print
 
 
 @dataclass
@@ -268,7 +268,7 @@ class SBF:
             self.logger.debug(f"... running: {str_yellow(' '.join(cmd_bin2asc))}")
 
         with rich_console.status(
-            f"[bold green]Converting SBF ({lst_sbfblocks}) to CSV files...",
+            f"Converting SBF [bold green]({lst_sbfblocks})[/bold green] to CSV files...",
             spinner="aesthetic",
         ):
             try:
@@ -317,7 +317,7 @@ class SBF:
 
                 # read csv file into dataframe
                 with rich_console.status(
-                    f"[bold green]Reading from CSV file ({sbf_block})...",
+                    f"Reading from CSV file [bold green]{sbf_block}[/bold green]",
                     spinner="aesthetic",
                 ):
                     sbf_df = pl.read_csv(
@@ -328,13 +328,20 @@ class SBF:
                         has_header=True,
                         skip_rows_after_header=1,  # Skip 1 row after the header
                         dtypes=keep_cols,
-                        null_values="NaN",
-                    )
+                        null_values=[
+                            "null",
+                            "NaN",
+                        ],  # First catch all null representations
+                    ).fill_null(
+                        float("nan")
+                    )  # Then convert all nulls to NaN
 
                     # add columns to the dataframe
                     sbf_df = self.add_columns(block_df=sbf_df)
 
                 sbf_dfs[sbf_block] = sbf_df
+
+                print(f"sbf_dfs[{sbf_block}]:\n{sbf_dfs[sbf_block]}")
 
                 # print(f"archive = {archive}")
                 # archiving the converted sbf file

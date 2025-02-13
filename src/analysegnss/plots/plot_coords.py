@@ -3,6 +3,7 @@
 import os
 import sys
 
+import matplotlib
 import matplotlib.pyplot as plt
 import polars as pl
 from rich import print
@@ -48,6 +49,9 @@ def plot_coords(argv: list):
 	Args:
 		argv (list): CLI arguments
 	"""
+ 
+	matplotlib.use('TkAgg')
+
 	# parse the CLI arguments
 	script_name = os.path.splitext(os.path.basename(__file__))[0]
 
@@ -155,6 +159,14 @@ def plot_coords(argv: list):
 				utm_columns.sdu,
 			]
 		)
+  
+	# Filter out rows with null/nan values in UTM coordinates and height
+	df_utm = df_utm.filter(
+		pl.col(utm_columns.east).is_not_null() & 
+		pl.col(utm_columns.north).is_not_null() & 
+		pl.col(utm_columns.height).is_not_null()
+	)
+
 	# select the columns needed for the plot
 	# print(f"=====================\ndf_utm = \n{df_utm}\n=====================")
 	if logger is not None:
