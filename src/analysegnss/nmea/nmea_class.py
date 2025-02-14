@@ -1,6 +1,8 @@
 # Standard library imports
 from collections import defaultdict
+from collections import defaultdict
 from dataclasses import dataclass, field
+import datetime
 import datetime
 import os
 import logging
@@ -10,10 +12,17 @@ import sys
 import polars as pl
 import pynmea2
 from rich import print
+from rich import print
 from rich.console import Console
+import utm
 import utm
 
 # Local application imports
+from analysegnss.utils.utilities import sf64, si64
+
+#TODO Only NMEA RMC contains the datestamp, so if this message is not present, the datetime can not be generated
+#   This should raise an error or warning and enable the user to add the date manually
+#   The NMEA ZDA message also contains the date, however day, month and year are in separate fields ...
 from analysegnss.utils.utilities import sf64, si64
 
 #TODO Only NMEA RMC contains the datestamp, so if this message is not present, the datetime can not be generated
@@ -62,7 +71,7 @@ class NMEA:
             list: a list containing the parsed NMEA messages
         """
         nmea_messages = []
-        nr_failed_parsed_lines = 0 # counts the non-NMEA lines
+        nrfailed_parsed_lines = 0 # counts the non-NMEA lines
         with open(self.nmea_ifn, "r") as file:
             for line in file:
                 try:
@@ -70,10 +79,10 @@ class NMEA:
                     nmea_messages.append(msg)
                 except pynmea2.ParseError as e:
                     if self.logger:
-                        nr_failed_parsed_lines += 1
+                        nrfailed_parsed_lines += 1
                         # self.logger.debug(f"Failed to parse line: {line.strip()} - {e}")
             self.logger.info(
-                f"Successfully parsed {len(nmea_messages)} NMEA messages out of {len(nmea_messages) + nr_failed_parsed_lines} lines"
+                f"Successfully parsed {len(nmea_messages)} NMEA messages out of {len(nmea_messages) + nrfailed_parsed_lines} lines"
             )
         
         # write parsed nmea messages to file
@@ -100,7 +109,7 @@ class NMEA:
 
         for msg in self.parse_nmea_file():
 
-            # get timestamp from nmea message and update last_timestamp
+            # get timestamp from nmea message and update last_timstamp
             timestamp = getattr(msg, "timestamp", last_timestamp)
             if timestamp is not None:
                 last_timestamp = timestamp
@@ -110,7 +119,7 @@ class NMEA:
 
             # pynmea2 doesn't always cast the values to the correct dtype, so some values need to be manually casted
             # we cast the values to the correct dtype now during the nmea data collection because we don't know which NMEA messages are available
-            # Event though the timestamp is already saved as the key, we still store it also as a value for easier conversion to dataframe
+            # Eventhough the timestamp is already saved as the key, we still store it also as a value for easier converion to dataframe
             if isinstance(msg, pynmea2.types.talker.RMC):
                 msg_entry.update(
                     {
@@ -228,7 +237,7 @@ class NMEA:
         collected_nmea_values = self.collect_nmea_values()
         # create a DataFrame with the NMEA values per timestamp
         nmea_df = pl.DataFrame(collected_nmea_values)
-        # add columns datetime and UTM coordinates if possible
+        # add columns datatime and UTM coordinates if possible
         nmea_df = self.add_df_columns(nmea_df=nmea_df)
 
         return nmea_df

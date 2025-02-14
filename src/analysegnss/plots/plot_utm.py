@@ -451,6 +451,19 @@ def plot_utm_height_mpl(
 
     # Create figure with three subplots sharing x-axis
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 8), sharex=True)
+    # Filter out None values before groupby
+    valid_utm_df = utm_df.filter(
+        pl.col(cols.quality_mapping.columns).is_not_null())
+    
+    # Replace None values with NaN in quality mapping columns only
+    valid_utm_df = utm_df.fill_null(float('nan'))
+    # if sd:
+    #     valid_utm_df = utm_df.with_columns(
+    #         pl.col('SD_lat [m]').fill_null(float('nan')),
+    #         pl.col('SD_lon [m]').fill_null(float('nan')),
+    #         pl.col('SD_hgt [m]').fill_null(float('nan'))
+    #     )
+    print(f"valid_utm_df:\n{valid_utm_df}")
 
     # Filter out None values before groupby
     valid_utm_df = utm_df.filter(

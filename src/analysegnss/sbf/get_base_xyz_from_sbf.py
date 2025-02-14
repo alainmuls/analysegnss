@@ -17,7 +17,9 @@ from analysegnss.utils import argument_parser, init_logger
 
 
 def get_base_coord_from_sbf(
+    
     parsed_args: argparse.Namespace, logger: Logger
+
 ) -> Tuple[float, float, float]:
     """
     This function extracts the base station coordinates from the BaseStation1 SBF block.
@@ -100,12 +102,16 @@ def main():
     parsed_args = argument_parser.argument_parser_get_base_coord(
         script_name=script_name, args=sys.argv[1:]
     )
+    parsed_args = argument_parser.argument_parser_get_base_coord(
+        script_name=script_name, args=sys.argv[1:]
+    )
     # Initialize logger
     logger = init_logger.logger_setup(
         args=parsed_args, base_name=script_name, log_dest=parsed_args.log_dest
     )
 
     get_base_coord_from_sbf(parsed_args=parsed_args, logger=logger)
+
 
 
 if __name__ == "__main__":

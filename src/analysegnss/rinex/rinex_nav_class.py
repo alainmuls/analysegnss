@@ -72,8 +72,10 @@ class RINEX_NAV(RINEX):
                     if self.logger is not None:
                         self.logger.error(
                             f"File is not a RINEX navigation file: {self.rnxnav_ifn}"
+                            f"File is not a RINEX navigation file: {self.rnxnav_ifn}"
                         )
                     raise ValueError(
+                        f"File is not a RINEX navigation file: {self.rnxnav_ifn}"
                         f"File is not a RINEX navigation file: {self.rnxnav_ifn}"
                     )
         except Exception as e:
@@ -96,6 +98,7 @@ class RINEX_NAV(RINEX):
             self.gfzrnx_exe,
             "-f",  # overwrite previous version of the output file
             "-finp",
+            self.rnxnav_ifn,
             self.rnxnav_ifn,
             "-tab",
             "-tab_sep",
@@ -135,8 +138,10 @@ class RINEX_NAV(RINEX):
 
                 # process GEC systems without Glonass
                 gec_nav_dict = self.gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
+                gec_nav_dict = self.gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
                 gnss_nav_dict.update(gec_nav_dict)
 
+            rich_console.print(f"GNSS {other_gnss} processed.")
             rich_console.print(f"GNSS {other_gnss} processed.")
 
         # Add GLONASS separately if present
@@ -162,9 +167,15 @@ class RINEX_NAV(RINEX):
                     gnss_nav_dict.update(r_nav_dict)
                     
             rich_console.print(f"GNSS {has_glonass} processed.")
+                r_nav_dict = self.gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
+                if r_nav_dict is not None:
+                    gnss_nav_dict.update(r_nav_dict)
+                    
+            rich_console.print(f"GNSS {has_glonass} processed.")
 
         return gnss_nav_dict
 
+    def gnss_nav_to_tabnav(self, gfzrnx_opts: list) -> dict:
     def gnss_nav_to_tabnav(self, gfzrnx_opts: list) -> dict:
         print(f"gfzrnx_opts = {gfzrnx_opts}")
         try:
@@ -184,7 +195,14 @@ class RINEX_NAV(RINEX):
                 self.logger.error(
                     f"{str_red('gfzrnx conversion failed, check availability')} of {str_yellow(gnss_list)} "
                     f"in {str_yellow(self.rnxnav_ifn)}"
+                    f"in {str_yellow(self.rnxnav_ifn)}"
                 )
+                
+                result = None
+            # raise RuntimeError(
+            #     f"{str_red('gfzrnx conversion failed, check availability')} of {str_yellow(gnss_list)} "
+            #     f"in {str_yellow(self.rnxnav_ifn)}"
+            # )
                 
                 result = None
             # raise RuntimeError(
@@ -199,6 +217,11 @@ class RINEX_NAV(RINEX):
             raise PermissionError(
                 f"{str_red('Permission error running gfzrnx')}: {str(e)}"
             )
+
+        # check if selected GNSS has data in result.stdout
+        if result is  None:
+            return
+        
 
         # check if selected GNSS has data in result.stdout
         if result is  None:
