@@ -147,7 +147,9 @@ def main():
     # get the name of this script for naming the logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
-    parsed_args = argument_parser.argument_parser_rnx2rtkp_launcher(args=sys.argv[1:])
+    parsed_args = argument_parser.argument_parser_rnx2rtkp_launcher(
+        script_name=script_name, args=sys.argv[1:]
+    )
 
     # create the file/console logger
     logger = init_logger.logger_setup(

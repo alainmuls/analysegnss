@@ -7,6 +7,7 @@ import polars as pl
 from rich import print
 
 import analysegnss.glabng.glab_parser as glab_parser
+import analysegnss.nmea.nmeaReader as nmeaReader
 import analysegnss.rtkpos.ppk_rnx2rtkp as ppk_rnx2rtkp
 import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
 from analysegnss.config import ERROR_CODES, rich_console
@@ -16,7 +17,7 @@ from analysegnss.utils import init_logger
 from analysegnss.utils.argument_parser import argument_parser_plot_coords
 
 
-def get_origin(parsed_args: list) -> str:
+def get_origin(parsed_args: list) -> str: # TODO replace 'origin' naming to 'source'?
     """determines the origin  of the coordinates
 
     Args:
@@ -26,12 +27,12 @@ def get_origin(parsed_args: list) -> str:
         tuple[str, str]: origin and filename
     """
     # set the origin of the coordinates
-    file_handlers = {"pos_ifn": "PPK", "sbf_ifn": "RTK", "glab_ifn": "GLABNG"}
+    file_handlers = {"pos_ifn": "PPK", "sbf_ifn": "RTK", "glab_ifn": "GLABNG", "nmea_ifn": "NMEA", "csv_ifn": "PNT_CSV"}
 
     # Get the first non-None filename and its attribute name
     file_attr = next(
         attr
-        for attr in ["pos_ifn", "sbf_ifn", "glab_ifn"]
+        for attr in ["pos_ifn", "sbf_ifn", "glab_ifn", "nmea_ifn", "csv_ifn"]
         if getattr(parsed_args, attr) is not None
     )
     # filename = getattr(parsed_args, file_attr)
@@ -51,9 +52,7 @@ def plot_coords(argv: list):
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    args_parsed = argument_parser_plot_coords(
-        args=argv[1:], script_name=os.path.basename(__file__)
-    )
+    args_parsed = argument_parser.argument_parser_plot_coords(script_name=script_name, args=argv[1:])
     # print(f"\nParsed arguments: {args_parsed}")
 
     # create the file/console logger
@@ -115,45 +114,64 @@ def plot_coords(argv: list):
 
             df_origin = dfs_glab["OUTPUT"]
 
+
+        case "NMEA":
+            # create the NMEA dataframe by calling nmeaReader.py
+            df_origin, qual_analysis = nmeaReader.nmeaReader(parsed_args=args_parsed, logger=logger)
+
+        case "PNT_CSV":
+            # create a PNT_CSV dataframe by reading PNT_CSV file written by nmeaReader.py, rtk_pvtgeod.py, ppk_rnx2rtkp.py or glab_parser.py
+            df_origin = pl.read_csv(args_parsed.csv_ifn, schema_overrides={"DT": pl.Datetime})
+
         case _:
             logger.error(f"Invalid origin: {origin}")
             sys.exit(ERROR_CODES["E_INVALID_ORIGIN"])
 
+    logger.debug(f"print source dataframe:\n{df_origin}")
+    
+    
     # get the utm columns names according to the origin
     utm_columns = get_utm_columns(origin=origin)
-    print(f"utm_columns: {utm_columns}")
-    print(f"type(utm_columns): {type(utm_columns)}")
-
-    print(
+    
+    
+    logger.debug(f"utm_columns: {utm_columns}")
+    logger.debug(f"type(utm_columns): {type(utm_columns)}")
+    logger.debug(
         f"{utm_columns.east} {utm_columns.north} {utm_columns.quality_mapping.columns}"
     )
 
     # create the df_utm dataframe from the dataframe obtained according to each origin
-    if not args_parsed.sd:
-        df_utm = df_origin.select(
-            [
-                utm_columns.time,
-                utm_columns.quality_mapping.columns,
-                utm_columns.nrSVN,
-                utm_columns.east,
-                utm_columns.north,
-                utm_columns.height,
-            ]
-        )
-    else:
-        df_utm = df_origin.select(
-            [
-                utm_columns.time,
-                utm_columns.quality_mapping.columns,
-                utm_columns.nrSVN,
-                utm_columns.east,
-                utm_columns.north,
-                utm_columns.height,
-                utm_columns.sdn,
-                utm_columns.sde,
-                utm_columns.sdu,
-            ]
-        )
+    try:
+        if not args_parsed.sd:
+            df_utm = df_origin.select(
+                [
+                    utm_columns.time,
+                    utm_columns.quality_mapping.columns,
+                    utm_columns.nrSVN,
+                    utm_columns.east,
+                    utm_columns.north,
+                    utm_columns.height,
+                ]
+            )
+        else:
+            df_utm = df_origin.select(
+                [
+                    utm_columns.time,
+                    utm_columns.quality_mapping.columns,
+                    utm_columns.nrSVN,
+                    utm_columns.east,
+                    utm_columns.north,
+                    utm_columns.height,
+                    utm_columns.sdn,
+                    utm_columns.sde,
+                    utm_columns.sdu,
+                ]
+            )
+    except pl.exceptions.ColumnNotFoundError as e: 
+        column_missing = e.args[0]
+        logger.error(f"ERROR: Missing the column |{column_missing}| in the dataframe")
+        sys.exit(1)
+        
     # select the columns needed for the plot
     print(f"=====================\ndf_utm = \n{df_utm}\n=====================")
     if logger is not None:
@@ -163,7 +181,7 @@ def plot_coords(argv: list):
     # ifn_full = args_parsed.pos_ifn if args_parsed.pos_ifn else args_parsed.sbf_ifn
     ifn_full = next(
         ifn
-        for ifn in [args_parsed.pos_ifn, args_parsed.sbf_ifn, args_parsed.glab_ifn]
+        for ifn in [args_parsed.pos_ifn, args_parsed.sbf_ifn, args_parsed.glab_ifn, args_parsed.nmea_ifn, args_parsed.csv_ifn]
         if ifn is not None
     )
 
@@ -177,47 +195,47 @@ def plot_coords(argv: list):
     # plot the UTM and orthoH coordinates
     if args_parsed.mpl == False:
         with rich_console.status(f"Creating UTM scatter plot.\t", spinner="aesthetic"):
-		    # use plotly for creating html plots
-		    plot_utm.plot_utm_scatter(
-		        utm_df=df_utm,
-		        origin=origin,
-		        ifn=filename_in,
-		        dir_fn=dir_fn,
-		        logger=logger,
-		        display=args_parsed.display,
-		    )
+        # use plotly for creating html plots
+            plot_utm.plot_utm_scatter(
+                utm_df=df_utm,
+                origin=origin,
+                ifn=filename_in,
+                dir_fn=dir_fn,
+                logger=logger,
+                display=args_parsed.display,
+            )
 
         with rich_console.status(f"Creating NEU vs DT plot.\t", spinner="aesthetic"):
-		    plot_utm.plot_utm_height(
-		        utm_df=df_utm,
-		        origin=origin,
-		        ifn=filename_in,
-		        dir_fn=dir_fn,
-		        sd=args_parsed.sd,
-		        logger=logger,
-		        display=args_parsed.display,
-		    )
+            plot_utm.plot_utm_height(
+            utm_df=df_utm,
+                origin=origin,
+                ifn=filename_in,
+                dir_fn=dir_fn,
+                sd=args_parsed.sd,
+                logger=logger,
+                display=args_parsed.display,
+            )
     else:
         with rich_console.status(f"Creating UTM scatter plot.\t", spinner="aesthetic"):
-		    plot_utm.plot_utm_scatter_mpl(
-		        utm_df=df_utm,
-		        origin=origin,
-		        ifn=filename_in,
-		        dir_fn=dir_fn,
-		        logger=logger,
-		        display=args_parsed.display,
-		    )
+            plot_utm.plot_utm_scatter_mpl(
+                utm_df=df_utm,
+                origin=origin,
+                ifn=filename_in,
+                dir_fn=dir_fn,
+                logger=logger,
+                display=args_parsed.display,
+            )
 
         with rich_console.status(f"Creating NEU vs DT plot.\t", spinner="aesthetic"):
-		    plot_utm.plot_utm_height_mpl(
-		        utm_df=df_utm,
-		        origin=origin,
-		        ifn=filename_in,
-		        dir_fn=dir_fn,
-		        sd=args_parsed.sd,
-		        logger=logger,
-		        display=args_parsed.display,
-		    )
+            plot_utm.plot_utm_height_mpl(
+                utm_df=df_utm,
+                origin=origin,
+                ifn=filename_in,
+                dir_fn=dir_fn,
+                sd=args_parsed.sd,
+                logger=logger,
+                display=args_parsed.display,
+            )
 
 
 def main():

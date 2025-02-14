@@ -103,6 +103,35 @@ class GNSSEphemeris:
         xk_orbit = rk * np.cos(uk)
         yk_orbit = rk * np.sin(uk)
 
+
+        # corrected longitude of ascending node (without accounting for Earth's rotation)
+        OMEGA_k_eci = self.OMEGA + self.OMEGA_DOT * tk
+
+        # Convert orbital plane to ECI
+        X_ECI = xk_prime * np.cos(OMEGA_k_eci) - yk_prime * np.cos(ik) * np.sin(OMEGA_k_eci)
+        Y_ECI = xk_prime * np.sin(OMEGA_k_eci) + yk_prime * np.cos(ik) * np.cos(OMEGA_k_eci)
+        Z_ECI = yk_prime * np.sin(ik)
+
+
+        # Rotation matrix around z axis 
+        rot_angle = -OMGE * t # correct for earth's rotation  
+        rot_z = np.array([[np.cos(rot_angle), -np.sin(rot_angle), 0],
+                            [np.sin(rot_angle), np.cos(rot_angle), 0],
+                            [0, 0, 1]])
+        
+        # rotate ECI to ECEF
+        x, y, z = np.dot(rot_z, np.array([X_ECI, Y_ECI, Z_ECI]))
+                # For BDS the coordinates are in the CGCS system, so convert to WGS84
+        if self.gnss == "C":
+            x, y, z = self.transform_cgcs_to_wgs84(x, y, z)
+        
+        return x, y, z    
+        
+        """
+                # Positions in orbital plane
+        xk_orbit = rk * np.cos(uk)
+        yk_orbit = rk * np.sin(uk)
+
         # Corrected longitude of ascending node with Earth rotation
         OMEGA_k = self.OMEGA + (self.OMEGA_DOT - OMGE) * tk - OMGE * self.toe
 
@@ -120,7 +149,7 @@ class GNSSEphemeris:
         # For BDS the coordinates are in the CGCS system, so convert to WGS84
         if self.gnss == "C":
             x, y, z = self.transform_cgcs_to_wgs84(x, y, z)
-
+       
         return x, y, z
 
     def is_valid(self, t: float) -> bool:
