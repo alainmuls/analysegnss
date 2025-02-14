@@ -128,7 +128,7 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
         baseName
         + """: Plot UTM scatter and line plots from data files.
 
-        Note: The plotting options --sbf_fn, --pos_fn, and --glib_fn are mutually exclusive.
+        Note: The plotting options --sbf_fn, --pos_fn, and --glab_fn, --nmea_ifn, --csv_ifn are mutually exclusive.
         You must choose exactly one of these options."""
     )
 
@@ -165,6 +165,16 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
     group.add_argument(
         "--glab_ifn",
         help="input gLABng filename",
+        type=str,
+    )
+    group.add_argument(
+        "--nmea_ifn",
+        help="input NMEA filename (-sd standard deviation not yet supported!)",
+        type=str,
+    )
+    group.add_argument(
+        "--csv_ifn",
+        help="input CSV filename (only csv sourced from nmea DF supported!)",
         type=str,
     )
 
@@ -208,7 +218,6 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
-    # print(f"Parsed arguments: {vars(args)}")
 
     return args
 
@@ -562,12 +571,12 @@ def argument_parser_cn0_daily(script_name: str, args: list) -> argparse.Namespac
     return args
 
 
-def argument_parser_get_ebh_timings(args: list) -> argparse.Namespace:
+def argument_parser_get_ebh_timings(script_name: str, args: list) -> argparse.Namespace:
     """
     Extracts the timestamps from the SBF file and saves them to a file.
     This file is formatted for ebh_lines.py
     """
-    baseName = str_yellow(os.path.basename(__file__))
+    baseName = str_yellow(script_name)
 
     help_txt = (
         baseName
@@ -625,9 +634,9 @@ def argument_parser_get_ebh_timings(args: list) -> argparse.Namespace:
     return args
 
 
-def argument_parser_get_base_coord(args: list) -> argparse.Namespace:
+def argument_parser_get_base_coord(script_name: str, args: list) -> argparse.Namespace:
     "Gets the base coordinates from a SBF file using the sbf_class"
-    baseName = str_yellow(os.path.basename(__file__))
+
     help_text = (
         baseName
         + """
@@ -671,13 +680,12 @@ def argument_parser_get_base_coord(args: list) -> argparse.Namespace:
     return args
 
 
-def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
+def argument_parser_ebh_process_launcher(script_name: str, args: list) -> argparse.Namespace:
     """Launches the appropriate functions to calculate the ebh_lines from the sbf_ifn file
     from which it retrievers the correct timings,
     decides whether the RTK or PPK solution has a sufficient quality,
     and finally outputs correct ASSUR formatted files for each ebh line.
     """
-    baseName = str_yellow(os.path.basename(__file__))
 
     help_text = (
         baseName
@@ -767,12 +775,10 @@ def argument_parser_ebh_process_launcher(args: list) -> argparse.Namespace:
     return args
 
 
-def argument_parser_rnx2rtkp_launcher(args: list) -> argparse.Namespace:
+def argument_parser_rnx2rtkp_launcher(script_name: str, args: list) -> argparse.Namespace:
     """
     Parses the arguments and creates console/file logger for launch_ppk_rnx2rtkp.py
     """
-
-    baseName = str_yellow(os.path.basename(__file__))
 
     help_text = (
         baseName
@@ -1121,6 +1127,61 @@ def argument_parser_sbfmeas_csv(script_name: str, args: list) -> argparse.Namesp
     )
     # allow argument completion
     argcomplete.autocomplete(parser)
+    args = parser.parse_args(args)
+
+    return args
+
+def argument_parser_nmeaReader(args: list, script_name: str) -> argparse.Namespace:
+    """
+    Read a file with NMEA data and return a dataframe with extracted NMEA data
+    and optionally write the dataframe to a csv file
+    """
+
+    baseName = str_yellow(script_name)
+
+    help_text = (
+        baseName
+        + """
+        Parses NMEA strings from a file and saves the output to a dataframe (and optionally to a csv file).
+        The output contains:
+            - all data contained in the NMEA messages/fields
+            - a dataframe containing the extracted NMEA data per column
+            - added UTM coordinates
+    """
+    )
+
+    parser = argparse.ArgumentParser(description=help_text)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+        required=False,
+    )
+    parser.add_argument(
+        "--log_dest",
+        help="Specify log destination directory (full path). (Default is /tmp/logs/)",
+        type=str,
+        required=False,
+        default="/tmp/logs/",
+    )
+    ############################################
+    parser.add_argument(
+        "-ifn",
+        "--nmea_ifn",
+        help="Input file name that contains NMEA messages.",
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
+        "-o",
+        "--csv_out",
+        help="Creates csv output file that contains NMEA messages in csv format. name: ifn + _df.csv",
+        required=False,
+        action="store_true",
+    )
     args = parser.parse_args(args)
 
     return args

@@ -473,7 +473,7 @@ def main():
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     parsed_args = argument_parser.argument_parser_ebh_process_launcher(
-        args=sys.argv[1:]
+        script_name=script_name, args=sys.argv[1:]
     )
 
     # create the file/console logger

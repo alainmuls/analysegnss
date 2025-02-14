@@ -97,7 +97,9 @@ def main():
     # fetch script name for logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
     # Parse arguments
-    parsed_args = argument_parser.argument_parser_get_base_coord(args=sys.argv[1:])
+    parsed_args = argument_parser.argument_parser_get_base_coord(
+        script_name=script_name, args=sys.argv[1:]
+    )
     # Initialize logger
     logger = init_logger.logger_setup(
         args=parsed_args, base_name=script_name, log_dest=parsed_args.log_dest

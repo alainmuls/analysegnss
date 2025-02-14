@@ -383,8 +383,8 @@ def plot_utm_scatter_mpl(
             label=f"{cols.quality_mapping.quality_dict[qual]['desc']}",
             alpha=0.6,
         )
-        ax.set_xticks(x_ticks)
-        ax.set_yticks(y_ticks)
+    ax.set_xticks(x_ticks)
+    ax.set_yticks(y_ticks)
 
     # Lock in the exact limits
     ax.set_xlim(x_ticks[0], x_ticks[-1])
