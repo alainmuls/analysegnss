@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import polars as pl
 import utm
+from rich import print
 
 from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.gnss.gnss_dt import gpsms2dt
@@ -21,7 +22,6 @@ from analysegnss.sbf.sbf_blocks_polars import (
     SBF_BLOCK_COLUMNS_SBF2ASC,
 )
 from analysegnss.utils.utilities import locate, str_red, str_yellow
-from rich import print
 
 
 @dataclass
@@ -340,7 +340,6 @@ class SBF:
                     sbf_df = self.add_columns(block_df=sbf_df)
 
                 sbf_dfs[sbf_block] = sbf_df
-
                 print(f"sbf_dfs[{sbf_block}]:\n{sbf_dfs[sbf_block]}")
 
                 # print(f"archive = {archive}")
@@ -664,7 +663,7 @@ class SBF:
             for col in columns:
                 keep_cols[col] = dtype
 
-        if self.logger:
+        if self.logger is not None:
             self.logger.debug(f"Keeping columns: \n{keep_cols}")
 
         return keep_cols

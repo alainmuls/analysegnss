@@ -118,7 +118,6 @@ def rtk_pvtgeod(argv: list) -> dict:
 
         # fill the null values with NaN
         df_pvt = df_pvt.fill_null(float('nan'))
-
         logger.info(f"  df_pvt: \n{df_pvt}")
 
         # analyse the quality of the solution
