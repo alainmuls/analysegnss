@@ -62,7 +62,7 @@ class NMEA:
             list: a list containing the parsed NMEA messages
         """
         nmea_messages = []
-        nrfailed_parsed_lines = 0 # counts the non-NMEA lines
+        nr_failed_parsed_lines = 0 # counts the non-NMEA lines
         with open(self.nmea_ifn, "r") as file:
             for line in file:
                 try:
@@ -70,10 +70,10 @@ class NMEA:
                     nmea_messages.append(msg)
                 except pynmea2.ParseError as e:
                     if self.logger:
-                        nrfailed_parsed_lines += 1
+                        nr_failed_parsed_lines += 1
                         # self.logger.debug(f"Failed to parse line: {line.strip()} - {e}")
             self.logger.info(
-                f"Successfully parsed {len(nmea_messages)} NMEA messages out of {len(nmea_messages) + nrfailed_parsed_lines} lines"
+                f"Successfully parsed {len(nmea_messages)} NMEA messages out of {len(nmea_messages) + nr_failed_parsed_lines} lines"
             )
         
         # write parsed nmea messages to file
@@ -100,7 +100,7 @@ class NMEA:
 
         for msg in self.parse_nmea_file():
 
-            # get timestamp from nmea message and update last_timstamp
+            # get timestamp from nmea message and update last_timestamp
             timestamp = getattr(msg, "timestamp", last_timestamp)
             if timestamp is not None:
                 last_timestamp = timestamp
@@ -110,7 +110,7 @@ class NMEA:
 
             # pynmea2 doesn't always cast the values to the correct dtype, so some values need to be manually casted
             # we cast the values to the correct dtype now during the nmea data collection because we don't know which NMEA messages are available
-            # Eventhough the timestamp is already saved as the key, we still store it also as a value for easier converion to dataframe
+            # Event though the timestamp is already saved as the key, we still store it also as a value for easier conversion to dataframe
             if isinstance(msg, pynmea2.types.talker.RMC):
                 msg_entry.update(
                     {
@@ -228,7 +228,7 @@ class NMEA:
         collected_nmea_values = self.collect_nmea_values()
         # create a DataFrame with the NMEA values per timestamp
         nmea_df = pl.DataFrame(collected_nmea_values)
-        # add columns datatime and UTM coordinates if possible
+        # add columns datetime and UTM coordinates if possible
         nmea_df = self.add_df_columns(nmea_df=nmea_df)
 
         return nmea_df
