@@ -20,7 +20,7 @@ from analysegnss.utils.argument_parser import argument_parser_plot_coords
 
 
 def get_origin(parsed_args: list) -> str: # TODO replace 'origin' naming to 'source'?
-    """determines the origin  of the coordinates
+	"""determines the origin  of the coordinates
 
 	Args:
 		parsed_args (list): list of parsed arguments
@@ -121,13 +121,13 @@ def plot_coords(argv: list):
 
 			df_origin = dfs_glab["OUTPUT"]
 
-        case "NMEA":
-            # create the NMEA dataframe by calling nmeaReader.py
-            df_origin, qual_analysis = nmeaReader.nmeaReader(parsed_args=args_parsed, logger=logger)
+		case "NMEA":
+			# create the NMEA dataframe by calling nmeaReader.py
+			df_origin, qual_analysis = nmeaReader.nmeaReader(parsed_args=args_parsed, logger=logger)
 
-        case "PNT_CSV":
-            # create a PNT_CSV dataframe by reading PNT_CSV file written by nmeaReader.py, rtk_pvtgeod.py, ppk_rnx2rtkp.py or glab_parser.py
-            df_origin = pl.read_csv(args_parsed.csv_ifn, schema_overrides={"DT": pl.Datetime})
+		case "PNT_CSV":
+			# create a PNT_CSV dataframe by reading PNT_CSV file written by nmeaReader.py, rtk_pvtgeod.py, ppk_rnx2rtkp.py or glab_parser.py
+			df_origin = pl.read_csv(args_parsed.csv_ifn, schema_overrides={"DT": pl.Datetime})
 
 		case _:
 			logger.error(f"Invalid origin: {origin}")
@@ -141,7 +141,7 @@ def plot_coords(argv: list):
 	# print(f"type(utm_columns): {type(utm_columns)}")
 
 	# create the df_utm dataframe from the dataframe obtained according to each origin
-    try:
+	try:
 		if not args_parsed.sd:
 			df_utm = df_origin.select(
 				[
@@ -167,11 +167,11 @@ def plot_coords(argv: list):
 					utm_columns.sdu,
 				]
 			)
-    except pl.exceptions.ColumnNotFoundError as e: 
-        column_missing = e.args[0]
-        logger.error(f"ERROR: Missing the column |{column_missing}| in the dataframe")
-        sys.exit(1)
-        
+	except pl.exceptions.ColumnNotFoundError as e: 
+		column_missing = e.args[0]
+		logger.error(f"ERROR: Missing the column |{column_missing}| in the dataframe")
+		sys.exit(1)
+		
 	# Filter out rows with null/nan values in UTM coordinates and height
 	df_utm = df_utm.filter(
 		pl.col(utm_columns.east).is_not_null() & 
