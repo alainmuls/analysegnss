@@ -138,10 +138,8 @@ class RINEX_NAV(RINEX):
 
                 # process GEC systems without Glonass
                 gec_nav_dict = self.gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
-                gec_nav_dict = self.gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
                 gnss_nav_dict.update(gec_nav_dict)
 
-            rich_console.print(f"GNSS {other_gnss} processed.")
             rich_console.print(f"GNSS {other_gnss} processed.")
 
         # Add GLONASS separately if present
@@ -167,15 +165,15 @@ class RINEX_NAV(RINEX):
                     gnss_nav_dict.update(r_nav_dict)
                     
             rich_console.print(f"GNSS {has_glonass} processed.")
-                r_nav_dict = self.gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
-                if r_nav_dict is not None:
-                    gnss_nav_dict.update(r_nav_dict)
+            
+            r_nav_dict = self.gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
+            if r_nav_dict is not None:
+                gnss_nav_dict.update(r_nav_dict)
                     
             rich_console.print(f"GNSS {has_glonass} processed.")
 
         return gnss_nav_dict
 
-    def gnss_nav_to_tabnav(self, gfzrnx_opts: list) -> dict:
     def gnss_nav_to_tabnav(self, gfzrnx_opts: list) -> dict:
         print(f"gfzrnx_opts = {gfzrnx_opts}")
         try:
@@ -219,12 +217,7 @@ class RINEX_NAV(RINEX):
             )
 
         # check if selected GNSS has data in result.stdout
-        if result is  None:
-            return
-        
-
-        # check if selected GNSS has data in result.stdout
-        if result is  None:
+        if result is None:
             return
         
         # read the first line of the output to get initial part of column names

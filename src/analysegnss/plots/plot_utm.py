@@ -8,15 +8,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 import polars as pl
+from matplotlib import dates as mdates
+from matplotlib.ticker import FormatStrFormatter
+from plotly.subplots import make_subplots
+from rich import print
 
 # Local application imports
 from analysegnss.plots import discrete_colors as dc
 from analysegnss.plots.plot_columns import get_utm_columns
 from analysegnss.plots.plot_fonts import MatplotlibFonts, PlotlyFonts
-from matplotlib import dates as mdates
-from matplotlib.ticker import FormatStrFormatter
-from plotly.subplots import make_subplots
-from rich import print
 
 
 # Create a custom formatter that splits date and time
@@ -54,10 +54,16 @@ def plot_utm_scatter(
     # get the common fonts to use in the plot
     plot_fonts = PlotlyFonts()
 
+    quality_col = cols.quality_mapping.columns # This will get "Type" for RTK, "Q" for PPK, etc.
+    columns_to_check = ['DT', quality_col]
+    valid_utm_df = utm_df.drop_nulls(subset=columns_to_check)
+    if logger is not None:
+        logger.debug(f"valid_utm_df:\n{valid_utm_df}")
+
     # create a figure
     fig = go.Figure()
 
-    for qual, qual_data in utm_df.groupby(cols.quality_mapping.columns):
+    for qual, qual_data in valid_utm_df.groupby(cols.quality_mapping.columns):
         fig.add_trace(
             go.Scatter(
                 x=qual_data[cols.east],
@@ -158,11 +164,16 @@ def plot_utm_height(
         for r, g, b, _ in colors
     ]
 
+    quality_col = cols.quality_mapping.columns # This will get "Type" for RTK, "Q" for PPK, etc.
+    columns_to_check = ['DT', quality_col]
+    valid_utm_df = utm_df.drop_nulls(subset=columns_to_check)
+    if logger is not None:
+        logger.debug(f"valid_utm_df:\n{valid_utm_df}")
+
     # Create the subplot structure
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True)
     # Add traces for each column
-    for qual, qual_data in utm_df.groupby(cols.quality_mapping.columns):
-
+    for qual, qual_data in valid_utm_df.groupby(cols.quality_mapping.columns):
         fig.add_trace(
             go.Scatter(
                 x=qual_data[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
@@ -370,11 +381,16 @@ def plot_utm_scatter_mpl(
     x_ticks = np.arange(x_start, x_end + tick_spacing, tick_spacing)
     y_ticks = np.arange(y_start, y_end + tick_spacing, tick_spacing)
 
-    # Filter out None values before groupby
-    valid_utm_df = utm_df.filter(
-        pl.col(cols.quality_mapping.columns).is_not_null())
+    # Using the correct column name 'DT'
+    # Get the correct quality column name from the UTMColumns mapping
+    quality_col = cols.quality_mapping.columns # This will get "Type" for RTK, "Q" for PPK, etc.
+    columns_to_check = ['DT', quality_col]
+    valid_utm_df = utm_df.drop_nulls(subset=columns_to_check)
+    if logger is not None:
+        logger.debug(f"valid_utm_df:\n{valid_utm_df}")
 
     for qual, qual_data in valid_utm_df.groupby(cols.quality_mapping.columns):
+        # print(f"qual:\n{qual}")
         ax.scatter(
             qual_data[cols.east],
             qual_data[cols.north],
@@ -451,33 +467,25 @@ def plot_utm_height_mpl(
 
     # Create figure with three subplots sharing x-axis
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 8), sharex=True)
-    # Filter out None values before groupby
-    valid_utm_df = utm_df.filter(
-        pl.col(cols.quality_mapping.columns).is_not_null())
+    # # Filter out None values before groupby
+    # valid_utm_df = utm_df.filter(
+    #     pl.col(cols.quality_mapping.columns).is_not_null())
     
-    # Replace None values with NaN in quality mapping columns only
-    valid_utm_df = utm_df.fill_null(float('nan'))
+    # # Replace None values with NaN in quality mapping columns only
+    # valid_utm_df = utm_df.fill_null(float('nan'))
     # if sd:
     #     valid_utm_df = utm_df.with_columns(
     #         pl.col('SD_lat [m]').fill_null(float('nan')),
     #         pl.col('SD_lon [m]').fill_null(float('nan')),
     #         pl.col('SD_hgt [m]').fill_null(float('nan'))
     #     )
-    print(f"valid_utm_df:\n{valid_utm_df}")
 
-    # Filter out None values before groupby
-    valid_utm_df = utm_df.filter(
-        pl.col(cols.quality_mapping.columns).is_not_null())
-    
-    # Replace None values with NaN in quality mapping columns only
-    valid_utm_df = utm_df.fill_null(float('nan'))
-    # if sd:
-    #     valid_utm_df = utm_df.with_columns(
-    #         pl.col('SD_lat [m]').fill_null(float('nan')),
-    #         pl.col('SD_lon [m]').fill_null(float('nan')),
-    #         pl.col('SD_hgt [m]').fill_null(float('nan'))
-    #     )
-    print(f"valid_utm_df:\n{valid_utm_df}")
+    quality_col = cols.quality_mapping.columns # This will get "Type" for RTK, "Q" for PPK, etc.
+    columns_to_check = ['DT', quality_col]
+    valid_utm_df = utm_df.drop_nulls(subset=columns_to_check)
+    if logger is not None:
+        logger.debug(f"valid_utm_df:\n{valid_utm_df}")
+
 
     # Plot data for each quality level
     for qual, qual_data in valid_utm_df.groupby(cols.quality_mapping.columns):

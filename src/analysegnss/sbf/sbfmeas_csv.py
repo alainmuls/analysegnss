@@ -1,17 +1,14 @@
 #!/usr/bin:env python3
 
 import argparse
-import argparse
 import logging
 import os
 import sys
 
 import polars as pl
 from polars.exceptions import ComputeError, SchemaError, ColumnNotFoundError
-from polars.exceptions import ComputeError, SchemaError, ColumnNotFoundError
 from rich import print
 
-from analysegnss.config import DICT_GNSS, DICT_SIGNAL_TYPES, ERROR_CODES
 from analysegnss.config import DICT_GNSS, DICT_SIGNAL_TYPES, ERROR_CODES
 from analysegnss.sbf.sbf_class import SBF
 from analysegnss.utils import init_logger
@@ -249,11 +246,6 @@ def convert_dataframe_csv(
         raise IOError(f"Failed to write CSV file {csv_ofn}: {e}")
     except (ComputeError, SchemaError, ValueError) as e:
         raise RuntimeError(f"Error during CSV writing: {e}")
-
-
-def sbfmeas_csv(argv: list):
-from analysegnss.utils.argument_parser import argument_parser_sbfmeas_csv
-from analysegnss.utils.utilities import str_red, str_green
 
 
 def convert_meas3_csv(
@@ -500,13 +492,11 @@ def sbfmeas_csv(argv: list):
 
     # parse the CLI arguments
     args_parsed = argument_parser_sbfmeas_csv(
-    args_parsed = argument_parser_sbfmeas_csv(
         args=argv[1:], script_name=os.path.basename(__file__)
     )
 
     # create the file/console logger
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
-    logger.info(f"Parsed arguments: {args_parsed} | {type(args_parsed)}")
     logger.info(f"Parsed arguments: {args_parsed} | {type(args_parsed)}")
 
     # create a SBF class object
@@ -515,7 +505,6 @@ def sbfmeas_csv(argv: list):
     except Exception as e:
         logger.error(f"Error creating SBF object: {e}")
         sys.exit(ERROR_CODES["E_SBF_OBJECT"])
-    logger.info(f"sbf object: {sbf}")
     logger.info(f"sbf object: {sbf}")
 
     # check which SBFBlock for measurements are available in the SBF file
@@ -533,8 +522,6 @@ def sbfmeas_csv(argv: list):
     ]
     # Check if all required blocks are present
     meas3_present = all(block in sbf_blocks for block in required_blocks)
-    # print(f"meas3_present: {meas3_present}")
-    if meas3_present:
     # print(f"meas3_present: {meas3_present}")
     if meas3_present:
         logger.debug("Converting measurements using Meas3 blocks")
@@ -571,7 +558,6 @@ def sbfmeas_csv(argv: list):
 
 
 def main():
-    sbfmeas_csv(argv=sys.argv)
     sbfmeas_csv(argv=sys.argv)
 
 

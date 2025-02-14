@@ -177,18 +177,8 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
         "--csv_ifn",
         help="input CSV filename (only csv sourced from nmea DF supported!)",
         type=str,
-    )
-    group.add_argument(
-        "--nmea_ifn",
-        help="input NMEA filename (-sd standard deviation not yet supported!)",
-        type=str,
-    )
-    group.add_argument(
-        "--csv_ifn",
-        help="input CSV filename (only csv sourced from nmea DF supported!)",
-        type=str,
-    )
-
+    ),
+    
     parser.add_argument(
         "--sd",
         help="add standard deviation to the plot",
@@ -589,12 +579,10 @@ def argument_parser_cn0_daily(script_name: str, args: list) -> argparse.Namespac
 
 
 def argument_parser_get_ebh_timings(script_name: str, args: list) -> argparse.Namespace:
-def argument_parser_get_ebh_timings(script_name: str, args: list) -> argparse.Namespace:
     """
     Extracts the timestamps from the SBF file and saves them to a file.
     This file is formatted for ebh_lines.py
     """
-    baseName = str_yellow(script_name)
     baseName = str_yellow(script_name)
 
     help_txt = (
@@ -654,9 +642,8 @@ def argument_parser_get_ebh_timings(script_name: str, args: list) -> argparse.Na
 
 
 def argument_parser_get_base_coord(script_name: str, args: list) -> argparse.Namespace:
-def argument_parser_get_base_coord(script_name: str, args: list) -> argparse.Namespace:
     "Gets the base coordinates from a SBF file using the sbf_class"
-
+    baseName = str_yellow(script_name)
 
     help_text = (
         baseName
@@ -707,6 +694,7 @@ def argument_parser_ebh_process_launcher(script_name: str, args: list) -> argpar
     decides whether the RTK or PPK solution has a sufficient quality,
     and finally outputs correct ASSUR formatted files for each ebh line.
     """
+    baseName = str_yellow(script_name)
 
     help_text = (
         baseName
@@ -797,10 +785,10 @@ def argument_parser_ebh_process_launcher(script_name: str, args: list) -> argpar
 
 
 def argument_parser_rnx2rtkp_launcher(script_name: str, args: list) -> argparse.Namespace:
-def argument_parser_rnx2rtkp_launcher(script_name: str, args: list) -> argparse.Namespace:
     """
     Parses the arguments and creates console/file logger for launch_ppk_rnx2rtkp.py
     """
+    baseName = str_yellow(script_name)
 
     help_text = (
         baseName
@@ -1088,7 +1076,6 @@ def argument_parser_reformat_sbf_rnx_for_opus(
     return args
 
 
-def argument_parser_sbfmeas_csv(script_name: str, args: list) -> argparse.Namespace:
 def argument_parser_sbfmeas_csv(script_name: str, args: list) -> argparse.Namespace:
     """parses the arguments
 
