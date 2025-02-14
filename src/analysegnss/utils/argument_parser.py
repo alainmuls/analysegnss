@@ -325,7 +325,7 @@ def argument_parser_rnxobs_csv(script_name: str, args: list) -> argparse.Namespa
     )
 
     parser.add_argument(
-        "--obs_fn",
+        "--obs_ifn",
         help="RINEX observation filename",
         type=str,
         required=True,
@@ -333,7 +333,7 @@ def argument_parser_rnxobs_csv(script_name: str, args: list) -> argparse.Namespa
     )
 
     parser.add_argument(
-        "--csv_fn",
+        "--csv_ofn",
         help="CSV observation filename (defaults to filename with extension csv)",
         type=str,
         required=False,
@@ -383,7 +383,7 @@ def argument_parser_rnxnav_csv(script_name: str, args: list) -> argparse.Namespa
     )
 
     parser.add_argument(
-        "--nav_fn",
+        "--nav_ifn",
         help="RINEX navigation filename",
         type=str,
         required=True,
@@ -433,7 +433,7 @@ def argument_parser_rnx_csv(script_name: str, args: list) -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--obs_fn",
+        "--obs_ifn",
         help="RINEX observation filename",
         type=str,
         required=True,
@@ -441,7 +441,7 @@ def argument_parser_rnx_csv(script_name: str, args: list) -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--nav_fn",
+        "--nav_ifn",
         help="RINEX navigation filename",
         type=str,
         required=True,
@@ -488,7 +488,7 @@ def argument_parser_glab_parser(script_name: str, args: list) -> argparse.Namesp
     )
 
     parser.add_argument(
-        "--glab_fn",
+        "--glab_ifn",
         help="gLAB produced file",
         type=str,
         required=True,
@@ -636,7 +636,7 @@ def argument_parser_get_ebh_timings(script_name: str, args: list) -> argparse.Na
 
 def argument_parser_get_base_coord(script_name: str, args: list) -> argparse.Namespace:
     "Gets the base coordinates from a SBF file using the sbf_class"
-    baseName = str_yellow(script_name)
+
     help_text = (
         baseName
         + """
@@ -686,7 +686,6 @@ def argument_parser_ebh_process_launcher(script_name: str, args: list) -> argpar
     decides whether the RTK or PPK solution has a sufficient quality,
     and finally outputs correct ASSUR formatted files for each ebh line.
     """
-    baseName = str_yellow(script_name)
 
     help_text = (
         baseName
@@ -780,8 +779,6 @@ def argument_parser_rnx2rtkp_launcher(script_name: str, args: list) -> argparse.
     """
     Parses the arguments and creates console/file logger for launch_ppk_rnx2rtkp.py
     """
-
-    baseName = str_yellow(script_name)
 
     help_text = (
         baseName
@@ -1069,7 +1066,7 @@ def argument_parser_reformat_sbf_rnx_for_opus(
     return args
 
 
-def argument_parser_sbfmeas2csv(script_name: str, args: list) -> argparse.Namespace:
+def argument_parser_sbfmeas_csv(script_name: str, args: list) -> argparse.Namespace:
     """parses the arguments
 
     Args:
@@ -1105,7 +1102,7 @@ def argument_parser_sbfmeas2csv(script_name: str, args: list) -> argparse.Namesp
     )
 
     parser.add_argument(
-        "--csv_fn",
+        "--csv_ofn",
         help="CSV observation filename (defaults to filename with extension csv)",
         type=str,
         required=False,

@@ -92,6 +92,9 @@ def get_base_coord_from_sbf(
 
 def main():
 
+    """
+    Main function to extract the base station coordinates from the SBF file
+    """
     # fetch script name for logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
     # Parse arguments

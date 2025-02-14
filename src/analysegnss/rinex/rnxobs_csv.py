@@ -36,7 +36,7 @@ def rnxobs_csv(argv: list):
     # create the RINEX object
     try:
         rnxobs = RINEX_OBS(
-            rnxobs_fn=args_parsed.obs_fn,
+            rnxobs_ifn=args_parsed.obs_ifn,
             gnss=args_parsed.gnss,
             logger=logger,
         )
@@ -50,7 +50,8 @@ def rnxobs_csv(argv: list):
     tabobs_dfs = rnxobs.gfzrnx_tabobs()
     for gnss, tabobs_df in tabobs_dfs.items():
         logger.debug(
-            f"Converted RINEX observation file for {str_green(DICT_GNSS[gnss])} to tabular observation file: \n{tabobs_df}"
+            f"Converted RINEX observation file for {str_green(DICT_GNSS[gnss]["name"])} "
+            f"to tabular observation file: \n{tabobs_df}"
         )
 
     # convert the tabular observations to csv format like rtcm3_parser MSM5/7 does
@@ -59,18 +60,18 @@ def rnxobs_csv(argv: list):
         logger.warning(f"Converted tabular observation file to CSV file: \n{csv_df}")
 
     # save the CSV file
-    if args_parsed.csv_fn is not None:
-        csv_fn = args_parsed.csv_fn
+    if args_parsed.csv_ofn is not None:
+        csv_ofn = args_parsed.csv_ofn
     else:
-        csv_fn = os.path.splitext(rnxobs.rnxobs_fn)[0] + ".csv"
-    csv_df.write_csv(csv_fn)
+        csv_ofn = os.path.splitext(rnxobs.rnxobs_ifn)[0] + ".csv"
+    csv_df.write_csv(csv_ofn)
 
     if logger is not None:
-        logger.warning(f"Saved CSV file: {str_green(csv_fn)}")
+        logger.warning(f"Saved CSV file: {str_green(csv_ofn)}")
 
     if rnxobs._console_loglevel > logging.WARNING:
         gnss_list = [DICT_GNSS[gnss] for gnss in args_parsed.gnss]
-        print(f"Created for {gnss_list}: {csv_fn}")
+        print(f"Created for {gnss_list}: {csv_ofn}")
 
 
 def main():

@@ -17,6 +17,10 @@ from rich import print
 from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.gnss.gnss_dt import gpsms2dt
 from analysegnss.sbf import sbf_constants as sbfc
+from analysegnss.sbf.sbf_blocks_polars import (
+    SBF_BLOCK_COLUMNS_BIN2ASC,
+    SBF_BLOCK_COLUMNS_SBF2ASC,
+)
 from analysegnss.utils.utilities import locate, str_red, str_yellow
 
 
@@ -264,7 +268,7 @@ class SBF:
             self.logger.debug(f"... running: {str_yellow(' '.join(cmd_bin2asc))}")
 
         with rich_console.status(
-            f"[bold green]Converting SBF ({lst_sbfblocks}) to CSV files...",
+            f"Converting SBF [bold green]({lst_sbfblocks})[/bold green] to CSV files...",
             spinner="aesthetic",
         ):
             try:
@@ -289,12 +293,9 @@ class SBF:
                 bin2asc_fns[sbf_block] = glob.glob(rf"{self.sbf_fn}_measurements.txt")[
                     0
                 ]
-        print(f"bin2asc_fns: {bin2asc_fns}")
 
         # create dictionary for containing the obtained dataframes
         sbf_dfs = {}
-
-        print(f"{bin2asc_fns = }")
 
         # iterate over the CVS files and convert them to dataframe
         for sbf_block, bin2asc_fn in bin2asc_fns.items():
@@ -314,10 +315,9 @@ class SBF:
                 # remove unused columns
                 keep_cols = self.used_columns(sbf_block)
 
-                print(f"{bin2asc_fn = }")
                 # read csv file into dataframe
                 with rich_console.status(
-                    f"[bold green]Reading from CSV file ({sbf_block})...",
+                    f"Reading from CSV file [bold green]{sbf_block}[/bold green]",
                     spinner="aesthetic",
                 ):
                     sbf_df = pl.read_csv(
@@ -328,13 +328,19 @@ class SBF:
                         has_header=True,
                         skip_rows_after_header=1,  # Skip 1 row after the header
                         dtypes=keep_cols,
-                        null_values="NaN",
-                    )
+                        null_values=[
+                            "null",
+                            "NaN",
+                        ],  # First catch all null representations
+                    ).fill_null(
+                        float("nan")
+                    )  # Then convert all nulls to NaN
 
                     # add columns to the dataframe
                     sbf_df = self.add_columns(block_df=sbf_df)
 
                 sbf_dfs[sbf_block] = sbf_df
+                print(f"sbf_dfs[{sbf_block}]:\n{sbf_dfs[sbf_block]}")
 
                 # print(f"archive = {archive}")
                 # archiving the converted sbf file
@@ -548,7 +554,6 @@ class SBF:
             in block_df.columns
             # and not block_df.select(pl.col("SVID")).dtypes[0] == pl.String
         ):
-            # TODO: correct the int into string or vice versa
             if self.logger:
                 self.logger.debug("\tadding PRN column to the dataframe")
             block_df = block_df.with_columns(
@@ -559,6 +564,7 @@ class SBF:
                 )
                 .alias("PRN")
             ).lazy()
+            block_df = block_df.drop(["SVID"]).lazy()
         # else:
         #     # rename the column to PRN
         #     block_df = block_df.rename({"SVID": "PRN"}).lazy()
@@ -645,189 +651,14 @@ class SBF:
         Returns:
                 list: column names we use
         """
-        if sbf_block == "MeasEpoch2":
-            col_types = {
-                pl.UInt32: [
-                    "TOW [0.001 s]",
-                ],
-                pl.UInt16: [
-                    "WNc [w]",
-                    "MeasType",
-                    "Antenna ID",
-                    "SignalType",
-                    "LockTime [s]",
-                ],
-                pl.String: ["SVID"],
-                pl.Float64: [
-                    "CN0_dBHz [dB-Hz]",
-                    "PR_m [m]",
-                    "Doppler_Hz",
-                    "L_cycles [cyc]",
-                ],
-            }
-        elif sbf_block == "Meas3Ranges":
-            # dict of columns to keep and column type
-            col_types = {
-                pl.Float32: ["TOW [s]"],
-                pl.UInt16: ["WNc [w]", "LockTime [s]"],
-                pl.String: ["SVID", "SignalType", "Antenna ID"],
-                pl.Float64: [
-                    "PR [m]",
-                    "L [cyc]",
-                    "Doppler [Hz]",
-                    "C/N0 [dB-Hz]",
-                ],
-            }
-        elif sbf_block == "PVTCartesian2":
-            # dict of your column names keyed by dtype
-            col_types = {
-                pl.Float64: [
-                    "X [m]",
-                    "Y [m]",
-                    "Z [m]",
-                    "Vx [m/s]",
-                    "Vy [m/s]",
-                    "Vz [m/s]",
-                    "COG [°]",
-                ],
-                pl.UInt32: [
-                    "TOW [0.001 s]",
-                ],
-                pl.UInt16: [
-                    "WNc [w]",
-                    "MeanCorrAge [0.01 s]",
-                ],
-                pl.UInt8: [
-                    "Type",
-                    "Error",
-                    "NrSV",
-                ],
-            }
-        elif sbf_block == "PVTGeodetic2":
-            # dict of your column names keyed by dtype
-            col_types = {
-                pl.Float64: [
-                    "Latitude [rad]",
-                    "Longitude [rad]",
-                    "Height [m]",
-                ],
-                pl.Float32: [
-                    "Undulation [m]",
-                    "COG [°]",
-                ],
-                pl.UInt32: [
-                    "TOW [0.001 s]",
-                    "SignalInfo",
-                ],
-                pl.UInt16: [
-                    "WNc [w]",
-                    "MeanCorrAge [0.01 s]",
-                ],
-                pl.UInt8: [
-                    "Type",
-                    "Error",
-                    "NrSV",
-                ],
-            }
-        elif sbf_block == "PVTResiduals2":
-            keep_cols = [
-                "TOW [0.001 s]",
-                "WNc [w]",
-                "N",
-                "SVID",
-                "FreqNr",
-                "Type",
-                "MeasInfo",
-                "ResidualType",
-                "Pseudorange residuals",
-                "Carrier-phase residuals",
-                "Doppler residuals",
-                "Fixed ambiguity",
-                "Residual [m]",
-                "Residual [cyc]",
-                "Residual [m/s]",
-            ]
-        elif sbf_block == "SatVisibility1":
-            keep_cols = [
-                "TOW [0.001 s]",
-                "WNc [w]",
-                "SVID",
-                "Azimuth_deg",
-                "Elevation_deg",
-                "RiseSet",
-                "SatelliteInfo",
-            ]
-        elif sbf_block == "ReceiverTime":
-            keep_cols = [
-                "TOW [0.001 s]",
-                "WNc [w]",
-                "UTCYear [Y]",
-                "UTCMonth [month]",
-                "UTCDay [d]",
-                "UTCHour [h]",
-                "UTCMin [min.]",
-                "UTCSec [s]",
-                "DeltaLS [s]",
-            ]
-        elif sbf_block == "PosCovCartesian1":
-            col_types = {
-                pl.Float32: [
-                    "Cov_xx [m²]",
-                    "Cov_yy [m²]",
-                    "Cov_zz [m²]",
-                    "Cov_bb [s²]",
-                ],
-                pl.UInt32: [
-                    "TOW [0.001 s]",
-                ],
-                pl.UInt16: [
-                    "WNc [w]",
-                ],
-            }
-        elif sbf_block == "PosCovGeodetic1":
-            # dict of your column names keyed by dtype
-            col_types = {
-                pl.Float32: [
-                    "Cov_latlat [m²]",
-                    "Cov_lonlon [m²]",
-                    "Cov_hgthgt [m²]",
-                ],
-                pl.UInt32: [
-                    "TOW [0.001 s]",
-                ],
-                pl.UInt16: [
-                    "WNc [w]",
-                ],
-            }
-        elif sbf_block == "Comment1":
-            col_types = {
-                pl.UInt32: [
-                    "TOW [0.001 s]",
-                ],
-                pl.UInt16: [
-                    "WNc [w]",
-                    "CommentLn",
-                ],
-                pl.Utf8: ["Comment"],
-            }
-        elif sbf_block == "BaseStation1":
-            col_types = {
-                pl.UInt32: [
-                    "TOW [0.001 s]",
-                ],
-                pl.UInt16: ["WNc [w]", "BaseStationID"],
-                pl.UInt8: [
-                    "BaseType",
-                    "Source",
-                    "Datum",
-                ],
-                pl.Float64: [
-                    "X [m]",
-                    "Y [m]",
-                    "Z [m]",
-                ],
-            }
+        if sbf_block not in SBF_BLOCK_COLUMNS_BIN2ASC:
+            if self.logger:
+                self.logger.error(f"Unknown SBF block type: {sbf_block}")
+            return {}
+
+        col_types = SBF_BLOCK_COLUMNS_BIN2ASC[sbf_block]
         keep_cols = {}
+
         for dtype, columns in col_types.items():
             for col in columns:
                 keep_cols[col] = dtype
@@ -919,55 +750,8 @@ class SBF:
             "sbf2asc is chosen as sbf converter. Looking up corresponding column names for each sbf block"
         )
 
-        # TODO this dict needs to be expanded
-        sbf_blocks_colnames = {
-            "PVTCartesian2": [
-                "0",
-                "GPST [s]",
-                "X [m]",
-                "Y [m]",
-                "Z [m]",
-                "Vx [m/s]",
-                "Vy [m/s]",
-                "Vz [m/s]",
-                "RxClockBias [s]",
-                "RxClockDrift [s/s]",
-                "NrSV",
-                "PVT Mode",
-                "MeanCorrAge [0.01 s]",
-                "PVT Error",
-                "COG [°]",
-            ],
-            "PVTGeodetic2": [
-                "-1",
-                "GPST [s]",
-                "Latitude [rad]",
-                "Longitude [rad]",
-                "Height [m]",
-                "Undulation [m]",
-                "Vn [m/s]",
-                "Ve [m/s]",
-                "Vu [m/s]",
-                "ClockBias [s]",
-                "ClockDrift [s/s]",
-                "NrSV",
-                "PVT Mode",
-                "MeanCorrAge [0.01 s]",
-                "PVT Error",
-                "COG [°]",
-            ],
-            "PosCovCartesian1": [
-                "-2",
-                "GPST [s]",
-                "Cov_XX [m²]",
-                "Cov_YY [m²]",
-                "Cov_ZZ [m²]",
-                "Cov_tt [s²]",
-            ],
-        }
-
         try:
-            sbf_block_colnames = sbf_blocks_colnames[sbf_block]
+            sbf_block_colnames = SBF_BLOCK_COLUMNS_SBF2ASC[sbf_block]
             if self.logger:
                 self.logger.info(
                     f"Returning sbf block {sbf_block} corresponding column names {sbf_block_colnames} for sbf2asc"

@@ -36,7 +36,7 @@ def rnxnav_csv(argv: list):
     # create the RINEX object
     try:
         rnxnav = RINEX_NAV(
-            rnxnav_fn=args_parsed.nav_fn,
+            rnxnav_ifn=args_parsed.nav_ifn,
             gnss=args_parsed.gnss,
             logger=logger,
         )
@@ -54,7 +54,7 @@ def rnxnav_csv(argv: list):
         return 1
 
     # get directory part and filename without extension part of the RINEX navigation file
-    rnxnav_dir, rnxnav_fn = os.path.split(args_parsed.nav_fn)
+    rnxnav_dir, rnxnav_fn = os.path.split(args_parsed.nav_ifn)
     rnxnav_dir = rnxnav_dir or "."
 
     # change to the directory part of the RINEX navigation file in try block
@@ -63,14 +63,14 @@ def rnxnav_csv(argv: list):
 
     # convert each GNSS / Navigation type dataframe to CSV file
     for (gnss, nav_type), nav_df in gnss_nav_dict.items():
-        csv_fn = f"{rnxnav_dir}/{os.path.basename(rnxnav_fn).split('.')[0]}_{DICT_GNSS[gnss]}_{nav_type}.csv"
+        csv_fn = f"{rnxnav_dir}/{os.path.basename(rnxnav_fn).split('.')[0]}_{DICT_GNSS[gnss]["abbrev"]}_{nav_type}.csv"
         if logger:
             logger.warning(
-                f"Created for {str_green(DICT_GNSS[gnss])}-{str_green(nav_type)}: {str_yellow(csv_fn)}"
+                f"Created for {str_green(DICT_GNSS[gnss]["name"])}-{str_green(nav_type)}: {str_yellow(csv_fn)}"
             )
 
         if rnxnav._console_loglevel > logging.WARNING:
-            print(f"Created for {DICT_GNSS[gnss]}-{nav_type}: {csv_fn}")
+            print(f"Created for {DICT_GNSS[gnss]["name"]}-{nav_type}: {csv_fn}")
 
         nav_df.write_csv(
             csv_fn,
