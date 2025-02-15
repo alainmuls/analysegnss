@@ -1,208 +1,227 @@
+import sys
+
 import numpy as np
-from datetime import datetime, timedelta
+import pytest
+from rich import print
 
-from src.analysegnss.config import GM_GPS, OMGE_GPS, GM_GAL, OMGE_GAL, GM_BDS, OMGE_BDS
+from src.analysegnss.config import ERROR_CODES, GPS_BDS_WEEK_DIFF, R_EARTH
+from src.analysegnss.gnss.glonass_ephemeris import GLONASSEphemeris
+from src.analysegnss.gnss.gnss_dt import gnss2dt
+from src.analysegnss.gnss.gnss_ephemeris import GNSSEphemeris
+from src.analysegnss.gnss.gnss_nav_reader import GNSSNavReader
 
+# def test_read_gnss_nav_csv():
+#     # Test data paths
+#     nav_csv_fns = {
+#         "GPS-LNAV": "tests/data/BERT00BEL_R_20243640700_41H_MN_GPS_LNAV.csv",
+#         "GAL_INAV": "tests/data/BERT00BEL_R_20243640700_41H_MN_Galileo_INAV.csv",
+#         "BDS_D1": "tests/data/BERT00BEL_R_20243640700_41H_MN_Beidou_D1.csv",
+#         "BDS_D2": "tests/data/BERT00BEL_R_20243640700_41H_MN_Beidou_D2.csv",
+#         "GPS-G16": "tests/data/BERT00BEL_R_20243640700_41H_MN_G16_GPS_LNAV.csv",
+#     }
 
-class GNSSEphemeris:
-    def __init__(self):
-        # Satellite identification
-        self.gnss = None
-        self.prn = None
-        self.health = None
+#     for nav_type, navcsv_fn in nav_csv_fns.items():
+#         print(f"\nProcessing {nav_type} | {navcsv_fn}")
+#         gnss_nav_reader = GNSSNavReader(csv_file=navcsv_fn)
+#         gnss_nav_reader.read_GEC_nav_csv()
+#         nav_data = gnss_nav_reader.get_ephemerides()
 
-        # Time parameters
-        self.toe = None  # Time of Ephemeris
-        self.toc = None  # Time of Clock
-        self.week = None
+#         assert len(nav_data) > 0, f"No data read for {nav_type}"
 
-        # Clock correction parameters
-        self.af0 = None  # Clock bias (seconds)
-        self.af1 = None  # Clock drift (sec/sec)
-        self.af2 = None  # Clock drift rate (sec/sec^2)
+#         # Test first ephemeris
+#         eph = nav_data[0]
 
-        # Orbital parameters
-        self.e = None  # Eccentricity
-        self.sqrta = None  # Square root of semi-major axis
-        self.dn = None  # Mean motion correction
-        self.m0 = None  # Mean anomaly at reference time
-        self.omega = None  # Argument of perigee
-        self.OMEGA = None  # Right ascension of ascending node
-        self.OMEGA_DOT = None  # Rate of right ascension
-        self.i0 = None  # Inclination angle at reference time
-        self.IDOT = None  # Rate of inclination angle
+#         # print in tabular form
+#         attributes = vars(eph)
+#         items = sorted(attributes.items())
+#         key_width = 12
+#         val_width = 18
 
-        # Correction terms
-        self.cuc = None  # Cosine latitude
-        self.cus = None  # Sine latitude
-        self.crc = None  # Cosine radius
-        self.crs = None  # Sine radius
-        self.cic = None  # Cosine inclination
-        self.cis = None  # Sine inclination
+#         for i in range(0, len(items), 3):
+#             row = items[i : i + 3]
+#             line = ""
+#             for attr, value in row:
+#                 # line += f"{attr:>{key_width}} : {str(value):<{val_width}}"
+#                 # line += f"{attr:>{key_width}} : {value} ({type(value).__name__}){' ':<{val_width-len(str(value))}}"
 
-        self.IODE = None  # Issue of Data
+#                 # if isinstance(value, (int, float)):
+#                 #     formatted_value = (
+#                 #         f"{value:>{val_width}.12f}"
+#                 #         if isinstance(value, float)
+#                 #         else f"{value:>{val_width}d}"
+#                 #     )
+#                 # else:
+#                 #     formatted_value = f"{str(value):<{val_width}}"
 
-    def calculate_GPS_GAL_coordinates(self, t: float) -> tuple:
-        match self.gnss:
-            case "G":
-                GM = GM_GPS
-                OMGE = OMGE_GPS
-            case "E":
-                GM = GM_GAL
-                OMGE = OMGE_GAL
-            case "C":
-                GM = GM_BDS
-                OMGE = OMGE_BDS
-            case _:
-                raise ValueError(f"Unknown GNSS: {gnss}")  # type: ignore
+#                 if isinstance(value, float):
+#                     formatted_value = f"{value:>{val_width}.9e}"
+#                 elif isinstance(value, int):
+#                     formatted_value = f"{value:>{val_width}d}"
+#                 else:
+#                     formatted_value = f"{str(value):<{val_width}}"
 
-        # Semi-major axis
-        A = self.sqrta * self.sqrta
+#                 line += f"{attr:>{key_width}} : {formatted_value}"
+#             print(line)
 
-        # Time from ephemeris reference epoch
-        tk = t - self.toe
-
-        # Mean motion
-        n0 = np.sqrt(GM / (A * A * A))
-        n = n0 + self.dn
-
-        # Mean anomaly
-        Mk = self.m0 + n * tk
-
-        # Solve Kepler's equation iteratively
-        Ek = Mk
-        for _ in range(10):
-            E_old = Ek
-            Ek = Mk + self.e * np.sin(Ek)
-            if abs(Ek - E_old) < 1e-12:
-                break
-
-        # Position calculation in orbital plane
-        # True anomaly
-        vk = np.arctan2(
-            np.sqrt(1.0 - self.e * self.e) * np.sin(Ek), np.cos(Ek) - self.e
-        )
-        # Argument of latitude
-        phik = vk + self.omega
-
-        # Second harmonic corrections
-        cos_2phik = np.cos(2.0 * phik)
-        sin_2phik = np.sin(2.0 * phik)
-
-        # Argument of latitude, Orbit radius and inclination correction
-        duk = self.cus * sin_2phik + self.cuc * cos_2phik
-        drk = self.crs * sin_2phik + self.crc * cos_2phik
-        dik = self.cis * sin_2phik + self.cic * cos_2phik
-
-        # Corrected radius, argument of latitude and inclination
-        uk = phik + duk
-        rk = A * (1.0 - self.e * np.cos(Ek)) + drk
-        ik = self.i0 + dik + self.IDOT * tk
-
-        # Positions in orbital plane
-        xk_orbit = rk * np.cos(uk)
-        yk_orbit = rk * np.sin(uk)
+#         assert eph is not None
+#         assert hasattr(eph, "prn")
+#         assert hasattr(eph, "health")
 
 
-        # corrected longitude of ascending node (without accounting for Earth's rotation)
-        OMEGA_k_eci = self.OMEGA + self.OMEGA_DOT * tk
+def test_satellite_position_calculation():
+    # Test data paths
+    nav_csv_fns = {
+        # "GPS-LNAV": "tests/data/BERT00BEL_R_20243640700_41H_MN_GPS_LNAV.csv",
+        # "GAL_INAV": "tests/data/BERT00BEL_R_20243640700_41H_MN_Galileo_INAV.csv",
+        # "BDS_D1": "tests/data/BERT00BEL_R_20243640700_41H_MN_Beidou_D1.csv",
+        # "BDS_D2": "tests/data/BERT00BEL_R_20243640700_41H_MN_Beidou_D2.csv",
+        "GPS-G16": "tests/data/BERT00BEL_R_20243640700_41H_MN_G16_GPS_LNAV.csv",
+    }
 
-        # Convert orbital plane to ECI
-        X_ECI = xk_prime * np.cos(OMEGA_k_eci) - yk_prime * np.cos(ik) * np.sin(OMEGA_k_eci)
-        Y_ECI = xk_prime * np.sin(OMEGA_k_eci) + yk_prime * np.cos(ik) * np.cos(OMEGA_k_eci)
-        Z_ECI = yk_prime * np.sin(ik)
+    # Test for each navigation type
+    for nav_type, navcsv_fn in nav_csv_fns.items():
+        print(f"\nProcessing {nav_type} | {navcsv_fn}")
+        gnss_nav_reader = GNSSNavReader(csv_file=navcsv_fn)
+        gnss_nav_reader.read_GEC_nav_csv()
+        nav_data = gnss_nav_reader.get_ephemerides()
+
+        eph = nav_data[0]
+
+        # Calculate positions at different times
+        t = eph.toe
+        WkNr = eph.week
+        x, y, z = eph.compute_satellite_position(t)
+
+        # Validate position values
+        assert isinstance(x, (int, float))
+        assert isinstance(y, (int, float))
+        assert isinstance(z, (int, float))
+
+        # Check reasonable orbital radius
+        gnss_radius = np.sqrt(x**2 + y**2 + z**2)
+
+        if nav_type.startswith("GPS-LNAV"):
+            print(
+                "\nNAV_TYPE     PRN  WKNR     TOW        X [m]           Y [m]           Z [m]    |     radius [m]  |     height [m]"
+            )  # GPS orbital radius range in meters
+        if not nav_type.startswith("BDS"):
+            print(
+                f"{nav_type:12s} {eph.prn:3d} {eph.week:5d} {t:7d} {x:15.3f} {y:15.3f} {z:15.3f} |"
+                f" {gnss_radius:15.3f} | {gnss_radius - R_EARTH:15.3f}"
+            )
+        else:
+            print(
+                f"{nav_type:12s} {eph.prn:3d} {eph.week + GPS_BDS_WEEK_DIFF:5d} {t:7d} {x:15.3f} {y:15.3f} {z:15.3f} |"
+                f" {gnss_radius:15.3f} | {gnss_radius - R_EARTH:15.3f}"
+            )
+
+        assert 20000000 < gnss_radius < 50000000  # GPS orbital radius range in meters
+
+        if nav_type == "GPS-G16":
+            pos_brdc = []
+            pos_glab = []
+
+            # read the corresponding GPS LNAV ephemeris from CSV file
+            gnss_nav_reader = GNSSNavReader(csv_file=navcsv_fn)
+            gnss_nav_reader.read_GEC_nav_csv()
+            nav_data = gnss_nav_reader.get_ephemerides()
+
+            t = eph.toe
+            WkNr = eph.week
+
+            # read all ines starting with SATPVT from the glab satpos file
+            with open("tests/data/BERT00BEL_R_20243640700_41H_MN_G16.satpos", "r") as f:
+                glab_lines = f.readlines()
+
+            for t in range(eph.toe - 239 * 30, eph.toe + 240 * 30, 30):
+                # convert the GPS Week/TOW to datetime
+                dt = gnss2dt(week=WkNr, tow=t)
+                x, y, z = eph.compute_satellite_position(t)
+
+                pos_brdc.append((WkNr, eph.toe, eph.IODE, t, dt, x, y, z))
+                # print(glab_hms, x, y, z)
+
+                # search in glab_lines the lines that corresponds to the glab_hms
+                glab_hms = dt.strftime("%H:%M:%S.%f")[:-4]
+                for line in glab_lines:
+                    if glab_hms in line:
+                        # extract fields 10, 11 and 12
+                        # print(line.split()[9])
+                        # print(line.split()[9:12])
+                        x_glab, y_glab, z_glab = map(float, line.split()[9:12])
+                        glab_iode = int(line.split()[17])
+                        pos_glab.append(
+                            (WkNr, t, glab_iode, dt, glab_hms, x_glab, y_glab, z_glab)
+                        )
+                        break
+
+            for i in range(len(pos_brdc)):
+                dist_brdc = np.sqrt(
+                    (pos_brdc[i][5] + pos_brdc[i][5]) ** 2
+                    + (pos_brdc[i][6] + pos_brdc[i][6]) ** 2
+                    + (pos_brdc[i][7] + pos_brdc[i][7]) ** 2
+                )
+
+                dist_glab = np.sqrt(
+                    (pos_glab[i][5] + pos_glab[i][5]) ** 2
+                    + (pos_glab[i][6] + pos_glab[i][6]) ** 2
+                    + (pos_glab[i][7] + pos_glab[i][7]) ** 2
+                )
+
+                print(
+                    f"{pos_brdc[i][0]:5d} {pos_brdc[i][1]:7d} | {pos_brdc[i][2]:3d} {pos_brdc[i][3]:6f} | "
+                    f"{pos_brdc[i][4].strftime("%H:%M:%S.%f")[:-4]} | "
+                    f" {pos_brdc[i][5]:15.3f} {pos_brdc[i][6]:15.3f} {pos_brdc[i][7]:15.3f}\n"
+                    f"                {pos_glab[i][2]:3d}                 {pos_glab[i][3].strftime("%H:%M:%S.%f")[:-4]} | "
+                    f" {pos_glab[i][5]:15.3f} {pos_glab[i][6]:15.3f} {pos_glab[i][7]:15.3f}"
+                )
+
+                assert np.isclose(dist_brdc, dist_glab, atol=1e-3)
+
+            # # read file ./tests/data/BERT00BEL_R_20243640700_41H_MN_G16_GPS_LNAV.satpos
+            # # find the line with timing 12:00:00.00 and extract the position
+            # with open("tests/data/BERT00BEL_R_20243640700_41H_MN_G16.satpos", "r") as f:
+            #     for line in f:
+            #         if "12:00:00.00" in line:
+            #             # extract fields 10, 11 and 12
+            #             # print(line.split()[9])
+            #             # print(line.split()[9:12])
+            #             x_glab, y_glab, z_glab = map(float, line.split()[9:12])
+            #             break
+            #         else:
+            #             continue
+
+            #     print(
+            #         f"\n{nav_type} {eph.prn} {WkNr} {t}: {x:15.3f} {y:15.3f} {z:15.3f}"
+            #         f"\n                        {x_glab:15.3f} {y_glab:15.3f} {z_glab:15.3f}"
+            #     )
+
+            #     # assert that the difference between the _ref and _glab coordinates is less than 5mm
+            #     assert abs(x_glab - x) < 0.005
+            #     assert abs(y_glab - y) < 0.005
+            #     assert abs(z_glab - z) < 0.005
 
 
-        # Rotation matrix around z axis 
-        rot_angle = -OMGE * t # correct for earth's rotation  
-        rot_z = np.array([[np.cos(rot_angle), -np.sin(rot_angle), 0],
-                            [np.sin(rot_angle), np.cos(rot_angle), 0],
-                            [0, 0, 1]])
-        
-        # rotate ECI to ECEF
-        x, y, z = np.dot(rot_z, np.array([X_ECI, Y_ECI, Z_ECI]))
-                # For BDS the coordinates are in the CGCS system, so convert to WGS84
-        if self.gnss == "C":
-            x, y, z = self.transform_cgcs_to_wgs84(x, y, z)
-        
-        return x, y, z    
-        
-        """
-                # Positions in orbital plane
-        xk_orbit = rk * np.cos(uk)
-        yk_orbit = rk * np.sin(uk)
+# def test_glonass_ephemeris():
+#     glonass_eph = GLONASSEphemeris()
 
-        # Corrected longitude of ascending node with Earth rotation
-        OMEGA_k = self.OMEGA + (self.OMEGA_DOT - OMGE) * tk - OMGE * self.toe
+#     # Test initial conditions
+#     glonass_eph.x = 10000.0  # km
+#     glonass_eph.y = 15000.0
+#     glonass_eph.z = 20000.0
+#     glonass_eph.vx = 1.0
+#     glonass_eph.vy = 2.0
+#     glonass_eph.vz = 3.0
 
-        # Earth rotation correction matrix
-        cos_Omega = np.cos(OMEGA_k)
-        sin_Omega = np.sin(OMEGA_k)
-        cos_incl = np.cos(ik)
-        sin_incl = np.sin(ik)
+#     # Test Runge-Kutta integration
+#     t = 300  # 5 minutes
+#     pos = glonass_eph.runge_kutta4(t)
 
-        # ECEF coordinates
-        x = xk_orbit * cos_Omega - yk_orbit * cos_incl * sin_Omega
-        y = xk_orbit * sin_Omega + yk_orbit * cos_incl * cos_Omega
-        z = yk_orbit * sin_incl
-
-        # For BDS the coordinates are in the CGCS system, so convert to WGS84
-        if self.gnss == "C":
-            x, y, z = self.transform_cgcs_to_wgs84(x, y, z)
-       
-        return x, y, z
-
-    def is_valid(self, t: float) -> bool:
-        """
-        Check if ephemeris is valid for given time
-        Args:
-            t: GPS time in seconds of week
-        Returns:
-            bool: True if ephemeris is valid
-        """
-        time_difference = abs(t - self.toe)
-        return time_difference <= 7200  # Valid for ±2 hours
-
-    def transform_cgcs_to_wgs84(
-        self, x: float, y: float, z: float
-    ) -> tuple[float, float, float]:
-        """Transform coordinates from BDS CGCS2000 to WGS84.
-
-        Args:
-            x, y, z: Coordinates in CGCS2000 frame (meters)
-        Returns:
-            tuple: (x, y, z) coordinates in WGS84 frame (meters)
-        """
-        # Translation parameters (meters)
-        dx = -0.99
-        dy = -1.90
-        dz = -0.76
-
-        # Scale parameter (ppb)
-        scale = -0.000069 * 1e-9
-
-        # Rotation parameters (radians)
-        rx = -0.000034 * 4.8481e-6
-        ry = 0.000002 * 4.8481e-6
-        rz = 0.000023 * 4.8481e-6
-
-        # Apply Helmert transformation
-        x_wgs = (1 + scale) * (x + rz * y - ry * z) + dx
-        y_wgs = (1 + scale) * (-rz * x + y + rx * z) + dy
-        z_wgs = (1 + scale) * (ry * x - rx * y + z) + dz
-
-        return (x_wgs, y_wgs, z_wgs)
+#     # Validate position
+#     assert len(pos) == 3
+#     radius = np.sqrt(sum(p**2 for p in pos))
+#     assert 19000 < radius < 26000  # GLONASS orbital radius range in km
 
 
-# eph = GNSSEphemeris()
-# eph.prn = 1
-# eph.toe = 345600  # Time of ephemeris in seconds of GPS week
-# eph.sqrta = 5153.79589081
-# eph.e = 0.00223578442819
-# # ... set other parameters ...
-
-# # Calculate position at specific time
-# gps_time = 346800  # GPS seconds of week
-# if eph.is_valid(gps_time):
-#     x, y, z = eph.compute_satellite_position(gps_time)
-#     print(f"Satellite position (ECEF): {x:.2f}, {y:.2f}, {z:.2f} meters")
+if __name__ == "__main__":
+    pytest.main([__file__])
