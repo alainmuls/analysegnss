@@ -191,6 +191,20 @@
             ]
         },
         {
+            "name": "Python Debugger: sbfnav_csv ROVR187J.23_",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/analysegnss/sbf/sbfnav_csv.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--sbf_ifn",
+                "/home/amuls/cylab/TESTDATA/analysegnss_data/ROVR187J.23_",
+                "-vvv",
+                "--archive",
+                "/tmp",
+            ]
+        },
+        {
             "name": "Python: Run Tests",
             "type": "debugpy",
             "request": "launch",

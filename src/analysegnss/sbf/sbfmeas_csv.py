@@ -481,7 +481,7 @@ def convert_dataframe_csv(
 
 
 def sbfmeas_csv(argv: list):
-    """reads SBF file and converts it to CSV file similar
+    """reads SBF file and converts Measurement blocks to CSV file similar
     to those created by rtcm3_parser.py
 
     Args:

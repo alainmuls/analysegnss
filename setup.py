@@ -16,6 +16,7 @@ setup(
             "glab_parser=analysegnss.glabng.glab_parser:main",
             "cn0_dataframe=analysegnss.analyse.cn0_dataframe:main",
             "sbfmeas_csv=analysegnss.sbf.sbfmeas_csv:main",
+            "sbfnav_csv=analysegnss.sbf.sbfnav_csv:main",
         ]
     },
 )
