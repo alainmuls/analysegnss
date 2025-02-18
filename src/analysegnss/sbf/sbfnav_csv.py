@@ -51,12 +51,32 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
         logger.error(f"No SBF Nav blocks found in {parsed_args.sbf_ifn}")
         sys.exit(ERROR_CODES["E_SBF_NAV_BLOCKS"])
 
+    # select the navigation SBF blocks for the selected GNSS
+    sbf_nav_blocks_gnss = []
+    for gnss in parsed_args.gnss:
+        gnss_abbrev = DICT_GNSS[gnss]["abbrev"]
+        logger.debug(f"Selected GNSS: {gnss_abbrev}")
+        sbf_nav_blocks_gnss.append(
+            [block for block in sbf_nav_blocks if gnss_abbrev in block][0]
+        )
+
+    print(f"sbf_nav_blocks_gnss: {sbf_nav_blocks_gnss}")
+
     # create a list of dictionaries to hold the dataframes for each navigation SBF block
     nav_dfs = sbf.bin2asc_dataframe(
-        lst_sbfblocks=sbf_nav_blocks, archive=parsed_args.archive
+        lst_sbfblocks=sbf_nav_blocks_gnss, archive=parsed_args.archive
     )
     for sbf_block, nav_df in nav_dfs.items():
-        logger.info(f"nav_df[{sbf_block}]:\n{nav_df}")
+        if sbf_block == "GPSNav":
+            logger.info(
+                f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[:20]).head(2)}"
+            )
+            logger.info(
+                f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[20:]).head(2)}"
+            )
+
+            # convert the polars dataframe to CSV for each navigation SBF block
+            print(f"{sbf_block}:\n{nav_df.columns}")
 
 
 def main():

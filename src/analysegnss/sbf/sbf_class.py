@@ -231,7 +231,7 @@ class SBF:
         if self.logger:
             self.logger.info(
                 f"{str_yellow(run_bin2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files\n"
-                f"and importing into dataframes for SBF blocks: {str_yellow(' '.join(lst_sbfblocks))}"
+                f"Importing into dataframes for SBF blocks: {str_yellow(' '.join(lst_sbfblocks))}"
             )
 
         # create options for bin2asc
@@ -339,8 +339,16 @@ class SBF:
                     # add columns to the dataframe
                     sbf_df = self.add_columns(block_df=sbf_df)
 
+                    # set the dtype again after having added some columns
+                    sbf_df = sbf_df.with_columns(
+                        [
+                            pl.col(col_name).cast(dtype)
+                            for col_name, dtype in keep_cols.items()
+                        ]
+                    )
+
                 sbf_dfs[sbf_block] = sbf_df
-                print(f"sbf_dfs[{sbf_block}]:\n{sbf_dfs[sbf_block]}")
+                # print(f"sbf_dfs[{sbf_block}]:\n{sbf_dfs[sbf_block]}")
 
                 # print(f"archive = {archive}")
                 # archiving the converted sbf file
@@ -515,8 +523,8 @@ class SBF:
         """
         # print(f"block_df = \n{block_df}")
         # remove the rows where 'Type' equals 0 (no PVT available)
-        if self.logger:
-            self.logger.debug("\tremoving rows with no PVT solution")
+        # if self.logger:
+        #     self.logger.debug("\tremoving rows with no PVT solution")
 
         if "Type" in block_df.columns:
             block_df = block_df.filter(pl.col("Type") != 0).lazy()
@@ -643,13 +651,13 @@ class SBF:
         return block_df
 
     def used_columns(self, sbf_block: str) -> list:
-        """returns the column names we use when extracting a SBF block from the SBF file
+        """returns the column names and dtype we use when extracting a SBF block from the SBF file
 
         Args:
                 sbf_block (str): the SBF block we are extracting
 
         Returns:
-                list: column names we use
+                list: column names we use with dtype
         """
         if sbf_block not in SBF_BLOCK_COLUMNS_BIN2ASC:
             if self.logger:
