@@ -10,9 +10,13 @@ from rich import print
 
 from analysegnss.config import DICT_GNSS, DICT_SIGNAL_TYPES, ERROR_CODES
 from analysegnss.sbf.sbf_class import SBF
+from analysegnss.sbf.sbf_column_mapping import (
+    GNSS_NAV_COLUMN_MAPPINGS,
+    convert_semicircles_to_radians,
+    rename_nav_columns,
+)
 from analysegnss.utils import init_logger
 from analysegnss.utils.argument_parser import argument_parser_sbfnav_csv
-from analysegnss.utils.utilities import str_red, str_green
 
 
 def sbfnav_csv(parsed_args: argparse.Namespace):
@@ -67,7 +71,14 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
         lst_sbfblocks=sbf_nav_blocks_gnss, archive=parsed_args.archive
     )
     for sbf_block, nav_df in nav_dfs.items():
+        # identify the gnss type from the SBF block name
+        gnss_abbrev = sbf_block[:3]
+        print(f"gnss_abbrev: {gnss_abbrev}")
+
         if sbf_block == "GPSNav":
+            nav_df = convert_semicircles_to_radians(df=nav_df, gnss_type=gnss_abbrev)
+            nav_df = rename_nav_columns(df=nav_df, gnss_type=gnss_abbrev)
+
             logger.info(
                 f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[:20]).head(2)}"
             )
@@ -76,7 +87,7 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
             )
 
             # convert the polars dataframe to CSV for each navigation SBF block
-            print(f"{sbf_block}:\n{nav_df.columns}")
+            print(f"nav_df.columns[{sbf_block}]:\n{nav_df.columns}")
 
 
 def main():
