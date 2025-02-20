@@ -1,15 +1,23 @@
 import os
 
+import polars as pl
 from polars import Config
 from rich.console import Console
+from rich.theme import Theme
+from rich.table import Table
 
 # console to use when an operation lasts some time to inform user
 rich_console = Console()
+# Create console with custom table style that removes row separators
+# rich_console = Console(
+#     theme=Theme({"repr.number": "none"}), style="none", highlight=False
+# )
 
 # general constants for printing polars dataframes
 Config.set_tbl_cols(-1)
 Config.set_float_precision(3)
 Config.set_tbl_cell_numeric_alignment("RIGHT")
+Config.set_tbl_formatting(format="ASCII_NO_BORDERS", rounded_corners=False)
 
 # Get the directory of the config file
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

@@ -320,10 +320,16 @@ class SBF:
                     f"Reading from CSV file [bold green]{sbf_block}[/bold green]",
                     spinner="aesthetic",
                 ):
+                    # First get the original column names
+                    original_cols = list(keep_cols.keys())
+                    print(f"keep_cols.keys() = {keep_cols.keys()}")
+                    print(f"original_cols = {original_cols}")
+
                     sbf_df = pl.read_csv(
                         source=bin2asc_fn,
                         separator=",",
-                        columns=list(keep_cols.keys()),
+                        columns=original_cols,
+                        new_columns=original_cols,  # This preserves exact column names
                         comment_prefix="#",
                         has_header=True,
                         skip_rows_after_header=1,  # Skip 1 row after the header
@@ -336,8 +342,20 @@ class SBF:
                         float("nan")
                     )  # Then convert all nulls to NaN
 
+                    # After reading the dataframe, rename columns using a simple string replacement
+                    print(f"sbf_df[:5] = \n{sbf_df[:5]}")
+                    print(f"sbf_df.columns = \n{sbf_df.columns}")
+                    sbf_df = sbf_df.rename(
+                        {col: col.replace(" ", "_") for col in sbf_df.columns}
+                    )
+                    print(f"sbf_df[:5] = \n{sbf_df[:5]}")
+                    print(f"sbf_df.columns = \n{sbf_df.columns}")
+
                     # add columns to the dataframe
                     sbf_df = self.add_columns(block_df=sbf_df)
+
+                    print(f"sbf_df[:5] = \n{sbf_df[:5]}")
+                    print(f"sbf_df.columns = \n{sbf_df.columns}")
 
                     # set the dtype again after having added some columns
                     sbf_df = sbf_df.with_columns(
@@ -659,7 +677,7 @@ class SBF:
         Returns:
                 list: column names we use with dtype
         """
-        if sbf_block not in SBF_BLOCK_COLUMNS_BIN2ASC:
+        if sbf_block not in SBF_BLOCK_COLUMNS_BIN2ASC.keys():
             if self.logger:
                 self.logger.error(f"Unknown SBF block type: {sbf_block}")
             return {}
@@ -668,7 +686,9 @@ class SBF:
         keep_cols = {}
 
         for dtype, columns in col_types.items():
+            print(f"dtype = {dtype} | columns = {columns}")
             for col in columns:
+                print(f"\tcol = {col} | dtype = {dtype}")
                 keep_cols[col] = dtype
 
         if self.logger is not None:

@@ -191,7 +191,7 @@
             ]
         },
         {
-            "name": "Python Debugger: sbfnav_csv ROVR187J.23_",
+            "name": "Python Debugger: sbfnav_csv ROVR187J.23_ GPS only",
             "type": "debugpy",
             "request": "launch",
             "program": "src/analysegnss/sbf/sbfnav_csv.py",

@@ -4,13 +4,13 @@ import numpy as np
 # Define columns that need conversion from semi-circles to radians
 SEMICIRCLE_COLUMNS = {
     "GPS": [
-        "IDOT ",  # [semi-circles/s] -> [rad/s]
-        "DEL_N ",  # [semi-circles/s] -> [rad/s]
-        "M_0 ",  # [semi-circles] -> [rad]
-        "OMEGA_0 ",  # [semi-circles] -> [rad]
-        "i_0 ",  # [semi-circles] -> [rad]
-        "omega ",  # [semi-circles] -> [rad]
-        "OMEGADOT ",  # [semi-circles/s] -> [rad/s]
+        "IDOT [semi-circle/s]",  # [semi-circles/s] -> [rad/s]
+        "DEL_N [semi-circle/s]",  # [semi-circles/s] -> [rad/s]
+        "M_0 [semi-circle]",  # [semi-circles] -> [rad]
+        "OMEGA_0 [semi-circle]",  # [semi-circles] -> [rad]
+        "i_0 [semi-circle]",  # [semi-circles] -> [rad]
+        "omega [semi-circle]",  # [semi-circles] -> [rad]
+        "OMEGADOT [semi-circle/s]",  # [semi-circles/s] -> [rad/s]
     ],
     "GAL": [],
     "BDS": [],
@@ -31,7 +31,7 @@ def convert_semicircles_to_radians(df: pl.DataFrame, gnss_type: str) -> pl.DataF
     SEMI_TO_RAD = np.pi
 
     # Convert each column containing semi-circles
-    for col in SEMICIRCLE_COLUMNS:
+    for col in SEMICIRCLE_COLUMNS[gnss_type]:
         if col in df.columns:
             df = df.with_columns(pl.col(col) * SEMI_TO_RAD)
 
