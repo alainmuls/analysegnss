@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import polars as pl
 import utm
-from rich import print
+from rich import print as rprint
 
 from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.gnss.gnss_dt import gpsms2dt
@@ -211,21 +211,29 @@ class SBF:
 
         return extracted_sbfblocks
 
+    # def bin2asc_dataframe(self, lst_sbfblocks: list, archive=None) -> dict:
+    #     """
+    #     bin2asc_dataframe converts binary SBF to CVS files for the sbfblocks in
+    #     lst_sbfblocks and load these files in dataframes
+
+    #     Arguments:
+    #             lst_sbfblocks: list of SBF blocks to convert to a dataframe
+    #             (Remark; sbfblocks starting with Meas3... are not decoded using bin2asc)
+
+    #     Raises:
+    #             Exception when the bin2asc program fails
+
+    #     Returns:
+    #             dict of sbfblocks and corresponding dataframes
+    #     """
     def bin2asc_dataframe(self, lst_sbfblocks: list, archive=None) -> dict:
-        """
-        bin2asc_dataframe converts binary SBF to CVS files for the sbfblocks in
-        lst_sbfblocks and load these files in dataframes
 
-        Arguments:
-                lst_sbfblocks: list of SBF blocks to convert to a dataframe
-                (Remark; sbfblocks starting with Meas3... are not decoded using bin2asc)
+        # Add this at the start of the method
+        print("Column names before processing:")
+        for block in lst_sbfblocks:
+            cols = self.used_columns(block)
+            print(f"Block {block} columns: {list(cols.keys())}")
 
-        Raises:
-                Exception when the bin2asc program fails
-
-        Returns:
-                dict of sbfblocks and corresponding dataframes
-        """
         # sbf to CSV conversion utility
         run_bin2asc = locate("bin2asc")
         if self.logger:
@@ -312,6 +320,12 @@ class SBF:
                         f"\t... converting {str_yellow(bin2asc_fn)} to dataframe"
                     )
 
+                # Read first line to get actual column names
+                with open(bin2asc_fn, "r") as f:
+                    header_line = f.readline().strip()
+                    actual_columns = header_line.split(",")
+                    print(f"CSV header columns: {actual_columns}")
+
                 # remove unused columns
                 keep_cols = self.used_columns(sbf_block)
 
@@ -364,6 +378,9 @@ class SBF:
                             for col_name, dtype in keep_cols.items()
                         ]
                     )
+
+                    print(f"sbf_df[:5] = \n{sbf_df[:5]}")
+                    print(f"sbf_df.columns = \n{sbf_df.columns}")
 
                 sbf_dfs[sbf_block] = sbf_df
                 # print(f"sbf_dfs[{sbf_block}]:\n{sbf_dfs[sbf_block]}")
@@ -668,32 +685,73 @@ class SBF:
 
         return block_df
 
+    # def used_columns(self, sbf_block: str) -> list:
+    #     """returns the column names and dtype we use when extracting a SBF block from the SBF file
+
+    #     Args:
+    #             sbf_block (str): the SBF block we are extracting
+
+    #     Returns:
+    #             list: column names we use with dtype
+    #     """
+    #     if sbf_block not in SBF_BLOCK_COLUMNS_BIN2ASC.keys():
+    #         if self.logger:
+    #             self.logger.error(f"Unknown SBF block type: {sbf_block}")
+    #         return {}
+
+    #     col_types = SBF_BLOCK_COLUMNS_BIN2ASC[sbf_block]
+    #     keep_cols = {}
+
+    #     for dtype, columns in col_types.items():
+    #         print(f"dtype = {dtype} | columns = {columns}")
+    #         for col in columns:
+    #             print(f"\tcol = |{col}|: dtype = {dtype}")
+    #             keep_cols[col] = dtype
+
+    #     if self.logger is not None:
+    #         self.logger.debug(f"Keeping columns: \n{keep_cols}")
+
+    #     return keep_cols
+
     def used_columns(self, sbf_block: str) -> list:
-        """returns the column names and dtype we use when extracting a SBF block from the SBF file
+        print(f"Dictionary ID in used_columns: {id(SBF_BLOCK_COLUMNS_BIN2ASC)}")
 
-        Args:
-                sbf_block (str): the SBF block we are extracting
+        print(f"Raw dictionary repr: {repr(SBF_BLOCK_COLUMNS_BIN2ASC[sbf_block])}")
+        col_types = SBF_BLOCK_COLUMNS_BIN2ASC[sbf_block]
+        # Print the raw dictionary entry
+        print(f"Direct dictionary access: {SBF_BLOCK_COLUMNS_BIN2ASC[sbf_block]}")
 
-        Returns:
-                list: column names we use with dtype
-        """
+        # Print the assignment
+        col_types = SBF_BLOCK_COLUMNS_BIN2ASC[sbf_block]
+        print(f"After assignment: {col_types}")
+
         if sbf_block not in SBF_BLOCK_COLUMNS_BIN2ASC.keys():
             if self.logger:
                 self.logger.error(f"Unknown SBF block type: {sbf_block}")
             return {}
 
-        col_types = SBF_BLOCK_COLUMNS_BIN2ASC[sbf_block]
+        col_types = deepcopy(SBF_BLOCK_COLUMNS_BIN2ASC[sbf_block])
         keep_cols = {}
 
+        print(f"Initial col_types: {col_types}")
+
         for dtype, columns in col_types.items():
-            print(f"dtype = {dtype} | columns = {columns}")
+            print(f"dtype = {dtype}")
+            print(f"columns list: {columns}")
             for col in columns:
-                print(f"\tcol = {col} | dtype = {dtype}")
-                keep_cols[col] = dtype
+                # print(f"Column: '{col}'")
+                # print(f"ASCII values: {[ord(c) for c in col]}")
+                # clean_col = col.rstrip()
+                # print(f"Column: '{col}' | Cleaned: '{clean_col}'")
+                # keep_cols[clean_col] = dtype
 
-        if self.logger is not None:
-            self.logger.debug(f"Keeping columns: \n{keep_cols}")
+                # Get the original string from the ASCII values
+                col_chars = [chr(c) for c in [ord(char) for char in col]]
+                full_col = "".join(col_chars)
+                print(f"Column: '{col}' | full_col: '{full_col}'")
+                keep_cols[full_col] = dtype
 
+        print(f"Final keep_cols: {keep_cols}")
         return keep_cols
 
     def convert_Cov2SD(self, df_cov: pl.DataFrame) -> pl.DataFrame:
