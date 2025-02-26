@@ -12,19 +12,19 @@ from analysegnss.utils.argument_parser import argument_parser_glab_parser
 
 
 def parse_glab_section(
-    glab_fn: str, section: list[str], logger: logging.Logger = None
+    glab_ifn: str, section: list[str], logger: logging.Logger = None
 ) -> dict[str, pl.DataFrame]:
     """parses specified section in a glab file
 
     Args:
-        glab_fn (str): name of glab file
+        glab_ifn (str): name of glab file
         section (list[str]): sections to parse
 
     Returns:
         dict[str, pl.DataFrame]: dictionary of dataframes where the section name is the key and the dataframe is the value
     """
     try:
-        glab = GLABNG(glab_fn=glab_fn, logger=logger)
+        glab = GLABNG(glab_ifn=glab_ifn, logger=logger)
     except ValueError as e:
         print(f"Validation failed: {e}")
 
@@ -58,7 +58,7 @@ def glab_parser(argv: list) -> dict[str, pl.DataFrame]:
     logger.info(f"Parsed arguments: {args_parsed}")
 
     dfs_glabng = parse_glab_section(
-        glab_fn=args_parsed.glab_fn,
+        glab_ifn=args_parsed.glab_ifn,
         section=args_parsed.section,
         logger=logger,
     )

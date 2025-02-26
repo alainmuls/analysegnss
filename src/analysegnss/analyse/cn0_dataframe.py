@@ -16,7 +16,7 @@ import polars as pl
 from rich import print
 
 from analysegnss.config import ERROR_CODES, DICT_GNSS, rich_console
-from analysegnss.CSV.CSV_class import GNSS_CSV
+from analysegnss.csv.csv_class import GNSS_CSV
 from analysegnss.utils import init_logger
 from analysegnss.utils.utilities import str_red
 from analysegnss.utils.argument_parser import argument_parser_cn0_daily
@@ -126,7 +126,7 @@ def cn0_analyse(argv: list):
 
     # Add title and grid
     plt.title(
-        f"CN0 Values and Number of PRNs Over Time - {DICT_GNSS[args_parsed.gnss]}"
+        f"CN0 Values and Number of PRNs Over Time - {DICT_GNSS[args_parsed.gnss]["name"]}"
         f" {args_parsed.sigtype}"
     )
     ax1.grid(True)

@@ -88,10 +88,10 @@ ERROR_CODES = {
 }
 
 DICT_GNSS = {
-    "G": "GPS",
-    "R": "Glonass",
-    "E": "Galileo",
-    "C": "Beidou",
+    "G": {"name": "GPS", "abbrev": "GPS"},
+    "R": {"name": "Glonass", "abbrev": "GLO"},
+    "E": {"name": "Galileo", "abbrev": "GAL"},
+    "C": {"name": "Beidou", "abbrev": "BDS"},
     # "S": "SBAS",
     # "I": "IRNSS",
     # "Z": "QZSS",
@@ -100,8 +100,8 @@ DICT_GNSS = {
 
 DICT_SIGNAL_TYPES = {
     0: {"type": "L1CA", "gnss": "GPS", "freq": 1575.42e3, "code": "1C"},
-    1: {"type": "L1P", "gnss": "GPS", "freq": 1575.42e3, "code": "1W"},
-    2: {"type": "L2P", "gnss": "GPS", "freq": 1227.60e3, "code": "2W"},
+    1: {"type": "L1PY", "gnss": "GPS", "freq": 1575.42e3, "code": "1W"},
+    2: {"type": "L2PY", "gnss": "GPS", "freq": 1227.60e3, "code": "2W"},
     3: {"type": "L2C", "gnss": "GPS", "freq": 1227.60e3, "code": "2L"},
     4: {"type": "L5", "gnss": "GPS", "freq": 1176.45e3, "code": "5Q"},
     5: {"type": "L1C", "gnss": "GPS", "freq": 1575.42e3, "code": "1L"},
@@ -135,11 +135,11 @@ DICT_SIGNAL_TYPES = {
     13: {"type": "B1C", "gnss": "BeiDou", "freq": 1575.42e3, "code": "1P"},
     14: {"type": "B2a", "gnss": "BeiDou", "freq": 1176.45e3, "code": "5P"},
     15: {"type": "L5", "gnss": "NavIC/IRNSS", "freq": 1176.45e3, "code": "5A"},
-    17: {"type": "E1 (L1BC)", "gnss": "Galileo", "freq": 1575.42e3, "code": "1C"},
+    17: {"type": "E1BC", "gnss": "Galileo", "freq": 1575.42e3, "code": "1C"},
     19: {"type": "E3 (E3BC)", "gnss": "Galileo", "freq": 1278.75e3, "code": "6C"},
     20: {"type": "E5a", "gnss": "Galileo", "freq": 1176.45e3, "code": "5Q"},
     21: {"type": "E5b", "gnss": "Galileo", "freq": 1207.14e3, "code": "7Q"},
-    22: {"type": "E5 AltBoc", "gnss": "Galileo", "freq": 1191.795e3, "code": "8Q"},
+    22: {"type": "E5", "gnss": "Galileo", "freq": 1191.795e3, "code": "8Q"},
     23: {"type": "LBand", "gnss": "MSS", "freq": "L-bandE3 beam speciﬁc", "code": "NA"},
     24: {"type": "L1CA", "gnss": "SBAS", "freq": 1575.42e3, "code": "1C"},
     25: {"type": "L5", "gnss": "SBAS", "freq": 1176.45e3, "code": "5I"},

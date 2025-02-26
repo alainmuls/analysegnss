@@ -67,7 +67,7 @@ COLUMN_MAPPINGS: Dict[str, UTMColumns] = {
         height="orthoH",
         time="DT",
         quality_mapping=UTMQualityMapping("pvt_qual", nmeac.DICT_NMEA_PVT_QUALITY),
-        sde="sdlon(m)", #TODO convert sdlon to sdE (if region is small: (omtrek_aarde/360)*sdlon = sde). Or use PROJ lib
+        sde="sdlon(m)", #TODO convert sdlon to sdE (if region is small: (BETER= (nautical mile (=1852m) * 60 * 360) vor omtrek aarde: omtrek_aarde/360)*sdlon = sde). Or use PROJ lib
         sdn="sdlat(m)",
         sdu="sdH(m)",
         nrSVN="num_sats",

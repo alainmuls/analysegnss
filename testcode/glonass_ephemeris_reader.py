@@ -2,7 +2,7 @@ import csv
 
 import numpy as np
 
-from src.analysegnss.gnss.GLONASSEphemeris import GLONASSEphemeris
+from src.analysegnss.gnss.glonass_ephemeris import GLONASSEphemeris
 
 
 def read_glonass_nav_csv(csv_file):

@@ -2,7 +2,7 @@ import csv
 
 import numpy as np
 
-from src.analysegnss.gnss.GNSSephemeris import GNSSEphemeris
+from src.analysegnss.gnss.gnss_ephemeris import GNSSEphemeris
 from src.analysegnss.config import GPS_BDS_WEEK_DIFF
 
 

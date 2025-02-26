@@ -1,0 +1,3 @@
+https://gnss-sdr.org/requirements/
+
+https://github.com/perrysou/SoftGNSS-python/blob/master/ephemeris.py#L60

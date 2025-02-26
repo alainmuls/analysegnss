@@ -1,6 +1,8 @@
 # Standard library imports
 from collections import defaultdict
+from collections import defaultdict
 from dataclasses import dataclass, field
+import datetime
 import datetime
 import os
 import logging
@@ -10,10 +12,17 @@ import sys
 import polars as pl
 import pynmea2
 from rich import print
+from rich import print
 from rich.console import Console
+import utm
 import utm
 
 # Local application imports
+from analysegnss.utils.utilities import sf64, si64
+
+#TODO Only NMEA RMC contains the datestamp, so if this message is not present, the datetime can not be generated
+#   This should raise an error or warning and enable the user to add the date manually
+#   The NMEA ZDA message also contains the date, however day, month and year are in separate fields ...
 from analysegnss.utils.utilities import sf64, si64
 
 #TODO Only NMEA RMC contains the datestamp, so if this message is not present, the datetime can not be generated
