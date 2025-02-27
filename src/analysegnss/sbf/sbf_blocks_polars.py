@@ -191,16 +191,6 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
     },
 }
 
-# After dictionary definition
-print("Dictionary state during module initialization:")
-print(f"Dictionary id: {id(SBF_BLOCK_COLUMNS_BIN2ASC)}")
-for block, block_data in SBF_BLOCK_COLUMNS_BIN2ASC.items():
-    print(f"\nBlock: {block}")
-    for dtype, columns in block_data.items():
-        print(f"  {dtype}: {columns}")
-
-
-print()
 
 SBF_BLOCK_COLUMNS_SBF2ASC = {
     "PVTCartesian2": [
