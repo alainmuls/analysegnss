@@ -275,6 +275,8 @@ def convert_meas3_csv(
     # Convert parsed_args.gnss string into a list of characters to match
     gnss_list = list(parsed_args.gnss)
 
+    print(f"df_meas['Meas3Ranges'].columns:\n{df_meas['Meas3Ranges'].columns}")
+    print(f"df_meas['Meas3Ranges'].head(3):\n{df_meas['Meas3Ranges'].head(3)}")
     # create the CSV dataframe
     df_csv = (
         df_meas["Meas3Ranges"]
@@ -291,7 +293,7 @@ def convert_meas3_csv(
                 .str.to_uppercase()
                 .map_dict(signal_mapping)
                 .alias("sigt"),
-                pl.col("PRN").str.slice(-2).alias("PRN"),
+                pl.col("PRN").str.slice(-2).cast(pl.UInt16).alias("PRN"),
                 (pl.col("TOW [s]") * 1000).cast(pl.UInt32).alias("TOW"),
             ]
         )
@@ -481,7 +483,7 @@ def convert_dataframe_csv(
 
 
 def sbfmeas_csv(argv: list):
-    """reads SBF file and converts it to CSV file similar
+    """reads SBF file and converts Measurement blocks to CSV file similar
     to those created by rtcm3_parser.py
 
     Args:

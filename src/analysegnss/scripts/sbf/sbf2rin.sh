@@ -96,8 +96,8 @@ if [ ! -f "${SBF_FN}" ]; then
 fi
 
 # Add validation for EXCL_GNSS parameter to ensure only valid GNSS letters are used
-if ! [[ "$EXCL_GNSS" =~ ^[RSCJIG]+$ ]]; then
-    echo -e "\e[1;31mError: Invalid GNSS exclusion characters. Use only R,S,C,J,I,G\e[0m"
+if ! [[ "$EXCL_GNSS" =~ ^[RSCJIGE]+$ ]]; then
+    echo -e "\e[1;31mError: Invalid GNSS exclusion characters. Use only R,S,C,J,I,G,E \e[0m"
     exit 1
 fi
 

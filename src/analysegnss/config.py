@@ -20,17 +20,27 @@ GEOID_PATH = os.path.join(BASE_DIR, "gnss", "geoids", "egm2008-1.pgm")
 # Constants
 # Earth's gravitational constant
 RE_GLO = 6378136.0  # type: ignore # radius of earth (m)            ref [2]
-GM_GPS = 3.986005e14  # type: ignore # gravitational constant         ref [1]
-GM_GLO = 3.9860044e14  # type: ignore # gravitational constant         ref [2]
-GM_GAL = 3.986004418e14  # type: ignore # earth gravitational constant   ref [7]
-GM_BDS = 3.986004418e14  # type: ignore # earth gravitational constant   ref [9]
+
+GNSS_CONSTANTS = {
+    "GPS": {
+        "GM": 3.986005e14,  # gravitational constant [1]
+        "OMGE": 7.2921151467e-5,  # Earth's rotation rate [rad/s]
+    },
+    "GLO": {
+        "GM": 3.9860044e14,  # gravitational constant [2]
+        "OMGE": 7.292115e-5,  # Earth's rotation rate [rad/s]
+    },
+    "GAL": {
+        "GM": 3.986004418e14,  # gravitational constant [7]
+        "OMGE": 7.2921151467e-5,  # Earth's rotation rate [rad/s]
+    },
+    "BDS": {
+        "GM": 3.986004418e14,  # gravitational constant [9]
+        "OMGE": 7.292115e-5,  # Earth's rotation rate [rad/s]
+    },
+}
 
 J2_GLO = 1.0826257e-3  # 2nd zonal harmonic of geopot   ref [2]
-
-# Earth's rotation rate
-OMGE_GPS = 7.2921151467e-5  # Earth's rotation rate rad/sOMGE_GLO = 7.292115e-5  # earth angular velocity (rad/s) ref [2]
-OMGE_GAL = 7.2921151467e-5  # earth angular velocity (rad/s) ref [7]
-OMGE_BDS = 7.292115e-5  # earth angular velocity (rad/s) ref [9]
 
 # Timing constants
 GPS_BDS_WEEK_DIFF = 1356  # week difference between GPS and BDS time
@@ -83,6 +93,7 @@ ERROR_CODES = {
     "E_SIGNALTYPE_MISMATCH": 48,
     "E_WRONG_GNSS": 49,
     "E_SBF_BLOCKS": 50,
+    "E_SBF_NAV_BLOCKS": 51,
     "E_PROCESS": 90,
     "E_FAILURE": 99,
 }

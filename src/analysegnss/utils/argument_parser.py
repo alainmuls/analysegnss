@@ -1089,7 +1089,7 @@ def argument_parser_sbfmeas_csv(script_name: str, args: list) -> argparse.Namesp
 
     help_txt = (
         baseName
-        + " Convert SBF file to CSV file similar to those created by rtcm3_parser.py"
+        + " Convert SBF measurement blocks to CSV file"
     )
 
     # create the parser for command line arguments
@@ -1249,6 +1249,74 @@ def argument_parser_nmeaReader(args: list, script_name: str) -> argparse.Namespa
         required=False,
         action="store_true",
     )
+    args = parser.parse_args(args)
+
+    return args
+
+
+
+def argument_parser_sbfnav_csv(script_name: str, args: list) -> argparse.Namespace:
+    """parses the arguments
+
+    Args:
+        argv (list): list of arguments
+
+    Returns:
+        argparse.Namespace: parsed arguments
+    """
+    baseName = str_yellow(script_name)
+
+    help_txt = (
+        baseName
+        + " Convert SBF navigation blocks to CSV file"
+    )
+
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_txt)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+    )
+
+    parser.add_argument(
+        "--sbf_ifn",
+        help="SBF filename",
+        type=str,
+        required=True,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--csv_ofn",
+        "--csv_ofn",
+        help="CSV observation filename (defaults to filename with extension csv)",
+        type=str,
+        required=False,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--gnss",
+        help="GNSS systems to convert (default: GE, select between GREC)",
+        type=str,
+        required=False,
+        default="GE",
+    )
+
+    parser.add_argument(
+        "--archive",
+        help="Archives extracted sbf blocks to specified archive's directory name. (full or relative (@sbf_ifn) path) \
+            Default is no archiving.",
+        required=False,
+        default=None,
+        type=str,
+    )
+    # allow argument completion
+    argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
 
     return args

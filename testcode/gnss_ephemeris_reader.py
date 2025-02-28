@@ -83,7 +83,7 @@ if __name__ == "__main__":
 
         # Calculate position at specific time
         for t in range(eph.toe, eph.toe + 3600, 300):
-            x, y, z = eph.compute_satellite_position(t)
+            x, y, z = eph.calculate_GPS_GAL_coordinates(t)
 
             if not nav_type.startswith("BDS"):
                 print(
