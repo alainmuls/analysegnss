@@ -1,23 +1,15 @@
 import os
 
-import polars as pl
 from polars import Config
 from rich.console import Console
-from rich.theme import Theme
-from rich.table import Table
 
 # console to use when an operation lasts some time to inform user
 rich_console = Console()
-# Create console with custom table style that removes row separators
-# rich_console = Console(
-#     theme=Theme({"repr.number": "none"}), style="none", highlight=False
-# )
 
 # general constants for printing polars dataframes
 Config.set_tbl_cols(-1)
 Config.set_float_precision(3)
 Config.set_tbl_cell_numeric_alignment("RIGHT")
-Config.set_tbl_formatting(format="ASCII_NO_BORDERS", rounded_corners=False)
 
 # Get the directory of the config file
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -47,16 +39,6 @@ GNSS_CONSTANTS = {
         "OMGE": 7.292115e-5,  # Earth's rotation rate [rad/s]
     },
 }
-# GM_GPS = 3.986005e14  # type: ignore # gravitational constant         ref [1]
-# GM_GLO = 3.9860044e14  # type: ignore # gravitational constant         ref [2]
-# GM_GAL = 3.986004418e14  # type: ignore # earth gravitational constant   ref [7]
-# GM_BDS = 3.986004418e14  # type: ignore # earth gravitational constant   ref [9]
-
-# # Earth's rotation rate
-# OMGE_GPS = 7.2921151467e-5  # Earth's rotation rate rad/s
-# OMGE_GLO = 7.292115e-5  # earth angular velocity (rad/s) ref [2]
-# OMGE_GAL = 7.2921151467e-5  # earth angular velocity (rad/s) ref [7]
-# OMGE_BDS = 7.292115e-5  # earth angular velocity (rad/s) ref [9]
 
 J2_GLO = 1.0826257e-3  # 2nd zonal harmonic of geopot   ref [2]
 

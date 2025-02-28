@@ -211,29 +211,21 @@ class SBF:
 
         return extracted_sbfblocks
 
-    # def bin2asc_dataframe(self, lst_sbfblocks: list, archive=None) -> dict:
-    #     """
-    #     bin2asc_dataframe converts binary SBF to CVS files for the sbfblocks in
-    #     lst_sbfblocks and load these files in dataframes
-
-    #     Arguments:
-    #             lst_sbfblocks: list of SBF blocks to convert to a dataframe
-    #             (Remark; sbfblocks starting with Meas3... are not decoded using bin2asc)
-
-    #     Raises:
-    #             Exception when the bin2asc program fails
-
-    #     Returns:
-    #             dict of sbfblocks and corresponding dataframes
-    #     """
     def bin2asc_dataframe(self, lst_sbfblocks: list, archive=None) -> dict:
+        """
+        bin2asc_dataframe converts binary SBF to CVS files for the sbfblocks in
+        lst_sbfblocks and load these files in dataframes
 
-        # Add this at the start of the method
-        print("Column names before processing:")
-        for block in lst_sbfblocks:
-            cols = self.used_columns(block)
-            # print(f"Block {block} columns: {list(cols.keys())}")
+        Arguments:
+                lst_sbfblocks: list of SBF blocks to convert to a dataframe
+                (Remark; sbfblocks starting with Meas3... are not decoded using bin2asc)
 
+        Raises:
+                Exception when the bin2asc program fails
+
+        Returns:
+                dict of sbfblocks and corresponding dataframes
+        """
         # sbf to CSV conversion utility
         run_bin2asc = locate("bin2asc")
         if self.logger:
@@ -320,12 +312,6 @@ class SBF:
                         f"\t... converting {str_yellow(bin2asc_fn)} to dataframe"
                     )
 
-                # # Read first line to get actual column names
-                # with open(bin2asc_fn, "r") as f:
-                #     header_line = f.readline().strip()
-                #     actual_columns = header_line.split(",")
-                #     print(f"CSV header columns: {actual_columns}")
-
                 # remove unused columns
                 keep_cols = self.used_columns(sbf_block)
 
@@ -334,11 +320,6 @@ class SBF:
                     f"Reading from CSV file [bold green]{sbf_block}[/bold green]",
                     spinner="aesthetic",
                 ):
-                    # First get the original column names
-                    # original_cols = list(keep_cols.keys())
-                    # print(f"keep_cols.keys() = {keep_cols.keys()}")
-                    # print(f"original_cols = {original_cols}")
-
                     sbf_df = pl.read_csv(
                         source=bin2asc_fn,
                         separator=",",
@@ -356,20 +337,8 @@ class SBF:
                         float("nan")
                     )  # Then convert all nulls to NaN
 
-                    # # After reading the dataframe, rename columns using a simple string replacement
-                    # print(f"sbf_df[:5] = \n{sbf_df[:5]}")
-                    # print(f"sbf_df.columns = \n{sbf_df.columns}")
-                    # sbf_df = sbf_df.rename(
-                    #     {col: col.replace(" ", "_") for col in sbf_df.columns}
-                    # )
-                    print(f"sbf_df[:5] = \n{sbf_df[:5]}")
-                    print(f"sbf_df.columns = \n{sbf_df.columns}")
-
                     # add columns to the dataframe
                     sbf_df = self.add_columns(block_df=sbf_df)
-
-                    print(f"sbf_df[:5] = \n{sbf_df[:5]}")
-                    print(f"sbf_df.columns = \n{sbf_df.columns}")
 
                     # set the dtype again after having added some columns
                     sbf_df = sbf_df.with_columns(
@@ -378,9 +347,6 @@ class SBF:
                             for col_name, dtype in keep_cols.items()
                         ]
                     )
-
-                    print(f"sbf_df[:5] = \n{sbf_df[:5]}")
-                    print(f"sbf_df.columns = \n{sbf_df.columns}")
 
                 sbf_dfs[sbf_block] = sbf_df
                 # print(f"sbf_dfs[{sbf_block}]:\n{sbf_dfs[sbf_block]}")
@@ -710,47 +676,6 @@ class SBF:
             self.logger.debug(f"Keeping columns: \n{keep_cols}")
 
         return keep_cols
-
-    # def used_columns(self, sbf_block: str) -> list:
-    #     print(f"Dictionary ID in used_columns: {id(SBF_BLOCK_COLUMNS_BIN2ASC)}")
-
-    #     print(f"Raw dictionary repr: {repr(SBF_BLOCK_COLUMNS_BIN2ASC[sbf_block])}")
-    #     col_types = SBF_BLOCK_COLUMNS_BIN2ASC[sbf_block]
-    #     # Print the raw dictionary entry
-    #     print(f"Direct dictionary access: {SBF_BLOCK_COLUMNS_BIN2ASC[sbf_block]}")
-
-    #     # Print the assignment
-    #     col_types = SBF_BLOCK_COLUMNS_BIN2ASC[sbf_block]
-    #     print(f"After assignment: {col_types}")
-
-    #     if sbf_block not in SBF_BLOCK_COLUMNS_BIN2ASC.keys():
-    #         if self.logger:
-    #             self.logger.error(f"Unknown SBF block type: {sbf_block}")
-    #         return {}
-
-    #     col_types = deepcopy(SBF_BLOCK_COLUMNS_BIN2ASC[sbf_block])
-    #     keep_cols = {}
-
-    #     print(f"Initial col_types: {col_types}")
-
-    #     for dtype, columns in col_types.items():
-    #         print(f"dtype = {dtype}")
-    #         print(f"columns list: {columns}")
-    #         for col in columns:
-    #             # print(f"Column: '{col}'")
-    #             # print(f"ASCII values: {[ord(c) for c in col]}")
-    #             # clean_col = col.rstrip()
-    #             # print(f"Column: '{col}' | Cleaned: '{clean_col}'")
-    #             # keep_cols[clean_col] = dtype
-
-    #             # Get the original string from the ASCII values
-    #             col_chars = [chr(c) for c in [ord(char) for char in col]]
-    #             full_col = "".join(col_chars)
-    #             print(f"Column: '{col}' | full_col: '{full_col}'")
-    #             keep_cols[full_col] = dtype
-
-    #     print(f"Final keep_cols: {keep_cols}")
-    #     return keep_cols
 
     def convert_Cov2SD(self, df_cov: pl.DataFrame) -> pl.DataFrame:
         """Convert covariance matrix to standard deviation
