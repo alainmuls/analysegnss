@@ -19,17 +19,17 @@ from analysegnss.utils import init_logger
 from analysegnss.utils.argument_parser import argument_parser_plot_coords
 
 
-def get_origin(parsed_args: list) -> str: # TODO replace 'origin' naming to 'source'? # TODO replace 'origin' naming to 'source'?
-	"""determines the origin  of the coordinates
+def get_source(parsed_args: list) -> str:
+	"""determines the source  of the coordinates
 
 	Args:
 		parsed_args (list): list of parsed arguments
 
 	Returns:
-		tuple[str, str]: origin and filename
+		tuple[str, str]: source and filename
 	"""
-	# set the origin of the coordinates
-	# set the origin of the coordinates
+	# set the source of the coordinates
+	# set the source of the coordinates
 	file_handlers = {"pos_ifn": "PPK", "sbf_ifn": "RTK", "glab_ifn": "GLABNG", "nmea_ifn": "NMEA", "csv_ifn": "PNT_CSV"}
 
 	# Get the first non-None filename and its attribute name
@@ -40,9 +40,9 @@ def get_origin(parsed_args: list) -> str: # TODO replace 'origin' naming to 'sou
 	)
 	# filename = getattr(parsed_args, file_attr)
 
-	# Create instance and get origin in one go
-	origin = file_handlers[file_attr]
-	return origin
+	# Create instance and get source in one go
+	source = file_handlers[file_attr]
+	return source
 
 
 def plot_coords(argv: list):
@@ -68,21 +68,21 @@ def plot_coords(argv: list):
 	# # test logger
 	logger.info(f"Parsed arguments: {args_parsed}")
  
-	# get the origin of the coordinates
-	origin = get_origin(parsed_args=args_parsed)
+	# get the source of the coordinates
+	source = get_source(parsed_args=args_parsed)
 
-	# get the needed columns from the dataframe according to the origin
+	# get the needed columns from the dataframe according to the source
 
-	match origin:
+	match source:
 		case "PPK":
 			# create the PPK position dataframe by calling ppk_rnx2rtkp.py
 			pos_ifn_index = argv.index("--pos_ifn")
 			pos_ifn_value = argv[pos_ifn_index + 1]
 
 			ppk_rnx2rtkp_args = ["ppk_rnx2rtkp.py", "--pos_ifn", pos_ifn_value]
-			df_origin = ppk_rnx2rtkp.rtkp_pos(argv=ppk_rnx2rtkp_args)
+			df_source = ppk_rnx2rtkp.rtkp_pos(argv=ppk_rnx2rtkp_args)
 			ppk_rnx2rtkp_args = ["ppk_rnx2rtkp.py", "--pos_ifn", pos_ifn_value]
-			df_origin = ppk_rnx2rtkp.rtkp_pos(argv=ppk_rnx2rtkp_args)
+			df_source = ppk_rnx2rtkp.rtkp_pos(argv=ppk_rnx2rtkp_args)
 
 		case "RTK":
 			# create the RTK position dataframe by calling rtk_pvtgeod.py
@@ -100,7 +100,7 @@ def plot_coords(argv: list):
 				]
 			)
 
-			df_origin = rtk_pvtgeod.rtk_pvtgeod(argv=rtk_pvtgeod_args)
+			df_source = rtk_pvtgeod.rtk_pvtgeod(argv=rtk_pvtgeod_args)
 
 		case "GLABNG":
 			# create the GLAB position dataframe by calling glab_parser
@@ -123,32 +123,32 @@ def plot_coords(argv: list):
 					)
 					print(df_section)
 
-			df_origin = dfs_glab["OUTPUT"]
+			df_source = dfs_glab["OUTPUT"]
 
 		case "NMEA":
 			# create the NMEA dataframe by calling nmeaReader.py
-			df_origin, qual_analysis = nmeaReader.nmeaReader(parsed_args=args_parsed, logger=logger)
+			df_source, qual_analysis = nmeaReader.nmeaReader(parsed_args=args_parsed, logger=logger)
 
 		case "PNT_CSV":
 			# create a PNT_CSV dataframe by reading PNT_CSV file written by nmeaReader.py, rtk_pvtgeod.py, ppk_rnx2rtkp.py or glab_parser.py
-			df_origin = pl.read_csv(args_parsed.csv_ifn, schema_overrides={"DT": pl.Datetime})
+			df_source = pl.read_csv(args_parsed.csv_ifn, schema_overrides={"DT": pl.Datetime})
 
 		case _:
-			logger.error(f"Invalid origin: {origin}")
-			sys.exit(ERROR_CODES["E_INVALID_ORIGIN"])
+			logger.error(f"Invalid source: {source}")
+			sys.exit(ERROR_CODES["E_INVALID_SOURCE"])
 
-	logger.debug(f"print source dataframe:\n{df_origin}")
+	logger.debug(f"print source dataframe:\n{df_source}")
 
-	# get the utm columns names according to the origin
-	utm_columns = get_utm_columns(origin=origin)
+	# get the utm columns names according to the source
+	utm_columns = get_utm_columns(source=source)
 	# print(f"utm_columns: {utm_columns}")
 	# print(f"type(utm_columns): {type(utm_columns)}")
-	logger.debug(f"print source dataframe:\n{df_origin}")
+	logger.debug(f"print source dataframe:\n{df_source}")
 
-	# create the df_utm dataframe from the dataframe obtained according to each origin
+	# create the df_utm dataframe from the dataframe obtained according to each source
 	try:
 		if not args_parsed.sd:
-			df_utm = df_origin.select(
+			df_utm = df_source.select(
 				[
 					utm_columns.time,
 					utm_columns.quality_mapping.columns,
@@ -159,7 +159,7 @@ def plot_coords(argv: list):
 				]
 			)
 		else:
-			df_utm = df_origin.select(
+			df_utm = df_source.select(
 				[
 					utm_columns.time,
 					utm_columns.quality_mapping.columns,
@@ -200,8 +200,8 @@ def plot_coords(argv: list):
 	filename_in = os.path.basename(ifn_full)
 	dir_fn = os.path.dirname(ifn_full)
 
-	# origin = "PPK" if args_parsed.pos_ifn else "RTK"
-	print(f"creating plot for {origin} position file {filename_in}")
+	# source = "PPK" if args_parsed.pos_ifn else "RTK"
+	print(f"creating plot for {source} position file {filename_in}")
 
 	# plot the UTM and orthoH coordinates
 	if args_parsed.mpl == False:
@@ -209,7 +209,7 @@ def plot_coords(argv: list):
 			# use plotly for creating html plots
 			plot_utm.plot_utm_scatter(
 				utm_df=df_utm,
-				origin=origin,
+				source=source,
 				ifn=filename_in,
 				dir_fn=dir_fn,
 				logger=logger,
@@ -219,7 +219,7 @@ def plot_coords(argv: list):
 		with rich_console.status(f"Creating NEU vs DT plot.\t", spinner="aesthetic"):
 			plot_utm.plot_utm_height(
 				utm_df=df_utm,
-				origin=origin,
+				source=source,
 				ifn=filename_in,
 				dir_fn=dir_fn,
 				sd=args_parsed.sd,
@@ -230,7 +230,7 @@ def plot_coords(argv: list):
 		with rich_console.status(f"Creating UTM scatter plot.\t", spinner="aesthetic"):
 			plot_utm.plot_utm_scatter_mpl(
 				utm_df=df_utm,
-				origin=origin,
+				source=source,
 				ifn=filename_in,
 				dir_fn=dir_fn,
 				logger=logger,
@@ -239,7 +239,7 @@ def plot_coords(argv: list):
 		with rich_console.status(f"Creating NEU vs DT plot.\t", spinner="aesthetic"):
 			plot_utm.plot_utm_height_mpl(
 				utm_df=df_utm,
-				origin=origin,
+				source=source,
 				ifn=filename_in,
 				dir_fn=dir_fn,
 				sd=args_parsed.sd,

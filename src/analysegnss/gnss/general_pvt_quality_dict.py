@@ -3,7 +3,7 @@ General PVT quality dictionary and conversion functions for different GNSS forma
 """
 
 # General PVT quality dictionary that serves as a common reference
-GENERAL_PVT_QUALITY = {
+GENERAL_PVT_QUALITY_ID = {
     'INVALID': dict(desc="Invalid/No PVT available", color="red"),
     'STANDALONE': dict(desc="Stand-Alone PVT", color="cornflowerblue"),
     'DIFFERENTIAL': dict(desc="Differential PVT", color="darkcyan"),
@@ -72,5 +72,5 @@ def get_quality_info(general_quality: str) -> dict:
     Returns:
         Dictionary containing description and color for the quality level
     """
-    return GENERAL_PVT_QUALITY.get(general_quality, 
+    return GENERAL_PVT_QUALITY_ID.get(general_quality, 
                                   dict(desc="Unknown", color="black"))

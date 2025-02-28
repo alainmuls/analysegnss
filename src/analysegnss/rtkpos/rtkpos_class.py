@@ -360,6 +360,15 @@ class Rtkpos:
                     )
                     .alias("orthoH")
                 ).lazy()
+            
+            # Rename Column with PVT quality to general name
+            if "Q" in df_pos.columns:
+                df_pos = df_pos.rename({"Q": "pvt_qual"}).lazy()
+                if self.logger is not None:
+                    self.logger.debug(f"\trenaming column 'Q' to 'pvt_qual'")
+            
+            
+            # collect the dataframe
             if self.logger is not None:
                 self.logger.info(
                     f"\tcollecting the dataframe. {str_red('Be patient.')}"

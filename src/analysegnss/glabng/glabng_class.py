@@ -272,7 +272,7 @@ class GLABNG:
             df_section = df_section.with_columns(
                 pl.struct(["lat", "lon"])
                 .apply(
-                    lambda x: gh_model.get(x["lat"], x["lon"], gh_model),
+                    lambda x: gh_model.get(x["lat"], x["lon"]),
                     return_dtype=pl.Float64,
                 )
                 .alias("undulation")
@@ -284,6 +284,12 @@ class GLABNG:
                 .apply(lambda x: x["ellH"] - x["undulation"], return_dtype=pl.Float64)
                 .alias("orthoH")
             ).lazy()
+
+            if "mode" in df_section.columns:
+                # Rename Column with PVT quality to general name
+                df_section = df_section.rename({"mode": "pvt_qual"}).lazy()
+                if self.logger:
+                    self.logger.debug(f"\trenaming column 'mode' to 'pvt_qual'")
 
             # Clean up intermediate columns
             df_section = df_section.drop(["Year", "DOY", "SOD", "utm_coords"]).lazy()
