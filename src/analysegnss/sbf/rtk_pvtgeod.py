@@ -35,12 +35,13 @@ def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:
                     sbfc.DICT_SBF_PVTMODE[qual]["desc"],
                     qual_data.shape[0],
                     round(qual_data.shape[0] / total_obs * 100, 2),
+                    total_obs
                 ]
             )
 
     qual_tabular = tabulate(
         qual_analysis,
-        headers=["PNT Mode", "Count", "Percentage"],
+        headers=["PNT Mode", "PNT Mode Count", "Percentage", "Total Observations"],
         tablefmt="fancy_outline",
     )
 

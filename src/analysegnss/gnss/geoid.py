@@ -80,6 +80,9 @@ class GeoidHeight(object):
     def __init__(self, name="egm2008-1.pgm"):
         self.offset = None
         self.scale = None
+        # Initialize attributes used in cubic and non-cubic interpolation [this should resolve the raised issue documented in issues/geoid_undulation_GeoidHeight_noAttribute_t_debug.out]
+        self.t = [0] * 10  # For cubic interpolation
+        self.v00 = self.v01 = self.v10 = self.v11 = 0  # For non-cubic interpolation
 
         with open(name, "rb") as f:
             line = f.readline()
@@ -162,6 +165,7 @@ class GeoidHeight(object):
         if iy == self.height - 1:
             iy -= 1
 
+        # Only update values if position has changed
         if ix != self.ix or iy != self.iy:
             self.ix = ix
             self.iy = iy

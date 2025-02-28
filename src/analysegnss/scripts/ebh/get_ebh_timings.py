@@ -102,7 +102,8 @@ def reformat_ebh_timestamps(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> 
         logger (Logger): Logger object
 
     returns:
-        ebh_timings (dict): dict with ebh keys and timestamps correctly formatted
+        ebh_timings_ebhlinefmt (dict): dict with ebh keys and timestamps correctly formatted for ebh_lines.py
+        ebh_timings (dict): dict with ebh keys and timestamps formaated as tuples
     """
     #TODO make the following lazy
 
@@ -229,14 +230,21 @@ def ebh_timings_to_file(ebh_timings: dict, dest_path: str, logger: Logger) -> No
     logger.info(f"Done writing timings file to {dest_path}")
 
 
-def get_ebh_timings(parsed_args: argparse.Namespace, logger:Logger) -> None:
+def get_ebh_timings(parsed_args: argparse.Namespace, logger:Logger) -> dict:
     """Getting ebh timings from sbf Comment block. 
         The timings are formatted for each ebh line with the following format 
         ebh_line_key: wnc tow, wnc tow 
         which corresponds to format used by ebh_lines.py
-        
-        returns:
-        ebh_timings(dict): dict with ebh keys and timestamps (week number and t of week) correctly formatted for ebh_lines.py 
+
+        Args:
+            parsed_args (argparse.Namespace): parsed arguments
+                                                - sbf_ifn: path to sbf file
+                                                - timing_ofn: path to output file
+                                                - log_dest: path to log file
+            logger (Logger): logger object
+
+        Returns:
+            ebh_timings(dict): dict with ebh keys and timestamps (week number and t of week) correctly formatted for ebh_lines.py 
         """
     
     # Get SBF comments

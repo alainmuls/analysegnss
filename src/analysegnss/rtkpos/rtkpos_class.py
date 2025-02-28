@@ -119,7 +119,11 @@ class Rtkpos:
         """read the RTK position file
 
         Returns:
-            polars.DataFrame: RTK position data
+            dict: processing information (header of rtklib pos file)
+            dict: processing information (header of rtklib pos file)
+            polars.DataFrame: RTK position data or None if error reading file (EMPTY CSV,..)
+            
+            
 
         """
         # get the processing information
@@ -273,7 +277,7 @@ class Rtkpos:
                     self.logger.debug("\tadding datetime to the dataframe")
                 df_pos = df_pos.with_columns(
                     pl.struct(["WNc", "TOW(s)"])
-                    .apply(
+                    .map_elements(
                         lambda x: gpsms2dt(x["WNc"], x["TOW(s)"] * 1000),
                         return_dtype=datetime.datetime,
                     )
@@ -293,7 +297,7 @@ class Rtkpos:
                 # Apply the conversion function lazily using map_elements with specified return_dtype
                 df_pos = df_pos.with_columns(
                     pl.struct(["latitude(deg)", "longitude(deg)"])
-                    .apply(
+                    .map_elements(
                         lambda row: latlon_to_utm(
                             row["latitude(deg)"], row["longitude(deg)"]
                         ),
@@ -334,11 +338,12 @@ class Rtkpos:
                 Returns:
                     GeoidHeight: An instance of the GeoidHeight class initialized with the specified geoid model.
                 """
+                # TODO: sometime the following error is raised:python function failed AttributeError: 'GeoidHeight' object has no attribute 't'
                 gh_model = geoid.GeoidHeight(GEOID_PATH)
 
                 df_pos = df_pos.with_columns(
                     pl.struct(["latitude(deg)", "longitude(deg)"])
-                    .apply(
+                    .map_elements(
                         lambda x: gh_model.get(
                             x["latitude(deg)"], x["longitude(deg)"]
                         ),
@@ -349,26 +354,25 @@ class Rtkpos:
 
                 df_pos = df_pos.with_columns(
                     pl.struct(["height(m)", "undulation"])
-                    .apply(
+                    .map_elements(
                         lambda x: x["height(m)"] - x["undulation"],
                         return_dtype=pl.Float64,
                     )
                     .alias("orthoH")
                 ).lazy()
-            # if self.logger is not None:
-            #     self.logger.info(
-            #         f"\tcollecting the dataframe. {str_red('Be patient.')}"
-            #     )
+            if self.logger is not None:
+                self.logger.info(
+                    f"\tcollecting the dataframe. {str_red('Be patient.')}"
+                )
 
             try:
                 df_pos = df_pos.collect()
             except pl.exceptions.ComputeError as e:
                 sys.stderr.write(
-                    f"""{str_red("""
+                    str_red("""
                     \r[ERROR] Probably a dtype error.
                     \rCheck if RTKlib date time is set to WkNr/TOW and not HMS.
-                    """)}
-                """
+                    """)
                 )
                 if self.logger is not None:
                     self.logger.error(

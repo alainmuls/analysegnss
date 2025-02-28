@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import polars as pl
 import utm
-from rich import print
+from rich import print as rprint
 
 from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.gnss.gnss_dt import gpsms2dt
@@ -255,13 +255,21 @@ class SBF:
 
         # # add logging level to cmd_bin2asc when self._console_loglevel is DEBUG
         # if self._console_loglevel == logging.DEBUG:
-        #     cmd_bin2asc.append("-v")
+        #   cmd_bin2asc.append("-v")
 
         for sbf_block in lst_sbfblocks:
             cmd_bin2asc.append("-m")
-            cmd_bin2asc.append(sbf_block)
             if sbf_block == "Meas3Ranges":
                 cmd_bin2asc.append("--extractGenMeas")
+            else:
+                cmd_bin2asc.append(sbf_block)
+
+        
+        
+        # add logging level to cmd_sbf2asc when self._console_loglevel is DEBUG
+        if self._console_loglevel == logging.DEBUG:
+            self.logger.debug("Adding verbose flag to cmd_sbf2asc")
+            cmd_bin2asc.append("-v")
 
         # Convert binary to text messages
         if self.logger:
@@ -286,16 +294,28 @@ class SBF:
         bin2asc_fns = {}
         for sbf_block in lst_sbfblocks:
             if sbf_block != "Meas3Ranges":
-                bin2asc_fns[sbf_block] = glob.glob(
-                    rf"{self.sbf_fn}_SBF_{sbf_block}.txt"
-                )[0]
+                try:
+                    bin2asc_fns[sbf_block] = glob.glob(
+                        rf"{self.sbf_fn}_SBF_{sbf_block}.txt"
+                    )[0]
+                except Exception as e:
+                    if self.logger:
+                        self.logger.error(f"Error finding created file for {sbf_block} sbf block: {e}")
             else:
-                bin2asc_fns[sbf_block] = glob.glob(rf"{self.sbf_fn}_measurements.txt")[
-                    0
-                ]
+                try:
+                    bin2asc_fns[sbf_block] = glob.glob(rf"{self.sbf_fn}_measurements.txt")[
+                        0
+                    ]
+                except Exception as e:
+                    if self.logger:
+                        self.logger.error(f"Error finding created file for {sbf_block} sbf block: {e}")
+        
+        if self.logger:
+            self.logger.debug(f"bin2asc_fns: {bin2asc_fns}")
 
         # create dictionary for containing the obtained dataframes
         sbf_dfs = {}
+
 
         # iterate over the CVS files and convert them to dataframe
         for sbf_block, bin2asc_fn in bin2asc_fns.items():
@@ -340,7 +360,8 @@ class SBF:
                     sbf_df = self.add_columns(block_df=sbf_df)
 
                 sbf_dfs[sbf_block] = sbf_df
-                print(f"sbf_dfs[{sbf_block}]:\n{sbf_dfs[sbf_block]}")
+                if self.logger:
+                    self.logger.debug(f"sbf_dfs[{sbf_block}]:\n{sbf_dfs[sbf_block]}")
 
                 # print(f"archive = {archive}")
                 # archiving the converted sbf file
@@ -404,6 +425,7 @@ class SBF:
 
         # add logging level to cmd_sbf2asc when self._console_loglevel is DEBUG
         if self._console_loglevel == logging.DEBUG:
+            self.logger.debug("Adding verbose flag to cmd_sbf2asc")
             cmd_sbf2asc.append("-v")
 
         # Convert binary to text messages
@@ -423,9 +445,15 @@ class SBF:
         # find created files
         sbf2asc_fns = {}
         for sbf_block in lst_sbfblocks:
-            sbf2asc_fns[sbf_block] = glob.glob(
-                rf"{self.sbf_fn}_sbf2asc_{sbf_block}.txt"
-            )
+            try:
+                sbf2asc_fns[sbf_block] = glob.glob(
+                    rf"{self.sbf_fn}_sbf2asc_{sbf_block}.txt"
+                )
+                if self.logger:
+                    self.logger.debug(f"Found created file {sbf2asc_fns[sbf_block]} for {sbf_block} sbf block")
+            except Exception as e:
+                if self.logger:
+                    self.logger.error(f"Error finding created file for {sbf_block} sbf block: {e}")
 
         # create dictionary for containing the obtained dataframes
         sbf_dfs = {}
@@ -461,6 +489,14 @@ class SBF:
 
             with open(sbf2asc_fn[0], "w") as fd:
                 fd.write(content)
+            if os.path.exists(sbf2asc_fn[0]):
+                if self.logger:
+                    self.logger.debug(f"File {sbf2asc_fn[0]} created")
+            else:
+                if self.logger:
+                    self.logger.error(f"File {sbf2asc_fn[0]} not created")
+                    print(f"File {sbf2asc_fn[0]} not created")
+            
             # remove unused columns
             sbf_df = pl.DataFrame()
 
@@ -471,12 +507,12 @@ class SBF:
                     separator=",",
                     new_columns=self.sbf2asc_sbfblock_colnames(sbf_block=sbf_block),
                 )
-            except Exception as e:
-                if self.logger:
-                    self.logger.error(f"Error reading file {sbf2asc_fn[0]}: {e}")
             except pl.exceptions.NoDataError as e:
                 if self.logger:
                     self.logger.error(f"Empty file {sbf2asc_fn[0]}: {e}")
+            except Exception as e:
+                if self.logger:
+                    self.logger.error(f"Error reading file {sbf2asc_fn[0]}: {e}")
 
             # Drop columns with only zeroes
             sbf_df = sbf_df.drop(
@@ -554,6 +590,7 @@ class SBF:
             in block_df.columns
             # and not block_df.select(pl.col("SVID")).dtypes[0] == pl.String
         ):
+            # TODO: correct the int into string or vice versa
             if self.logger:
                 self.logger.debug("\tadding PRN column to the dataframe")
             block_df = block_df.with_columns(
@@ -743,7 +780,7 @@ class SBF:
         Returns:
                 list of correct column names for each sbfblocks
         """
-        print(
+        rprint(
             "sbf2asc is chosen as sbf converter. Looking up corresponding column names for each sbf block"
         )
         self.logger.info(

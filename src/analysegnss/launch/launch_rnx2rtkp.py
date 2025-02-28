@@ -10,6 +10,7 @@ import sys
 
 # Third-party imports
 import polars as pl
+from rich import print as rprint
 
 # Local application imports
 from analysegnss.config import ERROR_CODES
@@ -49,11 +50,10 @@ def rnx2rtkp_ppk(
     # check if rnx2rtkp is installed
     rnx2rtkp_path = utilities.locate("rnx2rtkp")
     if rnx2rtkp_path is None:
-        print("rnx2rtkp not found in PATH. Please install RTKLIB. Program exits.")
+        rprint("[red]rnx2rtkp not found in PATH. Please install RTKLIB. Program exits.[/red]")
         sys.exit(ERROR_CODES["E_PROCESS"])
 
     # define command line arguments
-
     cmd_rnx2rtkp = [
         rnx2rtkp_path,
         "-k",
@@ -94,7 +94,7 @@ def rnx2rtkp_ppk(
     if hasattr(parsed_args, "pos_ofn") and parsed_args.pos_ofn:
         pos_ofn = parsed_args.pos_ofn
         logger.info(f"Using {pos_ofn} as output file name for rnx2rtkp process")
-    else:
+    else: # adding measurement duration info to the output filename
         pos_ofn, _ = os.path.splitext(parsed_args.obs)
         if s_dt_obj and e_dt_obj:
             s_time = s_dt_obj.strftime("%H%M%S")
@@ -111,8 +111,8 @@ def rnx2rtkp_ppk(
     cmd_rnx2rtkp.extend(["-o", pos_ofn])
 
     # TODO Get effective log leveli
-    logger.info("Putting rnx2rtkp in debugging mode")
-    print("rnx2rtkp in debugging mode")
+    logger.info(f"Putting rnx2rtkp in debugging mode")
+    rprint("[yellow]rnx2rtkp in debugging mode[/yellow]")
     cmd_rnx2rtkp.extend(["-x", "2"])
 
     # add obs and nav rnx filenames to cli
@@ -136,7 +136,8 @@ def rnx2rtkp_ppk(
     except subprocess.CalledProcessError as e:
         logger.error(f"rnx2rtkp failed with error code {e.returncode}")
         sys.exit(ERROR_CODES["E_PROCESS"])
-
+    
+    
     logger.info(f"Finished calculating PPK solution. Written file to {pos_ofn}")
 
     return pos_ofn

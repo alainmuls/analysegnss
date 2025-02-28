@@ -8,10 +8,11 @@ from logging import Logger
 
 # Third-party imports
 import polars as pl
+from rich import print as rprint
 from tabulate import tabulate
 
 # Local application imports
-from analysegnss.rtkpos import rtk_constants as rtkc
+from analysegnss.rtkpos import rtklib_constants as rtklibc
 from analysegnss.rtkpos.rtkpos_class import Rtkpos
 from analysegnss.utils import init_logger
 from analysegnss.utils.argument_parser import argument_parser_ppk
@@ -30,15 +31,16 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> list:
     for qual, qual_data in df_pos.group_by(["Q"]):
         qual_analysis.append(
             [
-                rtkc.DICT_RTK_PVTMODE[qual[0]]["desc"],
+                rtklibc.DICT_RTKLIB_PVTMODE[qual[0]]["desc"],
                 qual_data.shape[0],
                 round(qual_data.shape[0] / total_obs * 100, 2),
+                total_obs
             ]
         )
 
     qual_tabular = tabulate(
         qual_analysis,
-        headers=["PNT Mode", "Count", "Percentage"],
+        headers=["PNT Mode", "PNT Mode Count", "Percentage", "Total Observations"],
         tablefmt="fancy_outline",
     )
 
@@ -74,7 +76,7 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
     try:
         rtkpos = Rtkpos(pos_fn=args_parsed.pos_ifn, logger=logger)
     except Exception as e:
-        logger.error(f"Error creating RTKPos object: {e}")
+        logger.error(f"Error creating Rtkpos object: {e}")
         sys.exit(1)
 
     # read the CVS position file into polars dataframe
@@ -88,11 +90,9 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
 
     return pos_df
 
-
 def main():
     df_rtkpos = rtkp_pos(argv=sys.argv)
-    print(df_rtkpos)
-
+    rprint(df_rtkpos)
 
 if __name__ == "__main__":
     main()
