@@ -8,7 +8,7 @@ import sys
 import polars as pl
 from rich import print as rprint
 
-from analysegnss.config import DICT_GNSS, DICT_SIGNAL_TYPES, ERROR_CODES
+from analysegnss.config import DICT_GNSS, ERROR_CODES
 from analysegnss.sbf.sbf_class import SBF
 from analysegnss.sbf.sbf_column_mapping import (
     GNSS_NAV_COLUMN_MAPPINGS,
@@ -55,7 +55,7 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
         logger.error(f"No SBF Nav blocks found in {parsed_args.sbf_ifn}")
         sys.exit(ERROR_CODES["E_SBF_NAV_BLOCKS"])
 
-    # select the navigation SBF blocks for the selected GNSS
+    # select the navigation SBF blocks for the selected GNSSq
     sbf_nav_blocks_gnss = []
     for gnss in parsed_args.gnss:
         gnss_abbrev = DICT_GNSS[gnss]["abbrev"]
@@ -78,14 +78,27 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
             nav_df = rename_nav_columns(df=nav_df, gnss_type=gnss_abbrev)
 
             logger.info(
-                f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[:20]).head(2)}"
+                f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[:20]).head(3)}"
+                f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[20:]).head(3)}"
             )
-            logger.info(
-                f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[20:]).head(2)}"
-            )
+            # logger.info(
+            # )
             rprint(f"nav_df.columns[{sbf_block}]:\n{nav_df.columns}")
 
             # convert the polars dataframe to CSV for each navigation SBF block
+            csv_filename = f"{parsed_args.sbf_ifn}_{sbf_block}.csv"  # Add a descriptive name to output.
+            try:
+                nav_df.write_csv(csv_filename)
+                logger.info(f"Successfully wrote {sbf_block} data to {csv_filename}")
+            except Exception as e:
+                logger.error(f"Failed to write {sbf_block} data to {csv_filename}: {e}")
+        elif sbf_block == "GALNav":
+            print("in GALNav block")
+            logger.info(
+                f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[:20]).head(3)}"
+                f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[20:]).head(3)}"
+            )
+            print(f"nav_df.columns[{sbf_block}]:\n{nav_df.columns}")
 
 
 def main():
@@ -94,7 +107,7 @@ def main():
         args=sys.argv[1:], script_name=os.path.basename(__file__)
     )
 
-    print(f"args_parsed: {args_parsed}")
+    # print(f"args_parsed: {args_parsed}")
 
     sbfnav_csv(parsed_args=args_parsed)
 

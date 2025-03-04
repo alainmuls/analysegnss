@@ -339,6 +339,10 @@ class SBF:
 
                     # add columns to the dataframe
                     sbf_df = self.add_columns(block_df=sbf_df)
+                    print(
+                        f"sbf_df[{sbf_block}]:\n{sbf_df.select(sbf_df.columns[:20]).head(3)}"
+                        f"sbf_df[{sbf_block}]:\n{sbf_df.select(sbf_df.columns[20:]).head(3)}"
+                    )
 
                     # set the dtype again after having added some columns
                     sbf_df = sbf_df.with_columns(
