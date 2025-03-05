@@ -66,7 +66,7 @@ def convert_semicircles_to_radians(df: pl.DataFrame, gnss_type: str) -> pl.DataF
     SEMI_TO_RAD = np.pi
 
     # Replace your hardcoded SEMICIRCLE_COLUMNS with this
-    SEMICIRCLE_COLUMNS = extract_semicircle_columns(gnss=gnss_type)
+    SEMICIRCLE_COLUMNS = extract_semicircle_columns()
 
     # Convert each column containing semi-circles
     for col in SEMICIRCLE_COLUMNS[gnss_type]:
@@ -116,18 +116,14 @@ def convert_and_rename_semicircles(df: pl.DataFrame, gnss_type: str) -> pl.DataF
 GNSS_NAV_COLUMN_MAPPINGS = {
     "GPS": {
         "TOW [0.001 s]": "TOW",
-        "PRN": "prn",
         "WNc [w]": "WNc",
         "WN [w]": "WN",
-        "URA": "SVacc",
         "CAorPonL2": "CodesL2",
         "IDOT [semi-circle/s]": "IDOT",
-        "IODE2": "IODE",
         "t_oc [s]": "toc",
         "a_f2 [s/s²]": "af2",
         "a_f1 [s/s]": "af1",
         "a_f0 [s]": "af0",
-        "IODC": "IODC",
         "C_rs [m]": "Crs",
         "DEL_N [semi-circle/s]": "deltaN",
         "M_0 [semi-circle]": "M0",
@@ -144,22 +140,16 @@ GNSS_NAV_COLUMN_MAPPINGS = {
         "omega [semi-circle]": "omega",
         "OMEGADOT [semi-circle/s]": "omegaDot",
         "T_gd [s]": "TGD",
-        "health": "health",
-        "L2DataFlag": "L2Pflag",
-        "FitIntFlg": "Fit",
         "WNt_oc [w]": "WNt_oc",
         "WNt_oe [w]": "WNt_oe",
     },
     "GAL": {
         "TOW [0.001 s]": "TOW",
-        "PRN": "prn",
-        "WN [w]": "WN",
-        "SISA": "SVacc",
+        "WNc [w]": "WNc",
         "t_oc [s]": "toc",
         "a_f0 [s]": "af0",
         "a_f1 [s/s]": "af1",
         "a_f2 [s/s²]": "af2",
-        "IODnav": "IODnav",
         "C_rs [m]": "Crs",
         "DEL_N [semi-circle/s]": "deltaN",
         "M_0 [semi-circle]": "M0",
@@ -176,24 +166,13 @@ GNSS_NAV_COLUMN_MAPPINGS = {
         "omega [semi-circle]": "omega",
         "OMEGADOT [semi-circle/s]": "omegaDot",
         "IDOT [semi-circle/s]": "IDOT",
-        "BGD_E1E5a [s]": "BGD_E1E5a",
-        "BGD_E1E5b [s]": "BGD_E1E5b",
-        "E5a_HS": "E5a_HS",
-        "E5b_HS": "E5b_HS",
-        "E1B_HS": "E1B_HS",
-        "E5a_DVS": "E5a_DVS",
-        "E5b_DVS": "E5b_DVS",
-        "E1B_DVS": "E1B_DVS",
+        "BGD_L1E5a [s]": "BGD_L1E5a",
+        "BGD_L1E5b [s]": "BGD_L1E5b",
+        "BGD_L1AE6A [s]": "BGD_L1AE6A",
         "WNt_oc [w]": "WNt_oc",
         "WNt_oe [w]": "WNt_oe",
-        "SVID": "SVID",
-        "SigTypeFlags": "SigTypeFlags",
-        "CorrT": "CorrT",
-        "Health": "health",
-        "Source": "Source",
     },
     "BDS": {
-        "PRN": "prn",
         "WN ": "WN",
         "URA": "SVacc",
         # ... BeiDou specific mappings
