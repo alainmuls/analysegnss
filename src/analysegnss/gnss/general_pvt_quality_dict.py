@@ -8,6 +8,7 @@ GENERAL_PVT_QUALITY_ID = {
     'STANDALONE': dict(desc="Stand-Alone PVT", color="cornflowerblue"),
     'DIFFERENTIAL': dict(desc="Differential PVT", color="darkcyan"),
     'SBAS': dict(desc="SBAS aided PVT", color="deepskyblue"),
+    'SBAS_DFMC': dict(desc="SBAS Dual Frequency Multi Constellation", color="blue"),
     'RTK_FIXED': dict(desc="RTK with fixed ambiguities", color="green"),
     'RTK_FLOAT': dict(desc="RTK with float ambiguities", color="orange"),
     'PPP': dict(desc="Precise Point Positioning (PPP)", color="limegreen"),
@@ -61,6 +62,18 @@ def sbf_to_general_quality(sbf_mode: int) -> str:
         12: 'SIMULATION'
     }
     return conversion.get(sbf_mode, 'INVALID')
+
+def glab_to_general_quality(glab_mode: int) -> str:
+    """Convert GLAB PVT mode to general quality identifier"""
+    conversion = {
+        0: 'STANDALONE',
+        1: 'PPP',
+        5: 'SBAS',
+        6: 'SBAS_DFMC',
+        7: 'DIFFERENTIAL'
+    }
+    return conversion.get(glab_mode, 'INVALID')
+
 
 def get_quality_info(general_quality: str) -> dict:
     """

@@ -13,6 +13,7 @@ import analysegnss.nmea.nmeaReader as nmeaReader
 import analysegnss.rtkpos.ppk_rnx2rtkp as ppk_rnx2rtkp
 import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
 from analysegnss.config import ERROR_CODES, rich_console
+from analysegnss.gnss.general_pvt_quality_dict import GENERAL_PVT_QUALITY_ID
 from analysegnss.plots import plot_utm
 from analysegnss.plots.plot_columns import get_utm_columns
 from analysegnss.utils import init_logger
@@ -147,36 +148,61 @@ def plot_coords(argv: list):
 
 	# create the df_utm dataframe from the dataframe obtained according to each source
 	try:
-		if not args_parsed.sd:
-			df_utm = df_source.select(
-				[
-					utm_columns.time,
-					utm_columns.quality_mapping.columns,
-					utm_columns.nrSVN,
-					utm_columns.east,
-					utm_columns.north,
-					utm_columns.height,
-				]
-			)
-		else:
-			df_utm = df_source.select(
-				[
-					utm_columns.time,
-					utm_columns.quality_mapping.columns,
-					utm_columns.nrSVN,
-					utm_columns.east,
-					utm_columns.north,
-					utm_columns.height,
-					utm_columns.sdn,
-					utm_columns.sde,
-					utm_columns.sdu,
-				]
-			)
-	except pl.exceptions.ColumnNotFoundError as e: 
-		column_missing = e.args[0]
-		logger.error(f"ERROR: Missing the column |{column_missing}| in the dataframe")
-		sys.exit(1)
+		required_columns = [
+			utm_columns.time,
+			utm_columns.quality_mapping.quality_column,
+			utm_columns.nrSVN,
+			utm_columns.east,
+			utm_columns.north,
+			utm_columns.height,
+		]
+		if args_parsed.sd:
+			required_columns.extend([
+				utm_columns.sdn,
+				utm_columns.sde,
+				utm_columns.sdu,
+			])
+
+		# Check which columns are missing
+		existing_cols = df_source.columns
+		missing_cols = []
 		
+		for col in required_columns:
+			if isinstance(col, list):  # Handle quality_mapping.columns which is a list
+				if not any(qcol in existing_cols for qcol in col):
+					missing_cols.extend(col)
+			elif col not in existing_cols:
+				missing_cols.append(col)
+
+		# Create dummy columns for missing ones
+		if missing_cols:
+			logger.warning(f"Missing columns: {missing_cols}. Creating dummy columns.")
+			dummy_data = {}
+			
+			for col in missing_cols:
+				if col == utm_columns.time:
+					dummy_data[col] = pl.Series(name=col, values=[pl.datetime('now')] * len(df_source))
+				elif col == utm_columns.nrSVN:
+					dummy_data[col] = pl.Series(name=col, values=[0] * len(df_source))
+				elif col in utm_columns.quality_mapping.columns:
+					dummy_data[col] = pl.Series(name=col, values=[GENERAL_PVT_QUALITY_ID["MANUAL"]] * len(df_source))
+				else:
+					dummy_data[col] = pl.Series(name=col, values=[None] * len(df_source))
+			
+			# Add dummy columns to dataframe
+			for col_name, col_data in dummy_data.items():
+				df_source = df_source.with_columns(col_data)
+
+		# Now create df_utm with all required columns
+		if not args_parsed.sd:
+			df_utm = df_source.select(required_columns[:6])  # First 6 columns without SD
+		else:
+			df_utm = df_source.select(required_columns)  # All columns including SD
+
+	except Exception as e:
+		logger.error(f"Error creating UTM dataframe: {str(e)}")
+		raise
+
 	# Filter out rows with null/nan values in UTM coordinates and height
 	df_utm = df_utm.filter(
 		pl.col(utm_columns.east).is_not_null() & 

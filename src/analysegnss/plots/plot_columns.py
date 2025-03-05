@@ -3,13 +3,7 @@ from dataclasses import dataclass
 from typing import Dict
 
 # Local application imports
-from analysegnss.gnss.general_pvt_quality_dict import (
-    GENERAL_PVT_QUALITY_ID,
-    rtklib_to_general_quality,
-    nmea_to_general_quality,
-    sbf_to_general_quality,
-    get_quality_info,
-)
+from analysegnss.gnss.general_pvt_quality_dict import GENERAL_PVT_QUALITY_ID
 from analysegnss.nmea import nmea_constants as nmeac
 from analysegnss.rtkpos import rtklib_constants as rtklibc
 from analysegnss.sbf import sbf_constants as sbfc
@@ -18,7 +12,7 @@ from analysegnss.glabng import glab_constants as glabc
 
 @dataclass
 class UTMQualityMapping:
-    columns: str
+    quality_column: str
     quality_dict: Dict
 
 
@@ -35,16 +29,14 @@ class UTMColumns:
     nrSVN: str
 
 
-# Define mappings for different origins
+# Define mappings for different sources
 COLUMN_MAPPINGS: Dict[str, UTMColumns] = {
     "RTK": UTMColumns(
         east="UTM.E",
         north="UTM.N",
         height="orthoH",
         time="DT",
-        quality_mapping=UTMQualityMapping(
-            "pvt_qual", get_quality_info(sbf_to_general_quality(sbfc.DICT_SBF_PVTMODE))
-        ),
+        quality_mapping=UTMQualityMapping("Type", sbfc.DICT_SBF_PVTMODE),
         sde="SD_lon [m]",
         sdn="SD_lat [m]",
         sdu="SD_hgt [m]",
@@ -55,9 +47,7 @@ COLUMN_MAPPINGS: Dict[str, UTMColumns] = {
         north="UTM.N",
         height="orthoH",
         time="DT",
-        quality_mapping=UTMQualityMapping(
-            "pvt_qual", get_quality_info(rtklib_to_general_quality(rtklibc.DICT_RTK_PVTMODE))
-        ),
+        quality_mapping=UTMQualityMapping("Q", rtkc.DICT_RTK_PVTMODE),
         sde="sde(m)",
         sdn="sdn(m)",
         sdu="sdu(m)",
@@ -68,9 +58,7 @@ COLUMN_MAPPINGS: Dict[str, UTMColumns] = {
         north="UTM.N",
         height="orthoH",
         time="DT",
-        quality_mapping=UTMQualityMapping(
-            "pvt_qual", get_quality_info(sbf_to_general_quality(sbfc.DICT_SBF_PVTMODE))
-        ),
+        quality_mapping=UTMQualityMapping("mode", glabc.DICT_PROCESSING_MODE),
         sde="sd.E",
         sdn="sd.N",
         sdu="sd.U",
@@ -81,10 +69,7 @@ COLUMN_MAPPINGS: Dict[str, UTMColumns] = {
         north="UTM.N",
         height="orthoH",
         time="DT",
-        quality_mapping=UTMQualityMapping(
-            "pvt_qual",
-            get_quality_info(nmea_to_general_quality(nmeac.DICT_NMEA_PVT_QUALITY)),
-        ),
+        quality_mapping=UTMQualityMapping("pvt_qual", nmeac.DICT_NMEA_PVT_QUALITY),
         sde="sdlon(m)",  # TODO convert sdlon to sdE (if region is small: (BETER= (nautical mile (=1852m) * 60 * 360) vor omtrek aarde: omtrek_aarde/360)*sdlon = sde). Or use PROJ lib
         sdn="sdlat(m)",
         sdu="sdH(m)",
