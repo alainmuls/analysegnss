@@ -68,6 +68,7 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
     nav_dfs = sbf.bin2asc_dataframe(
         lst_sbfblocks=sbf_nav_blocks_gnss, archive=parsed_args.archive
     )
+
     for sbf_block, nav_df in nav_dfs.items():
         # identify the gnss type from the SBF block name
         gnss_abbrev = sbf_block[:3]

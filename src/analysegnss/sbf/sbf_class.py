@@ -343,14 +343,41 @@ class SBF:
                         f"sbf_df[{sbf_block}]:\n{sbf_df.select(sbf_df.columns[:20]).head(3)}"
                         f"sbf_df[{sbf_block}]:\n{sbf_df.select(sbf_df.columns[20:]).head(3)}"
                     )
+                    # print the column names of sbf_df one per line
+                    for col_name in sbf_df.columns:
+                        print(col_name)
 
                     # set the dtype again after having added some columns
-                    sbf_df = sbf_df.with_columns(
-                        [
-                            pl.col(col_name).cast(dtype)
-                            for col_name, dtype in keep_cols.items()
-                        ]
-                    )
+                    # sbf_df = sbf_df.with_columns(
+                    #     [
+                    #         pl.col(col_name).cast(dtype)
+                    #         for col_name, dtype in keep_cols.items()
+                    #     ]
+                    # )
+
+                    # identify columns with null values and applies different strategies based on the target data type
+                    cast_expressions = []
+                    for col_name, dtype in keep_cols.items():
+                        # For integer types, check if we need to handle nulls
+                        if str(dtype).startswith(("UInt", "Int")):
+                            # For columns that might have nulls, first fill nulls with a default value
+                            rprint(
+                                f"col_name = {col_name}\n{sbf_df[col_name]}\n{sbf_df[col_name].null_count()}"
+                            )
+                            if sbf_df[col_name].null_count() > 0:
+                                cast_expressions.append(
+                                    pl.col(col_name)
+                                    .fill_null(0)
+                                    .cast(dtype)
+                                    .alias(col_name)
+                                )
+                            else:
+                                cast_expressions.append(pl.col(col_name).cast(dtype))
+                        else:
+                            # For other types, just perform the regular cast
+                            cast_expressions.append(pl.col(col_name).cast(dtype))
+
+                    sbf_df = sbf_df.with_columns(cast_expressions)
 
                 sbf_dfs[sbf_block] = sbf_df
                 # print(f"sbf_dfs[{sbf_block}]:\n{sbf_dfs[sbf_block]}")

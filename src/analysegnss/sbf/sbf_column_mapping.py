@@ -89,8 +89,22 @@ def rename_nav_columns(df: pl.DataFrame, gnss_type: str) -> pl.DataFrame:
     return df.rename(GNSS_NAV_COLUMN_MAPPINGS[gnss_type])
 
 
-def convert_and_rename_semicircles(df):
+def convert_and_rename_semicircles(df: pl.DataFrame, gnss_type: str) -> pl.DataFrame:
+    """converts the columns using semi-circles to radians and renames the columns
+    according to the GNSS type
+
+    Args:
+        df (pl.DataFrame): navigation message dataframe obtained for a gnss type
+        gnss_type (str): type of GNSS system (GPS, GAL, BDS, etc.)
+
+    Returns:
+        pl.DataFrame: navigation message dataframe with radians units and renamed columns
+    """
+    # Conversion factor: 1 semi-circle = π radians
     SEMI_TO_RAD = np.pi
+
+    # Replace your hardcoded SEMICIRCLE_COLUMNS with this
+    SEMICIRCLE_COLUMNS = extract_semicircle_columns(gnss=gnss_type)
 
     for orig_col in SEMICIRCLE_COLUMNS.keys():
         if orig_col in df.columns:
@@ -137,10 +151,46 @@ GNSS_NAV_COLUMN_MAPPINGS = {
         "WNt_oe [w]": "WNt_oe",
     },
     "GAL": {
+        "TOW [0.001 s]": "TOW",
         "PRN": "prn",
-        "WN ": "WN",
-        "SISA": "SVacc",  # Galileo uses SISA instead of URA
-        # ... Galileo specific mappings
+        "WN [w]": "WN",
+        "SISA": "SVacc",
+        "t_oc [s]": "toc",
+        "a_f0 [s]": "af0",
+        "a_f1 [s/s]": "af1",
+        "a_f2 [s/s²]": "af2",
+        "IODnav": "IODnav",
+        "C_rs [m]": "Crs",
+        "DEL_N [semi-circle/s]": "deltaN",
+        "M_0 [semi-circle]": "M0",
+        "C_uc [rad]": "Cuc",
+        "e": "eccen",
+        "C_us [rad]": "Cus",
+        "SQRT_A [m**1/2]": "sqrtA",
+        "t_oe [s]": "toe",
+        "C_ic [rad]": "Cic",
+        "OMEGA_0 [semi-circle]": "Omega0",
+        "C_is [rad]": "Cis",
+        "i_0 [semi-circle]": "Io",
+        "C_rc [m]": "Crc",
+        "omega [semi-circle]": "omega",
+        "OMEGADOT [semi-circle/s]": "omegaDot",
+        "IDOT [semi-circle/s]": "IDOT",
+        "BGD_E1E5a [s]": "BGD_E1E5a",
+        "BGD_E1E5b [s]": "BGD_E1E5b",
+        "E5a_HS": "E5a_HS",
+        "E5b_HS": "E5b_HS",
+        "E1B_HS": "E1B_HS",
+        "E5a_DVS": "E5a_DVS",
+        "E5b_DVS": "E5b_DVS",
+        "E1B_DVS": "E1B_DVS",
+        "WNt_oc [w]": "WNt_oc",
+        "WNt_oe [w]": "WNt_oe",
+        "SVID": "SVID",
+        "SigTypeFlags": "SigTypeFlags",
+        "CorrT": "CorrT",
+        "Health": "health",
+        "Source": "Source",
     },
     "BDS": {
         "PRN": "prn",
