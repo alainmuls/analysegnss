@@ -74,32 +74,22 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
         gnss_abbrev = sbf_block[:3]
         rprint(f"gnss_abbrev: {gnss_abbrev}")
 
-        if sbf_block == "GPSNav":
-            nav_df = convert_semicircles_to_radians(df=nav_df, gnss_type=gnss_abbrev)
-            nav_df = rename_nav_columns(df=nav_df, gnss_type=gnss_abbrev)
+        # if sbf_block == "GPSNav":
+        nav_df = convert_semicircles_to_radians(df=nav_df, gnss_type=gnss_abbrev)
+        nav_df = rename_nav_columns(df=nav_df, gnss_type=gnss_abbrev)
 
-            logger.info(
-                f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[:20]).head(3)}"
-                f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[20:]).head(3)}"
-            )
-            # logger.info(
-            # )
-            rprint(f"nav_df.columns[{sbf_block}]:\n{nav_df.columns}")
+        logger.info(
+            f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[:20]).head(3)}"
+            f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[20:]).head(3)}"
+        )
 
-            # convert the polars dataframe to CSV for each navigation SBF block
-            csv_filename = f"{parsed_args.sbf_ifn}_{sbf_block}.csv"  # Add a descriptive name to output.
-            try:
-                nav_df.write_csv(csv_filename)
-                logger.info(f"Successfully wrote {sbf_block} data to {csv_filename}")
-            except Exception as e:
-                logger.error(f"Failed to write {sbf_block} data to {csv_filename}: {e}")
-        elif sbf_block == "GALNav":
-            print("in GALNav block")
-            logger.info(
-                f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[:20]).head(3)}"
-                f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[20:]).head(3)}"
-            )
-            print(f"nav_df.columns[{sbf_block}]:\n{nav_df.columns}")
+        # convert the polars dataframe to CSV for each navigation SBF block
+        csv_filename = f"{parsed_args.sbf_ifn}_{sbf_block}.csv"  # Add a descriptive name to output.
+        try:
+            nav_df.write_csv(csv_filename)
+            logger.info(f"Successfully wrote {sbf_block} data to {csv_filename}")
+        except Exception as e:
+            logger.error(f"Failed to write {sbf_block} data to {csv_filename}: {e}")
 
 
 def main():
