@@ -1319,4 +1319,8 @@ def argument_parser_sbfnav_csv(script_name: str, args: list) -> argparse.Namespa
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
 
+<<<<<<< HEAD
     return args
+=======
+    return args
+>>>>>>> devam

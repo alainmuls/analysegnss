@@ -8,7 +8,11 @@ import sys
 import polars as pl
 from rich import print as rprint
 
+<<<<<<< HEAD
 from analysegnss.config import DICT_GNSS, DICT_SIGNAL_TYPES, ERROR_CODES
+=======
+from analysegnss.config import DICT_GNSS, ERROR_CODES
+>>>>>>> devam
 from analysegnss.sbf.sbf_class import SBF
 from analysegnss.sbf.sbf_column_mapping import (
     GNSS_NAV_COLUMN_MAPPINGS,
@@ -55,7 +59,11 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
         logger.error(f"No SBF Nav blocks found in {parsed_args.sbf_ifn}")
         sys.exit(ERROR_CODES["E_SBF_NAV_BLOCKS"])
 
+<<<<<<< HEAD
     # select the navigation SBF blocks for the selected GNSS
+=======
+    # select the navigation SBF blocks for the selected GNSSq
+>>>>>>> devam
     sbf_nav_blocks_gnss = []
     for gnss in parsed_args.gnss:
         gnss_abbrev = DICT_GNSS[gnss]["abbrev"]
@@ -68,11 +76,16 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
     nav_dfs = sbf.bin2asc_dataframe(
         lst_sbfblocks=sbf_nav_blocks_gnss, archive=parsed_args.archive
     )
+<<<<<<< HEAD
+=======
+
+>>>>>>> devam
     for sbf_block, nav_df in nav_dfs.items():
         # identify the gnss type from the SBF block name
         gnss_abbrev = sbf_block[:3]
         rprint(f"gnss_abbrev: {gnss_abbrev}")
 
+<<<<<<< HEAD
         if sbf_block == "GPSNav":
             nav_df = convert_semicircles_to_radians(df=nav_df, gnss_type=gnss_abbrev)
             nav_df = rename_nav_columns(df=nav_df, gnss_type=gnss_abbrev)
@@ -86,6 +99,24 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
             rprint(f"nav_df.columns[{sbf_block}]:\n{nav_df.columns}")
 
             # convert the polars dataframe to CSV for each navigation SBF block
+=======
+        # if sbf_block == "GPSNav":
+        nav_df = convert_semicircles_to_radians(df=nav_df, gnss_type=gnss_abbrev)
+        nav_df = rename_nav_columns(df=nav_df, gnss_type=gnss_abbrev)
+
+        logger.info(
+            f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[:20]).head(3)}"
+            f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[20:]).head(3)}"
+        )
+
+        # convert the polars dataframe to CSV for each navigation SBF block
+        csv_filename = f"{parsed_args.sbf_ifn}_{sbf_block}.csv"  # Add a descriptive name to output.
+        try:
+            nav_df.write_csv(csv_filename)
+            logger.info(f"Successfully wrote {sbf_block} data to {csv_filename}")
+        except Exception as e:
+            logger.error(f"Failed to write {sbf_block} data to {csv_filename}: {e}")
+>>>>>>> devam
 
 
 def main():
@@ -94,7 +125,11 @@ def main():
         args=sys.argv[1:], script_name=os.path.basename(__file__)
     )
 
+<<<<<<< HEAD
     print(f"args_parsed: {args_parsed}")
+=======
+    # print(f"args_parsed: {args_parsed}")
+>>>>>>> devam
 
     sbfnav_csv(parsed_args=args_parsed)
 
