@@ -3,21 +3,6 @@ import numpy as np
 
 from analysegnss.sbf.sbf_blocks_polars import SBF_BLOCK_COLUMNS_BIN2ASC
 
-# # Define columns that need conversion from semi-circles to radians
-# SEMICIRCLE_COLUMNS = {
-#     "GPS": [
-#         "IDOT [semi-circle/s]",  # [semi-circles/s] -> [rad/s]
-#         "DEL_N [semi-circle/s]",  # [semi-circles/s] -> [rad/s]
-#         "M_0 [semi-circle]",  # [semi-circles] -> [rad]
-#         "OMEGA_0 [semi-circle]",  # [semi-circles] -> [rad]
-#         "i_0 [semi-circle]",  # [semi-circles] -> [rad]
-#         "omega [semi-circle]",  # [semi-circles] -> [rad]
-#         "OMEGADOT [semi-circle/s]",  # [semi-circles/s] -> [rad/s]
-#     ],
-#     "GAL": [],
-#     "BDS": [],
-# }
-
 
 def extract_semicircle_columns() -> dict:
     """extract columns containing semi-circles from each navigation block
