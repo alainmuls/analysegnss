@@ -70,11 +70,14 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
             sbf_nav_blocks_gnss.append(matching_blocks[0])
         else:
             logger.warning(
-                f"No navigation blocks found for {gnss} ({gnss_abbrev}). Skipping this GNSS."
+                f"{str_red("No navigation blocks")} found for {str_red(gnss)} ({str_red(gnss_abbrev)}). Skipping this GNSS."
             )
 
     if not sbf_nav_blocks_gnss:
-        logger.error("No navigation blocks found for selected GNSS systems. Exiting.")
+        logger.error(
+            f"{str_red("No navigation blocks")} found for selected GNSS systems "
+            f"{str_red(parsed_args.gnss)}. Exiting."
+        )
         sys.exit(ERROR_CODES["E_SBF_NAV_BLOCKS"])
 
     # create a list of dictionaries to hold the dataframes for each navigation SBF block
