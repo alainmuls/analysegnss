@@ -19,6 +19,9 @@ from analysegnss.utils import argument_parser, init_logger
 # gradients of the runway. It needs at least two (ebh) lines
 # that contain xy and height coordinates but preferably more including the centerline.
 
+# A design decision was made to import the generated ASSUR formatted csv files from a directory.
+# This ensures that the script is standalone.
+
 # The script will output the maximum longitudinal gradient from the lowest threshold
 # to the highest point on the centerline and the maximum transversal gradient across
 # the width of the runway.
@@ -107,7 +110,7 @@ def gradient_ebhlines(parsed_args: argparse.Namespace, logger: Logger) -> str:
     ########################################################
 
     # Find the outermost lines
-    outer_line1, outer_line2 = outermost_lines(ebh_lines=ebh_lines, logger=logger)
+    outer_line1, outer_line2, max_dist = outermost_lines(ebh_lines=ebh_lines, logger=logger)
     # Determine the max TRANSVERSAL gradient across the width of the runway
     max_transversal_gradient_rwy = max_transversal_gradient(
         outer_line1=ebh_lines[outer_line1],
@@ -115,16 +118,16 @@ def gradient_ebhlines(parsed_args: argparse.Namespace, logger: Logger) -> str:
         logger=logger,
     )
 
-    # store the output in a dictionary
+    # store the output in a dictionary #TODO: add UTM.Z to the output
     gradient_runway_output = f"""
         EBH project name:\t\t\t\t\t\t\t{ebh_project_name}\n
-        Length of the runway:\t\t\t\t\t\t\t{length_of_runway:.2f} meters\n
-        maximum LONGITUDINAL gradient of the runway (degrees):\t\t\t{max_longitudinal_gradient_rwy:.2f}
-        maximum TRANSVERSAL gradient of the runway (degrees):\t\t\t{max_transversal_gradient_rwy:.2f}\n
-        highest point on centerline (UTM.E, UTM.N, orthoH):\t\t\t{highest_point_CL}
-        centerline coordinates on lowest threshold (UTM.E, UTM.N, orthoH):\t{lowest_threshold}\n
-        distance from lowest threshold to highest point on centerline (meters):\t{dist_threshold_and_Hpoint_CL:.2f}
-        slope from lowest threshold to highest point on centerline:\t\t{slope_threshold_to_Hpoint_CL:.2f}
+        Measured length of the runway (meters):\t\t\t\t\t{length_of_runway:.2f}
+        Measured width of the runway (meters):\t\t\t\t\t{max_dist:.2f}\n
+        Maximum LONGITUDINAL gradient of the runway (degrees):\t\t\t{max_longitudinal_gradient_rwy:.2f}
+        Maximum TRANSVERSAL gradient of the runway (degrees):\t\t\t{max_transversal_gradient_rwy:.2f}\n
+        Centerline coordinates of highest point (UTM.E, UTM.N, orthoH):\t\t{highest_point_CL}
+        Centerline coordinates of lowest threshold (UTM.E, UTM.N, orthoH):\t{lowest_threshold}\n
+        Distance from lowest threshold to highest point on centerline (meters):\t{dist_threshold_and_Hpoint_CL:.2f}
     """
 
     # save the output to a file
@@ -133,55 +136,6 @@ def gradient_ebhlines(parsed_args: argparse.Namespace, logger: Logger) -> str:
     )
 
     return gradient_runway_output
-
-def collect_ebh_lines(parsed_args: argparse.Namespace, logger: Logger) -> dict:
-    """
-    Collect the ebh lines csv files from a directory
-
-    args:
-    parsed_args (argparse.Namespace): parsed arguments.
-                                        - input_dir: directory containing the ebh lines
-                                        - output_dir: directory to save the output
-                                        - output_filename: name of the output file
-                                        - log_dest: destination of the log file
-    logger (Logger): Logger object
-
-    returns:
-    ebh_lines (dict): dictionary with ebh line keys and ebh line dataframes
-    ebh_project_name (str): name of the ebh project
-    """
-
-    # check if the directory exists
-    if not os.path.exists(parsed_args.input_dir):
-        logger.error(f"Directory {parsed_args.input_dir} does not exist")
-        sys.exit(1)
-
-    # get the ebh lines from the directory
-    ebh_lines = {}
-    for file in os.listdir(parsed_args.input_dir):
-        if file.endswith(".csv"):
-            logger.info(
-                f"Collecting ebh line {file} from directory {parsed_args.input_dir}"
-            )
-            ebh_lines[file] = pl.read_csv(
-                source=os.path.join(parsed_args.input_dir, file),
-                separator=";",
-                columns=["UTM.E", "UTM.N", "orthoH"],
-                comment_prefix="#",
-                has_header=True,
-                dtypes={"UTM.E": float, "UTM.N": float, "orthoH": float},
-                null_values="NaN",
-            )
-            logger.debug(f"Extracted {len(ebh_lines[file])} rows from ebh line {file}")
-
-    logger.info(
-        f"Extracted ebh lines {ebh_lines.keys()} from directory {parsed_args.input_dir}"
-    )
-
-    # rename the ebh line keys to the line name without the .csv extension
-    ebh_lines, ebh_project_name = rename_ebh_line_keys(ebh_lines=ebh_lines, logger=logger)
-
-    return ebh_lines, ebh_project_name
 
 
 def gradient_3d(
@@ -272,38 +226,95 @@ def lowest_rwy_threshold_and_highest_point_CL(
     return lowest_threshold, highest_point_CL
 
 
-def rename_ebh_line_keys(ebh_lines: dict, logger: Logger) -> dict:
+def collect_ebh_lines(parsed_args: argparse.Namespace, logger: Logger) -> dict:
     """
-    Rename the ebh line keys when line collected from directory
-    The file name is the key and have the following format:
-    <ebh_project_name>_<line_name>.csv
-    The key is the line name without the .csv extension
-    The ebh project name is also extracted from the key
-    
-    Args:
-    ebh_lines (dict): dictionary with ebh line keys and ebh line dataframes
+    Collect the ebh lines csv files from a directory
+
+    args:
+    parsed_args (argparse.Namespace): parsed arguments.
+                                        - input_dir: directory containing the ebh lines
+                                        - desc: description of the ebh lines
+                                        - output_dir: directory to save the output
+                                        - output_filename: name of the output file
+                                        - log_dest: destination of the log file
     logger (Logger): Logger object
 
-    Returns:
+    returns:
     ebh_lines (dict): dictionary with ebh line keys and ebh line dataframes
     ebh_project_name (str): name of the ebh project
     """
 
-    # get the ebh project name from the first key/ file name 
-    ebh_project_name = "_".join(list(ebh_lines.keys())[0].split(".")[0].split("_")[:-1])
-    logger.info(f"Identified ebh project name: {ebh_project_name}")
+    # check if the directory exists
+    if not os.path.exists(parsed_args.input_dir):
+        logger.error(f"Directory {parsed_args.input_dir} does not exist")
+        sys.exit(1)
 
-    # rename the ebh line keys
-    for key in ebh_lines.keys():
+    # collect the ebh lines from the directory + metadata
+    ebh_project_name = None
+    ebh_line_metadata = {} # ebh_line_metadata = {ebh_line_key: ebh_line_fn}
+    ebh_lines = {} # ebh_lines = {ebh_line_key: pl.DataFrame}
+    for file in os.listdir(parsed_args.input_dir):
+        
+        # if no tag is provided, collect all ebh lines
+        if parsed_args.desc is None:
+            if file.endswith(".csv"):
+                logger.info(
+                    f"Collecting ebh line {file} from directory {parsed_args.input_dir}"
+                )
+                
+                if ebh_project_name is None:
+                    # get the ebh project name from the first key/ file name 
+                    ebh_project_name = "_".join(file.split("_")[:-1])
+                    logger.info(f"Identified ebh project name: {ebh_project_name}")
+                
+                # create a key for the ebh line sourced from the filename
+                ebh_line_key = file.split(".")[0].split("_")[-1]                
+                # store the ebh line filename in the metadata
+                ebh_line_metadata[ebh_line_key] = file
 
-        # extract only the line name by splitting the key and removing the .csv extension
-        # then splitting the key again by "_" and extracting the last element
-        line_key = key.split(".")[0].split("_")[-1]
+                logger.debug(f"Collected ebh line metadata: {ebh_line_metadata[ebh_line_key]}")
 
-        # rename the ebh line key
-        ebh_lines[line_key] = ebh_lines.pop(key)
+        # if a tag is provided, collect only the ebh lines with the given tag
+        elif parsed_args.desc is not None:
+            if file.endswith(".csv") and parsed_args.desc in file:
+                logger.info(
+                    f"Collecting ebh line {file} from directory {parsed_args.input_dir}"
+                )
 
-        logger.debug(f"Renamed ebh line key {key} to {line_key}")
+                if ebh_project_name is None:
+                    # get the ebh project name from the first key/ file name 
+                    ebh_project_name = "_".join(file.split("_")[:-1])
+                    logger.info(f"Identified ebh project name: {ebh_project_name}")
+
+                # create a key for the ebh line sourced from the filename
+                ebh_line_key = file.split(".")[0].split("_")[-1]
+
+                # store the ebh line filename in the metadata
+                ebh_line_metadata[ebh_line_key] = file
+
+                logger.debug(f"Collected ebh line metadata: {ebh_line_metadata[ebh_line_key]}")
+        else:
+                pass
+           
+        # reading the collected ebh lines from dir and storing them in a ebh_lines dictionary {ebh_line_key: pl.DataFrame}
+        for ebh_line_key, ebh_line_fn in ebh_line_metadata.items():
+            # read the ebh line from the file
+            ebh_lines[ebh_line_key] = pl.read_csv(
+                source=os.path.join(parsed_args.input_dir, ebh_line_fn),
+                separator=";", 
+                columns=["UTM.E", "UTM.N", "orthoH"],
+                comment_prefix="#",
+                has_header=True,
+                dtypes={"UTM.E": float, "UTM.N": float, "orthoH": float},
+                null_values="NaN",
+                )
+
+            logger.debug(f"Extracted {len(ebh_lines[ebh_line_key])} rows from ebh line {ebh_line_fn}")
+                
+
+    logger.info(
+        f"Extracted ebh lines {ebh_lines.keys()} from directory {parsed_args.input_dir}"
+    )
 
     return ebh_lines, ebh_project_name
 
@@ -357,7 +368,7 @@ def outermost_lines(ebh_lines: dict, logger: Logger) -> tuple[str, str]:
         f"Found outermost lines: {outer_line1} and {outer_line2} with separation {max_dist:.2f}m"
     )
 
-    return outer_line1, outer_line2
+    return outer_line1, outer_line2, max_dist
 
 
 def max_transversal_gradient(

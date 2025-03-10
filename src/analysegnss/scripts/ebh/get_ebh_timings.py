@@ -9,6 +9,7 @@ from logging import Logger
 
 # Third-party imports
 import polars as pl
+from rich import print as rprint
 
 # Local application imports
 from analysegnss.gnss import gnss_dt
@@ -16,19 +17,22 @@ from analysegnss.sbf.sbf_class import SBF
 from analysegnss.utils import argument_parser, init_logger
 
 
-def get_SBFcomments(parsed_args: argparse.Namespace, logger: Logger) -> pl.DataFrame:
+def get_EBH_comments_from_sbf(
+    parsed_args: argparse.Namespace, logger: Logger
+) -> pl.DataFrame:
     """
     Extract EBH time stamps from SBF file
 
     args:
     parsed_args (argparse.Namespace): Parsed arguments
+        - sbf_ifn: path to SBF file
     logger (Logger): Logger object
 
     returns:
-        pl.DataFrame: EBH time stamps
+        pl.DataFrame: EBH comments with EBH timestamps [written in column "Comment"]
     """
     logger.info("Creating SBF object from SBF file")
-    if parsed_args.sbf_ifn:
+    if parsed_args.sbf_ifn is not None:
         # create a SBF class object
         try:
             sbf = SBF(sbf_fn=parsed_args.sbf_ifn, logger=logger)
@@ -39,20 +43,60 @@ def get_SBFcomments(parsed_args: argparse.Namespace, logger: Logger) -> pl.DataF
         sys.exit()
 
     # extract the SBF comment block(s) from SBF file
-    df_sbfComments = sbf.bin2asc_dataframe(
+    df_EBH_comments = sbf.bin2asc_dataframe(
         lst_sbfblocks=["Comment1"], archive=parsed_args.archive
     )["Comment1"]
-    logger.debug(f"Extracted sbf comment block from SBF file.\n{df_sbfComments}")
+    logger.debug(f"Extracted EBH comments from SBF file.\n{df_EBH_comments}")
 
-    return df_sbfComments
+    return df_EBH_comments
 
 
-def parseSBFComments(df_sbfComments: pl.DataFrame, logger: Logger) -> pl.DataFrame:
+def get_EBH_comments_from_text(
+    parsed_args: argparse.Namespace, logger: Logger
+) -> pl.DataFrame:
+    """
+    Get EBH comments with EBH timestamps from text file
+
+    Args:
+        parsed_args (argparse.Namespace): parsed arguments.
+            - ebh_timings_ifn: path to text file
+        logger (Logger): logger object
+
+    Returns:
+        pl.DataFrame: EBH comments with timestamps [written in column "Comment"]
+    """
+    logger.info("Getting EBH comments with EBH timestamps from ASCII file")
+
+    try:
+        # Read the ASCII file
+        df_EBH_comments = pl.read_csv(
+            parsed_args.ebh_timings_ifn,
+            separator="\n",
+            has_header=False,
+            new_columns=["Comment"],
+            dtypes={"Comment": pl.Utf8},
+        )
+    except Exception as e:
+        logger.error(f"Error reading text file: {e}")
+        logger.warning(f"Fallingback to SBF file")
+        return get_EBH_comments_from_sbf(parsed_args=parsed_args, logger=logger)
+        
+    if df_EBH_comments.is_empty():
+        logger.warning(f"No EBH comments found in text file: {parsed_args.ebh_timings_ifn}")
+        logger.warning(f"Fallingback to SBF file")
+        return get_EBH_comments_from_sbf(parsed_args=parsed_args, logger=logger)
+
+    logger.debug(f"EBH comments extracted from text file: {df_EBH_comments}")
+
+    return df_EBH_comments
+
+
+def parseEBHComments(df_EBH_comments: pl.DataFrame, logger: Logger) -> pl.DataFrame:
     """
     Parse SBF comments dataframe to return correct formatted EBH timestamps
 
     args:
-    df_sfbComments (pl.DataFrame): SBF comments
+    df_EBH_comments (pl.DataFrame): EBH comments
     logger (Logger): Logger object
 
     returns:
@@ -62,11 +106,11 @@ def parseSBFComments(df_sbfComments: pl.DataFrame, logger: Logger) -> pl.DataFra
         "Extracting EBH timestamps from SBF comments and parsing the key,time and misc values"
     )
 
-    df_ebh_timestamps = df_sbfComments.select(
+    df_ebh_timestamps = df_EBH_comments.select(
         [
             # Create a new column with the timestamp key
             pl.col("Comment").str.extract(r"(?:[^_]*_){2}(.+)").alias("key"),
-            # For comment format: 20241001_10-34-51_Start_0m 
+            # For comment format: 20241001_10-34-51_Start_0m
             # For comment format: 20241001_10-34-51_Finished
             pl.col("Comment")
             .str.extract(r"(\d{8}_\d{2}-\d{2}-\d{2})")
@@ -92,9 +136,11 @@ def parseSBFComments(df_sbfComments: pl.DataFrame, logger: Logger) -> pl.DataFra
     return df_ebh_timestamps
 
 
-def reformat_ebh_timestamps(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> dict:
+def reformat_timestamps_for_ebh(
+    df_ebh_timestamps: pl.DataFrame, logger: Logger
+) -> dict:
     """
-    Reformat EBH timestamps for ebh_lines.py
+    Reformat timestamps for ebh_lines.py
     ebh_line_key: wnc tow, wnc tow
 
     args:
@@ -105,12 +151,12 @@ def reformat_ebh_timestamps(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> 
         ebh_timings_ebhlinefmt (dict): dict with ebh keys and timestamps correctly formatted for ebh_lines.py
         ebh_timings (dict): dict with ebh keys and timestamps formaated as tuples
     """
-    #TODO make the following lazy
+    # TODO make the following lazy?
 
     logger.info("Reformatting EBH timestamps")
 
     # An EBH measurement is only initiated once
-    # if a measurements fails, the web applications requests the user to rename the survey 
+    # if a measurements fails, the web applications requests the user to rename the survey
     # This resolves the issue of having duplicate stop/finish commands for one survey
 
     logger.info("Grouping EBH timestamp dataframe for each found measurement")
@@ -137,9 +183,7 @@ def reformat_ebh_timestamps(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> 
         logger.debug(df_ebh_timestamps)
 
     else:
-        logger.warning(
-            f"No key {key_stop} found in SBF comments. Using all timestamps"
-        )
+        logger.warning(f"No key {key_stop} found in SBF comments. Using all timestamps")
 
     # Search for patterns "Start_l" and "End_l", and group them by index
     ebh_timings_ebhlinefmt = {}
@@ -155,9 +199,10 @@ def reformat_ebh_timestamps(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> 
 
             logger.debug(f"found match for {start_key}: {match}")
             # in the used regex pattern the capturing groups are ([+-]?) which is the sign and  (\d+) which is the line number
-            sign = match.group(1) # this capture the group with + or - sign
-            line_number = match.group(2) # this capture the group with the line number [string]
-
+            sign = match.group(1)  # this capture the group with + or - sign
+            line_number = match.group(
+                2
+            )  # this capture the group with the line number [string]
 
             # Find the corresponding "End_l" key using the same index
             end_key = f"End_{sign}{line_number}m"
@@ -186,25 +231,33 @@ def reformat_ebh_timestamps(df_ebh_timestamps: pl.DataFrame, logger: Logger) -> 
             if (
                 sign == ""
             ):  # Special case for 0m: Change the key name to CL for compatibility reasons with ebh_lines.py
-                
+
                 # ebh_lines.py format
                 ebh_timings_ebhlinefmt["CL"] = (
                     f"{int(start_data[0])} {start_data[1]}, {int(end_data[0])} {(end_data[1])}"
                 )
-                
+
                 # genal format using tuples
-                ebh_timings[f"CL"] = [(start_data[0],start_data[1]),(end_data[0],end_data[1])]
+                ebh_timings[f"CL"] = [
+                    (start_data[0], start_data[1]),
+                    (end_data[0], end_data[1]),
+                ]
             else:
-                
+
                 # ebh_lines.py format
                 ebh_timings_ebhlinefmt[f"{sign}{line_number}"] = (
                     f"{int(start_data[0])} {start_data[1]}, {int(end_data[0])} {end_data[1]}"
                 )
-                
+
                 # general format using tuples
-                ebh_timings[f"{sign}{line_number}"] = [(start_data[0],start_data[1]),(end_data[0],end_data[1])]
+                ebh_timings[f"{sign}{line_number}"] = [
+                    (start_data[0], start_data[1]),
+                    (end_data[0], end_data[1]),
+                ]
         else:
-            logger.debug(f"{start_key} does not match sbf comment timestamp with pattern {start_pattern}") 
+            logger.debug(
+                f"{start_key} does not match sbf comment timestamp with pattern {start_pattern}"
+            )
 
     logger.info(f"ebh line timings using ebh_lines format:\n{ebh_timings_ebhlinefmt}")
 
@@ -227,62 +280,104 @@ def ebh_timings_to_file(ebh_timings: dict, dest_path: str, logger: Logger) -> No
         for key, value in ebh_timings.items():
             f.write(f"{key}: {value}\n")
 
-    logger.info(f"Done writing timings file to {dest_path}")
+    # check if the file is empty
+    if os.path.getsize(dest_path) == 0:
+        logger.warning(f"No ebh timings found in {dest_path}")
+        rprint(f"No ebh timings found in [yellow]{dest_path}[/yellow]")
+    else:
+        logger.warning(f"Done writing timings file to {dest_path}")
+        rprint(f"Done writing timings file to [yellow]{dest_path}[/yellow]")
 
 
-def get_ebh_timings(parsed_args: argparse.Namespace, logger:Logger) -> dict:
-    """Getting ebh timings from sbf Comment block. 
-        The timings are formatted for each ebh line with the following format 
-        ebh_line_key: wnc tow, wnc tow 
-        which corresponds to format used by ebh_lines.py
+def get_ebh_timings(parsed_args: argparse.Namespace, logger: Logger) -> dict:
+    """Getting ebh timings from sbf Comment block or ASCII file.
+    The timings are formatted for each ebh line as follows:
+    ebh_line_key: wnc tow, wnc tow
+    which corresponds to format used by ebh_lines.py
 
-        Args:
-            parsed_args (argparse.Namespace): parsed arguments
-                                                - sbf_ifn: path to sbf file
-                                                - timing_ofn: path to output file
-                                                - log_dest: path to log file
-            logger (Logger): logger object
+    Args:
+        parsed_args (argparse.Namespace): parsed arguments
+                                            - sbf_ifn: path to sbf file
+                                            - ebh_timings_ifn: path to ascii file
+                                            - timing_ofn: path to output file
+                                            - log_dest: path to log file
+        logger (Logger): logger object
 
-        Returns:
-            ebh_timings(dict): dict with ebh keys and timestamps (week number and t of week) correctly formatted for ebh_lines.py 
-        """
+    Returns:
+        ebh_timings(dict): dict with ebh keys and timestamps (week number and t of week) correctly formatted for ebh_lines.py
+    """
+
+    logger.debug(f"parsed_args: {parsed_args}")
     
-    # Get SBF comments
-    df_sbfComments = get_SBFcomments(parsed_args=parsed_args, logger=logger)
+    # it first checks if the ebh_timings_ifn is provided. If not, it checks if the sbf_ifn is provided.
+    if parsed_args.ebh_timings_ifn is not None:
+        # convert ascii file name to absolute path
+        parsed_args.ebh_timings_ifn = os.path.abspath(parsed_args.ebh_timings_ifn)
+        logger.info(f"Reading EBH comments from text file: {parsed_args.ebh_timings_ifn}")
+        # Get EBH comments with EBH timestamps from ASCII file
+        df_EBH_comments = get_EBH_comments_from_text(
+            parsed_args=parsed_args, logger=logger
+        )
+    elif parsed_args.sbf_ifn is not None:
+        # convert sbf file name to absolute path
+        parsed_args.sbf_ifn = os.path.abspath(parsed_args.sbf_ifn)
+        logger.info(f"Reading EBH comments from SBF file: {parsed_args.sbf_ifn}")
+        # Get SBF comments
+        df_EBH_comments = get_EBH_comments_from_sbf(
+            parsed_args=parsed_args, logger=logger
+        )
+    else:
+        logger.error("No SBF or text file provided")
+        sys.exit()
+
     # Get EBH timestamps
-    df_ebh_timestamps = parseSBFComments(df_sbfComments=df_sbfComments, logger=logger)
+    df_ebh_timestamps = parseEBHComments(df_EBH_comments=df_EBH_comments, logger=logger)
     # reformat EBH timestamps
-    ebh_timings_ebhlinefmt, ebh_timings = reformat_ebh_timestamps(
+    ebh_timings_ebhlinefmt, ebh_timings = reformat_timestamps_for_ebh(
         df_ebh_timestamps=df_ebh_timestamps, logger=logger
     )
     # Write EBH timings to file for ebh_lines.py usage
     # Using hasattr here to check if the argument exists (this fixes argparse.namespace errors across different python scripts)
     if hasattr(parsed_args, "timing_ofn") and parsed_args.timing_ofn:
         ebh_timings_to_file(
-            ebh_timings=ebh_timings_ebhlinefmt, dest_path=parsed_args.timing_ofn, logger=logger
-        )
-    else:  # if no output file is provided, write to default file name
-        ebh_timings_to_file(
             ebh_timings=ebh_timings_ebhlinefmt,
-            dest_path=f"{parsed_args.sbf_ifn}_ebh_timings.txt",
+            dest_path=parsed_args.timing_ofn,
             logger=logger,
         )
-    
+    else:  # if no output file is provided, write to default file name
+        if parsed_args.ebh_timings_ifn is not None:
+            ebh_timings_to_file(
+                ebh_timings=ebh_timings_ebhlinefmt,
+                dest_path=f"{parsed_args.ebh_timings_ifn}_ebh_timings.txt",
+                logger=logger,
+            )
+        elif parsed_args.sbf_ifn is not None:
+            ebh_timings_to_file(
+                ebh_timings=ebh_timings_ebhlinefmt,
+                dest_path=f"{parsed_args.sbf_ifn}_ebh_timings.txt",
+                logger=logger,
+            )
+        else:
+            pass
+
     return ebh_timings
 
 
 def main():
-        
+
     # fetch script name for logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
     # Parse arguments
-    parsed_args = argument_parser.argument_parser_get_ebh_timings(script_name=script_name, args=sys.argv[1:])
+    parsed_args = argument_parser.argument_parser_get_ebh_timings(
+        script_name=script_name, args=sys.argv[1:]
+    )
     # Initialize logger
     logger = init_logger.logger_setup(
         args=parsed_args, base_name=script_name, log_dest=parsed_args.log_dest
     )
-    
+
     get_ebh_timings(parsed_args=parsed_args, logger=logger)
+
 
 if __name__ == "__main__":
     main()

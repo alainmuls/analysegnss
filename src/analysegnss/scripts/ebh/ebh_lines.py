@@ -513,7 +513,7 @@ def ebh_to_assurfmt(
         logger.error(f"Error writing ebh assur file to {ebh_assur_fp}")
     else:
         logger.info(f"Done writing ebh assur file to {ebh_assur_fp}")
-        rprint(f"[green]Done writing ebh assur file to {ebh_assur_fp}[/green]\n")
+        rprint(f"Done writing ebh assur file to [yellow]{ebh_assur_fp}[/yellow]\n")
 
 
 def ebhrtk_to_csv(
