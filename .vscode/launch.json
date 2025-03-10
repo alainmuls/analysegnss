@@ -203,7 +203,23 @@
                 "--archive",
                 "/tmp",
                 "--gnss",
-                "C",
+                "G",
+            ]
+        },
+        {
+            "name": "Python Debugger: sbfnav_csv KEIHEUVEL BASE275Z.24_",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/analysegnss/sbf/sbfnav_csv.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--sbf_ifn",
+                "~/GNSSData/20241001-KEIHEUVEL/base_sbf/BASE275Z.24_",
+                "-vvv",
+                "--archive",
+                "/tmp",
+                "--gnss",
+                "CGE",
             ]
         },
         {

@@ -156,7 +156,6 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "WNt_oe [w]",
         ],
         pl.UInt8: [
-            "PRN",
             "CAorPonL2",
             "URA",
             "health",
@@ -164,6 +163,9 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "IODE2",
             "IODE3",
             "FitIntFlg",
+        ],
+        pl.String: [
+            "PRN",
         ],
         pl.Float32: [
             "T_gd [s]",
@@ -257,6 +259,53 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
         ],
         pl.String: [
             "PRN",
+        ],
+        pl.Datetime: [
+            "DT",
+        ],
+    },
+    "BDSNav": {
+        pl.UInt32: [
+            "TOW [0.001 s]",
+            "t_oe [s]",
+            "t_oc [s]",
+        ],
+        pl.UInt16: [
+            "WNc [w]",
+            "WN [w]",
+        ],
+        pl.String: [
+            "PRN",
+        ],
+        pl.UInt8: [
+            "URA",
+            "SatH1",
+            "IODC",
+            "IODE",
+        ],
+        pl.Float32: [
+            "T_GD1 [s]",
+            "T_GD2 [s]",
+            "a_f2 [s/s²]",
+            "a_f1 [s/s]",
+            "a_f0 [s]",
+            "DEL_N [semi-circle/s]",
+            "C_uc [rad]",
+            "C_us [rad]",
+            "C_ic [rad]",
+            "C_is [rad]",
+            "C_rc [m]",
+            "C_rs [m]",
+            "OMEGADOT [semi-circle/s]",
+            "IDOT [semi-circle/s]",
+        ],
+        pl.Float64: [
+            "M_0 [semi-circle]",
+            "e",
+            "SQRT_A [m**1/2]",
+            "OMEGA_0 [semi-circle]",
+            "i_0 [semi-circle]",
+            "omega [semi-circle]",
         ],
         pl.Datetime: [
             "DT",
