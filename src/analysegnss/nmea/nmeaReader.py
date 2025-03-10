@@ -12,6 +12,7 @@ from rich import print
 from tabulate import tabulate
 
 # Local application imports
+from analysegnss.gnss.general_pvt_quality_dict import nmea_to_general_pvtqual, get_pvtquality_info
 from analysegnss.nmea import nmea_constants as nmeac
 from analysegnss.nmea.nmea_class import NMEA
 from analysegnss.utils import argument_parser, init_logger
@@ -26,18 +27,19 @@ def quality_analysis(df_pvt: pl.DataFrame, logger: logging.Logger = None) -> lis
     # analysis of the quality of the position data
     qual_analysis = []
     total_obs = df_pvt.shape[0]
-    for qual, qual_data in df_pvt.group_by(["pvt_qual"]):
+    for qual, qual_data in df_pvt.group_by("gps_qual"):
         qual_analysis.append(
             [
-                nmeac.DICT_NMEA_PVT_QUALITY[qual[0]]["desc"],
-                f"{qual_data.shape[0]}/{total_obs}",
+                get_pvtquality_info(nmea_to_general_pvtqual(qual))["desc"],
+                qual_data.shape[0],
                 round(qual_data.shape[0]/total_obs*100,2),
+                total_obs
             ]
         )
 
     qual_tabular = tabulate(
         qual_analysis,
-        headers=["PNT Mode", "Count", "Percentage"],
+        headers=["PNT Mode", "Count", "Percentage", "Total Observations"],
         tablefmt="fancy_outline",
     )
     

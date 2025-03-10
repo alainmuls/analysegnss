@@ -16,6 +16,7 @@ from rich import print as rprint
 
 from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.gnss.gnss_dt import gpsms2dt
+from analysegnss.gnss.general_pvt_quality_dict import sbf_to_general_pvtqual, get_pvtquality_info
 from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.sbf.sbf_blocks_polars import (
     SBF_BLOCK_COLUMNS_BIN2ASC,
@@ -352,9 +353,9 @@ class SBF:
                             "null",
                             "NaN",
                         ],  # First catch all null representations
-                    ).fill_null(
-                        float("nan")
-                    )  # Then convert all nulls to NaN
+#                    ).fill_null(
+#                        float("nan")
+                    )  # commented this out because it changes the type of all columns to float
 
                     # add columns to the dataframe
                     sbf_df = self.add_columns(block_df=sbf_df)
@@ -556,13 +557,18 @@ class SBF:
 
         if "Type" in block_df.columns:
             block_df = block_df.filter(pl.col("Type") != 0).lazy()
-            """
-            # Rename column with PVT quality to general name pvt_qual
-            block_df = block_df.rename({"Type": "pvt_qual"}).lazy()
+            # create new column with general PVT quality ID to general name pvt_qual
+            block_df = block_df.with_columns(
+                pl.struct(["Type"])
+                .map_elements(
+                    lambda x: sbf_to_general_pvtqual(x["Type"]),
+                    return_dtype=pl.Utf8,
+                )
+                .alias("pvt_qual")
+            ).lazy()
             if self.logger:
-                self.logger.debug(f"\trenaming column 'Type' to 'pvt_qual'")
+                self.logger.debug(f"\tcreated new column 'pvt_qual' from 'Type'")
             # print(f"block_df = \n{block_df}")
-            """
 
         # add date-time and PRN (as str) to the dataframe
         if "WNc [w]" in block_df.columns and "TOW [0.001 s]" in block_df.columns:

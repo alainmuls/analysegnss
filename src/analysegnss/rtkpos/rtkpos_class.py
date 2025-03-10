@@ -15,6 +15,7 @@ import utm
 from analysegnss.config import ERROR_CODES, GEOID_PATH, rich_console
 from analysegnss.gnss import geoid
 from analysegnss.gnss.gnss_dt import gpsms2dt
+from analysegnss.gnss.general_pvt_quality_dict import rtklib_to_general_pvtqual
 from analysegnss.utils.utilities import str_red
 
 
@@ -256,9 +257,9 @@ class Rtkpos:
         if self.logger is not None:
             self.logger.debug(f"column names = \n{col_names}")
             # self.logger.info(f"info_processing = \n{info_processing}")
-            self.logger.debug(
-                f"Processing info:\n{json.dumps(info_processing, indent=4)}"
-            )
+            #self.logger.debug(
+            #    f"Processing info:\n{json.dumps(info_processing, indent=4)}"
+            #)
 
         return info_processing, col_names
 
@@ -341,7 +342,6 @@ class Rtkpos:
                 Returns:
                     GeoidHeight: An instance of the GeoidHeight class initialized with the specified geoid model.
                 """
-                # TODO: sometime the following error is raised:python function failed AttributeError: 'GeoidHeight' object has no attribute 't'
                 gh_model = geoid.GeoidHeight(GEOID_PATH)
 
                 df_pos = df_pos.with_columns(
@@ -364,13 +364,18 @@ class Rtkpos:
                     .alias("orthoH")
                 ).lazy()
            
-            """ 
-            # Rename Column with PVT quality to general name
+            # add new column with general PVT quality ID from 'Q'
             if "Q" in df_pos.columns:
-                df_pos = df_pos.rename({"Q": "pvt_qual"}).lazy()
+                df_pos = df_pos.with_columns(
+                    pl.struct(["Q"])
+                    .map_elements(  
+                        lambda x: rtklib_to_general_pvtqual(x["Q"]),
+                        return_dtype=pl.Utf8,
+                    )
+                    .alias("pvt_qual")
+                ).lazy()
                 if self.logger is not None:
-                    self.logger.debug(f"\trenaming column 'Q' to 'pvt_qual'")
-            """
+                    self.logger.debug(f"\tcreated new column 'pvt_qual' from 'Q'")
             
             
             # collect the dataframe

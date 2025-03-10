@@ -6,6 +6,7 @@ import os
 import sys
 
 # Third-party imports
+from rich import print as rprint
 import polars as pl
 from tabulate import tabulate
 
@@ -32,8 +33,7 @@ def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:
         if qual in sbfc.DICT_SBF_PVTMODE:
             qual_analysis.append(
                 [
-                    sbfc.DICT_SBF_PVTMODE[qual]["desc"],
-                    #get_pvtquality_info(sbf_to_general_pvtqual(sbfc.DICT_SBF_PVTMODE[qual]["desc"])),
+                    get_pvtquality_info(sbf_to_general_pvtqual(qual))["desc"],
                     qual_data.shape[0],
                     round(qual_data.shape[0] / total_obs * 100, 2),
                     total_obs
@@ -119,9 +119,10 @@ def rtk_pvtgeod(argv: list) -> dict:
             )["PVTGeodetic2"]
 
         # fill the null values with NaN
-        df_pvt = df_pvt.fill_null(float('nan'))
-        logger.info(f"  df_pvt: \n{df_pvt}")
-
+        # df_pvt = df_pvt.fill_null(float('nan')) # -- commented out because it changes the type of all columns to float
+        logger.debug(f"df_pvt: \n{df_pvt}")
+        
+        rprint(f"df_pvt = \n{df_pvt}")
         # analyse the quality of the solution
         quality_analysis(geod_df=df_pvt, logger=logger)
 
@@ -143,10 +144,15 @@ def rtk_pvtgeod(argv: list) -> dict:
         else:
             df_xyzcov = None
 
-        logger.info(f"df_pvt: \n{df_pvt}")
-        logger.info(f"df_xyz: \n{df_xyz}")
+        logger.debug(f"df_pvt: \n{df_pvt}")
+        logger.debug(f"df_xyz: \n{df_xyz}")
         if df_xyzcov is not None:
-            logger.info(f"df_xyzcov: \n{df_xyzcov}")
+            logger.debug(f"df_xyzcov: \n{df_xyzcov}")
+
+        rprint(f"df_pvt = \n{df_pvt}")
+        rprint(f"df_xyz = \n{df_xyz}")
+        if df_xyzcov is not None:
+            rprint(f"df_xyzcov = \n{df_xyzcov}")
 
         return df_pvt
 

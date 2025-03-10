@@ -67,6 +67,10 @@ launch_rnx2rtkp = "analysegnss.launch.launch_rnx2rtkp:main"
 # rinex
 get_rnx_files = "analysegnss.rinex.get_rnx_files:main"
 
+# NMEA
+get_nmea_files = "analysegnss.nmea.get_nmea_files:main"
+nmeaReader = "analysegnss.nmea.nmeaReader:main"
+
 # SBF
 get_base_xyz_from_sbf = "analysegnss.sbf.get_base_xyz_from_sbf:main"
 rtk_pvtgeod = "analysegnss.sbf.rtk_pvtgeod:main"

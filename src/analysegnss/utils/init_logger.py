@@ -56,7 +56,7 @@ def logger_setup(args: list, base_name: str = "logger", log_dest: str = "/tmp/lo
     )
     log_file_handler.setFormatter(
         ColorFormatter(
-            "%(asctime)s [%(levelname)s](%(module)s.%(name)s:%(funcName)s:%(lineno)d): %(message)s"
+            "%(asctime)s [%(levelname)s](%(name)s.%(module)s:%(funcName)s:%(lineno)d): %(message)s"
         )
     )
     log_file_handler.setLevel(logging.DEBUG)
@@ -69,7 +69,7 @@ def logger_setup(args: list, base_name: str = "logger", log_dest: str = "/tmp/lo
     )  # set later by set_log_level_from_verbose() in interactive sessions
     console_handler.setFormatter(
         ColorFormatter(
-            "%(asctime)s [%(levelname)s](%(module)s.%(name)s:%(funcName)s:%(lineno)d): %(message)s"
+            "%(asctime)s [%(levelname)s](%(name)s.%(module)s:%(funcName)s:%(lineno)d): %(message)s"
         )
     )
     # add the console handler to the logger
