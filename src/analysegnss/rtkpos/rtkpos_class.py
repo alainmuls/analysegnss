@@ -210,6 +210,8 @@ class Rtkpos:
         """
         # read from the position file line per line until the line no longer starts with '%'
         # to get processing information
+        # TODO: Make this compatible with rtklib pos files which are parsed as csv files
+
         hdr_lines = []
         with open(self.pos_fn, "r") as f:
             line = f.readline()
@@ -271,6 +273,7 @@ class Rtkpos:
         """
 
         with rich_console.status("Collecting and adjusting data", spinner="aesthetic"):
+            # TODO: MAKE compatible with HMS time
             # add date-time and PRN (as str) to the dataframe
             if "WNc" in df_pos.columns and "TOW(s)" in df_pos.columns:
                 if self.logger is not None:
@@ -360,12 +363,14 @@ class Rtkpos:
                     )
                     .alias("orthoH")
                 ).lazy()
-            
+           
+            """ 
             # Rename Column with PVT quality to general name
             if "Q" in df_pos.columns:
                 df_pos = df_pos.rename({"Q": "pvt_qual"}).lazy()
                 if self.logger is not None:
                     self.logger.debug(f"\trenaming column 'Q' to 'pvt_qual'")
+            """
             
             
             # collect the dataframe

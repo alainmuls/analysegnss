@@ -27,7 +27,7 @@ class CustomDateFormatter(mdates.DateFormatter):
 
 def plot_utm_scatter(
     utm_df: pl.DataFrame,
-    origin: str,
+    source: str,
     ifn: str,
     dir_fn: str,
     logger: logging.Logger = None,
@@ -38,7 +38,7 @@ def plot_utm_scatter(
 
     Args:
         utm_df (pl.DataFrame): Polars DataFrame containing the UTM coordinates.
-        origin (str): Origin of the plot ('RTK' or 'PPK').
+        source (str): Source of the plot ('RTK' or 'PPK' or 'gLAB' or 'NMEA' or 'CSV').
         ifn (str): name of file used
         dir_fn (str): directory of the file
         logger (logging.Logger): Logger object for logging.
@@ -49,12 +49,12 @@ def plot_utm_scatter(
         logger.info(f"utm_df = \n{utm_df}")
 
     # get the correct column names according to the origin
-    cols = get_utm_columns(origin)
+    cols = get_utm_columns(source)
 
     # get the common fonts to use in the plot
     plot_fonts = PlotlyFonts()
 
-    quality_col = cols.quality_mapping.columns # This will get "Type" for RTK, "Q" for PPK, etc.
+    quality_col = cols.quality_mapping.quality_column # This will get "Type" for RTK, "Q" for PPK, etc.
     columns_to_check = ['DT', quality_col]
     valid_utm_df = utm_df.drop_nulls(subset=columns_to_check)
     if logger is not None:
@@ -63,7 +63,7 @@ def plot_utm_scatter(
     # create a figure
     fig = go.Figure()
 
-    for qual, qual_data in valid_utm_df.groupby(cols.quality_mapping.columns):
+    for qual, qual_data in valid_utm_df.groupby(cols.quality_mapping.quality_column):
         fig.add_trace(
             go.Scatter(
                 x=qual_data[cols.east],
@@ -79,7 +79,7 @@ def plot_utm_scatter(
     fig.update_layout(
         plot_bgcolor="white",
         font=dict(color="#909497"),  # , size=14),
-        title=dict(text=f"{ifn} - {origin}"),  # , font=dict(size=18)),
+        title=dict(text=f"{ifn} - {source}"),  # , font=dict(size=18)),
         xaxis=dict(
             title=cols.east,
             linecolor="#909497",
@@ -126,7 +126,7 @@ def plot_utm_scatter(
 
 def plot_utm_height(
     utm_df: pl.DataFrame,
-    origin: str,
+    source: str,
     ifn: str,
     dir_fn: str,
     sd: bool = False,
@@ -137,7 +137,7 @@ def plot_utm_height(
 
     Args:
         utm_df (pl.DataFrame): df with coordinates, standard deviation and time
-        origin (str): origin of the plot ('RTK' or 'PPK' or 'gLAB').
+        source (str): source of the plot ('RTK' or 'PPK' or 'gLAB' or 'NMEA' or 'CSV').
         ifn (str): name of file used
         dir_fn (str): directory of the file
         sd (bool): display the standard deviation if true
@@ -147,7 +147,7 @@ def plot_utm_height(
         logger.info(f"utm_df = \n{utm_df}")
 
     # get the correct column names according to the origin
-    cols = get_utm_columns(origin)
+    cols = get_utm_columns(source)
 
     # get the common fonts to use in the plot
     plot_fonts = PlotlyFonts()
@@ -164,7 +164,7 @@ def plot_utm_height(
         for r, g, b, _ in colors
     ]
 
-    quality_col = cols.quality_mapping.columns # This will get "Type" for RTK, "Q" for PPK, etc.
+    quality_col = cols.quality_mapping.quality_column # This will get "Type" for RTK, "Q" for PPK, etc.
     columns_to_check = ['DT', quality_col]
     valid_utm_df = utm_df.drop_nulls(subset=columns_to_check)
     if logger is not None:
@@ -173,7 +173,7 @@ def plot_utm_height(
     # Create the subplot structure
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True)
     # Add traces for each column
-    for qual, qual_data in valid_utm_df.groupby(cols.quality_mapping.columns):
+    for qual, qual_data in valid_utm_df.groupby(cols.quality_mapping.quality_column):
         fig.add_trace(
             go.Scatter(
                 x=qual_data[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
@@ -257,7 +257,7 @@ def plot_utm_height(
         width=1024,
         showlegend=True,
         plot_bgcolor="white",
-        title=dict(text=f"{ifn} - {origin}"),  # , font=dict(size=18)),
+        title=dict(text=f"{ifn} - {source}"),  # , font=dict(size=18)),
         yaxis_tickformat=",.2f",
         yaxis2_tickformat=",.2f",
         yaxis3_tickformat=",.2f",
@@ -324,7 +324,7 @@ def plot_utm_height(
 
 def plot_utm_scatter_mpl(
     utm_df: pl.DataFrame,
-    origin: str,
+    source: str,
     ifn: str,
     dir_fn: str,
     logger: logging.Logger = None,
@@ -334,7 +334,7 @@ def plot_utm_scatter_mpl(
     matplotlib.use("TkAgg")
 
     # get the columns used in the UTM dataframe
-    cols = get_utm_columns(origin)
+    cols = get_utm_columns(source)
 
     plt.style.use("tableau-colorblind10")
 
@@ -383,13 +383,13 @@ def plot_utm_scatter_mpl(
 
     # Using the correct column name 'DT'
     # Get the correct quality column name from the UTMColumns mapping
-    quality_col = cols.quality_mapping.columns # This will get "Type" for RTK, "Q" for PPK, etc.
+    quality_col = cols.quality_mapping.quality_column # This will get "Type" for RTK, "Q" for PPK, etc.
     columns_to_check = ['DT', quality_col]
     valid_utm_df = utm_df.drop_nulls(subset=columns_to_check)
     if logger is not None:
         logger.debug(f"valid_utm_df:\n{valid_utm_df}")
 
-    for qual, qual_data in valid_utm_df.groupby(cols.quality_mapping.columns):
+    for qual, qual_data in valid_utm_df.groupby(cols.quality_mapping.quality_column):
         # print(f"qual:\n{qual}")
         ax.scatter(
             qual_data[cols.east],
@@ -411,7 +411,7 @@ def plot_utm_scatter_mpl(
 
     ax.set_xlabel(cols.east)
     ax.set_ylabel(cols.north)
-    ax.set_title(f"{ifn} - {origin}")
+    ax.set_title(f"{ifn} - {source}")
     ax.grid(True, linestyle="--", alpha=0.7)
     ax.set_aspect("equal")
 
@@ -440,7 +440,7 @@ def plot_utm_scatter_mpl(
 
 def plot_utm_height_mpl(
     utm_df: pl.DataFrame,
-    origin: str,
+    source: str,
     ifn: str,
     dir_fn: str,
     sd: bool = False,
@@ -451,7 +451,7 @@ def plot_utm_height_mpl(
 
     Args:
         utm_df (pl.DataFrame): df with coordinates, standard deviation and time
-        origin (str): origin of the plot ('RTK' or 'PPK' or 'gLAB')
+        source (str): source of the plot ('RTK' or 'PPK' or 'gLAB' or 'NMEA' or 'CSV')
         ifn (str): name of file used
         dir_fn (str): directory of the file
         sd (bool): display the standard deviation if true
@@ -460,7 +460,7 @@ def plot_utm_height_mpl(
     """
     matplotlib.use("TkAgg")
     # Get the correct column names according to the origin
-    cols = get_utm_columns(origin)
+    cols = get_utm_columns(source)
 
     # Get the custom fonts
     plot_fonts = MatplotlibFonts()
@@ -469,9 +469,9 @@ def plot_utm_height_mpl(
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 8), sharex=True)
     # # Filter out None values before groupby
     # valid_utm_df = utm_df.filter(
-    #     pl.col(cols.quality_mapping.columns).is_not_null())
+    #     pl.col(cols.quality_mapping.quality_column).is_not_null())
     
-    # # Replace None values with NaN in quality mapping columns only
+    # # Replace None values with NaN in quality mapping.quality_column only
     # valid_utm_df = utm_df.fill_null(float('nan'))
     # if sd:
     #     valid_utm_df = utm_df.with_columns(
@@ -480,7 +480,7 @@ def plot_utm_height_mpl(
     #         pl.col('SD_hgt [m]').fill_null(float('nan'))
     #     )
 
-    quality_col = cols.quality_mapping.columns # This will get "Type" for RTK, "Q" for PPK, etc.
+    quality_col = cols.quality_mapping.quality_column # This will get "Type" for RTK, "Q" for PPK, etc.
     columns_to_check = ['DT', quality_col]
     valid_utm_df = utm_df.drop_nulls(subset=columns_to_check)
     if logger is not None:
@@ -488,7 +488,7 @@ def plot_utm_height_mpl(
 
 
     # Plot data for each quality level
-    for qual, qual_data in valid_utm_df.groupby(cols.quality_mapping.columns):
+    for qual, qual_data in valid_utm_df.groupby(cols.quality_mapping.quality_column):
         color = cols.quality_mapping.quality_dict[qual]["color"]
         label = cols.quality_mapping.quality_dict[qual]["desc"]
 
@@ -553,7 +553,7 @@ def plot_utm_height_mpl(
     ax1.legend(markerscale=8, loc="best")
 
     # Set title for entire figure
-    fig.suptitle(f"{ifn} - {origin}")
+    fig.suptitle(f"{ifn} - {source}")
 
     plt.tight_layout()
 

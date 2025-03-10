@@ -10,6 +10,18 @@ from rich import print
 from analysegnss.utils.utilities import str_yellow
 
 
+def cs_str_to_list(value):
+    """Convert comma-separated string to list of strings.
+    
+    Args:
+        value (str): Comma-separated string
+        
+    Returns:
+        list: List of stripped strings
+    """
+    return [s.strip() for s in value.split(',')]
+
+
 def argument_parser_rtk(script_name: str, args: list) -> argparse.Namespace:
     """parses the arguments
 
@@ -129,7 +141,6 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
         + """: Plot UTM scatter and line plots from data files.
 
         Note: The plotting options --sbf_fn, --pos_fn, and --glab_fn, --nmea_ifn, --csv_ifn are mutually exclusive.
-        Note: The plotting options --sbf_fn, --pos_fn, and --glab_fn, --nmea_ifn, --csv_ifn are mutually exclusive.
         You must choose exactly one of these options."""
     )
 
@@ -145,40 +156,81 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
     )
 
     # Create a mutually exclusive group
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.description = "Specify origin (POS, SBF or gLABng) (required)"
-    # parser.add_argument(
-    #     "--mutually-exclusive",
-    #     action="store_true",
-    #     help="One of the following options is required:",
-    # )
+    source_group = parser.add_mutually_exclusive_group(required=True)
+    source_group.description = "Specify coordinates source (POS, SBF, NMEA, CSV, gLABng) (required)"
 
-    group.add_argument(
+    source_group.add_argument(
         "--sbf_ifn",
         help="input SBF filename",
         type=str,
     )
-    group.add_argument(
+    source_group.add_argument(
         "--pos_ifn",
         help="input rnx2rtkp pos filename",
         type=str,
     )
-    group.add_argument(
+    source_group.add_argument(
         "--glab_ifn",
         help="input gLABng filename",
         type=str,
     )
-    group.add_argument(
+    source_group.add_argument(
         "--nmea_ifn",
         help="input NMEA filename (-sd standard deviation not yet supported!)",
         type=str,
     )
-    group.add_argument(
+    source_group.add_argument(
         "--csv_ifn",
-        help="input CSV filename (only csv sourced from nmea DF supported!)",
+        help="input CSV filename (see additional CSV options to correctly read out the file)",
         type=str,
-    ),
+    )
+
+    # Create a group for CSV-specific arguments
+    csv_group = parser.add_argument_group('CSV file options', 'Options specific to CSV input files')
+    csv_group.add_argument(
+        "--columns_csv",
+        help="Comma-separated list of columns to be read from CSV files (default: DT,UTM.E,UTM.N,orthoH)",
+        type=cs_str_to_list,
+        required=False,
+        default="DT,UTM.E,UTM.N,orthoH",
+    )
+    csv_group.add_argument(
+        "--sep",
+        help="separator for CSV files (default: ',')",
+        type=str,
+        required=False,
+        default=",",
+    )
+    csv_group.add_argument(
+        "--comment_prefix",
+        help="comment prefix for CSV files (default: #)",
+        type=str,
+        required=False,
+        default="#",
+    )
+    csv_group.add_argument(
+        "--header",
+        help="has header for CSV files True or False (default: True)",
+        type=bool,
+        required=False,
+        default=True,
+    )
+    csv_group.add_argument(
+        "--skip_rows_after_header",
+        help="skip rows after header for CSV files (default: 0)",
+        type=int,
+        required=False,
+        default=0,
+    )
+    csv_group.add_argument(
+        "--datetime_start",
+        help="start datetime for CSV files if no DT column is present (default: 1980-01-06 00:00:00)",
+        type=str,
+        required=False,
+        default="1980-01-06 00:00:00",
+    )
     
+
     parser.add_argument(
         "--sd",
         help="add standard deviation to the plot",

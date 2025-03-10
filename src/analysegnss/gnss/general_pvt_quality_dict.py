@@ -16,11 +16,11 @@ GENERAL_PVT_QUALITY_ID = {
     'RTK_MOVING_BASE_FLOAT': dict(desc="Moving-base RTK with float ambiguities", color="golden"),
     'FIXED_LOCATION': dict(desc="Fixed location", color="darkgreen"),
     'INS': dict(desc="INS Dead Reckoning", color="purple"),
-    'MANUAL': dict(desc="Manual input mode", color="yellow"),
+    'MANUAL': dict(desc="Manual input mode", color="black"),
     'SIMULATION': dict(desc="Simulation mode", color="gray"),
 }
 
-def rtklib_to_general_quality(rtklib_mode: int) -> str:
+def rtklib_to_general_pvtqual(rtklib_mode: int) -> str:
     """Convert RTKLIB PVT mode to general quality identifier"""
     conversion = {
         1: 'RTK_FIXED',
@@ -32,7 +32,7 @@ def rtklib_to_general_quality(rtklib_mode: int) -> str:
     }
     return conversion.get(rtklib_mode, 'INVALID')
 
-def nmea_to_general_quality(nmea_quality: int) -> str:
+def nmea_to_general_pvtqual(nmea_quality: int) -> str:
     """Convert NMEA quality indicator to general quality identifier"""
     conversion = {
         0: 'INVALID',
@@ -46,7 +46,7 @@ def nmea_to_general_quality(nmea_quality: int) -> str:
     }
     return conversion.get(nmea_quality, 'INVALID')
 
-def sbf_to_general_quality(sbf_mode: int) -> str:
+def sbf_to_general_pvtqual(sbf_mode: int) -> str:
     """Convert Septentrio SBF PVT mode to general quality identifier"""
     conversion = {
         0: 'INVALID',
@@ -63,7 +63,7 @@ def sbf_to_general_quality(sbf_mode: int) -> str:
     }
     return conversion.get(sbf_mode, 'INVALID')
 
-def glab_to_general_quality(glab_mode: int) -> str:
+def glab_to_general_pvtqual(glab_mode: int) -> str:
     """Convert GLAB PVT mode to general quality identifier"""
     conversion = {
         0: 'STANDALONE',
@@ -75,7 +75,7 @@ def glab_to_general_quality(glab_mode: int) -> str:
     return conversion.get(glab_mode, 'INVALID')
 
 
-def get_quality_info(general_quality: str) -> dict:
+def get_pvtquality_info(general_quality: str) -> dict:
     """
     Get the description and color for a general quality identifier
     

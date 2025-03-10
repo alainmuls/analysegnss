@@ -78,3 +78,6 @@ ppk_rnx2rtkp = "analysegnss.rtkpos.ppk_rnx2rtkp:main"
 ebh_lines = "analysegnss.scripts.ebh.ebh_lines:main"
 get_ebh_timings = "analysegnss.scripts.ebh.get_ebh_timings:main"
 gradient_ebhlines = "analysegnss.scripts.ebh.gradient_ebhlines:main"
+
+# Plotting
+plot_coords = "analysegnss.plots.plot_coords:main"

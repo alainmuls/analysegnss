@@ -556,11 +556,13 @@ class SBF:
 
         if "Type" in block_df.columns:
             block_df = block_df.filter(pl.col("Type") != 0).lazy()
+            """
             # Rename column with PVT quality to general name pvt_qual
             block_df = block_df.rename({"Type": "pvt_qual"}).lazy()
             if self.logger:
                 self.logger.debug(f"\trenaming column 'Type' to 'pvt_qual'")
             # print(f"block_df = \n{block_df}")
+            """
 
         # add date-time and PRN (as str) to the dataframe
         if "WNc [w]" in block_df.columns and "TOW [0.001 s]" in block_df.columns:

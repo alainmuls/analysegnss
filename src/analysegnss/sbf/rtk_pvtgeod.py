@@ -11,12 +11,12 @@ from tabulate import tabulate
 
 # Local application imports
 from analysegnss.config import ERROR_CODES
+from analysegnss.gnss.general_pvt_quality_dict import sbf_to_general_pvtqual, get_pvtquality_info
 from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.sbf.sbf_class import SBF
 from analysegnss.utils import init_logger
 from analysegnss.utils.utilities import combine_dfs
 from analysegnss.utils.argument_parser import argument_parser_rtk
-
 
 def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:
     """display the quality analysis
@@ -33,6 +33,7 @@ def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:
             qual_analysis.append(
                 [
                     sbfc.DICT_SBF_PVTMODE[qual]["desc"],
+                    #get_pvtquality_info(sbf_to_general_pvtqual(sbfc.DICT_SBF_PVTMODE[qual]["desc"])),
                     qual_data.shape[0],
                     round(qual_data.shape[0] / total_obs * 100, 2),
                     total_obs
