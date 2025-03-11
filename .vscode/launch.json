@@ -223,6 +223,22 @@
             ]
         },
         {
+            "name": "Python Debugger: sbfnav_csv MOSAIC X5 MoX3345Z.22_",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/analysegnss/sbf/sbfnav_csv.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--sbf_ifn",
+                "~/cylab/TESTDATA/MosaicX5/MoX3345Z.22_",
+                "-vvv",
+                "--archive",
+                "/tmp",
+                "--gnss",
+                "R",
+            ]
+        },
+        {
             "name": "Python: Run Tests",
             "type": "debugpy",
             "request": "launch",

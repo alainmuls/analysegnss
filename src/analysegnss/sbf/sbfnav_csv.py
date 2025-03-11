@@ -90,8 +90,9 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
         gnss_abbrev = sbf_block[:3]
         # rprint(f"gnss_abbrev: {gnss_abbrev}")
 
-        # if sbf_block == "GPSNav":
-        nav_df = convert_semicircles_to_radians(df=nav_df, gnss_type=gnss_abbrev)
+        if sbf_block != "GLONav":
+            nav_df = convert_semicircles_to_radians(df=nav_df, gnss_type=gnss_abbrev)
+
         nav_df = rename_nav_columns(df=nav_df, gnss_type=gnss_abbrev)
 
         logger.info(

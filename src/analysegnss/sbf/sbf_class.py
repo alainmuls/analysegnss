@@ -343,9 +343,9 @@ class SBF:
                     #     f"sbf_df[{sbf_block}]:\n{sbf_df.select(sbf_df.columns[:20]).head(3)}"
                     #     f"sbf_df[{sbf_block}]:\n{sbf_df.select(sbf_df.columns[20:]).head(3)}"
                     # )
-                    # # print the column names of sbf_df one per line
-                    # for col_name in sbf_df.columns:
-                    #     print(col_name)
+                    # print the column names of sbf_df one per line
+                    for col_name in sbf_df.columns:
+                        print(col_name)
 
                     # set the dtype again after having added some columns
                     # identify columns with null values and applies different strategies based on the target data type

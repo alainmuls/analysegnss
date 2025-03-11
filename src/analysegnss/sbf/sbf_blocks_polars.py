@@ -311,8 +311,54 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "DT",
         ],
     },
+    "GLONav": {
+        pl.UInt32: [
+            "TOW [0.001 s]",
+            "t_oe [s]",
+        ],
+        pl.UInt16: [
+            "WNc [w]",
+            "WN_toe [w]",
+            "tb [min.]",
+            "N_T [d]",
+            "F_T [0.01 m]",
+        ],
+        pl.UInt8: [
+            "FreqNr",
+            "P1 [min.]",
+            "P2",
+            "E [d]",
+            "B",
+            "M",
+            "P",
+            "l",
+            "P4",
+            "C",
+        ],
+        pl.Float64: [
+            "X [1000 m]",
+            "Y [1000 m]",
+            "Z [1000 m]",
+        ],
+        pl.Float32: [
+            "Dx [1000 m/s]",
+            "Dy [1000 m/s]",
+            "Dz [1000 m/s]",
+            "Ddx [1000 m/s²]",
+            "Ddy [1000 m/s²]",
+            "Ddz [1000 m/s²]",
+            "gamma [Hz/Hz]",
+            "tau [s]",
+            "dtau [s]",
+        ],
+        pl.String: [
+            "PRN",
+        ],
+        pl.Datetime: [
+            "DT",
+        ],
+    },
 }
-
 
 SBF_BLOCK_COLUMNS_SBF2ASC = {
     "PVTCartesian2": [
