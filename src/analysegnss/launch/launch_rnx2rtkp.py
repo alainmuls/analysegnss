@@ -50,7 +50,9 @@ def rnx2rtkp_ppk(
     # check if rnx2rtkp is installed
     rnx2rtkp_path = utilities.locate("rnx2rtkp")
     if rnx2rtkp_path is None:
-        rprint("[red]rnx2rtkp not found in PATH. Please install RTKLIB. Program exits.[/red]")
+        rprint(
+            "[red]rnx2rtkp not found in PATH. Please install RTKLIB. Program exits.[/red]"
+        )
         sys.exit(ERROR_CODES["E_PROCESS"])
 
     # define command line arguments
@@ -94,7 +96,7 @@ def rnx2rtkp_ppk(
     if hasattr(parsed_args, "pos_ofn") and parsed_args.pos_ofn:
         pos_ofn = parsed_args.pos_ofn
         logger.info(f"Using {pos_ofn} as output file name for rnx2rtkp process")
-    else: # adding measurement duration info to the output filename
+    else:  # adding measurement duration info to the output filename
         pos_ofn, _ = os.path.splitext(parsed_args.obs)
         if s_dt_obj and e_dt_obj:
             s_time = s_dt_obj.strftime("%H%M%S")
@@ -136,8 +138,7 @@ def rnx2rtkp_ppk(
     except subprocess.CalledProcessError as e:
         logger.error(f"rnx2rtkp failed with error code {e.returncode}")
         sys.exit(ERROR_CODES["E_PROCESS"])
-    
-    
+
     logger.info(f"Finished calculating PPK solution. Written file to {pos_ofn}")
 
     return pos_ofn

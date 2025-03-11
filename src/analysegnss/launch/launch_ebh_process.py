@@ -87,8 +87,18 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
         )
 
         ## store PPK process EBH decision and PVT quality analysis
-        message_collector.add_message(ppk_result.get("msg_pvt_qanalysis", "[WARNING] Unable to calculate PPK. Check logs for more info.\n"))
-        message_collector.add_message(ppk_result.get("msg_ebh_decision", "[WARNING] EBH measurement only based on (insufficient) RTK solution.\n"))
+        message_collector.add_message(
+            ppk_result.get(
+                "msg_pvt_qanalysis",
+                "[WARNING] Unable to calculate PPK. Check logs for more info.\n",
+            )
+        )
+        message_collector.add_message(
+            ppk_result.get(
+                "msg_ebh_decision",
+                "[WARNING] EBH measurement only based on (insufficient) RTK solution.\n",
+            )
+        )
 
         if ppk_result.get("success", False):
             # Calculate and save runway gradients if PPK was successful
