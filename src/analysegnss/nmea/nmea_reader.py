@@ -8,7 +8,7 @@ import sys
 
 # Third party imports
 import polars as pl
-from rich import print
+from rich import print as rprint
 from tabulate import tabulate
 
 # Local application imports
@@ -45,7 +45,7 @@ def quality_analysis(df_pvt: pl.DataFrame, logger: logging.Logger = None) -> lis
     if logger is not None:
         logger.info(f"Analysis of the quality of the position data\n{qual_tabular}")
 
-    print(f"Quality analysis:\n{qual_tabular}")
+    rprint(f"Quality analysis:\n{qual_tabular}")
     
     return qual_analysis
 
@@ -64,6 +64,16 @@ def nmea_reader(parsed_args: argparse.Namespace, logger: logging.Logger) -> tupl
         pl.DataFrame: NMEA dataframe
         list: quality analysis
     """
+    
+    # Ensure compatibility when passing on parsed_args from a higher level script.
+    parsed_args = argument_parser.auto_populate_args_namespace(
+        parsed_args,
+        argument_parser.argument_parser_nmea_reader,
+        os.path.splitext(os.path.basename(__file__))[0],
+    )
+    
+    rprint(parsed_args)
+    
     # Create NMEA object    
     nmea_data = NMEA(nmea_ifn=parsed_args.nmea_ifn, logger=logger)
 
@@ -76,10 +86,14 @@ def nmea_reader(parsed_args: argparse.Namespace, logger: logging.Logger) -> tupl
     if nmea_data._console_loglevel <= logging.INFO:
         # print number of observations
         logger.info(f"Number of observations extracted from the NMEA messages: {nmea_df.shape[0]}")
-        print(f"Number of observations extracted from the NMEA messages: {nmea_df.shape[0]}")
+        rprint(f"Number of observations extracted from the NMEA messages: {nmea_df.shape[0]}")
     
-    print(f"NMEA dataframe:\n{nmea_df}")
+    rprint(f"NMEA dataframe:\n{nmea_df}")
     logger.info(f"NMEA dataframe:\n{nmea_df}")
+     
+    if parsed_args.csv_out:
+        ofn = os.path.abspath(parsed_args.nmea_ifn + "_nmea.csv")
+        write_nmea_df(nmea_df=nmea_df, ofn=ofn, logger=logger)    
      
     return nmea_df, qual_analysis
 
@@ -94,8 +108,10 @@ def write_nmea_df(nmea_df: pl.DataFrame, ofn: str, logger: logging.Logger) -> No
     nmea_df.write_csv(ofn)
     if os.path.exists(ofn):
         logger.info(f"NMEA dataframe written to {ofn}")
+        rprint(f"NMEA dataframe written to {ofn}")
     else:
         logger.error(f"Error writing NMEA dataframe to {ofn}")
+        rprint(f"Error writing NMEA dataframe to {ofn}")
 
 def main():
     # get the name of this script for naming the logger
@@ -111,11 +127,6 @@ def main():
     # call nmea_reader to read NMEA data and return a dataframe
     nmea_df, _ = nmea_reader(parsed_args=args_parsed, logger=logger)
    
-    # write the NMEA dataframe to a csv file
-    if args_parsed.csv_out:
-        ofn = args_parsed.nmea_ifn + "_nmea.csv"
-        write_nmea_df(nmea_df=nmea_df, ofn=ofn, logger=logger)    
-    
 
 if __name__ == "__main__":
     main()

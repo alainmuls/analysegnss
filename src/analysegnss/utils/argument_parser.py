@@ -32,24 +32,36 @@ def auto_populate_args_namespace(parsed_args: argparse.Namespace, native_parser_
         native_parser_func (callable): The native argument_parser_ function
         script_name (str): The name of the script
     Returns:
-        argparse.Namespace: The parsed arguments
+        argparse.Namespace: The parsed arguments with all required arguments populated
     """
+    import sys
+    
+    # Store original sys.exit
+    original_exit = sys.exit
+    sys.exit = lambda x: None  # Temporarily disable sys.exit
    
-    # convert parsed_args to list of arguments
-    parsed_args_list = []
-    # iterate over the parsed_args namespace and add the arguments and values to the list
-    for arg, value in vars(parsed_args).items():
-        if value is not None:
-            if arg == 'verbose' and isinstance(value, int):
-                # handle verbose argument as a count argument
-                parsed_args_list.extend(['-v'] * value)
-            else:
-                parsed_args_list.extend([f"--{arg}", str(value)])
+    native_parser = argparse.ArgumentParser()
+    # Get parser by calling with --help (which would normally exit)
+    native_parser_func(script_name=script_name, args=['--help'])
+    
+    # Restore sys.exit
+    sys.exit = original_exit
+    
+    # Get all argument destinations and their defaults
+    defaults = {}
+    for action in native_parser._actions:
+        if action.dest != 'help':  # Skip help action
+            defaults[action.dest] = action.default
    
-    # call native argument parser function with the list of arguments so that optional arguments are also set to default values
-    complete_args = native_parser_func(script_name=script_name, args=parsed_args_list) 
-
-    return complete_args
+    # Create complete args starting with defaults
+    complete_args = defaults.copy()
+    
+    # Update with all values from parsed_args that aren't None
+    parsed_dict = vars(parsed_args)
+    complete_args.update({k: v for k, v in parsed_dict.items()})
+    
+    # Convert back to Namespace
+    return argparse.Namespace(**complete_args)
 
 
 def argument_parser_rtk(script_name: str, args: list) -> argparse.Namespace:
@@ -211,18 +223,18 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
     )
     source_group.add_argument(
         "--csv_ifn",
-        help="input CSV filename (see additional CSV options to correctly read out the file)",
+        help="input CSV filename with PNT data (see additional CSV options to correctly read out the file)",
         type=str,
     )
 
-    # Create a group for CSV-specific arguments
-    csv_group = parser.add_argument_group('CSV file options', 'Options specific to CSV input files')
+    # Creating a group for PNT_CSV-specific arguments
+    csv_group = parser.add_argument_group('PNT_CSV file options', 'Options specific to PNT_CSV input files')
     csv_group.add_argument(
         "--columns_csv",
-        help="Comma-separated list of columns to be read from CSV files (default: DT,UTM.E,UTM.N,orthoH)",
+        help="Comma-separated list of columns to be read from CSV files (default: DT, UTM.E, UTM.N, orthoH)",
         type=cs_str_to_list,
         required=False,
-        default="DT,UTM.E,UTM.N,orthoH",
+        default="DT, UTM.E, UTM.N, orthoH",
     )
     csv_group.add_argument(
         "--sep",
@@ -1297,7 +1309,7 @@ def argument_parser_nmea_reader(args: list, script_name: str) -> argparse.Namesp
     parser.add_argument(
         "-o",
         "--csv_out",
-        help="Creates csv output file that contains NMEA messages in csv format. name: ifn + _df.csv",
+        help="Creates csv output file that contains NMEA messages in csv format. name: ifn + _nmea.csv",
         required=False,
         action="store_true",
     )

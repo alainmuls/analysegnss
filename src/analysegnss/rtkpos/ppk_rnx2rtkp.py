@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Standard library imports
+import argparse
 import json
 import os
 import sys
@@ -12,11 +13,17 @@ from rich import print as rprint
 from tabulate import tabulate
 
 # Local application imports
-from analysegnss.gnss.general_pvt_quality_dict import rtklib_to_general_pvtqual, get_pvtquality_info
+from analysegnss.gnss.general_pvt_quality_dict import (
+    rtklib_to_general_pvtqual,
+    get_pvtquality_info,
+)
 from analysegnss.rtkpos import rtklib_constants as rtklibc
 from analysegnss.rtkpos.rtkpos_class import Rtkpos
 from analysegnss.utils import init_logger
-from analysegnss.utils.argument_parser import argument_parser_ppk
+from analysegnss.utils.argument_parser import (
+    argument_parser_ppk,
+    auto_populate_args_namespace,
+)
 
 
 def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> list:
@@ -35,7 +42,7 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> list:
                 get_pvtquality_info(rtklib_to_general_pvtqual(qual))["desc"],
                 qual_data.shape[0],
                 round(qual_data.shape[0] / total_obs * 100, 2),
-                total_obs
+                total_obs,
             ]
         )
 
@@ -51,31 +58,28 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> list:
     return qual_analysis
 
 
-def rtkp_pos(argv: list) -> pl.DataFrame:
+def rtkp_pos(parsed_args: argparse.Namespace, logger: Logger) -> pl.DataFrame:
     """analyses the rnx2rtkp output file and extracts the position information
 
     Args:
-        argv (list): CLI arguments
+        parsed_args (argparse.Namespace): parsed CLI arguments
+            - pos_ifn: input rnx2rtkp pos file
+            - archive: archive's directory name which archives the extracted rnx2rtkp pos file
+        logger (Logger): logger object
 
     Returns:
         pl.DataFrame: RTK position dataframe
     """
-    # get the name of this script for naming the logger
-    script_name = os.path.splitext(os.path.basename(__file__))[0]
-
-    # parse the CLI arguments
-    args_parsed = argument_parser_ppk(
-        args=argv[1:], script_name=os.path.basename(__file__)
+    # Ensure compatibility when passing on parsed_args from a higher level script.
+    parsed_args = auto_populate_args_namespace(
+        parsed_args,
+        argument_parser_ppk,
+        os.path.splitext(os.path.basename(__file__))[0],
     )
-    # print(f"\nParsed arguments: {args_parsed}")
-
-    # create the file/console logger
-    logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
-    logger.debug(f"Parsed arguments: {args_parsed}")
 
     # create a RTKlib pos class object
     try:
-        rtkpos = Rtkpos(pos_fn=args_parsed.pos_ifn, logger=logger)
+        rtkpos = Rtkpos(pos_fn=parsed_args.pos_ifn, logger=logger)
     except Exception as e:
         logger.error(f"Error creating Rtkpos object: {e}")
         sys.exit(1)
@@ -89,11 +93,24 @@ def rtkp_pos(argv: list) -> pl.DataFrame:
     # analyse the quality of the solution
     quality_analysis(df_pos=pos_df, logger=logger)
 
-
     return pos_df
 
+
 def main():
+
+    # get the name of this script for naming the logger
+    script_name = os.path.splitext(os.path.basename(__file__))[0]
+
+    # parse the CLI arguments
+    args_parsed = argument_parser_ppk(args=sys.argv[1:], script_name=script_name)
+
+    # create the file/console logger
+    logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
+    logger.debug(f"Parsed arguments: {args_parsed}")
+
+    # call df_rtkpos to create dataframe from rtklib pos file
     df_rtkpos = rtkp_pos(argv=sys.argv)
+
 
 if __name__ == "__main__":
     main()

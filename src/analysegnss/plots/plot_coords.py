@@ -84,31 +84,11 @@ def plot_coords(argv: list):
     match source:
         case "PPK":
             # create the PPK position dataframe by calling ppk_rnx2rtkp.py
-            pos_ifn_index = argv.index("--pos_ifn")
-            pos_ifn_value = argv[pos_ifn_index + 1]
-
-            ppk_rnx2rtkp_args = ["ppk_rnx2rtkp.py", "--pos_ifn", pos_ifn_value]
-            df_source = ppk_rnx2rtkp.rtkp_pos(argv=ppk_rnx2rtkp_args)
-            ppk_rnx2rtkp_args = ["ppk_rnx2rtkp.py", "--pos_ifn", pos_ifn_value]
-            df_source = ppk_rnx2rtkp.rtkp_pos(argv=ppk_rnx2rtkp_args)
+            df_source = ppk_rnx2rtkp.rtkp_pos(parsed_args=args_parsed, logger=logger)
 
         case "RTK":
             # create the RTK position dataframe by calling rtk_pvtgeod.py
-            sbf_ifn_index = argv.index("--sbf_ifn")
-            sbf_ifn_value = argv[sbf_ifn_index + 1]
-
-            rtk_pvtgeod_args = (
-                ["rtk_pvtgeod.py", "--sbf_ifn", sbf_ifn_value]
-                if not args_parsed.sd
-                else [
-                    "rtk_pvtgeod.py",
-                    "--sbf_ifn",
-                    sbf_ifn_value,
-                    "--sd",
-                ]
-            )
-
-            df_source = rtk_pvtgeod.rtk_pvtgeod(argv=rtk_pvtgeod_args)
+            df_source = rtk_pvtgeod.rtk_pvtgeod(parsed_args=args_parsed, logger=logger)
 
         case "GLABNG":
             # create the GLAB position dataframe by calling glab_parser
@@ -135,7 +115,7 @@ def plot_coords(argv: list):
 
         case "NMEA":
             # create the NMEA dataframe by calling nmea_reader.py
-            df_source, qual_analysis = nmea_reader.nmea_reader(
+            df_source, _ = nmea_reader.nmea_reader(
                 parsed_args=args_parsed, logger=logger
             )
 
