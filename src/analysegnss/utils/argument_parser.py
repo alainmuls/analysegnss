@@ -692,6 +692,7 @@ def argument_parser_get_ebh_timings(script_name: str, args: list) -> argparse.Na
         help="input sbf filename with sbf comments holding timestamp info",
         type=str,
         required=True,
+        default=None,
     )
     parser.add_argument(
         "-o",
@@ -700,6 +701,7 @@ def argument_parser_get_ebh_timings(script_name: str, args: list) -> argparse.Na
             is required by ebh_lines.py (default: {sbf_ifn}_ebh_timings.txt)",
         type=str,
         required=False,
+        default=None,
     )
     parser.add_argument(
         "--archive",
@@ -1233,7 +1235,7 @@ def argument_parser_sbfmeas_csv(script_name: str, args: list) -> argparse.Namesp
 
     return args
 
-def argument_parser_nmeaReader(args: list, script_name: str) -> argparse.Namespace:
+def argument_parser_nmea_reader(args: list, script_name: str) -> argparse.Namespace:
     """
     Read a file with NMEA data and return a dataframe with extracted NMEA data
     and optionally write the dataframe to a csv file
@@ -1285,61 +1287,6 @@ def argument_parser_nmeaReader(args: list, script_name: str) -> argparse.Namespa
         action="store_true",
     )
 
-    args = parser.parse_args(args)
-
-    return args
-
-def argument_parser_nmeaReader(args: list, script_name: str) -> argparse.Namespace:
-    """
-    Read a file with NMEA data and return a dataframe with extracted NMEA data
-    and optionally write the dataframe to a csv file
-    """
-
-    baseName = str_yellow(script_name)
-
-    help_text = (
-        baseName
-        + """
-        Parses NMEA strings from a file and saves the output to a dataframe (and optionally to a csv file).
-        The output contains:
-            - all data contained in the NMEA messages/fields
-            - a dataframe containing the extracted NMEA data per column
-            - added UTM coordinates
-    """
-    )
-
-    parser = argparse.ArgumentParser(description=help_text)
-    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="count",
-        default=None,
-        help="verbose level... repeat up to three times.",
-        required=False,
-    )
-    parser.add_argument(
-        "--log_dest",
-        help="Specify log destination directory (full path). (Default is /tmp/logs/)",
-        type=str,
-        required=False,
-        default="/tmp/logs/",
-    )
-    ############################################
-    parser.add_argument(
-        "-ifn",
-        "--nmea_ifn",
-        help="Input file name that contains NMEA messages.",
-        type=str,
-        required=True,
-    )
-    parser.add_argument(
-        "-o",
-        "--csv_out",
-        help="Creates csv output file that contains NMEA messages in csv format. name: ifn + _df.csv",
-        required=False,
-        action="store_true",
-    )
     args = parser.parse_args(args)
 
     return args

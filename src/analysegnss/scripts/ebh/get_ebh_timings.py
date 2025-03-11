@@ -17,6 +17,92 @@ from analysegnss.sbf.sbf_class import SBF
 from analysegnss.utils import argument_parser, init_logger
 
 
+def get_ebh_timings(parsed_args: argparse.Namespace, logger: Logger) -> dict:
+    """Getting ebh timings from sbf Comment block or ASCII file.
+    The timings are formatted for each ebh line as follows:
+    ebh_line_key: wnc tow, wnc tow
+    which corresponds to format used by ebh_lines.py
+
+    Args:
+        parsed_args (argparse.Namespace): parsed arguments
+                                            - sbf_ifn: path to sbf file
+                                            - ebh_timings_ifn: path to ascii file
+                                            - timing_ofn: path to output file
+                                            - log_dest: path to log file
+        logger (Logger): logger object
+
+    Returns:
+        ebh_timings(dict): dict with ebh keys and timestamps (week number and t of week) correctly formatted for ebh_lines.py
+    """
+
+    # ******************************************************* #
+    # To ensure compatibility when passing on parsed_args     #
+    # from a higher level scripti                             #
+    # ******************************************************* #
+    parsed_args = argument_parser.auto_populate_args_namespace(
+        parsed_args,
+        argument_parser.argument_parser_get_ebh_timings,
+        os.path.splitext(os.path.basename(__file__))[0],
+    )
+    # ******************************************************* # 
+
+    logger.debug(f"parsed_args: {parsed_args}")
+    
+    # it first checks if the ebh_timings_ifn is provided. If not, it checks if the sbf_ifn is provided.
+    if parsed_args.ebh_timings_ifn is not None:
+        # convert ascii file name to absolute path
+        parsed_args.ebh_timings_ifn = os.path.abspath(parsed_args.ebh_timings_ifn)
+        logger.info(f"Reading EBH comments from text file: {parsed_args.ebh_timings_ifn}")
+        # Get EBH comments with EBH timestamps from ASCII file
+        df_EBH_comments = get_EBH_comments_from_text(
+            parsed_args=parsed_args, logger=logger
+        )
+    elif parsed_args.sbf_ifn is not None:
+        # convert sbf file name to absolute path
+        parsed_args.sbf_ifn = os.path.abspath(parsed_args.sbf_ifn)
+        logger.info(f"Reading EBH comments from SBF file: {parsed_args.sbf_ifn}")
+        # Get SBF comments
+        df_EBH_comments = get_EBH_comments_from_sbf(
+            parsed_args=parsed_args, logger=logger
+        )
+    else:
+        logger.error("No SBF or text file provided")
+        sys.exit()
+
+    # Get EBH timestamps
+    df_ebh_timestamps = parseEBHComments(df_EBH_comments=df_EBH_comments, logger=logger)
+    # reformat EBH timestamps
+    ebh_timings_ebhlinefmt, ebh_timings = reformat_timestamps_for_ebh(
+        df_ebh_timestamps=df_ebh_timestamps, logger=logger
+    )
+    # Write EBH timings to file for ebh_lines.py usage
+    # Using hasattr here to check if the argument exists (this fixes argparse.namespace errors across different python scripts)
+    if parsed_args.timing_ofn is not None:
+        ebh_timings_to_file(
+            ebh_timings=ebh_timings_ebhlinefmt,
+            dest_path=parsed_args.timing_ofn,
+            logger=logger,
+        )
+    else:  # if no output file is provided, write to default file name
+        if parsed_args.ebh_timings_ifn is not None:
+            ebh_timings_to_file(
+                ebh_timings=ebh_timings_ebhlinefmt,
+                dest_path=f"{parsed_args.ebh_timings_ifn}_ebh_timings.txt",
+                logger=logger,
+            )
+        elif parsed_args.sbf_ifn is not None:
+            ebh_timings_to_file(
+                ebh_timings=ebh_timings_ebhlinefmt,
+                dest_path=f"{parsed_args.sbf_ifn}_ebh_timings.txt",
+                logger=logger,
+            )
+        else:
+            pass
+
+    return ebh_timings
+
+
+
 def get_EBH_comments_from_sbf(
     parsed_args: argparse.Namespace, logger: Logger
 ) -> pl.DataFrame:
@@ -289,78 +375,6 @@ def ebh_timings_to_file(ebh_timings: dict, dest_path: str, logger: Logger) -> No
         rprint(f"Done writing timings file to [yellow]{dest_path}[/yellow]")
 
 
-def get_ebh_timings(parsed_args: argparse.Namespace, logger: Logger) -> dict:
-    """Getting ebh timings from sbf Comment block or ASCII file.
-    The timings are formatted for each ebh line as follows:
-    ebh_line_key: wnc tow, wnc tow
-    which corresponds to format used by ebh_lines.py
-
-    Args:
-        parsed_args (argparse.Namespace): parsed arguments
-                                            - sbf_ifn: path to sbf file
-                                            - ebh_timings_ifn: path to ascii file
-                                            - timing_ofn: path to output file
-                                            - log_dest: path to log file
-        logger (Logger): logger object
-
-    Returns:
-        ebh_timings(dict): dict with ebh keys and timestamps (week number and t of week) correctly formatted for ebh_lines.py
-    """
-
-    logger.debug(f"parsed_args: {parsed_args}")
-    
-    # it first checks if the ebh_timings_ifn is provided. If not, it checks if the sbf_ifn is provided.
-    if parsed_args.ebh_timings_ifn is not None:
-        # convert ascii file name to absolute path
-        parsed_args.ebh_timings_ifn = os.path.abspath(parsed_args.ebh_timings_ifn)
-        logger.info(f"Reading EBH comments from text file: {parsed_args.ebh_timings_ifn}")
-        # Get EBH comments with EBH timestamps from ASCII file
-        df_EBH_comments = get_EBH_comments_from_text(
-            parsed_args=parsed_args, logger=logger
-        )
-    elif parsed_args.sbf_ifn is not None:
-        # convert sbf file name to absolute path
-        parsed_args.sbf_ifn = os.path.abspath(parsed_args.sbf_ifn)
-        logger.info(f"Reading EBH comments from SBF file: {parsed_args.sbf_ifn}")
-        # Get SBF comments
-        df_EBH_comments = get_EBH_comments_from_sbf(
-            parsed_args=parsed_args, logger=logger
-        )
-    else:
-        logger.error("No SBF or text file provided")
-        sys.exit()
-
-    # Get EBH timestamps
-    df_ebh_timestamps = parseEBHComments(df_EBH_comments=df_EBH_comments, logger=logger)
-    # reformat EBH timestamps
-    ebh_timings_ebhlinefmt, ebh_timings = reformat_timestamps_for_ebh(
-        df_ebh_timestamps=df_ebh_timestamps, logger=logger
-    )
-    # Write EBH timings to file for ebh_lines.py usage
-    # Using hasattr here to check if the argument exists (this fixes argparse.namespace errors across different python scripts)
-    if hasattr(parsed_args, "timing_ofn") and parsed_args.timing_ofn:
-        ebh_timings_to_file(
-            ebh_timings=ebh_timings_ebhlinefmt,
-            dest_path=parsed_args.timing_ofn,
-            logger=logger,
-        )
-    else:  # if no output file is provided, write to default file name
-        if parsed_args.ebh_timings_ifn is not None:
-            ebh_timings_to_file(
-                ebh_timings=ebh_timings_ebhlinefmt,
-                dest_path=f"{parsed_args.ebh_timings_ifn}_ebh_timings.txt",
-                logger=logger,
-            )
-        elif parsed_args.sbf_ifn is not None:
-            ebh_timings_to_file(
-                ebh_timings=ebh_timings_ebhlinefmt,
-                dest_path=f"{parsed_args.sbf_ifn}_ebh_timings.txt",
-                logger=logger,
-            )
-        else:
-            pass
-
-    return ebh_timings
 
 
 def main():

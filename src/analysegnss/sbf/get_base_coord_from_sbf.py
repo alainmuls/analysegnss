@@ -34,18 +34,23 @@ def get_base_coord_from_sbf(
     base_coord (Tuple[float, float, float]): base station coordinates (X, Y, Z)
     """
 
-    # ********************************************************#
-    # To ensure compatibility when passing on parsed_args from
-    # a higher level script, add this code snippet
-    # ********************************************************#
+    # ******************************************************* #
+    # To ensure compatibility when passing on parsed_args     #
+    # from a higher level script, add this code snippet to    #
+    # each function that needs to parse arguments. Make sure  #
+    # to pass on the correct script name to the argument      #
+    # parser.                                                 #
+    # ******************************************************* #
     parsed_args = argument_parser.auto_populate_args_namespace(
         parsed_args,
         argument_parser.argument_parser_get_base_coord,
         os.path.splitext(os.path.basename(__file__))[0],
     )
-    # ********************************************************#
+    # ******************************************************* #
 
 
+
+    # Create SBF object from SBF file
     logger.debug("Creating SBF object from SBF file")
     if parsed_args.sbf_ifn:
         # create a SBF class object

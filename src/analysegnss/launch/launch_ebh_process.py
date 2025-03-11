@@ -15,7 +15,7 @@ from analysegnss.launch.launch_rnx2rtkp import rnx2rtkp_ppk
 from analysegnss.utils import argument_parser, init_logger, utilities
 from analysegnss.scripts.ebh.ebh_exit_codes import EBH_EXIT_CODES
 from analysegnss.scripts.ebh.get_ebh_timings import get_ebh_timings
-from analysegnss.sbf.get_base_xyz_from_sbf import get_base_coord_from_sbf
+from analysegnss.sbf.get_base_coord_from_sbf import get_base_coord_from_sbf
 from analysegnss.scripts.ebh.ebh_lines import ebh_lines
 from analysegnss.rinex import get_rnx_files
 from analysegnss.scripts.ebh.gradient_ebhlines import gradient_ebhlines

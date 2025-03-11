@@ -13,7 +13,6 @@ from tabulate import tabulate
 
 # Local application imports
 from analysegnss.gnss.general_pvt_quality_dict import nmea_to_general_pvtqual, get_pvtquality_info
-from analysegnss.nmea import nmea_constants as nmeac
 from analysegnss.nmea.nmea_class import NMEA
 from analysegnss.utils import argument_parser, init_logger
 
@@ -51,7 +50,7 @@ def quality_analysis(df_pvt: pl.DataFrame, logger: logging.Logger = None) -> lis
     return qual_analysis
 
 
-def nmeaReader(parsed_args: argparse.Namespace, logger: logging.Logger) -> tuple[pl.DataFrame, list]:
+def nmea_reader(parsed_args: argparse.Namespace, logger: logging.Logger) -> tuple[pl.DataFrame, list]:
     """Read the ascii file with NMEA data and return a dataframe with extracted NMEA data
     and optionally write the dataframe to a csv file
 
@@ -103,14 +102,14 @@ def main():
     script_name = os.path.basename(__file__).split(".")[0]
 
     # parse the CLI arguments
-    args_parsed = argument_parser.argument_parser_nmeaReader(args=sys.argv[1:], script_name=script_name)
+    args_parsed = argument_parser.argument_parser_nmea_reader(args=sys.argv[1:], script_name=script_name)
 
     # create the file/console logger
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
     logger.info(f"Parsed arguments: {args_parsed}")
 
-    # call nmeaReader to read NMEA data and return a dataframe
-    nmea_df, _ = nmeaReader(parsed_args=args_parsed, logger=logger)
+    # call nmea_reader to read NMEA data and return a dataframe
+    nmea_df, _ = nmea_reader(parsed_args=args_parsed, logger=logger)
    
     # write the NMEA dataframe to a csv file
     if args_parsed.csv_out:

@@ -69,7 +69,7 @@ get_rnx_files = "analysegnss.rinex.get_rnx_files:main"
 
 # NMEA
 get_nmea_files = "analysegnss.nmea.get_nmea_files:main"
-nmeaReader = "analysegnss.nmea.nmeaReader:main"
+nmea_reader = "analysegnss.nmea.nmea_reader:main"
 
 # SBF
 get_base_xyz_from_sbf = "analysegnss.sbf.get_base_xyz_from_sbf:main"

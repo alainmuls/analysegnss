@@ -10,7 +10,7 @@ import polars as pl
 from rich import print
 
 import analysegnss.glabng.glab_parser as glab_parser
-import analysegnss.nmea.nmeaReader as nmeaReader
+import analysegnss.nmea.nmea_reader as nmea_reader
 import analysegnss.rtkpos.ppk_rnx2rtkp as ppk_rnx2rtkp
 import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
 from analysegnss.config import ERROR_CODES, rich_console
@@ -134,8 +134,8 @@ def plot_coords(argv: list):
             df_source = dfs_glab["OUTPUT"]
 
         case "NMEA":
-            # create the NMEA dataframe by calling nmeaReader.py
-            df_source, qual_analysis = nmeaReader.nmeaReader(
+            # create the NMEA dataframe by calling nmea_reader.py
+            df_source, qual_analysis = nmea_reader.nmea_reader(
                 parsed_args=args_parsed, logger=logger
             )
 
