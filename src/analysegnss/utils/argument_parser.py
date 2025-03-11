@@ -1,10 +1,10 @@
 # Standard library imports
 import argparse
-import os
+from typing import Callable
 
 # Third party imports
 import argcomplete
-from rich import print
+from rich import print as rprint
 
 # Local application imports
 from analysegnss.utils.utilities import str_yellow
@@ -20,6 +20,36 @@ def cs_str_to_list(value):
         list: List of stripped strings
     """
     return [s.strip() for s in value.split(',')]
+
+def auto_populate_args_namespace(parsed_args: argparse.Namespace, native_parser_func: callable, script_name: str) -> argparse.Namespace:
+    """
+    Automatically populates the argument namespace with default values from the native argument_parser_ function.
+    This is useful for scripts that are launched by other scripts and need to pass on the arguments used by the native argument_parser_ function.
+    This removes the need of checking each argument separately (by using hasattr()) if it is present and set to a default value.
+    
+    Args:
+        parsed_args (argparse.Namespace): The parsed arguments
+        native_parser_func (callable): The native argument_parser_ function
+        script_name (str): The name of the script
+    Returns:
+        argparse.Namespace: The parsed arguments
+    """
+   
+    # convert parsed_args to list of arguments
+    parsed_args_list = []
+    # iterate over the parsed_args namespace and add the arguments and values to the list
+    for arg, value in vars(parsed_args).items():
+        if value is not None:
+            if arg == 'verbose' and isinstance(value, int):
+                # handle verbose argument as a count argument
+                parsed_args_list.extend(['-v'] * value)
+            else:
+                parsed_args_list.extend([f"--{arg}", str(value)])
+   
+    # call native argument parser function with the list of arguments so that optional arguments are also set to default values
+    complete_args = native_parser_func(script_name=script_name, args=parsed_args_list) 
+
+    return complete_args
 
 
 def argument_parser_rtk(script_name: str, args: list) -> argparse.Namespace:
@@ -673,7 +703,7 @@ def argument_parser_get_ebh_timings(script_name: str, args: list) -> argparse.Na
     )
     parser.add_argument(
         "--archive",
-        help="Specify archive's directory name. (full or relative (@sbf_ifn) path) \
+        help="Archives extracted sbf blocks to specified archive's directory name. (full or relative (@sbf_ifn) path) \
             Default is no archiving.",
         required=False,
         default=None,
@@ -726,6 +756,15 @@ def argument_parser_get_base_coord(script_name: str, args: list) -> argparse.Nam
         help="Date time instance of the base station coordinates in YYYY-MM-DD_HH:MM:SS(.s)",
         type=str,
         required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--archive",
+        help="Archives extracted sbf blocks to specified archive's directory name. (full or relative (@sbf_ifn) path) \
+            Default is no archiving.",
+        required=False,
+        default=None,
+        type=str,
     )
     parser.add_argument(
         "--log_dest",

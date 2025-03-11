@@ -20,7 +20,7 @@ def get_base_coord_from_sbf(
     parsed_args: argparse.Namespace, logger: Logger
 ) -> Tuple[float, float, float]:
     """
-    This function extracts the base station coordinates from the BaseStation1 SBF block 
+    This function extracts the base station coordinates from the BaseStation1 SBF block
     which is logged on the rover which received diffcorr from the basestation.
     One could also use the PVTCartesian block logged by the basestation to get the base coordinates.
     However, this is not yet implemented and not recommended because the base_correction file can alse be a RNX file!
@@ -33,6 +33,19 @@ def get_base_coord_from_sbf(
     return:
     base_coord (Tuple[float, float, float]): base station coordinates (X, Y, Z)
     """
+
+    # ********************************************************#
+    # To ensure compatibility when passing on parsed_args from
+    # a higher level script, add this code snippet
+    # ********************************************************#
+    parsed_args = argument_parser.auto_populate_args_namespace(
+        parsed_args,
+        argument_parser.argument_parser_get_base_coord,
+        os.path.splitext(os.path.basename(__file__))[0],
+    )
+    # ********************************************************#
+
+
     logger.debug("Creating SBF object from SBF file")
     if parsed_args.sbf_ifn:
         # create a SBF class object
@@ -53,7 +66,8 @@ def get_base_coord_from_sbf(
 
     # TODO: basestation1 block are fixed coordinates, so we can just take the last row of the dataframe
     # TODO: The datetime argument is needed when PVTCartesian block is used logged by the basestation!
-    if hasattr(parsed_args, "datetime") and parsed_args.datetime:
+    # if hasattr(parsed_args, "datetime") and parsed_args.datetime:
+    if parsed_args.datetime is not None:
         logger.info(
             f"Extracting basestation coordinates from sbf dataframe at date time {parsed_args.datetime}"
         )
