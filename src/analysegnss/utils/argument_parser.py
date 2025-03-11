@@ -687,11 +687,22 @@ def argument_parser_get_ebh_timings(script_name: str, args: list) -> argparse.Na
         required=False,
     )
     parser.add_argument(
-        "-i",
-        "--sbf_ifn",
-        help="input sbf filename with sbf comments holding timestamp info",
+        "-txt",
+        "--ebh_timings_ifn",
+        help="input Comments file name (ASCII format) holding the EBH line timestamps. The Comments format is as follows: \
+            YYYYMMDD_HH-MM-SS_lineID_CLdeviation \
+            YYYYMMDD_HH-MM-SS = timestamp \
+            lineID + CLdeviation = key \
+            This file is formatted for ebh_lines.py \
+            If not provided, the ebh line timestamps are retrieved from the sbf file.",
         type=str,
-        required=True,
+        default=None,
+    )
+    parser.add_argument(
+        "-sbf",
+        "--sbf_ifn",
+        help="input sbf filename with sbf comments block holding EBH timestamps",
+        type=str,
         default=None,
     )
     parser.add_argument(
@@ -721,6 +732,10 @@ def argument_parser_get_ebh_timings(script_name: str, args: list) -> argparse.Na
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
+    
+    # Check that at least one an ascii or sbf file is specified that contains the timestamp info
+    if args.sbf_ifn is None and args.ascii_ifn is None:
+        parser.error("At least one of --sbf_ifn or --ascii_ifn must be specified")
 
     return args
 
