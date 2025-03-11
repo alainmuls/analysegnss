@@ -1,23 +1,23 @@
 import random
 from typing import Optional
-
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from matplotlib import cm, colors
-from pydantic import BaseModel
 
 
-class DiscreteColors(BaseModel):
+class DiscreteColors:
     """
     DiscreteColors creates a color sequence which is consistently repeatable.
     The generated list of colors has maximum 'max_colors' of different values
     """
 
-    cmap: Optional[colors.LinearSegmentedColormap] = cm.get_cmap(
-        "hsv"
-    )  # colormap, cfr https://matplotlib.org/3.5.0/tutorials/colors/colormaps.html (gist_rainbow, nipy_spectral)
-    max_colors: Optional[int] = 37  # max (odd) number of colors in discrete series
+    def __init__(self, cmap=None, max_colors=37):
+        """
+        Initialize DiscreteColors with optional custom colormap and max_colors
+        """
+        self.cmap = cmap if cmap is not None else cm.get_cmap("hsv")
+        self.max_colors = max_colors  # max (odd) number of colors in discrete series
 
     def discrete_color(self, value: int) -> tuple:
         """
@@ -28,14 +28,8 @@ class DiscreteColors(BaseModel):
         while value >= self.max_colors:
             value = value - self.max_colors
 
-        # print(f"value = {value}")
-        # print(f"max_colors = {self.max_colors}")
-
         color = self.cmap(value / self.max_colors)
         return color
-
-    class Config:
-        arbitrary_types_allowed = True
 
 
 def plotly_discrete_colors(n_colors: int = 37) -> list:
@@ -69,7 +63,7 @@ def main() -> None:
             f"{my_colors.discrete_color(value=prn)}"
         )
         # print(f"my2_colors.discrete_color(value={prn:02d}) = "
-        #       f{my2_colors.discrete_color(value=prn)}")
+        # f{my2_colors.discrete_color(value=prn)}")
 
     enu_colors = DiscreteColors(cmap=cm.get_cmap("gist_rainbow"), max_colors=3)
     for i in range(3):
