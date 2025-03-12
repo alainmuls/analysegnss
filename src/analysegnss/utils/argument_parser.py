@@ -12,21 +12,24 @@ from analysegnss.utils.utilities import str_yellow
 
 def cs_str_to_list(value):
     """Convert comma-separated string to list of strings.
-    
+
     Args:
         value (str): Comma-separated string
-        
+
     Returns:
         list: List of stripped strings
     """
-    return [s.strip() for s in value.split(',')]
+    return [s.strip() for s in value.split(",")]
 
-def auto_populate_args_namespace(parsed_args: argparse.Namespace, native_parser_func: callable, script_name: str) -> argparse.Namespace:
+
+def auto_populate_args_namespace(
+    parsed_args: argparse.Namespace, native_parser_func: callable, script_name: str
+) -> argparse.Namespace:
     """
     Automatically populates the argument namespace with default values from the native argument_parser_ function.
     This is useful for scripts that are launched by other scripts and need to pass on the arguments used by the native argument_parser_ function.
     This removes the need of checking each argument separately (by using hasattr()) if it is present and set to a default value.
-    
+
     Args:
         parsed_args (argparse.Namespace): The parsed arguments
         native_parser_func (callable): The native argument_parser_ function
@@ -34,32 +37,42 @@ def auto_populate_args_namespace(parsed_args: argparse.Namespace, native_parser_
     Returns:
         argparse.Namespace: The parsed arguments with all required arguments populated
     """
-    import sys
-    
-    # Store original sys.exit
-    original_exit = sys.exit
-    sys.exit = lambda x: None  # Temporarily disable sys.exit
-   
-    native_parser = argparse.ArgumentParser()
-    # Get parser by calling with --help (which would normally exit)
-    native_parser_func(script_name=script_name, args=['--help'])
-    
-    # Restore sys.exit
-    sys.exit = original_exit
-    
-    # Get all argument destinations and their defaults
-    defaults = {}
-    for action in native_parser._actions:
-        if action.dest != 'help':  # Skip help action
-            defaults[action.dest] = action.default
-   
-    # Create complete args starting with defaults
-    complete_args = defaults.copy()
-    
-    # Update with all values from parsed_args that aren't None
+    # ----------------------------------------------------------------------------------#
+    # to fetch the default values of the native parser function,
+    # we need to call it to fill a dictionary with the default values of the arguments
+    # however if an argument is required, the parser will exit with an error
+    # therefore we need to make all arguments optional temporarily
+    # The only 'clean' way of doing this is to temporarily patch the ArgumentParser class
+    # ----------------------------------------------------------------------------------#
+
+    # Store original add_argument method
+    original_argparse_add_argument = argparse.ArgumentParser.add_argument
+
+    # Create a wrapper that makes all arguments optional
+    def add_argument_optional(*args, **kwargs):
+        if "required" in kwargs:
+            kwargs["required"] = False
+        return original_argparse_add_argument(*args, **kwargs)
+
+    # Patch ArgumentParser temporarily
+    argparse.ArgumentParser.add_argument = add_argument_optional
+
+    try:
+        # Get defaults by calling the native parser function with empty args
+        native_default_args = vars(native_parser_func(script_name=script_name, args=[]))
+    finally:
+        # Restore original method
+        argparse.ArgumentParser.add_argument = original_argparse_add_argument
+    # ----------------------------------------------------------------------------------#
+
+    # Create complete args starting with defaults of the native parser function
+    complete_args = native_default_args.copy()
+
+    # Update with all values from passed on parsed_args
     parsed_dict = vars(parsed_args)
-    complete_args.update({k: v for k, v in parsed_dict.items()})
-    
+    complete_args.update(parsed_dict)
+
+
     # Convert back to Namespace
     return argparse.Namespace(**complete_args)
 
@@ -199,7 +212,9 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
 
     # Create a mutually exclusive group
     source_group = parser.add_mutually_exclusive_group(required=True)
-    source_group.description = "Specify coordinates source (POS, SBF, NMEA, CSV, gLABng) (required)"
+    source_group.description = (
+        "Specify coordinates source (POS, SBF, NMEA, CSV, gLABng) (required)"
+    )
 
     source_group.add_argument(
         "--sbf_ifn",
@@ -228,7 +243,9 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
     )
 
     # Creating a group for PNT_CSV-specific arguments
-    csv_group = parser.add_argument_group('PNT_CSV file options', 'Options specific to PNT_CSV input files')
+    csv_group = parser.add_argument_group(
+        "PNT_CSV file options", "Options specific to PNT_CSV input files"
+    )
     csv_group.add_argument(
         "--columns_csv",
         help="Comma-separated list of columns to be read from CSV files (default: DT, UTM.E, UTM.N, orthoH)",
@@ -271,7 +288,6 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
         required=False,
         default="1980-01-06 00:00:00",
     )
-    
 
     parser.add_argument(
         "--sd",
@@ -744,7 +760,7 @@ def argument_parser_get_ebh_timings(script_name: str, args: list) -> argparse.Na
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
-    
+
     # Check that at least one an ascii or sbf file is specified that contains the timestamp info
     if args.sbf_ifn is None and args.ascii_ifn is None:
         parser.error("At least one of --sbf_ifn or --ascii_ifn must be specified")
@@ -808,7 +824,9 @@ def argument_parser_get_base_coord(script_name: str, args: list) -> argparse.Nam
     return args
 
 
-def argument_parser_ebh_process_launcher(script_name: str, args: list) -> argparse.Namespace:
+def argument_parser_ebh_process_launcher(
+    script_name: str, args: list
+) -> argparse.Namespace:
     """Launches the appropriate functions to calculate the ebh_lines from the sbf_ifn file
     from which it retrievers the correct timings,
     decides whether the RTK or PPK solution has a sufficient quality,
@@ -904,7 +922,9 @@ def argument_parser_ebh_process_launcher(script_name: str, args: list) -> argpar
     return args
 
 
-def argument_parser_rnx2rtkp_launcher(script_name: str, args: list) -> argparse.Namespace:
+def argument_parser_rnx2rtkp_launcher(
+    script_name: str, args: list
+) -> argparse.Namespace:
     """
     Parses the arguments and creates console/file logger for launch_ppk_rnx2rtkp.py
     """
@@ -1262,6 +1282,7 @@ def argument_parser_sbfmeas_csv(script_name: str, args: list) -> argparse.Namesp
 
     return args
 
+
 def argument_parser_nmea_reader(args: list, script_name: str) -> argparse.Namespace:
     """
     Read a file with NMEA data and return a dataframe with extracted NMEA data
@@ -1305,6 +1326,7 @@ def argument_parser_nmea_reader(args: list, script_name: str) -> argparse.Namesp
         help="Input file name that contains NMEA messages.",
         type=str,
         required=True,
+        default=None,
     )
     parser.add_argument(
         "-o",

@@ -72,7 +72,7 @@ def nmea_reader(parsed_args: argparse.Namespace, logger: logging.Logger) -> tupl
         os.path.splitext(os.path.basename(__file__))[0],
     )
     
-    rprint(parsed_args)
+    logger.debug(f"Parsed arguments: {parsed_args}")
     
     # Create NMEA object    
     nmea_data = NMEA(nmea_ifn=parsed_args.nmea_ifn, logger=logger)
