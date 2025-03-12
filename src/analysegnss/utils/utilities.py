@@ -306,6 +306,8 @@ def combine_dfs(dfs: dict) -> pl.DataFrame:
         combined_df = combined_df.join(df, on="DT", how="outer")
 
     return combined_df
+
+
 def sf64(val, e_return_none: bool = True, logger: logging.Logger = None):
     """Safely convert to float if possible, else return original value
 
@@ -323,8 +325,9 @@ def sf64(val, e_return_none: bool = True, logger: logging.Logger = None):
             logger.debug(f"Could not cast {val} to float")
         if e_return_none:
             return None
-        else:    
+        else:
             return val
+
 
 def si64(val, e_return_none: bool = True, logger: logging.Logger = None):
     """Safely convert to int if possible, else return original value

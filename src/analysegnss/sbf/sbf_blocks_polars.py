@@ -51,6 +51,10 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "Vy [m/s]",
             "Vz [m/s]",
             "COG [°]",
+            "RxClkBias [ms]",
+        ],
+        pl.Float32: [
+            "RxClkDrift [ppm]",
         ],
         pl.UInt32: [
             "TOW [0.001 s]",
@@ -70,10 +74,12 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "Latitude [rad]",
             "Longitude [rad]",
             "Height [m]",
+            "RxClkBias [ms]",
         ],
         pl.Float32: [
             "Undulation [m]",
             "COG [°]",
+            "RxClkDrift [ppm]",
         ],
         pl.UInt32: [
             "TOW [0.001 s]",
@@ -108,6 +114,7 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "Cov_latlat [m²]",
             "Cov_lonlon [m²]",
             "Cov_hgthgt [m²]",
+            "Cov_bb [m²]",
         ],
         pl.UInt32: [
             "TOW [0.001 s]",
@@ -124,13 +131,18 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "WNc [w]",
             "CommentLn",
         ],
-        pl.Utf8: ["Comment"],
+        pl.Utf8: [
+            "Comment",
+        ],
     },
     "BaseStation1": {
         pl.UInt32: [
             "TOW [0.001 s]",
         ],
-        pl.UInt16: ["WNc [w]", "BaseStationID"],
+        pl.UInt16: [
+            "WNc [w]",
+            "BaseStationID",
+        ],
         pl.UInt8: [
             "BaseType",
             "Source",

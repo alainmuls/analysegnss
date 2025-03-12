@@ -78,10 +78,15 @@ def rtk_pvtgeod(argv: list) -> dict:
         sys.exit(ERROR_CODES["E_SBF_OBJECT"])
 
     if not args_parsed.sbf2asc:
+        # list of SBF blocks that we need to process
+        sbf_blocks = []
         if args_parsed.sd:
+            # sbf blocks to decode
+            sbf_blocks = ["PVTGeodetic2", "PosCovGeodetic1"]
+
             # extract the PVT Geodetic2 block from SBF file and its covariance elements
             dfs_pvt = sbf.bin2asc_dataframe(
-                lst_sbfblocks=["PVTGeodetic2", "PosCovGeodetic1"],
+                lst_sbfblocks=sbf_blocks,
                 archive=args_parsed.archive,
             )
 
@@ -94,6 +99,7 @@ def rtk_pvtgeod(argv: list) -> dict:
                         ~pl.col("Cov_latlat [m²]").is_null()
                         & ~pl.col("Cov_lonlon [m²]").is_null()
                         & ~pl.col("Cov_hgthgt [m²]").is_null()
+                        & ~pl.col("Cov_bb [m²]").is_null()
                     )
                     .collect()
                 )
@@ -111,14 +117,22 @@ def rtk_pvtgeod(argv: list) -> dict:
                 df_pvt = df_pvt.drop("DT_right")
 
         else:  # only use the PVTGeodetic, no StdDev required
+            # sbf blocks to decode
+            sbf_blocks = ["PVTGeodetic2"]
+
             # extract the PVT Geodetic2 block from SBF file
             df_pvt = sbf.bin2asc_dataframe(
-                lst_sbfblocks=["PVTGeodetic2"], archive=args_parsed.archive
+                lst_sbfblocks=sbf_blocks, archive=args_parsed.archive
             )["PVTGeodetic2"]
 
         # fill the null values with NaN
-        df_pvt = df_pvt.fill_null(float('nan'))
-        logger.info(f"  df_pvt: \n{df_pvt}")
+        df_pvt = df_pvt.fill_null(float("nan"))
+        # logger.info(f"df_pvt[{sbf_blocks}]: \n{df_pvt}")
+        logger.info(
+            f"df_pvt[{sbf_blocks}]:\n{df_pvt.select(df_pvt.columns[:20]).head(3)}"
+            f"\n{df_pvt.select(df_pvt.columns[20:40]).head(3)}"
+            f"\n{df_pvt.select(df_pvt.columns[40:]).head(3)}"
+        )
 
         # analyse the quality of the solution
         quality_analysis(geod_df=df_pvt, logger=logger)

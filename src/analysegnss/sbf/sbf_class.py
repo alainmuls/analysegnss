@@ -268,7 +268,8 @@ class SBF:
             self.logger.debug(f"... running: {str_yellow(' '.join(cmd_bin2asc))}")
 
         with rich_console.status(
-            f"Converting SBF [bold green]({lst_sbfblocks})[/bold green] to CSV files...",
+            f"Converting SBF blocks [bold green]({lst_sbfblocks})[/bold green] to CSV files running:\n"
+            f"\t{' '.join(cmd_bin2asc)}\n",
             spinner="aesthetic",
         ):
             try:
@@ -314,10 +315,11 @@ class SBF:
 
                 # remove unused columns
                 keep_cols = self.used_columns(sbf_block)
+                print(f"\ninital keep_cols = {keep_cols}\n")
 
                 # read csv file into dataframe
                 with rich_console.status(
-                    f"Reading from CSV file [bold green]{sbf_block}[/bold green]",
+                    f"Reading from CSV file [bold green]{sbf_block}[/bold green]\n",
                     spinner="aesthetic",
                 ):
                     sbf_df = pl.read_csv(
@@ -337,16 +339,46 @@ class SBF:
                         float("nan")
                     )  # Then convert all nulls to NaN
 
+                with rich_console.status(
+                    f"Adjusting columns for [bold green]{sbf_block}[/bold green]\n",
+                    spinner="aesthetic",
+                ):
                     # add columns to the dataframe
-                    sbf_df = self.add_columns(block_df=sbf_df)
+                    sbf_df, added_cols, removed_cols = self.add_columns(block_df=sbf_df)
+                    # adjust the keep_cols adding and removing the columns
+                    for col_name, col_dtype in added_cols.items():
+                        keep_cols[col_name] = col_dtype
+                    for col_name in removed_cols:
+                        del keep_cols[col_name]
+                    print(f"\nupdated keep_cols = {keep_cols}\n")
+
                     # print(
                     #     f"sbf_df[{sbf_block}]:\n{sbf_df.select(sbf_df.columns[:20]).head(3)}"
                     #     f"sbf_df[{sbf_block}]:\n{sbf_df.select(sbf_df.columns[20:]).head(3)}"
                     # )
 
-                    # # print the column names of sbf_df one per line
+                    # # we changed some values (eg. from rad to deg) so rename the columns
+                    # # Get keys that need to be changed
+                    # keys_to_change = [
+                    #     key
+                    #     for key in keep_cols.keys()
+                    #     if "rad" in key and ("Latitude" in key or "Longitude" in key)
+                    # ]
+
+                    # # Update each key
+                    # for old_key in keys_to_change:
+                    #     value = keep_cols[old_key]
+                    #     new_key = old_key.replace("rad", "deg")
+                    #     new_key = new_key.replace("Latitude", "latitude").replace(
+                    #         "Longitude", "longitude"
+                    #     )
+                    #     keep_cols[new_key] = value
+                    #     del keep_cols[old_key]
+
+                    # print the column names of sbf_df one per line
                     # for col_name in sbf_df.columns:
                     #     print(col_name)
+                    print(f"sbf_df.columns = {sbf_df.columns}")
 
                     # set the dtype again after having added some columns
                     # identify columns with null values and applies different strategies based on the target data type
@@ -372,6 +404,38 @@ class SBF:
                             cast_expressions.append(pl.col(col_name).cast(dtype))
 
                     sbf_df = sbf_df.with_columns(cast_expressions)
+
+                    # TODO: AMAMAMAMcheck the columns in the dataframe to see whether we only keep the keep_columns????
+                    print("=" * 60)
+                    print(f"sbf_block = {sbf_block}")
+                    print(f"sbf_df.columns = {sbf_df.columns} | {len(sbf_df.columns)}")
+                    print(
+                        f"\nkeep_cols.keys() = {keep_cols.keys()} | {len(keep_cols.keys())}"
+                    )
+                    print("-" * 60)
+
+                    # drop the columns which are not in the keep_cols
+                    for col_name in sbf_df.columns:
+                        if col_name not in keep_cols.keys():
+                            sbf_df = sbf_df.drop(col_name)
+                    print("+" * 60)
+                    print(f"sbf_block = {sbf_block}")
+                    print(f"sbf_df.columns = {sbf_df.columns} | {len(sbf_df.columns)}")
+                    print(
+                        f"\nkeep_cols.keys() = {keep_cols.keys()} | {len(keep_cols.keys())}"
+                    )
+                    print("#" * 60)
+
+                    print(f"sbf_df[{sbf_block}]:\n{sbf_df}")
+                    if len(sbf_df.columns) > 15:
+                        print(
+                            f"\n\ndf_pvt[{sbf_block}]:\n{sbf_df.select(sbf_df.columns[:15]).head(3)}"
+                            f"\n{sbf_df.select(sbf_df.columns[15:]).head(3)}\n\n"
+                        )
+                    else:
+                        print(
+                            f"\n\ndf_pvt[{sbf_block}]:\n{sbf_df.select(sbf_df.columns).head(3)}\n\n"
+                        )
 
                 sbf_dfs[sbf_block] = sbf_df
                 # print(f"sbf_dfs[{sbf_block}]:\n{sbf_dfs[sbf_block]}")
@@ -538,7 +602,7 @@ class SBF:
 
         return sbf_dfs
 
-    def add_columns(self, block_df: pl.DataFrame) -> pl.DataFrame:
+    def add_columns(self, block_df: pl.DataFrame) -> tuple[pl.DataFrame, dict, list]:
         """checks if we can create a datetime,PRN, UTM columns in the dataframe
 
         Args:
@@ -546,12 +610,14 @@ class SBF:
 
         Returns:
                 pl.DataFrame: dataframe with datetime and PRN columns added if possible
+                dict: columns added with dtype
+                list: columns removed with dtype
         """
-        # print(f"block_df = \n{block_df}")
-        # remove the rows where 'Type' equals 0 (no PVT available)
-        # if self.logger:
-        #     self.logger.debug("\tremoving rows with no PVT solution")
+        # adding/removing columns based on information available, so keep track of those columns and dtypes
+        added_cols = {}
+        removed_cols = []
 
+        # remove the rows where 'Type' equals 0 (no PVT available)
         if "Type" in block_df.columns:
             block_df = block_df.filter(pl.col("Type") != 0).lazy()
             # print(f"block_df = \n{block_df}")
@@ -568,6 +634,7 @@ class SBF:
                 )
                 .alias("DT")
             ).lazy()
+            added_cols["DT"] = pl.Datetime
 
         # add date-time and PRN (as str) to the dataframe
         if "WNc [w]" in block_df.columns and "TOW [s]" in block_df.columns:
@@ -581,6 +648,7 @@ class SBF:
                 )
                 .alias("DT")
             ).lazy()
+            added_cols["DT"] = pl.Datetime
 
         # add date-time and PRN (as str) to the dataframe
         if (
@@ -599,9 +667,8 @@ class SBF:
                 .alias("PRN")
             ).lazy()
             block_df = block_df.drop(["SVID"]).lazy()
-        # else:
-        #     # rename the column to PRN
-        #     block_df = block_df.rename({"SVID": "PRN"}).lazy()
+            added_cols["PRN"] = pl.Utf8
+            removed_cols.append("SVID")
 
         # add UTM coordinates
         if (
@@ -655,6 +722,11 @@ class SBF:
             block_df = block_df.drop(
                 ["Latitude [rad]", "Longitude [rad]", "utm_coords"]
             ).lazy()
+            added_cols["latitude [deg]"] = pl.Float64
+            added_cols["longitude [deg]"] = pl.Float64
+            added_cols["UTM.E"] = pl.Float64
+            added_cols["UTM.N"] = pl.Float64
+            removed_cols.extend(["Latitude [rad]", "Longitude [rad]"])
 
         # add orthometric height to the dataframe
         if "Height [m]" in block_df.columns and "Undulation [m]" in block_df.columns:
@@ -662,19 +734,20 @@ class SBF:
                 self.logger.debug("\tadding orthometric height to the dataframe")
             block_df = block_df.with_columns(
                 pl.struct(["Height [m]", "Undulation [m]"])
-                .apply(
+                .map_elements(
                     lambda x: x["Height [m]"] - x["Undulation [m]"],
                     return_dtype=pl.Float64,
                 )
                 .alias("orthoH")
             ).lazy()
+            added_cols["orthoH"] = pl.Float64
 
         # If an SBF block doesn't contain a column used in this func,
         # the collect() will throw an error.
         if getattr(block_df, "collect", None) is not None:
             block_df = block_df.collect()
 
-        return block_df
+        return block_df, added_cols, removed_cols
 
     def used_columns(self, sbf_block: str) -> list:
         """returns the column names and dtype we use when extracting a SBF block from the SBF file
@@ -716,6 +789,7 @@ class SBF:
             "Cov_latlat [m²]": "SD_lat [m]",
             "Cov_lonlon [m²]": "SD_lon [m]",
             "Cov_hgthgt [m²]": "SD_hgt [m]",
+            "Cov_bb [m²]": "SD_bb [m]",
         }
 
         return (
