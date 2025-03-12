@@ -39,9 +39,9 @@ def auto_populate_args_namespace(
     """
     # ----------------------------------------------------------------------------------#
     # to fetch the default values of the native parser function,
-    # we need to call it to fill a dictionary with the default values of the arguments
-    # however if an argument is required, the parser will exit with an error
-    # therefore we need to make all arguments optional temporarily
+    # we need to call the native parser function to fill a dictionary with the default 
+    # values of the arguments. However if an argument is required, the parser will exit 
+    # with an error. Therefore we need to make all arguments temporarily optional
     # The only 'clean' way of doing this is to temporarily patch the ArgumentParser class
     # ----------------------------------------------------------------------------------#
 
@@ -332,6 +332,156 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
 
     return args
 
+
+def argument_parser_pnt_data_collector_df_constructor(script_name: str, args: list) -> argparse.Namespace:
+    """parses the arguments
+
+    Args:
+        argv (list): list of arguments
+
+    Returns:
+        argparse.Namespace: parsed arguments
+    """
+    baseName = str_yellow(script_name)
+
+    help_txt = baseName + " The PNT data collector df constructor is used to collect PNT data from multiple sources\
+                            and construct standardised dataframes. If multiple sources are provided, \
+                            these can be merged, concatenated, or written to a csv file.\
+                            The constructed dataframes can be further processed by plot_coords.py\
+                            or gnss analysis tool."
+
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_txt)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+    )
+    # input pnt sources have the nargs option which allows for multiple files to be passed as arguments
+    parser.add_argument(
+        "--sbf_ifn",
+        help="input SBF filename",
+        nargs="+",
+        type=str,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--pos_ifn",
+        help="input rnx2rtkp pos filename",
+        nargs="+",
+        type=str,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--glab_ifn",
+        help="input gLABng filename",
+        nargs="+",
+        type=str,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--nmea_ifn",
+        help="input NMEA filename (-sd standard deviation not yet supported!)",
+        nargs="+",
+        type=str,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--csv_ifn",
+        help="input CSV filename with PNT data (see additional CSV options to correctly read out the file)",
+        nargs="+",
+        type=str,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--sd",
+        help="add standard deviations to the dataframe. (only enable if all input sources contain standard deviations)",
+        action="store_true",
+        required=False,
+        default=False,
+    )
+    parser.add_argument(
+        "--merge",
+        help="merge the input PNT sources into a single dataframe",
+        action="store_true",
+        required=False,
+        default=False,
+    )
+    parser.add_argument(
+        "--output_csv",
+        help="Enables output of CSV files containing the standardised dataframe collected from PNT sources.\
+            If multiple sources are provided and the merge option is disabled, the output filename will be \
+                the same as the input filename exended with pnt_standard.csv added.",
+        action="store_true",
+        required=False,
+        default=False,
+    )
+    
+    
+    # Creating a group for PNT_CSV-specific arguments
+    csv_group = parser.add_argument_group(
+        "PNT_CSV file options", "Options specific to PNT_CSV input files"
+    )
+    csv_group.add_argument(
+        "--columns_csv",
+        help="Comma-separated list of columns to be read from CSV files (default: DT, UTM.E, UTM.N, orthoH)",
+        type=cs_str_to_list,
+        required=False,
+        default="DT, UTM.E, UTM.N, orthoH",
+    )
+    csv_group.add_argument(
+        "--sep",
+        help="separator for CSV files (default: ',')",
+        type=str,
+        required=False,
+        default=",",
+    )
+    csv_group.add_argument(
+        "--comment_prefix",
+        help="comment prefix for CSV files (default: #)",
+        type=str,
+        required=False,
+        default="#",
+    )
+    csv_group.add_argument(
+        "--header",
+        help="has header for CSV files True or False (default: True)",
+        type=bool,
+        required=False,
+        default=True,
+    )
+    csv_group.add_argument(
+        "--skip_rows_after_header",
+        help="skip rows after header for CSV files (default: 0)",
+        type=int,
+        required=False,
+        default=0,
+    )
+    csv_group.add_argument(
+        "--datetime_start",
+        help="start datetime for CSV files if no DT column is present (default: 1980-01-06 00:00:00)",
+        type=str,
+        required=False,
+        default="1980-01-06 00:00:00",
+    )
+
+    # allow argument completion
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args(args)
+
+    return args
+
+    
+    
+    
 
 def argument_parser_ebh_lines(script_name: str, args: list) -> argparse.Namespace:
     """parses the arguments

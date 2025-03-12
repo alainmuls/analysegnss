@@ -64,6 +64,9 @@ where = ["src"]
 launch_ebh_process = "analysegnss.launch.launch_ebh_process:main"
 launch_rnx2rtkp = "analysegnss.launch.launch_rnx2rtkp:main"
 
+# PNT
+pnt_data_collector_df_constructor = "analysegnss.pnt.pnt_data_collector_df_constructor:main"
+
 # rinex
 get_rnx_files = "analysegnss.rinex.get_rnx_files:main"
 
