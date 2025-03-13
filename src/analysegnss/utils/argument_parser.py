@@ -238,7 +238,8 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
     )
     source_group.add_argument(
         "--csv_ifn",
-        help="input CSV filename with PNT data (see additional CSV options to correctly read out the file)",
+        help="input CSV filename with PNT data. The csv option defaults are configured for reading the csv files\
+            produced by pnt_data_collector.py\ (see additional CSV options if this is not the case)",
         type=str,
     )
 
@@ -248,10 +249,13 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
     )
     csv_group.add_argument(
         "--columns_csv",
-        help="Comma-separated list of columns to be read from CSV files (default: DT, UTM.E, UTM.N, orthoH)",
+        help="Comma-separated list of columns to be read from CSV files.\
+            Enter columns in CLI as a list of strings. e.g. --columns_csv 'DT, UTM.E, UTM.N, orthoH'\
+                the minimum required columns are: UTM.E, UTM.N, orthoH (default)\
+                the following list of columns can be processed: UTM.E, UTM.N, orthoH, DT, pvt_qual, sde(m), sdn(m), sdu(m), num_sats",
         type=cs_str_to_list,
         required=False,
-        default="DT, UTM.E, UTM.N, orthoH",
+        default="UTM.E, UTM.N, orthoH",
     )
     csv_group.add_argument(
         "--sep",
@@ -268,11 +272,11 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
         default="#",
     )
     csv_group.add_argument(
-        "--header",
-        help="has header for CSV files True or False (default: True)",
-        type=bool,
+        "--no_header",
+        help="Disables processing of header for CSV files (default: False)",
+        action="store_true",
         required=False,
-        default=True,
+        default=False,
     )
     csv_group.add_argument(
         "--skip_rows_after_header",
@@ -415,8 +419,9 @@ def argument_parser_pnt_data_collector(script_name: str, args: list) -> argparse
         required=False,
         default=False,
     )
+
     parser.add_argument(
-        "--output_csv",
+        "--csv_out",
         help="Enables output of CSV files containing the standardised dataframe collected from PNT sources.\
             If multiple sources are provided and the merge option is disabled, the output filename will be \
                 the same as the input filename exended with pnt_standard.csv added.",
@@ -424,7 +429,13 @@ def argument_parser_pnt_data_collector(script_name: str, args: list) -> argparse
         required=False,
         default=False,
     )
-    
+    parser.add_argument(
+        "--merge_dest",
+        help="Directory if where merged pnt csv file is written. Required when both --csv_out and --merge are enabled.",
+        type=str,
+        required=False,
+        default=None,
+    )
     
     # Creating a group for PNT_CSV-specific arguments
     csv_group = parser.add_argument_group(
@@ -476,6 +487,10 @@ def argument_parser_pnt_data_collector(script_name: str, args: list) -> argparse
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
+
+    # Validate that merge_dest is provided when both csv_out and merge are enabled
+    if args.csv_out and args.merge and args.merge_dest is None:
+        parser.error("--merge_dest is required when both --csv_out and --merge are enabled")
 
     return args
 

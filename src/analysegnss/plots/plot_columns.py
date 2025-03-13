@@ -4,9 +4,6 @@ from typing import Dict
 
 # Local application imports
 from analysegnss.gnss.general_pvt_quality_dict import GENERAL_PVT_QUALITY_ID
-from analysegnss.nmea import nmea_constants as nmeac
-from analysegnss.rtkpos import rtklib_constants as rtklibc
-from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.glabng import glab_constants as glabc
 
 
@@ -81,9 +78,9 @@ COLUMN_MAPPINGS: Dict[str, UTMColumns] = {
         height="orthoH",
         time="DT",
         quality_mapping=UTMQualityMapping("pvt_qual", GENERAL_PVT_QUALITY_ID),
-        sde="sdlon(m)",
-        sdn="sdlat(m)",
-        sdu="sdH",
+        sde="sde(m)",
+        sdn="sdn(m)",
+        sdu="sdu(m)",
         nrSVN="num_sats",
     ),
     # "GLABNG": UTMColumns(

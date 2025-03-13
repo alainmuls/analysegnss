@@ -17,7 +17,7 @@ from analysegnss.plots import plot_utm
 from analysegnss.plots.plot_columns import get_utm_columns
 from analysegnss.utils import init_logger
 from analysegnss.utils.argument_parser import argument_parser_plot_coords
-from analysegnss.pnt.pnt_data_collector import get_source_df, standardize_df
+from analysegnss.pnt.pnt_data_collector import get_source_df, standardize_pnt_df
 
 
 def get_source(parsed_args: argparse.Namespace) -> str:
@@ -66,8 +66,8 @@ def plot_coords(args_parsed: argparse.Namespace, logger: logging.Logger):
     source = get_source(parsed_args=args_parsed)
 
     # get the source dataframe and standardize it
-    df_source = get_source_df(source=source, args_parsed=args_parsed, logger=logger)
-    df_utm = standardize_df(df=df_source, source=source, args_parsed=args_parsed, logger=logger)
+    df_source = get_source_df(source=source, source_ifn=None, parsed_args=args_parsed, logger=logger) # source_ifn is fetched from the parsed_args
+    df_utm = standardize_pnt_df(df_source=df_source, source=source, parsed_args=args_parsed, logger=logger)
 
     logger.debug(f"df_utm = \n{df_utm}")
 
