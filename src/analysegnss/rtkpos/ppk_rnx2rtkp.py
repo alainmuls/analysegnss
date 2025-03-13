@@ -13,11 +13,10 @@ from rich import print as rprint
 from tabulate import tabulate
 
 # Local application imports
-from analysegnss.gnss.general_pvt_quality_dict import (
-    rtklib_to_general_pvtqual,
-    get_pvtquality_info,
+from analysegnss.gnss.general_pnt_quality_dict import (
+    rtklib_to_general_pntqual,
+    get_pntquality_info,
 )
-from analysegnss.rtkpos import rtklib_constants as rtklibc
 from analysegnss.rtkpos.rtkpos_class import Rtkpos
 from analysegnss.utils import init_logger
 from analysegnss.utils.argument_parser import (
@@ -39,7 +38,7 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> list:
     for qual, qual_data in df_pos.group_by("Q"):
         qual_analysis.append(
             [
-                get_pvtquality_info(rtklib_to_general_pvtqual(qual))["desc"],
+                get_pntquality_info(rtklib_to_general_pntqual(qual))["desc"],
                 qual_data.shape[0],
                 round(qual_data.shape[0] / total_obs * 100, 2),
                 total_obs,
@@ -51,6 +50,9 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> list:
         headers=["PNT Mode", "PNT Mode Count", "Percentage", "Total Observations"],
         tablefmt="fancy_outline",
     )
+
+    # print the quality analysis
+    rprint(qual_tabular)
 
     if logger is not None:
         logger.info(f"Analysis of the quality of the position data\n{qual_tabular}")

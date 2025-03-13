@@ -19,7 +19,7 @@ import utm
 
 # Local application imports
 from analysegnss.utils.utilities import sf64, si64
-from analysegnss.gnss.general_pvt_quality_dict import nmea_to_general_pvtqual
+from analysegnss.gnss.general_pnt_quality_dict import nmea_to_general_pntqual
 
 #TODO Only NMEA RMC contains the datestamp, so if this message is not present, the datetime can not be generated
 #   This should raise an error or warning and enable the user to add the date manually
@@ -259,23 +259,23 @@ class NMEA:
                 "Trying to add datetime, UTM and orthoH columns to the NMEA parsed DataFrame"
             )
 
-        # remove invalid PNT where GNSS quality equals 0 and add new column with general PVT quality ID from 'pvt_qual'
+        # remove invalid PNT where GNSS quality equals 0 and add new column with general PNT quality ID from 'pnt_qual'
         if "gps_qual" in nmea_df.columns:
             if self.logger:
                 self.logger.debug("Removing invalid PNT where GNSS quality equals 0")
             nmea_df = nmea_df.filter(pl.col("gps_qual") != 0).lazy()
 
-            # add new column with general PVT quality ID from 'pvt_qual'
+            # add new column with general PNT quality ID from 'pnt_qual'
             nmea_df = nmea_df.with_columns(
                 pl.struct(["gps_qual"])
                 .map_elements(
-                    lambda x: nmea_to_general_pvtqual(x["gps_qual"]),
+                    lambda x: nmea_to_general_pntqual(x["gps_qual"]),
                     return_dtype=pl.Utf8,
                 )
-                .alias("pvt_qual")
+                .alias("pnt_qual")
             ).lazy()
             if self.logger:
-                self.logger.debug(f"\tcreated new column 'pvt_qual' from 'gps_qual'")
+                self.logger.debug(f"\tcreated new column 'pnt_qual' from 'gps_qual'")
 
             
         if "datestamp" in nmea_df.columns and "timestamp" in nmea_df.columns:

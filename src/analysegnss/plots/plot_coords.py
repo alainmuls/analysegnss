@@ -13,11 +13,14 @@ import polars as pl
 from rich import print
 
 from analysegnss.config import ERROR_CODES, rich_console
+from analysegnss.glabng import glab_parser
+from analysegnss.nmea import nmea_reader
+from analysegnss.rtkpos import ppk_rnx2rtkp
+from analysegnss.sbf import rtk_pvtgeod
 from analysegnss.plots import plot_utm
 from analysegnss.plots.plot_columns import get_utm_columns
 from analysegnss.utils import init_logger
 from analysegnss.utils.argument_parser import argument_parser_plot_coords
-from analysegnss.pnt.pnt_data_collector import get_source_df, standardize_pnt_df
 
 
 def get_source(parsed_args: argparse.Namespace) -> str:
@@ -66,9 +69,51 @@ def plot_coords(args_parsed: argparse.Namespace, logger: logging.Logger):
     source = get_source(parsed_args=args_parsed)
 
     # get the source dataframe and standardize it
-    df_source = get_source_df(source=source, source_ifn=None, parsed_args=args_parsed, logger=logger) # source_ifn is fetched from the parsed_args
-    df_utm = standardize_pnt_df(df_source=df_source, source=source, parsed_args=args_parsed, logger=logger)
+    df_source = get_source_df(source=source, parsed_args=args_parsed, logger=logger)
 
+    # Get column mappings for this source
+    utm_columns = get_utm_columns(source=source)
+    logger.debug(f"utm_columns: {utm_columns}")
+
+	# create the df_utm dataframe from the dataframe obtained according to each source
+    try:
+        if not args_parsed.sd:
+            df_utm = df_source.select(
+                [
+                    utm_columns.time,
+                    utm_columns.quality_mapping.quality_column,
+                    utm_columns.nrSVN,
+                    utm_columns.east,
+                    utm_columns.north,
+                    utm_columns.height,
+                ]
+            )
+        else:
+            df_utm = df_source.select(
+                [
+                    utm_columns.time,
+                    utm_columns.quality_mapping.quality_column,
+                    utm_columns.nrSVN,
+                    utm_columns.east,
+                    utm_columns.north,
+                    utm_columns.height,
+                    utm_columns.sdn,
+                    utm_columns.sde,
+                    utm_columns.sdu,
+                ]
+            )
+    except pl.exceptions.ColumnNotFoundError as e: 
+        column_missing = e.args[0]
+        logger.error(f"ERROR: Missing the column |{column_missing}| in the dataframe")
+        sys.exit(1)
+        
+    # Filter out null values in coordinates
+    df_utm = df_utm.filter(
+        pl.col(utm_columns.east).is_not_null()
+        & pl.col(utm_columns.north).is_not_null()
+        & pl.col(utm_columns.height).is_not_null()
+    )        
+    
     logger.debug(f"df_utm = \n{df_utm}")
 
     # find filename and directory from the position file
@@ -132,6 +177,90 @@ def plot_coords(args_parsed: argparse.Namespace, logger: logging.Logger):
         if args_parsed.display:
             with rich_console.status(f"Displaying plots.\t", spinner="aesthetic"):
                 plt.show(block=True)
+
+
+def get_source_df(
+    source: str,
+    parsed_args: argparse.Namespace,
+    logger: logging.Logger,
+) -> pl.DataFrame:
+    """Get dataframe from a specific source
+
+    Args:
+        source (str): Source type (RTK, PPK, GLABNG, NMEA, PNT_CSV)
+        parsed_args: Parsed arguments
+        logger: Logger object
+
+    Returns:
+        pl.DataFrame: DataFrame with standardized columns
+    """
+    match source:
+        case "PPK":
+            # Create PPK position dataframe
+            logger.debug(f"Creating PPK position dataframe")
+            df_source = ppk_rnx2rtkp.rtkp_pos(parsed_args=parsed_args, logger=logger)
+
+        case "RTK":
+            # Create RTK position dataframe
+            logger.debug(f"Creating RTK position dataframe")
+            df_source = rtk_pvtgeod.rtk_pvtgeod(parsed_args=parsed_args, logger=logger)
+
+        case "GLABNG":
+            # Create GLAB position dataframe
+            logger.debug(f"Creating GLAB position dataframe")
+            glab_parser_args = [
+                "glab_parser",
+                "--glab_ifn",
+                parsed_args.glab_ifn,
+                "--section",
+                "OUTPUT",
+            ]
+            dfs_glab = glab_parser.glab_parser(argv=glab_parser_args)
+            df_source = dfs_glab["OUTPUT"]
+            if logger:
+                logger.debug(f"GLAB OUTPUT dataframe:\n{df_source}")
+
+        case "NMEA":
+            # Create NMEA dataframe
+            df_source, _ = nmea_reader.nmea_reader(
+                parsed_args=parsed_args, logger=logger
+            )
+
+        case "PNT_CSV":
+            try:
+                # Read PNT CSV file
+                
+                # first check if parsed_args.header is True. Then use the columns defined in the header.
+                # Otherwise, use the columns defined in the parsed_args.columns_csv
+                if parsed_args.no_header:
+                    # If no header, use the specified column names
+                    df_source = pl.read_csv(
+                        parsed_args.csv_ifn,
+                        separator=parsed_args.sep,
+                        has_header=False,
+                        new_columns=parsed_args.columns_csv,
+                        comment_prefix=parsed_args.comment_prefix,
+                        skip_rows_after_header=parsed_args.skip_rows_after_header,
+                    )
+                else:
+                    # Read the CSV with existing column names from header
+                    df_source = pl.read_csv(
+                        parsed_args.csv_ifn,
+                        separator=parsed_args.sep,
+                        comment_prefix=parsed_args.comment_prefix,
+                        has_header=True,
+                        skip_rows_after_header=parsed_args.skip_rows_after_header,
+                        schema_overrides={"DT": pl.Datetime()},
+                    )
+            except Exception as e:
+                logger.error(f"Error creating PNT_CSV dataframe: {str(e)}")
+                raise
+
+        case _:
+            logger.error(f"Invalid source: {source}")
+            sys.exit(ERROR_CODES["E_INVALID_SOURCE"])
+
+    return df_source
 
 
 def main():

@@ -238,8 +238,9 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
     )
     source_group.add_argument(
         "--csv_ifn",
-        help="input CSV filename with PNT data. The csv option defaults are configured for reading the csv files\
-            produced by pnt_data_collector.py\ (see additional CSV options if this is not the case)",
+        help="input CSV filename with PNT data.\
+            It is recommended to use pnt_data_collector.py to produce the compatible CSV files.\
+            (see additional CSV options if this is not the case)",
         type=str,
     )
 
@@ -250,12 +251,13 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
     csv_group.add_argument(
         "--columns_csv",
         help="Comma-separated list of columns to be read from CSV files.\
-            Enter columns in CLI as a list of strings. e.g. --columns_csv 'DT, UTM.E, UTM.N, orthoH'\
-                the minimum required columns are: UTM.E, UTM.N, orthoH (default)\
-                the following list of columns can be processed: UTM.E, UTM.N, orthoH, DT, pvt_qual, sde(m), sdn(m), sdu(m), num_sats",
+            Enter columns in CLI as a list of strings. e.g. --columns_csv 'UTM.E, UTM.N, orthoH, DT, pnt_qual, num_sats'.\
+            The minimum required columns are: [UTM.E, UTM.N, orthoH, DT, pnt_qual, num_sats]\
+            [sde(m), sdn(m), sdu(m)] are optional.\
+            Important: the no_header and skip_rows_after_header args (if applicable) must be configured accordingly",
         type=cs_str_to_list,
         required=False,
-        default="UTM.E, UTM.N, orthoH",
+        default="UTM.E, UTM.N, orthoH, DT, pnt_qual, num_sats",
     )
     csv_group.add_argument(
         "--sep",
@@ -284,13 +286,6 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
         type=int,
         required=False,
         default=0,
-    )
-    csv_group.add_argument(
-        "--datetime_start",
-        help="start datetime for CSV files if no DT column is present (default: 1980-01-06 00:00:00)",
-        type=str,
-        required=False,
-        default="1980-01-06 00:00:00",
     )
 
     parser.add_argument(
@@ -350,9 +345,9 @@ def argument_parser_pnt_data_collector(script_name: str, args: list) -> argparse
 
     help_txt = baseName + " The PNT data collector is used to collect PNT data from multiple sources\
                             and construct standardised dataframes. If multiple sources are provided, \
-                            these can be merged, concatenated, or written to a csv file.\
+                            these can be merged. All dataframes can be written to a csv file.\
                             The constructed dataframes can be further processed by plot_coords.py\
-                            or gnss analysis tool."
+                            or other gnss analysis tools."
 
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=help_txt)
@@ -367,7 +362,8 @@ def argument_parser_pnt_data_collector(script_name: str, args: list) -> argparse
     # input pnt sources have the nargs option which allows for multiple files to be passed as arguments
     parser.add_argument(
         "--sbf_ifn",
-        help="input SBF filename",
+        help="input SBF filename.\
+            To add multiple SBF files, only separate the filenames with a space. e.g. --sbf_ifn sbf1.sbf sbf2.sbf",
         nargs="+",
         type=str,
         required=False,
@@ -375,7 +371,8 @@ def argument_parser_pnt_data_collector(script_name: str, args: list) -> argparse
     )
     parser.add_argument(
         "--pos_ifn",
-        help="input rnx2rtkp pos filename",
+        help="input rnx2rtkp pos filename.\
+            To add multiple pos files, only separate the filenames with a space.",
         nargs="+",
         type=str,
         required=False,
@@ -383,7 +380,8 @@ def argument_parser_pnt_data_collector(script_name: str, args: list) -> argparse
     )
     parser.add_argument(
         "--glab_ifn",
-        help="input gLABng filename",
+        help="input gLABng filename.\
+            To add multiple gLABng files, only separate the filenames with a space.",
         nargs="+",
         type=str,
         required=False,
@@ -391,7 +389,8 @@ def argument_parser_pnt_data_collector(script_name: str, args: list) -> argparse
     )
     parser.add_argument(
         "--nmea_ifn",
-        help="input NMEA filename (-sd standard deviation not yet supported!)",
+        help="input NMEA filename (-sd standard deviation not yet supported!).\
+            To add multiple nmea files, only separate the filenames with a space.",
         nargs="+",
         type=str,
         required=False,
@@ -399,7 +398,8 @@ def argument_parser_pnt_data_collector(script_name: str, args: list) -> argparse
     )
     parser.add_argument(
         "--csv_ifn",
-        help="input CSV filename with PNT data (see additional CSV options to correctly read out the file)",
+        help="input CSV filename with PNT data (see additional CSV options to correctly read out the file).\
+            To add multiple csv files, only separate the filenames with a space.",
         nargs="+",
         type=str,
         required=False,
@@ -419,7 +419,6 @@ def argument_parser_pnt_data_collector(script_name: str, args: list) -> argparse
         required=False,
         default=False,
     )
-
     parser.add_argument(
         "--csv_out",
         help="Enables output of CSV files containing the standardised dataframe collected from PNT sources.\
@@ -443,7 +442,12 @@ def argument_parser_pnt_data_collector(script_name: str, args: list) -> argparse
     )
     csv_group.add_argument(
         "--columns_csv",
-        help="Comma-separated list of columns to be read from CSV files (default: DT, UTM.E, UTM.N, orthoH)",
+        help="Comma-separated list of columns to be read from CSV files.\
+            Enter columns in CLI as a list of strings. e.g. --columns_csv 'UTM.E, UTM.N, orthoH, DT, pnt_qual, num_sats'.\
+            The minimum required columns are: [UTM.E, UTM.N, orthoH]\
+            The pnt_data_collector.py script can process the following columns:\
+                [UTM.E, UTM.N, orthoH, DT, pnt_qual, num_sats, sde(m), sdn(m), sdu(m)]\
+            Important: the no_header and skip_rows_after_header args (if applicable) must be configured accordingly",   
         type=cs_str_to_list,
         required=False,
         default="DT, UTM.E, UTM.N, orthoH",
@@ -463,11 +467,11 @@ def argument_parser_pnt_data_collector(script_name: str, args: list) -> argparse
         default="#",
     )
     csv_group.add_argument(
-        "--header",
-        help="has header for CSV files True or False (default: True)",
-        type=bool,
+        "--no_header",
+        help="Disables processing of header for CSV files (default: False)",
+        action="store_true",
         required=False,
-        default=True,
+        default=False,
     )
     csv_group.add_argument(
         "--skip_rows_after_header",

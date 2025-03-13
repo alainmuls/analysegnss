@@ -16,7 +16,7 @@ from rich import print as rprint
 
 from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.gnss.gnss_dt import gpsms2dt
-from analysegnss.gnss.general_pvt_quality_dict import sbf_to_general_pvtqual, get_pvtquality_info
+from analysegnss.gnss.general_pnt_quality_dict import sbf_to_general_pntqual, get_pntquality_info
 from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.sbf.sbf_blocks_polars import (
     SBF_BLOCK_COLUMNS_BIN2ASC,
@@ -557,17 +557,17 @@ class SBF:
 
         if "Type" in block_df.columns:
             block_df = block_df.filter(pl.col("Type") != 0).lazy()
-            # create new column with general PVT quality ID to general name pvt_qual
+            # create new column with general PNT quality ID to general name pnt_qual
             block_df = block_df.with_columns(
                 pl.struct(["Type"])
                 .map_elements(
-                    lambda x: sbf_to_general_pvtqual(x["Type"]),
+                    lambda x: sbf_to_general_pntqual(x["Type"]),
                     return_dtype=pl.Utf8,
                 )
-                .alias("pvt_qual")
+                .alias("pnt_qual")
             ).lazy()
             if self.logger:
-                self.logger.debug(f"\tcreated new column 'pvt_qual' from 'Type'")
+                self.logger.debug(f"\tcreated new column 'pnt_qual' from 'Type'")
             # print(f"block_df = \n{block_df}")
 
         # add date-time and PRN (as str) to the dataframe

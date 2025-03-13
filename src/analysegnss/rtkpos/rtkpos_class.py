@@ -15,7 +15,7 @@ import utm
 from analysegnss.config import ERROR_CODES, GEOID_PATH, rich_console
 from analysegnss.gnss import geoid
 from analysegnss.gnss.gnss_dt import gpsms2dt
-from analysegnss.gnss.general_pvt_quality_dict import rtklib_to_general_pvtqual
+from analysegnss.gnss.general_pnt_quality_dict import rtklib_to_general_pntqual
 from analysegnss.utils.utilities import str_red
 
 
@@ -173,14 +173,14 @@ class Rtkpos:
             dict: schema for the RTK position dataframe
         """
         col_types = {
-            pl.Int16: ["WNc"],
+            pl.UInt16: ["WNc"],
             pl.Float64: [
                 "TOW(s)",
                 "latitude(deg)",
                 "longitude(deg)",
                 "height(m)",
             ],
-            pl.Int16: ["Q", "ns"],
+            pl.UInt8: ["Q", "ns"],
             pl.Float32: [
                 "sdn(m)",
                 "sde(m)",
@@ -364,18 +364,18 @@ class Rtkpos:
                     .alias("orthoH")
                 ).lazy()
            
-            # add new column with general PVT quality ID from 'Q'
+            # add new column with general PNT quality ID from 'Q'
             if "Q" in df_pos.columns:
                 df_pos = df_pos.with_columns(
                     pl.struct(["Q"])
                     .map_elements(  
-                        lambda x: rtklib_to_general_pvtqual(x["Q"]),
+                        lambda x: rtklib_to_general_pntqual(x["Q"]),
                         return_dtype=pl.Utf8,
                     )
-                    .alias("pvt_qual")
+                    .alias("pnt_qual")
                 ).lazy()
                 if self.logger is not None:
-                    self.logger.debug(f"\tcreated new column 'pvt_qual' from 'Q'")
+                    self.logger.debug(f"\tcreated new column 'pnt_qual' from 'Q'")
             
             
             # collect the dataframe

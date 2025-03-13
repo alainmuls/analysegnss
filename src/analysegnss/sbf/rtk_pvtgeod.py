@@ -13,8 +13,7 @@ from tabulate import tabulate
 
 # Local application imports
 from analysegnss.config import ERROR_CODES
-from analysegnss.gnss.general_pvt_quality_dict import sbf_to_general_pvtqual, get_pvtquality_info
-from analysegnss.sbf import sbf_constants as sbfc
+from analysegnss.gnss.general_pnt_quality_dict import sbf_to_general_pntqual, get_pntquality_info
 from analysegnss.sbf.sbf_class import SBF
 from analysegnss.utils import init_logger
 from analysegnss.utils.utilities import combine_dfs
@@ -31,21 +30,23 @@ def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:
     qual_analysis = []
     total_obs = geod_df.shape[0]
     for qual, qual_data in geod_df.group_by("Type"):
-        if qual in sbfc.DICT_SBF_PVTMODE:
-            qual_analysis.append(
-                [
-                    get_pvtquality_info(sbf_to_general_pvtqual(qual))["desc"],
-                    qual_data.shape[0],
-                    round(qual_data.shape[0] / total_obs * 100, 2),
-                    total_obs
-                ]
-            )
+        qual_analysis.append(
+            [
+                get_pntquality_info(sbf_to_general_pntqual(qual))["desc"],
+                qual_data.shape[0],
+                round(qual_data.shape[0] / total_obs * 100, 2),
+                total_obs
+            ]
+        )
 
     qual_tabular = tabulate(
         qual_analysis,
         headers=["PNT Mode", "PNT Mode Count", "Percentage", "Total Observations"],
         tablefmt="fancy_outline",
     )
+
+    # print the quality analysis
+    rprint(qual_tabular)
 
     if logger is not None:
         logger.debug(f"Quality analysis:\n{qual_tabular}")

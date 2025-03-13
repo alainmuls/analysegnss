@@ -12,7 +12,7 @@ from rich import print as rprint
 from tabulate import tabulate
 
 # Local application imports
-from analysegnss.gnss.general_pvt_quality_dict import nmea_to_general_pvtqual, get_pvtquality_info
+from analysegnss.gnss.general_pnt_quality_dict import nmea_to_general_pntqual, get_pntquality_info
 from analysegnss.nmea.nmea_class import NMEA
 from analysegnss.utils import argument_parser, init_logger
 
@@ -29,7 +29,7 @@ def quality_analysis(df_pvt: pl.DataFrame, logger: logging.Logger = None) -> lis
     for qual, qual_data in df_pvt.group_by("gps_qual"):
         qual_analysis.append(
             [
-                get_pvtquality_info(nmea_to_general_pvtqual(qual))["desc"],
+                get_pntquality_info(nmea_to_general_pntqual(qual))["desc"],
                 qual_data.shape[0],
                 round(qual_data.shape[0]/total_obs*100,2),
                 total_obs

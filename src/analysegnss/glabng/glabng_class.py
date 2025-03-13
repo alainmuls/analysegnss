@@ -287,9 +287,9 @@ class GLABNG:
 
             if "mode" in df_section.columns:
                 # Rename Column with PVT quality to general name
-                df_section = df_section.rename({"mode": "pvt_qual"}).lazy()
+                df_section = df_section.rename({"mode": "pnt_qual"}).lazy()
                 if self.logger:
-                    self.logger.debug(f"\trenaming column 'mode' to 'pvt_qual'")
+                    self.logger.debug(f"\trenaming column 'mode' to 'pnt_qual'")
 
             # Clean up intermediate columns
             df_section = df_section.drop(["Year", "DOY", "SOD", "utm_coords"]).lazy()

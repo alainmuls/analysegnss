@@ -17,7 +17,7 @@ import analysegnss.rtkpos.ppk_rnx2rtkp as ppk_rnx2rtkp
 import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
 import analysegnss.glabng.glab_parser as glab_parser
 from analysegnss.config import ERROR_CODES, rich_console
-from analysegnss.plots.plot_columns import get_utm_columns
+from analysegnss.pnt.pnt_columns import get_pnt_columns
 from analysegnss.utils import init_logger
 from analysegnss.utils.argument_parser import argument_parser_pnt_data_collector
 
@@ -111,10 +111,10 @@ def pnt_data_collector(parsed_args: argparse.Namespace, logger: logging.Logger) 
         if parsed_args.merge_dest is not None:
             # get destination directory of merged pnt dataframe
             merged_pnt_odir = os.path.dirname(os.path.abspath(parsed_args.merge_dest))
-            merged_pnt_dest = os.path.join(merged_pnt_odir, "merged_pnt_standard.csv")
+            merged_pnt_dest = os.path.join(merged_pnt_odir, "merged.csv")
             logger.info(f"Merged PNT dataframe will be written to: {merged_pnt_dest}")
         else:
-            merged_pnt_dest = "merged_pnt_standard"
+            merged_pnt_dest = "merged.csv"
             logger.warning(f"No destination directory provided for merged PNT dataframe. Not writing to file.")
         
         # add merged pnt dataframe to dictionary
@@ -246,15 +246,15 @@ def standardize_pnt_df(
     logger: logging.Logger,
 ) -> pl.DataFrame:
     """Standardize PNT dataframe columns:
-        - DT: datetime
         - UTM.E: east coordinate
         - UTM.N: north coordinate
         - orthoH: orthometric height
+        - DT: datetime
+        - pnt_qual: quality of the PVT solution
+        - num_sats: number of satellites used in the fix
         (- sdn: standard deviation of north coordinate)
         (- sde: standard deviation of east coordinate)
         (- sdu: standard deviation of orthometric height)
-        - pvt_qual: quality of the PVT solution
-        - nrSVN: number of satellites used in the fix
         - source: source type
     
     Args:
@@ -269,26 +269,28 @@ def standardize_pnt_df(
         pl.DataFrame: Standardized dataframe
     """
     # Get column mappings for this source
-    utm_columns = get_utm_columns(source=source)
+    pnt_columns = get_pnt_columns(source=source)
 
     # Define required columns
     required_columns = [
-        utm_columns.east,
-        utm_columns.north,
-        utm_columns.height,
-        utm_columns.time,
-        utm_columns.quality_mapping.quality_column,
-        utm_columns.nrSVN,
-        "source", # [RTK, PPK, GLABNG, NMEA, PNT_CSV]
+        pnt_columns.east,
+        pnt_columns.north,
+        pnt_columns.height,
+        pnt_columns.time,
+        pnt_columns.quality_mapping.quality_column,
+        pnt_columns.nrSVN,
     ]
     if parsed_args.sd:
         required_columns.extend(
             [
-                utm_columns.sdn,
-                utm_columns.sde,
-                utm_columns.sdu,
+                pnt_columns.sdn,
+                pnt_columns.sde,
+                pnt_columns.sdu,
             ]
         )
+
+    # add source column at the end of the list [RTK, PPK, GLABNG, NMEA, PNT_CSV]
+    required_columns.extend(["source"])
 
     # Check for missing columns
     existing_cols = df_source.columns
@@ -308,7 +310,7 @@ def standardize_pnt_df(
         )
         dummy_data = {}
         for col in missing_cols:
-            if col == utm_columns.time:
+            if col == pnt_columns.time:
                 dummy_data[col] = pl.Series(
                     name=col,
                     values=[
@@ -319,9 +321,9 @@ def standardize_pnt_df(
                         for i in range(len(df_source))
                     ],
                 )
-            elif col == utm_columns.nrSVN:
+            elif col == pnt_columns.nrSVN:
                 dummy_data[col] = pl.Series(name=col, values=[0] * len(df_source))
-            elif col == utm_columns.quality_mapping.quality_column:
+            elif col == pnt_columns.quality_mapping.quality_column:
                 dummy_data[col] = pl.Series(
                     name=col, values=["MANUAL"] * len(df_source)
                 )
@@ -336,16 +338,34 @@ def standardize_pnt_df(
 
     
     # Select required columns
-    #if not parsed_args.sd:
-    #    df_source = df_source.select(required_columns[:7])
-    #else:
     df_source = df_source.select(required_columns)
 
+    # Rename columns according to PNTColumns class "PNT_CSV" for standardization. PNT_CSV will act as the standard PNT output format
+    pnt_csv_columns = get_pnt_columns(source="PNT_CSV")
+    df_source = df_source.rename(
+        {
+            pnt_columns.east: pnt_csv_columns.east,
+            pnt_columns.north: pnt_csv_columns.north,
+            pnt_columns.height: pnt_csv_columns.height,
+            pnt_columns.time: pnt_csv_columns.time,
+            pnt_columns.quality_mapping.quality_column: pnt_csv_columns.quality_mapping.quality_column,
+            pnt_columns.nrSVN: pnt_csv_columns.nrSVN,
+        }
+    )
+    if parsed_args.sd:
+        df_source = df_source.rename(
+            {
+                pnt_columns.sdn: pnt_csv_columns.sdn,
+                pnt_columns.sde: pnt_csv_columns.sde,
+                pnt_columns.sdu: pnt_csv_columns.sdu,
+            }
+        )
+    
     # Filter out null values in coordinates
     df_source = df_source.filter(
-        pl.col(utm_columns.east).is_not_null()
-        & pl.col(utm_columns.north).is_not_null()
-        & pl.col(utm_columns.height).is_not_null()
+        pl.col(pnt_columns.east).is_not_null()
+        & pl.col(pnt_columns.north).is_not_null()
+        & pl.col(pnt_columns.height).is_not_null()
     )
 
     # Add source identifier
@@ -400,7 +420,10 @@ def write_standardized_pnt_df_to_csv(standard_pnt_dfs: dict, logger: logging.Log
 
     for source_ifn_abs, standard_pnt_df in standard_pnt_dfs.items():
         
+        
+        # get destination directory for merged pnt dataframe
         output_dest = os.path.splitext(source_ifn_abs)[0] + "_pnt_standard.csv"
+        
         standard_pnt_df.write_csv(output_dest)
         
         # check if file was written successfully

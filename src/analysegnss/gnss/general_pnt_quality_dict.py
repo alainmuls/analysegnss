@@ -1,13 +1,13 @@
 """
-General PVT quality dictionary and conversion functions for different GNSS formats
+General PNT quality dictionary and conversion functions for different GNSS formats
 """
 
-# General PVT quality dictionary that serves as a common reference
-GENERAL_PVT_QUALITY_ID = {
-    'INVALID': dict(desc="Invalid/No PVT available", color="red"),
-    'STANDALONE': dict(desc="Stand-Alone PVT", color="cornflowerblue"),
-    'DIFFERENTIAL': dict(desc="Differential PVT", color="darkcyan"),
-    'SBAS': dict(desc="SBAS aided PVT", color="deepskyblue"),
+# General PNT quality dictionary that serves as a common reference
+GENERAL_PNT_QUALITY_ID = {
+    'INVALID': dict(desc="Invalid/No PNT available", color="red"),
+    'STANDALONE': dict(desc="Stand-Alone PNT", color="cornflowerblue"),
+    'DIFFERENTIAL': dict(desc="Differential PNT", color="darkcyan"),
+    'SBAS': dict(desc="SBAS aided PNT", color="deepskyblue"),
     'SBAS_DFMC': dict(desc="SBAS Dual Frequency Multi Constellation", color="blue"),
     'RTK_FIXED': dict(desc="RTK with fixed ambiguities", color="green"),
     'RTK_FLOAT': dict(desc="RTK with float ambiguities (NMEA: RTK Float or PPP)", color="orange"),
@@ -20,8 +20,8 @@ GENERAL_PVT_QUALITY_ID = {
     'SIMULATION': dict(desc="Simulation mode", color="gray"),
 }
 
-def rtklib_to_general_pvtqual(rtklib_mode: int) -> str:
-    """Convert RTKLIB PVT mode to general quality identifier"""
+def rtklib_to_general_pntqual(rtklib_mode: int) -> str:
+    """Convert RTKLIB PNT mode to general quality identifier"""
     conversion = {
         1: 'RTK_FIXED',
         2: 'RTK_FLOAT',
@@ -32,7 +32,7 @@ def rtklib_to_general_pvtqual(rtklib_mode: int) -> str:
     }
     return conversion.get(rtklib_mode, 'INVALID')
 
-def nmea_to_general_pvtqual(nmea_quality: int) -> str:
+def nmea_to_general_pntqual(nmea_quality: int) -> str:
     """Convert NMEA quality indicator to general quality identifier"""
     conversion = {
         0: 'INVALID',
@@ -46,8 +46,8 @@ def nmea_to_general_pvtqual(nmea_quality: int) -> str:
     }
     return conversion.get(nmea_quality, 'INVALID')
 
-def sbf_to_general_pvtqual(sbf_mode: int) -> str:
-    """Convert Septentrio SBF PVT mode to general quality identifier"""
+def sbf_to_general_pntqual(sbf_mode: int) -> str:
+    """Convert Septentrio SBF PNT mode to general quality identifier"""
     conversion = {
         0: 'INVALID',
         1: 'STANDALONE',
@@ -63,8 +63,8 @@ def sbf_to_general_pvtqual(sbf_mode: int) -> str:
     }
     return conversion.get(sbf_mode, 'INVALID')
 
-def glab_to_general_pvtqual(glab_mode: int) -> str:
-    """Convert GLAB PVT mode to general quality identifier"""
+def glab_to_general_pntqual(glab_mode: int) -> str:
+    """Convert GLAB PNT mode to general quality identifier"""
     conversion = {
         0: 'STANDALONE',
         1: 'PPP',
@@ -75,15 +75,15 @@ def glab_to_general_pvtqual(glab_mode: int) -> str:
     return conversion.get(glab_mode, 'INVALID')
 
 
-def get_pvtquality_info(general_quality: str) -> dict:
+def get_pntquality_info(general_quality: str) -> dict:
     """
     Get the description and color for a general quality identifier
     
     Args:
-        general_quality: String identifier from the GENERAL_PVT_QUALITY dictionary
+        general_quality: String identifier from the GENERAL_PNT_QUALITY dictionary
         
     Returns:
         Dictionary containing description and color for the quality level
     """
-    return GENERAL_PVT_QUALITY_ID.get(general_quality, 
+    return GENERAL_PNT_QUALITY_ID.get(general_quality, 
                                   dict(desc="Unknown", color="black"))
