@@ -17,7 +17,7 @@ from analysegnss.plots import plot_utm
 from analysegnss.plots.plot_columns import get_utm_columns
 from analysegnss.utils import init_logger
 from analysegnss.utils.argument_parser import argument_parser_plot_coords
-from analysegnss.pnt.pnt_data_collector_df_constructor import get_source_df, standardize_df
+from analysegnss.pnt.pnt_data_collector import get_source_df, standardize_df
 
 
 def get_source(parsed_args: argparse.Namespace) -> str:
@@ -29,6 +29,15 @@ def get_source(parsed_args: argparse.Namespace) -> str:
     Returns:
         str: Source type (PPK, RTK, GLABNG, NMEA, PNT_CSV)
     """
+    
+    # dictionary to map source type to argparse argument name
+    file_handlers = {
+        "pos_ifn": "PPK",
+        "sbf_ifn": "RTK",
+        "glab_ifn": "GLABNG",
+        "nmea_ifn": "NMEA",
+        "csv_ifn": "PNT_CSV",
+    }
 
     # Get the first non-None filename and its attribute name
     file_attr = next(

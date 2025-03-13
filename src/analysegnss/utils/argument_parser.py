@@ -333,7 +333,7 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
     return args
 
 
-def argument_parser_pnt_data_collector_df_constructor(script_name: str, args: list) -> argparse.Namespace:
+def argument_parser_pnt_data_collector(script_name: str, args: list) -> argparse.Namespace:
     """parses the arguments
 
     Args:
@@ -344,7 +344,7 @@ def argument_parser_pnt_data_collector_df_constructor(script_name: str, args: li
     """
     baseName = str_yellow(script_name)
 
-    help_txt = baseName + " The PNT data collector df constructor is used to collect PNT data from multiple sources\
+    help_txt = baseName + " The PNT data collector is used to collect PNT data from multiple sources\
                             and construct standardised dataframes. If multiple sources are provided, \
                             these can be merged, concatenated, or written to a csv file.\
                             The constructed dataframes can be further processed by plot_coords.py\
@@ -428,7 +428,7 @@ def argument_parser_pnt_data_collector_df_constructor(script_name: str, args: li
     
     # Creating a group for PNT_CSV-specific arguments
     csv_group = parser.add_argument_group(
-        "PNT_CSV file options", "Options specific to PNT_CSV input files"
+        "CSV input file options", "Options specific to CSV input files"
     )
     csv_group.add_argument(
         "--columns_csv",

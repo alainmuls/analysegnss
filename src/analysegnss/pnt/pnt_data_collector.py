@@ -19,11 +19,11 @@ import analysegnss.glabng.glab_parser as glab_parser
 from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.plots.plot_columns import get_utm_columns
 from analysegnss.utils import init_logger
-from analysegnss.utils.argument_parser import argument_parser_pnt_data_collector_df_constructor
+from analysegnss.utils.argument_parser import argument_parser_pnt_data_collector
 
 
 
-def pnt_data_collector_df_constructor(parsed_args: argparse.Namespace, logger: logging.Logger) -> dict:
+def pnt_data_collector(parsed_args: argparse.Namespace, logger: logging.Logger) -> dict:
     """Collects PNT data from given sources and constructs standardized PNT dataframes
     The function will return a dictionary with the source type as key and the standardized pnt dataframe as value.
     
@@ -47,50 +47,76 @@ def pnt_data_collector_df_constructor(parsed_args: argparse.Namespace, logger: l
 
     # Iterate over the input filenames and collect PNT data sources [PPK, RTK, GLABNG, NMEA, PNT_CSV]
     for source_type in ["pos_ifn", "sbf_ifn", "glab_ifn", "nmea_ifn", "csv_ifn"]:
-        for source_ifn in getattr(parsed_args, source_type):
+        for source_ifn in getattr(parsed_args, source_type) if getattr(parsed_args, source_type) is not None else []:
+            
+            logger.debug(f"Detected source_ifn: {source_ifn}")
+            if source_ifn is None:
+                logger.debug(f"source_ifn is None, skipping")
+                continue
+            
            
             # get absolute path and basename from filename
-            source_ifn_dir = os.path.dirname(os.path.abspath(source_ifn))
-            source_ifn_basename = os.path.basename(source_ifn)
+            source_ifn_abs = os.path.abspath(source_ifn)
+            source_ifn_dir = os.path.dirname(source_ifn_abs)
+            source_ifn_base = os.path.basename(source_ifn_abs)
+            logger.debug(f"source_ifn_abs: {source_ifn_abs} / source_ifn_dir: {source_ifn_dir} / source_ifn_base: {source_ifn_base}")
             
             # get source type [PPK, RTK, GLABNG, NMEA, PNT_CSV]
             source = file_handlers.get(source_type, "Source not found")
+            logger.debug(f"Detected source: {source}")
             
             # Get pnt source dataframe
-            df_source = get_source_df(source=source, parsed_args=parsed_args, logger=logger)
+            df_source = get_source_df(source=source, source_ifn=source_ifn_abs, parsed_args=parsed_args, logger=logger)
 
             # Standardize PNT dataframe
             df_source_standardized = standardize_pnt_df(df_source=df_source, source=source, parsed_args=parsed_args, logger=logger)
 
             if parsed_args.output_csv:
                 # get output filename
-                output_dest = os.path.join(source_ifn_dir, os.path.splitext(source_ifn_basename)[0] + "_" + source + "_pnt_standard.csv")
+                output_dest = os.path.join(source_ifn_dir, os.path.splitext(source_ifn_base)[0] + "_" + source + "_pnt_standard.csv")
                 # write to csv
                 df_source_standardized.write_csv(output_dest)
+                if os.path.exists(output_dest):
+                    logger.info(f"Successfully wrote {source} PNT dataframe to {output_dest}")
+                    rprint(f"Successfully wrote {source} PNT dataframe to {output_dest}")
+                else:
+                    logger.error(f"Failed to write {source} PNT dataframe to {output_dest}")
+                    rprint(f"Failed to write {source} PNT dataframe to {output_dest}")
             
             # Add standardized PNT dataframe to dictionary
             standard_pnt_dfs[source] = df_source_standardized
+
+    # print the standard_pnt_dfs
+    for source, pnt_df in standard_pnt_dfs.items():
+        logger.info(f"PNT source: {source}")
+        logger.info(f"PNT dataframe:\n{pnt_df}")
 
     # Merge PNT dataframes if requested
     if parsed_args.merge:
         merged_pnt_df = merge_pnt_sources(standard_pnt_dfs=standard_pnt_dfs, logger=logger)
         # add merged pnt dataframe to dictionary
         standard_pnt_dfs["merged_pnt"] = merged_pnt_df
+        logger.info(f"Merged PNT dataframe:\n{merged_pnt_df}")
         
         if parsed_args.output_csv:
             # get output filename
-            output_dest = os.path.join(source_ifn_dir, os.path.splitext(source_ifn_basename)[0] + "_merged_PNTs_standard.csv")
+            output_dest = os.path.join(source_ifn_dir, "merged_PNTs_standard.csv")
             # write to csv
             merged_pnt_df.write_csv(output_dest)
-        
+            if os.path.exists(output_dest):
+                logger.info(f"Successfully wrote merged PNT dataframe to {output_dest}")
+                rprint(f"Successfully wrote merged PNT dataframe to {output_dest}")
+            else:
+                logger.error(f"Failed to write merged PNT dataframe to {output_dest}")
+                rprint(f"Failed to write merged PNT dataframe to {output_dest}")
+    
 
     return standard_pnt_dfs
     
 
 
 
-
-def get_source_df(source: str, parsed_args: argparse.Namespace, logger: logging.Logger) -> pl.DataFrame:
+def get_source_df(source: str, source_ifn: str, parsed_args: argparse.Namespace, logger: logging.Logger) -> pl.DataFrame:
     """Get dataframe from a specific source
 
     Args:
@@ -104,14 +130,20 @@ def get_source_df(source: str, parsed_args: argparse.Namespace, logger: logging.
     match source:
         case "PPK":
             # Create PPK position dataframe
+            logger.debug(f"Creating PPK position dataframe")
+            parsed_args.pos_ifn = source_ifn
             df_source = ppk_rnx2rtkp.rtkp_pos(parsed_args=parsed_args, logger=logger)
 
         case "RTK":
             # Create RTK position dataframe
+            logger.debug(f"Creating RTK position dataframe")
+            parsed_args.sbf_ifn = source_ifn
             df_source = rtk_pvtgeod.rtk_pvtgeod(parsed_args=parsed_args, logger=logger)
 
         case "GLABNG":
             # Create GLAB position dataframe
+            logger.debug(f"Creating GLAB position dataframe")
+            parsed_args.glab_ifn = source_ifn
             glab_parser_args = [
                 "glab_parser",
                 "--glab_ifn",
@@ -126,6 +158,8 @@ def get_source_df(source: str, parsed_args: argparse.Namespace, logger: logging.
 
         case "NMEA":
             # Create NMEA dataframe
+            logger.debug(f"Creating NMEA dataframe")
+            parsed_args.nmea_ifn = source_ifn
             df_source, _ = nmea_reader.nmea_reader(
                 parsed_args=parsed_args, logger=logger
             )
@@ -133,6 +167,9 @@ def get_source_df(source: str, parsed_args: argparse.Namespace, logger: logging.
         case "PNT_CSV":
             try:
                 # Read PNT CSV file
+                logger.debug(f"Creating PNT_CSV dataframe")
+                parsed_args.csv_ifn = source_ifn
+                logger.debug(f"Parsed arguments: {parsed_args}")
                 df_source = pl.read_csv(
                     parsed_args.csv_ifn,
                     separator=parsed_args.sep,
@@ -255,10 +292,12 @@ def merge_pnt_sources(standard_pnt_dfs: dict, logger: logging.Logger) -> pl.Data
         pl.DataFrame: Merged dataframe
     """
 
+    merged_df = pl.DataFrame()
+    
     for source, pnt_df in standard_pnt_dfs.items():
-
-        # Merge all dataframes
-        merged_df = pl.concat(pnt_df, how="diagonal")
+       
+        logger.info(f"Merging pnt dataframe from {source} with\n{pnt_df}\ninto merged pnt dataframe with\n{merged_df}\n")
+        merged_df = pl.concat([merged_df, pnt_df], how="diagonal")
         logger.info(f"Successfully merged pnt dataframe with {len(pnt_df)} rows from {source} into merged pnt dataframe with {len(merged_df)} rows")
 
     # Sort by time if available
@@ -267,8 +306,6 @@ def merge_pnt_sources(standard_pnt_dfs: dict, logger: logging.Logger) -> pl.Data
 
     return merged_df
 
-
-
     
 def main():
 
@@ -276,7 +313,7 @@ def main():
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
     # parse the CLI arguments
-    args_parsed = argument_parser_pnt_data_collector_df_constructor(
+    args_parsed = argument_parser_pnt_data_collector(
         script_name=script_name,
         args=sys.argv[1:]
     )
@@ -285,7 +322,7 @@ def main():
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
    
     # merge pnt sources
-    pnt_dfs = pnt_data_collector_df_constructor(parsed_args=args_parsed, logger=logger)
+    pnt_dfs = pnt_data_collector(parsed_args=args_parsed, logger=logger)
     
     for source, pnt_df in pnt_dfs.items():
         rprint(f"PNT source: {source}")

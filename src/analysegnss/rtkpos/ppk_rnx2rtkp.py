@@ -76,6 +76,9 @@ def rtkp_pos(parsed_args: argparse.Namespace, logger: Logger) -> pl.DataFrame:
         argument_parser_ppk,
         os.path.splitext(os.path.basename(__file__))[0],
     )
+    
+    logger.debug(f"Parsed arguments: {parsed_args}")
+    
 
     # create a RTKlib pos class object
     try:

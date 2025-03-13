@@ -67,7 +67,9 @@ def rtk_pvtgeod(parsed_args: argparse.Namespace, logger: Logger) -> dict:
         argument_parser_rtk,
         os.path.splitext(os.path.basename(__file__))[0],
     )
-
+    
+    logger.debug(f"Parsed arguments: {parsed_args}")
+    
     # create a SBF class object
     try:
         sbf = SBF(sbf_fn=parsed_args.sbf_ifn, logger=logger)
@@ -116,13 +118,12 @@ def rtk_pvtgeod(parsed_args: argparse.Namespace, logger: Logger) -> dict:
 
         # fill the null values with NaN
         # df_pvt = df_pvt.fill_null(float('nan')) # -- commented out because it changes the type of all columns to float
-        logger.debug(f"df_pvt: \n{df_pvt}")
         
         rprint(f"df_pvt = \n{df_pvt}")
         # analyse the quality of the solution
         qual_analysis = quality_analysis(geod_df=df_pvt, logger=logger)
 
-        return df_pvt, qual_analysis
+        return df_pvt
 
     else:  # conversion using sbf2asc # TODO: next part not yet finished
         df_pvt = sbf.sbf2asc_dataframe(
@@ -150,7 +151,7 @@ def rtk_pvtgeod(parsed_args: argparse.Namespace, logger: Logger) -> dict:
         if df_xyzcov is not None:
             rprint(f"df_xyzcov = \n{df_xyzcov}")
 
-        return df_pvt, qual_analysis
+        return df_pvt
 
 
 def main():
