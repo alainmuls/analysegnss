@@ -118,7 +118,8 @@ class NMEA:
             # update existing list of dictionaries if timestamp already exists
             msg_entry = data_dict[timestamp]
 
-            # pynmea2 doesn't always cast the values to the correct dtype, so some values need to be manually casted
+            # pynmea2 doesn't always cast the values to the correct dtype, 
+            # so some values need to be manually casted using a safe conversion function which returns None if the cast fails without raising an error
             # we cast the values to the correct dtype now during the nmea data collection because we don't know which NMEA messages are available
             # Eventhough the timestamp is already saved as the key, we still store it also as a value for easier converion to dataframe
             if isinstance(msg, pynmea2.types.talker.RMC):
@@ -236,8 +237,54 @@ class NMEA:
 
         # collect the NMEA values
         collected_nmea_values = self.collect_nmea_values()
+        
         # create a DataFrame with the NMEA values per timestamp
         nmea_df = pl.DataFrame(collected_nmea_values)
+        
+        # Define dtype lookup table for each data column [ensures compatibility with the other pnt_data classes]
+        dtype_lookup = {
+            # Integer columns that should be uint8 (0-255)
+            "num_sats": pl.UInt8,
+            "gps_qual": pl.UInt8,
+            "day": pl.UInt8,
+            "month": pl.UInt8,
+            
+            # uint16 columns
+            "year": pl.UInt16,
+            
+            # Float columns
+            "latitude(deg)": pl.Float64,
+            "longitude(deg)": pl.Float64,
+            "orthoH": pl.Float64,
+            "undulation": pl.Float64,
+            "speed": pl.Float64,
+            "track": pl.Float64,
+            "age(s)": pl.Float64,
+            "pdop": pl.Float64,
+            "hdop": pl.Float64,
+            "vdop": pl.Float64,
+            "rms_val": pl.Float64,
+            "std_major(m)": pl.Float64,
+            "std_minor(m)": pl.Float64,
+            "orientation_a(degrees_from_true_north)": pl.Float64,
+            "sdlat(m)": pl.Float64,
+            "sdlon(m)": pl.Float64,
+            "sdH(m)": pl.Float64,
+            
+            # dtype Date/time columns is set in add_df_columns()
+        }
+        
+        # Apply data type conversions
+        for col_name, dtype in dtype_lookup.items():
+            if col_name in nmea_df.columns:
+                try:
+                    nmea_df = nmea_df.with_columns(
+                        pl.col(col_name).cast(dtype, strict=False)
+                    )
+                except Exception as e:
+                    if self.logger:
+                        self.logger.warning(f"Could not cast column {col_name} to {dtype}: {e}")
+        
         # add columns datatime and UTM coordinates if possible
         nmea_df = self.add_df_columns(nmea_df=nmea_df)
 

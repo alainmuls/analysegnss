@@ -122,15 +122,6 @@ def pnt_data_collector(parsed_args: argparse.Namespace, logger: logging.Logger) 
         logger.info(f"Merged PNT dataframe:\n{merged_pnt_df}")
 
 
-    ### WRITE STANDARDIZED PNT DATAFRAMES TO CSV ###
-
-    if parsed_args.csv_out:
-        write_standardized_pnt_df_to_csv(
-            standard_pnt_dfs=standard_pnt_dfs,
-            logger=logger
-        )
-
-
     ### PRINT STANDARDIZED PNT DATAFRAMES ###
     for source, pnt_df in standard_pnt_dfs.items():
         logger.info(f"PNT source: {source}")
@@ -138,6 +129,14 @@ def pnt_data_collector(parsed_args: argparse.Namespace, logger: logging.Logger) 
         rprint(f"\nPNT source: {source}")
         rprint(f"\nPNT dataframe:\n{pnt_df}")
 
+
+    ### WRITE STANDARDIZED PNT DATAFRAMES TO CSV ###
+    if parsed_args.csv_out:
+        write_standardized_pnt_df_to_csv(
+            standard_pnt_dfs=standard_pnt_dfs,
+            logger=logger
+        )
+    
     return standard_pnt_dfs
 
 
