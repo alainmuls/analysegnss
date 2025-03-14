@@ -17,7 +17,7 @@ from analysegnss.sbf.sbf_column_mapping import (
 )
 from analysegnss.utils import init_logger
 from analysegnss.utils.argument_parser import argument_parser_sbfnav_csv
-from analysegnss.utils.utilities import str_green, str_red
+from analysegnss.utils.utilities import str_green, str_red, print_df_in_chunks
 
 
 def sbfnav_csv(parsed_args: argparse.Namespace):
@@ -95,9 +95,11 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
 
         nav_df = rename_nav_columns(df=nav_df, gnss_type=gnss_abbrev)
 
-        logger.info(
-            f"nav_df[{str_green(sbf_block)}]:\n{nav_df.select(nav_df.columns[:25]).head(3)}"
-            f"\n{nav_df.select(nav_df.columns[25:]).head(3)}"
+        logger.debug(
+            print_df_in_chunks(
+                df=nav_df,
+                title=f"nav_df[{str_green(sbf_block)}]:",
+            )
         )
 
         # convert the polars dataframe to CSV for each navigation SBF block

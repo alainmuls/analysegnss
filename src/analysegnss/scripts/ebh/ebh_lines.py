@@ -290,8 +290,6 @@ def ebh_line_thin_out(
     if logger is not None:
         pl.Config.set_tbl_rows(20)
         logger.debug(f"df_line = \n{df_line.collect()}")
-        # logger.debug first 30 rows of the dataframe
-        # logger.debug(f"df_line.head(30) = \n{df_line.head(30)}")
         # thin out the df_line to keep positions every 0.5 meters
         logger.debug(f"df_assur = \n{df_assur.collect()}")
         # logger.debug(f"df_assur.head(30) = \n{df_assur.head(30)}")

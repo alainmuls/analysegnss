@@ -14,7 +14,7 @@ from analysegnss.config import ERROR_CODES
 from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.sbf.sbf_class import SBF
 from analysegnss.utils import init_logger
-from analysegnss.utils.utilities import combine_dfs
+from analysegnss.utils.utilities import combine_dfs, print_df_in_chunks, df_schema_info
 from analysegnss.utils.argument_parser import argument_parser_rtk
 
 
@@ -29,10 +29,13 @@ def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:
     qual_analysis = []
     total_obs = geod_df.shape[0]
     for qual, qual_data in geod_df.group_by("Type"):
-        if qual in sbfc.DICT_SBF_PVTMODE:
+        # Extract the first element from the tuple
+        qual_value = qual[0] if isinstance(qual, tuple) else qual
+
+        if qual_value in sbfc.DICT_SBF_PVTMODE:
             qual_analysis.append(
                 [
-                    sbfc.DICT_SBF_PVTMODE[qual]["desc"],
+                    sbfc.DICT_SBF_PVTMODE[qual_value]["desc"],
                     qual_data.shape[0],
                     round(qual_data.shape[0] / total_obs * 100, 2),
                 ]
@@ -45,7 +48,7 @@ def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:
     )
 
     if logger is not None:
-        logger.debug(f"Quality analysis:\n{qual_tabular}")
+        logger.info(f"Quality analysis:\n{qual_tabular}")
 
     return qual_analysis
 
@@ -112,9 +115,11 @@ def rtk_pvtgeod(argv: list) -> dict:
 
             # merge the RTK position dataframes on the DT column
             df_pvt = combine_dfs(dfs_pvt)
-            # Drop the column
-            if "DT_right" in df_pvt.columns:
-                df_pvt = df_pvt.drop("DT_right")
+
+            # Drop the column which end on "_right"
+            right_columns = [col for col in df_pvt.columns if col.endswith("_right")]
+            if right_columns:
+                df_pvt = df_pvt.drop(right_columns)
 
         else:  # only use the PVTGeodetic, no StdDev required
             # sbf blocks to decode
@@ -125,14 +130,8 @@ def rtk_pvtgeod(argv: list) -> dict:
                 lst_sbfblocks=sbf_blocks, archive=args_parsed.archive
             )["PVTGeodetic2"]
 
-        # fill the null values with NaN
-        df_pvt = df_pvt.fill_null(float("nan"))
-        # logger.info(f"df_pvt[{sbf_blocks}]: \n{df_pvt}")
-        logger.info(
-            f"df_pvt[{sbf_blocks}]:\n{df_pvt.select(df_pvt.columns[:20]).head(3)}"
-            f"\n{df_pvt.select(df_pvt.columns[20:40]).head(3)}"
-            f"\n{df_pvt.select(df_pvt.columns[40:]).head(3)}"
-        )
+        # print the dataframe in chunks
+        logger.info(print_df_in_chunks(title="df_pvt", df=df_pvt))
 
         # analyse the quality of the solution
         quality_analysis(geod_df=df_pvt, logger=logger)
@@ -155,10 +154,11 @@ def rtk_pvtgeod(argv: list) -> dict:
         else:
             df_xyzcov = None
 
-        logger.info(f"df_pvt: \n{df_pvt}")
-        logger.info(f"df_xyz: \n{df_xyz}")
+        logger.debug(print_df_in_chunks(title="df_pvt", df=df_pvt))
+        logger.debug(print_df_in_chunks(title="df_xyz", df=df_xyz))
+
         if df_xyzcov is not None:
-            logger.info(f"df_xyzcov: \n{df_xyzcov}")
+            logger.debug(print_df_in_chunks(title="df_xyzcov", df=df_xyzcov))
 
         return df_pvt
 

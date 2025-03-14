@@ -21,7 +21,7 @@ from analysegnss.sbf.sbf_blocks_polars import (
     SBF_BLOCK_COLUMNS_BIN2ASC,
     SBF_BLOCK_COLUMNS_SBF2ASC,
 )
-from analysegnss.utils.utilities import locate, str_red, str_yellow
+from analysegnss.utils.utilities import locate, str_red, str_yellow, print_df_in_chunks
 
 
 @dataclass
@@ -315,7 +315,7 @@ class SBF:
 
                 # remove unused columns
                 keep_cols = self.used_columns(sbf_block)
-                print(f"\ninital keep_cols = {keep_cols}\n")
+                # print(f"\ninital keep_cols = {keep_cols}\n")
 
                 # read csv file into dataframe
                 with rich_console.status(
@@ -350,35 +350,8 @@ class SBF:
                         keep_cols[col_name] = col_dtype
                     for col_name in removed_cols:
                         del keep_cols[col_name]
-                    print(f"\nupdated keep_cols = {keep_cols}\n")
-
-                    # print(
-                    #     f"sbf_df[{sbf_block}]:\n{sbf_df.select(sbf_df.columns[:20]).head(3)}"
-                    #     f"sbf_df[{sbf_block}]:\n{sbf_df.select(sbf_df.columns[20:]).head(3)}"
-                    # )
-
-                    # # we changed some values (eg. from rad to deg) so rename the columns
-                    # # Get keys that need to be changed
-                    # keys_to_change = [
-                    #     key
-                    #     for key in keep_cols.keys()
-                    #     if "rad" in key and ("Latitude" in key or "Longitude" in key)
-                    # ]
-
-                    # # Update each key
-                    # for old_key in keys_to_change:
-                    #     value = keep_cols[old_key]
-                    #     new_key = old_key.replace("rad", "deg")
-                    #     new_key = new_key.replace("Latitude", "latitude").replace(
-                    #         "Longitude", "longitude"
-                    #     )
-                    #     keep_cols[new_key] = value
-                    #     del keep_cols[old_key]
-
-                    # print the column names of sbf_df one per line
-                    # for col_name in sbf_df.columns:
-                    #     print(col_name)
-                    print(f"sbf_df.columns = {sbf_df.columns}")
+                    # print(f"\nupdated keep_cols = {keep_cols}\n")
+                    # print(f"sbf_df.columns = {sbf_df.columns}")
 
                     # set the dtype again after having added some columns
                     # identify columns with null values and applies different strategies based on the target data type
@@ -405,40 +378,20 @@ class SBF:
 
                     sbf_df = sbf_df.with_columns(cast_expressions)
 
-                    # TODO: AMAMAMAMcheck the columns in the dataframe to see whether we only keep the keep_columns????
-                    print("=" * 60)
-                    print(f"sbf_block = {sbf_block}")
-                    print(f"sbf_df.columns = {sbf_df.columns} | {len(sbf_df.columns)}")
-                    print(
-                        f"\nkeep_cols.keys() = {keep_cols.keys()} | {len(keep_cols.keys())}"
-                    )
-                    print("-" * 60)
-
                     # drop the columns which are not in the keep_cols
                     for col_name in sbf_df.columns:
                         if col_name not in keep_cols.keys():
                             sbf_df = sbf_df.drop(col_name)
-                    print("+" * 60)
-                    print(f"sbf_block = {sbf_block}")
-                    print(f"sbf_df.columns = {sbf_df.columns} | {len(sbf_df.columns)}")
-                    print(
-                        f"\nkeep_cols.keys() = {keep_cols.keys()} | {len(keep_cols.keys())}"
-                    )
-                    print("#" * 60)
 
-                    print(f"sbf_df[{sbf_block}]:\n{sbf_df}")
-                    if len(sbf_df.columns) > 15:
-                        print(
-                            f"\n\ndf_pvt[{sbf_block}]:\n{sbf_df.select(sbf_df.columns[:15]).head(3)}"
-                            f"\n{sbf_df.select(sbf_df.columns[15:]).head(3)}\n\n"
-                        )
-                    else:
-                        print(
-                            f"\n\ndf_pvt[{sbf_block}]:\n{sbf_df.select(sbf_df.columns).head(3)}\n\n"
+                    if self.logger is not None:
+                        self.logger.debug(
+                            print_df_in_chunks(
+                                title=f"df_pvt[{sbf_block}]",
+                                df=sbf_df,
+                            )
                         )
 
                 sbf_dfs[sbf_block] = sbf_df
-                # print(f"sbf_dfs[{sbf_block}]:\n{sbf_dfs[sbf_block]}")
 
                 # print(f"archive = {archive}")
                 # archiving the converted sbf file
