@@ -353,30 +353,44 @@ class SBF:
                     # print(f"\nupdated keep_cols = {keep_cols}\n")
                     # print(f"sbf_df.columns = {sbf_df.columns}")
 
-                    # set the dtype again after having added some columns
-                    # identify columns with null values and applies different strategies based on the target data type
-                    cast_expressions = []
-                    for col_name, dtype in keep_cols.items():
-                        # For integer types, check if we need to handle nulls
-                        if str(dtype).startswith(("UInt", "Int")):
-                            # For columns that might have nulls, first fill nulls with a default value
-                            # rprint(
-                            #     f"col_name = {col_name}\n{sbf_df[col_name]}\n{sbf_df[col_name].null_count()}"
-                            # )
-                            if sbf_df[col_name].null_count() > 0:
-                                cast_expressions.append(
-                                    pl.col(col_name)
-                                    .fill_null(0)
-                                    .cast(dtype)
-                                    .alias(col_name)
-                                )
-                            else:
-                                cast_expressions.append(pl.col(col_name).cast(dtype))
-                        else:
-                            # For other types, just perform the regular cast
-                            cast_expressions.append(pl.col(col_name).cast(dtype))
+                    # print the column names and their dtypes
+                    print(  # print the column names and their dtypes
+                        f"Columns and their dtypes for {sbf_block}:\n"
+                        + "\n".join(
+                            [
+                                f"{col_name}: {dtype}"
+                                for col_name, dtype in keep_cols.items()
+                            ]
+                        )
+                    )
 
-                    sbf_df = sbf_df.with_columns(cast_expressions)
+                    # # set the dtype again after having added some columns
+                    # # identify columns with null values and applies different strategies based on the target data type
+                    # cast_expressions = []
+                    # for col_name, dtype in keep_cols.items():
+                    #     # For integer types, check if we need to handle nulls
+                    #     if str(dtype).startswith(("UInt", "Int")):
+                    #         # For columns that might have nulls, first fill nulls with a default value
+                    #         print(f"col_name = {col_name} | {dtype}")
+                    #         print(f"sbf_df[{col_name}] = {sbf_df[col_name]}")
+                    #         print(f"null_count = {sbf_df[col_name].null_count()}")
+
+                    #         if sbf_df[col_name].null_count() >= 0:
+                    #             cast_expressions.append(
+                    #                 pl.col(col_name)
+                    #                 .fill_null(0)
+                    #                 .cast(dtype)
+                    #                 .alias(col_name)
+                    #             )
+                    #         else:
+                    #             cast_expressions.append(pl.col(col_name).cast(dtype))
+                    #     else:
+                    #         # For other types, just perform the regular cast
+                    #         cast_expressions.append(pl.col(col_name).cast(dtype))
+
+                    # for cast_expression in cast_expressions:
+                    #     print(f"cast_expression = {cast_expression}")
+                    #     sbf_df = sbf_df.with_columns(cast_expression)
 
                     # drop the columns which are not in the keep_cols
                     for col_name in sbf_df.columns:
@@ -392,6 +406,16 @@ class SBF:
                         )
 
                 sbf_dfs[sbf_block] = sbf_df
+                # print the column names and their dtypes
+                print(  # print the column names and their dtypes
+                    f"Columns and their dtypes for {sbf_block}:\n"
+                    + "\n".join(
+                        [
+                            f"{col_name}: {dtype}"
+                            for col_name, dtype in keep_cols.items()
+                        ]
+                    )
+                )
 
                 # print(f"archive = {archive}")
                 # archiving the converted sbf file
@@ -570,13 +594,16 @@ class SBF:
         added_cols = {}
         removed_cols = []
 
+        # get the column names of the block_df
+        column_names = block_df.collect_schema().names()
+
         # remove the rows where 'Type' equals 0 (no PVT available)
-        if "Type" in block_df.columns:
+        if "Type" in column_names:
             block_df = block_df.filter(pl.col("Type") != 0).lazy()
             # print(f"block_df = \n{block_df}")
 
         # add date-time and PRN (as str) to the dataframe
-        if "WNc [w]" in block_df.columns and "TOW [0.001 s]" in block_df.columns:
+        if "WNc [w]" in column_names and "TOW [0.001 s]" in column_names:
             if self.logger:
                 self.logger.debug("\tadding datetime column to the dataframe")
             block_df = block_df.with_columns(
@@ -590,7 +617,7 @@ class SBF:
             added_cols["DT"] = pl.Datetime
 
         # add date-time and PRN (as str) to the dataframe
-        if "WNc [w]" in block_df.columns and "TOW [s]" in block_df.columns:
+        if "WNc [w]" in column_names and "TOW [s]" in column_names:
             if self.logger:
                 self.logger.debug("\tadding datetime column to the dataframe")
             block_df = block_df.with_columns(
@@ -606,7 +633,7 @@ class SBF:
         # add date-time and PRN (as str) to the dataframe
         if (
             "SVID"
-            in block_df.columns
+            in column_names
             # and not block_df.select(pl.col("SVID")).dtypes[0] == pl.String
         ):
             if self.logger:
@@ -624,10 +651,7 @@ class SBF:
             removed_cols.append("SVID")
 
         # add UTM coordinates
-        if (
-            "Latitude [rad]" in block_df.columns
-            and "Longitude [rad]" in block_df.columns
-        ):
+        if "Latitude [rad]" in column_names and "Longitude [rad]" in column_names:
             if self.logger:
                 self.logger.debug("\tadding UTM coordinates to the dataframe")
 
@@ -682,7 +706,7 @@ class SBF:
             removed_cols.extend(["Latitude [rad]", "Longitude [rad]"])
 
         # add orthometric height to the dataframe
-        if "Height [m]" in block_df.columns and "Undulation [m]" in block_df.columns:
+        if "Height [m]" in column_names and "Undulation [m]" in column_names:
             if self.logger:
                 self.logger.debug("\tadding orthometric height to the dataframe")
             block_df = block_df.with_columns(
