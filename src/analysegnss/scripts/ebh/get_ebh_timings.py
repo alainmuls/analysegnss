@@ -237,7 +237,6 @@ def reformat_timestamps_for_ebh(
         ebh_timings_ebhlinefmt (dict): dict with ebh keys and timestamps correctly formatted for ebh_lines.py
         ebh_timings (dict): dict with ebh keys and timestamps formaated as tuples
     """
-    # TODO make the following lazy?
 
     logger.info("Reformatting EBH timestamps")
 

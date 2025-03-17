@@ -21,10 +21,6 @@ import utm
 from analysegnss.utils.utilities import sf64, si64
 from analysegnss.gnss.general_pnt_quality_dict import nmea_to_general_pntqual
 
-#TODO Only NMEA RMC contains the datestamp, so if this message is not present, the datetime can not be generated
-#   This should raise an error or warning and enable the user to add the date manually
-#   The NMEA ZDA message also contains the date, however day, month and year are in separate fields ...
-from analysegnss.utils.utilities import sf64, si64
 
 #TODO Only NMEA RMC contains the datestamp, so if this message is not present, the datetime can not be generated
 #   This should raise an error or warning and enable the user to add the date manually

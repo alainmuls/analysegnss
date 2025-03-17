@@ -411,16 +411,6 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
                 f"The ppk quality of the line {ebh_key} is {qual_ebh_lines[ebh_key]}"
             )
             #TODO put here function (ebhrtk_to_csv) to save dataframes to csv files that can be used for plotting
-            """
-            if not qual_ebh_lines[ebh_key][0][0] == rtklibc.DICT_RTKLIB_PVTMODE[1]["desc"]:
-                logger.warning(
-                    f"The ppk quality of the line {ebh_key} is {qual_ebh_lines[ebh_key][0]}. "
-                    f"PPK fixed quality is needed for ASSUR. Skipping this line."
-                )
-                print(f"Skipping line {ebh_key} for ASSUR formatting due to insufficient PPK quality which is {qual_ebh_lines[ebh_key][0]}")
-                
-                continue
-            """
         else:
             qual_ebh_lines[ebh_key] = rtk_pvtgeod.quality_analysis(
                 ebh_assur_line, logger=logger

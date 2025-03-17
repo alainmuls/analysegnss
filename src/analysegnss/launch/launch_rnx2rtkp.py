@@ -112,10 +112,11 @@ def rnx2rtkp_ppk(
 
     cmd_rnx2rtkp.extend(["-o", pos_ofn])
 
-    # TODO Get effective log leveli
-    logger.info(f"Putting rnx2rtkp in debugging mode")
-    rprint("[yellow]rnx2rtkp in debugging mode[/yellow]")
-    cmd_rnx2rtkp.extend(["-x", "2"])
+    # TODO Get effective log level from logger
+    #if logger.getEffectiveLevel() == logging.DEBUG:
+    #    logger.info(f"Putting rnx2rtkp in debugging mode")
+    #    rprint("[yellow]rnx2rtkp in debugging mode[/yellow]")
+    #    cmd_rnx2rtkp.extend(["-x", "2"])
 
     # add obs and nav rnx filenames to cli
     cmd_rnx2rtkp.extend([parsed_args.obs, parsed_args.base_corr])

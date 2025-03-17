@@ -602,7 +602,6 @@ class SBF:
             in block_df.columns
             # and not block_df.select(pl.col("SVID")).dtypes[0] == pl.String
         ):
-            # TODO: correct the int into string or vice versa
             if self.logger:
                 self.logger.debug("\tadding PRN column to the dataframe")
             block_df = block_df.with_columns(

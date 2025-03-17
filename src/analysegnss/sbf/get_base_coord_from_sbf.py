@@ -64,7 +64,6 @@ def get_base_coord_from_sbf(
 
     # TODO: basestation1 block are fixed coordinates, so we can just take the last row of the dataframe
     # TODO: The datetime argument is needed when PVTCartesian block is used logged by the basestation!
-    # if hasattr(parsed_args, "datetime") and parsed_args.datetime:
     if parsed_args.datetime is not None:
         logger.info(
             f"Extracting basestation coordinates from sbf dataframe at date time {parsed_args.datetime}"

@@ -32,7 +32,6 @@ It implements a quality-based decision system for processing GNSS data and calcu
 """
 
 # TODO: improve the RTK/PPK quality check by also checking standard deviation error of RTK/PPK solution
-# TODO: create sys exit EBH decision look up table
 
 EBH_REJECTION_LEVEL = 99  # if the number of fixed RTK/PPK points is below this level, the ebh line is rejected
 

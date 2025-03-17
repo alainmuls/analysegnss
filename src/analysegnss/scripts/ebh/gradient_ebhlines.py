@@ -118,7 +118,7 @@ def gradient_ebhlines(parsed_args: argparse.Namespace, logger: Logger) -> str:
         logger=logger,
     )
 
-    # store the output in a dictionary #TODO: add UTM.Z to the output
+    # store the output in a dictionary #TODO: add UTM.Z to the output and latitude and longitude
     gradient_runway_output = f"""
         EBH project name:\t\t\t\t\t\t\t{ebh_project_name}\n
         Measured length of the runway (meters):\t\t\t\t\t{length_of_runway:.2f}
