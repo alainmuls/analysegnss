@@ -1,7 +1,6 @@
 {
     "version": "0.2.0",
     "configurations": [
-        
         {
             "name": "EBH Process: RTK+PPK (Hoeilaart)",
             "type": "debugpy",
@@ -9,7 +8,9 @@
             "program": "src/analysegnss/launch/launch_ebh_process.py",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "purpose": ["debug-in-terminal"],
+            "purpose": [
+                "debug-in-terminal"
+            ],
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/src",
             },
@@ -35,7 +36,9 @@
             "program": "src/analysegnss/launch/launch_ebh_process.py",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "purpose": ["debug-in-terminal"],
+            "purpose": [
+                "debug-in-terminal"
+            ],
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/src",
             },
@@ -59,7 +62,9 @@
             "program": "src/analysegnss/launch/launch_ebh_process.py",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "purpose": ["debug-in-terminal"],
+            "purpose": [
+                "debug-in-terminal"
+            ],
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/src"
             },
@@ -84,7 +89,9 @@
             "program": "src/analysegnss/launch/launch_ebh_process.py",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "purpose": ["debug-in-terminal"],
+            "purpose": [
+                "debug-in-terminal"
+            ],
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/src"
             },
@@ -111,7 +118,9 @@
             "program": "src/analysegnss/launch/launch_ebh_process.py",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "purpose": ["debug-in-terminal"],
+            "purpose": [
+                "debug-in-terminal"
+            ],
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/src"
             },
@@ -131,5 +140,67 @@
                 "order": 5
             }
         },
+        {
+            "name": "pnt_data_collector: PNT_CSV (default import) and merge",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/analysegnss/pnt/pnt_data_collector.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "purpose": [
+                "debug-in-terminal"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
+            "args": [
+                "--csv_ifn",
+                "data/20250227_jubelpark_3lijnen/rover_pnt_standard.csv",
+                "data/20250227_jubelpark_5lijnen/rover_pnt_standard.csv",
+                "--merge",
+                "-vvv"
+            ],
+            "stopOnEntry": false,
+            "presentation": {
+                "hidden": false,
+                "group": "pnt_collector_tests",
+                "order": 1
+            }
+        },
+        {
+            "name": "pnt_data_collector: sbf, rtkpos, nmea and merge",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/analysegnss/pnt/pnt_data_collector.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "purpose": [
+                "debug-in-terminal"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
+            "args": [
+                "--sbf_ifn",
+                "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/MOSX5GO/sbf/20241128-161759-usb-Septentrio_Septentrio_USB_Device_3688193-if02-MOSX5GO.sbf",
+                "--nmea_ifn",
+                "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-161759-usb-FTDI_FT230X_Basic_UART_DA0150ZY-if00-port0.out",
+                "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-181810-usb-FTDI_FT230X_Basic_UART_DA0150ZY-if00-port0.out",
+                "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-201820-usb-FTDI_FT230X_Basic_UART_DA0150ZY-if00-port0.out",
+                "--pos_ifn",
+                "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/MOSX5GO/rtklib_pos/2501171310_SEPT00BEL_R_20243331619_03D_30S_MO_PPK_160000_25200S.pos",
+                "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-161759-unicore-UM982_MO_PPK.pos",
+                "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-181810-unicore-UM982_MO_PPK.pos",
+                "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-201820-unicore-UM982_MO_PPK.pos",
+                "--merge",
+                "-vvv"
+            ],
+            "stopOnEntry": false,
+            "presentation": {
+                "hidden": false,
+                "group": "pnt_collector_tests",
+                "order": 2
+            }
+        }
     ]
 }
