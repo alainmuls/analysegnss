@@ -1,10 +1,16 @@
--e git+ssh://git@gitlab.cylab.be/gnss/analysegnss.git@d23d4ab288df77391a9c1b46f15c018b9f84eba1#egg=analysegnss
+-e git+ssh://git@gitlab.cylab.be/gnss/analysegnss.git@07c6242e093a8fb18147f06d32217e95e8e2addd#egg=analysegnss
+argcomplete==3.6.0
+markdown-it-py==3.0.0
+mdurl==0.1.2
 numpy==2.2.3
 pandas==2.2.2
 polars==1.24.0
+Pygments==2.19.1
 python-dateutil==2.9.0.post0
 pytz==2025.1
+rich==13.9.4
 six==1.17.0
 tabulate==0.9.0
+termcolor==2.5.0
 tzdata==2025.1
 utm==0.7.0
