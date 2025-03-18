@@ -273,7 +273,7 @@ class Rtkpos:
                     self.logger.debug("\tadding datetime to the dataframe")
                 df_pos = df_pos.with_columns(
                     pl.struct(["WNc", "TOW(s)"])
-                    .apply(
+                    .map_elements(
                         lambda x: gpsms2dt(x["WNc"], x["TOW(s)"] * 1000),
                         return_dtype=datetime.datetime,
                     )
@@ -293,7 +293,7 @@ class Rtkpos:
                 # Apply the conversion function lazily using map_elements with specified return_dtype
                 df_pos = df_pos.with_columns(
                     pl.struct(["latitude(deg)", "longitude(deg)"])
-                    .apply(
+                    .map_elements(
                         lambda row: latlon_to_utm(
                             row["latitude(deg)"], row["longitude(deg)"]
                         ),
@@ -338,10 +338,8 @@ class Rtkpos:
 
                 df_pos = df_pos.with_columns(
                     pl.struct(["latitude(deg)", "longitude(deg)"])
-                    .apply(
-                        lambda x: gh_model.get(
-                            x["latitude(deg)"], x["longitude(deg)"]
-                        ),
+                    .map_elements(
+                        lambda x: gh_model.get(x["latitude(deg)"], x["longitude(deg)"]),
                         return_dtype=pl.Float64,
                     )
                     .alias("undulation")
@@ -349,7 +347,7 @@ class Rtkpos:
 
                 df_pos = df_pos.with_columns(
                     pl.struct(["height(m)", "undulation"])
-                    .apply(
+                    .map_elements(
                         lambda x: x["height(m)"] - x["undulation"],
                         return_dtype=pl.Float64,
                     )
