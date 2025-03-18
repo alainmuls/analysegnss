@@ -54,8 +54,10 @@ def plot_utm_scatter(
     # get the common fonts to use in the plot
     plot_fonts = PlotlyFonts()
 
-    quality_col = cols.quality_mapping.columns # This will get "Type" for RTK, "Q" for PPK, etc.
-    columns_to_check = ['DT', quality_col]
+    quality_col = (
+        cols.quality_mapping.columns
+    )  # This will get "Type" for RTK, "Q" for PPK, etc.
+    columns_to_check = ["DT", quality_col]
     valid_utm_df = utm_df.drop_nulls(subset=columns_to_check)
     if logger is not None:
         logger.debug(f"valid_utm_df:\n{valid_utm_df}")
@@ -63,15 +65,18 @@ def plot_utm_scatter(
     # create a figure
     fig = go.Figure()
 
-    for qual, qual_data in valid_utm_df.groupby(cols.quality_mapping.columns):
+    for qual, qual_data in valid_utm_df.group_by(cols.quality_mapping.columns):
+        # Handle both integer and tuple cases for qual in one line
+        qual_value = qual[0] if isinstance(qual, tuple) else qual
+
         fig.add_trace(
             go.Scatter(
                 x=qual_data[cols.east],
                 y=qual_data[cols.north],
                 mode="markers",
-                name=f"{cols.quality_mapping.quality_dict[qual]['desc']}",
+                name=f"{cols.quality_mapping.quality_dict[qual_value]['desc']}",
                 marker=dict(
-                    color=cols.quality_mapping.quality_dict[qual]["color"], size=1
+                    color=cols.quality_mapping.quality_dict[qual_value]["color"], size=1
                 ),
             )
         )
@@ -117,8 +122,7 @@ def plot_utm_scatter(
     if not os.path.exists(os.path.join(dir_fn, "plots")):
         os.makedirs(os.path.join(dir_fn, "plots"))
 
-    fn_plot = os.path.join(
-        dir_fn, "plots", f"{ifn.replace('.', '_')}_scatter.html")
+    fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_scatter.html")
     # fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_scatter.html")
     fig.write_html(fn_plot)
     print(f"Plot saved to {fn_plot}")
@@ -164,8 +168,10 @@ def plot_utm_height(
         for r, g, b, _ in colors
     ]
 
-    quality_col = cols.quality_mapping.columns # This will get "Type" for RTK, "Q" for PPK, etc.
-    columns_to_check = ['DT', quality_col]
+    quality_col = (
+        cols.quality_mapping.columns
+    )  # This will get "Type" for RTK, "Q" for PPK, etc.
+    columns_to_check = ["DT", quality_col]
     valid_utm_df = utm_df.drop_nulls(subset=columns_to_check)
     if logger is not None:
         logger.debug(f"valid_utm_df:\n{valid_utm_df}")
@@ -173,23 +179,26 @@ def plot_utm_height(
     # Create the subplot structure
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True)
     # Add traces for each column
-    for qual, qual_data in valid_utm_df.groupby(cols.quality_mapping.columns):
+    for qual, qual_data in valid_utm_df.group_by(cols.quality_mapping.columns):
+        # handle both integer and tuple cases for qual in one line
+        qual_value = qual[0] if isinstance(qual, tuple) else qual
+
         fig.add_trace(
             go.Scatter(
                 x=qual_data[cols.time].dt.strftime("%Y-%m-%d %H:%M:%S"),
                 y=qual_data[cols.north],
                 mode="markers",
                 marker=dict(
-                    color=cols.quality_mapping.quality_dict[qual]["color"], size=1
+                    color=cols.quality_mapping.quality_dict[qual_value]["color"], size=1
                 ),
-                name=f"{cols.quality_mapping.quality_dict[qual]['desc']}",
+                name=f"{cols.quality_mapping.quality_dict[qual_value]['desc']}",
                 showlegend=True,
                 error_y=(
                     dict(
                         type="data",
                         array=qual_data[cols.sdn],
                         visible=True,
-                        color=cols.quality_mapping.quality_dict[qual]["color"],
+                        color=cols.quality_mapping.quality_dict[qual_value]["color"],
                         thickness=0,
                         width=0.5,
                     )
@@ -206,7 +215,7 @@ def plot_utm_height(
                 y=qual_data[cols.east],
                 mode="markers",
                 marker=dict(
-                    color=cols.quality_mapping.quality_dict[qual]["color"], size=1
+                    color=cols.quality_mapping.quality_dict[qual_value]["color"], size=1
                 ),
                 showlegend=False,
                 error_y=(
@@ -214,7 +223,7 @@ def plot_utm_height(
                         type="data",
                         array=qual_data[cols.sde],
                         visible=True,
-                        color=cols.quality_mapping.quality_dict[qual]["color"],
+                        color=cols.quality_mapping.quality_dict[qual_value]["color"],
                         thickness=0,
                         width=0.5,
                     )
@@ -231,7 +240,7 @@ def plot_utm_height(
                 y=qual_data[cols.height],
                 mode="markers",
                 marker=dict(
-                    color=cols.quality_mapping.quality_dict[qual]["color"], size=1
+                    color=cols.quality_mapping.quality_dict[qual_value]["color"], size=1
                 ),
                 showlegend=False,
                 error_y=(
@@ -239,7 +248,7 @@ def plot_utm_height(
                         type="data",
                         array=qual_data[cols.sdu],
                         visible=True,
-                        color=cols.quality_mapping.quality_dict[qual]["color"],
+                        color=cols.quality_mapping.quality_dict[qual_value]["color"],
                         thickness=0,
                         width=0.5,
                     )
@@ -308,13 +317,11 @@ def plot_utm_height(
     # fig.write_image(fn_plot, width=1024, height=600)
 
     if not sd:
-        fn_plot = os.path.join(
-            dir_fn, "plots", f"{ifn.replace('.', '_')}_enu.html")
+        fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_enu.html")
         # fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_enu.html")
         # fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_enu.svg")
     else:
-        fn_plot = os.path.join(
-            dir_fn, "plots", f"{ifn.replace('.', '_')}_enu_sd.html")
+        fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_enu_sd.html")
         # fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_enu_sd.html")
         # fn_plot = os.path.join(dir_fn, "plots", f"{ifn.replace('.', '_')}_enu_sd.svg")
 
@@ -369,8 +376,7 @@ def plot_utm_scatter_mpl(
 
     # Find appropriate interval that gives about 5-7 grid lines
     target_lines = 7
-    tick_spacing = min(base_intervals, key=lambda x: abs(
-        plot_range / x - target_lines))
+    tick_spacing = min(base_intervals, key=lambda x: abs(plot_range / x - target_lines))
 
     # Calculate ticks using the selected base interval
     x_start = np.floor(x_min / tick_spacing) * tick_spacing
@@ -383,20 +389,24 @@ def plot_utm_scatter_mpl(
 
     # Using the correct column name 'DT'
     # Get the correct quality column name from the UTMColumns mapping
-    quality_col = cols.quality_mapping.columns # This will get "Type" for RTK, "Q" for PPK, etc.
-    columns_to_check = ['DT', quality_col]
+    quality_col = (
+        cols.quality_mapping.columns
+    )  # This will get "Type" for RTK, "Q" for PPK, etc.
+    columns_to_check = ["DT", quality_col]
     valid_utm_df = utm_df.drop_nulls(subset=columns_to_check)
     if logger is not None:
         logger.debug(f"valid_utm_df:\n{valid_utm_df}")
 
-    for qual, qual_data in valid_utm_df.groupby(cols.quality_mapping.columns):
-        # print(f"qual:\n{qual}")
+    for qual, qual_data in valid_utm_df.group_by(cols.quality_mapping.columns):
+        # Handle both integer and tuple cases for qual in one line
+        qual_value = qual[0] if isinstance(qual, tuple) else qual
+
         ax.scatter(
             qual_data[cols.east],
             qual_data[cols.north],
             s=0.2,
-            c=[cols.quality_mapping.quality_dict[qual]["color"]],
-            label=f"{cols.quality_mapping.quality_dict[qual]['desc']}",
+            c=[cols.quality_mapping.quality_dict[qual_value]["color"]],
+            label=f"{cols.quality_mapping.quality_dict[qual_value]['desc']}",
             alpha=0.6,
         )
     ax.set_xticks(x_ticks)
@@ -430,8 +440,7 @@ def plot_utm_scatter_mpl(
     plots_dir = os.path.join(dir_fn, "plots")
     os.makedirs(plots_dir, exist_ok=True)
 
-    fn_plot = os.path.join(
-        plots_dir, f"{ifn.replace('.', '_')}_scatter_mpl.png")
+    fn_plot = os.path.join(plots_dir, f"{ifn.replace('.', '_')}_scatter_mpl.png")
     fig.savefig(fn_plot, bbox_inches="tight", dpi=300)
     print(f"Plot saved to {fn_plot}")
 
@@ -467,10 +476,10 @@ def plot_utm_height_mpl(
 
     # Create figure with three subplots sharing x-axis
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 8), sharex=True)
-    # # Filter out None values before groupby
+    # # Filter out None values before group_by
     # valid_utm_df = utm_df.filter(
     #     pl.col(cols.quality_mapping.columns).is_not_null())
-    
+
     # # Replace None values with NaN in quality mapping columns only
     # valid_utm_df = utm_df.fill_null(float('nan'))
     # if sd:
@@ -480,17 +489,21 @@ def plot_utm_height_mpl(
     #         pl.col('SD_hgt [m]').fill_null(float('nan'))
     #     )
 
-    quality_col = cols.quality_mapping.columns # This will get "Type" for RTK, "Q" for PPK, etc.
-    columns_to_check = ['DT', quality_col]
+    quality_col = (
+        cols.quality_mapping.columns
+    )  # This will get "Type" for RTK, "Q" for PPK, etc.
+    columns_to_check = ["DT", quality_col]
     valid_utm_df = utm_df.drop_nulls(subset=columns_to_check)
     if logger is not None:
         logger.debug(f"valid_utm_df:\n{valid_utm_df}")
 
-
     # Plot data for each quality level
-    for qual, qual_data in valid_utm_df.groupby(cols.quality_mapping.columns):
-        color = cols.quality_mapping.quality_dict[qual]["color"]
-        label = cols.quality_mapping.quality_dict[qual]["desc"]
+    for qual, qual_data in valid_utm_df.group_by(cols.quality_mapping.columns):
+        # Handle both integer and tuple cases for qual in one line
+        qual_value = qual[0] if isinstance(qual, tuple) else qual
+
+        color = cols.quality_mapping.quality_dict[qual_value]["color"]
+        label = cols.quality_mapping.quality_dict[qual_value]["desc"]
 
         times = qual_data[cols.time].to_list()
         north = qual_data[cols.north].to_list()
@@ -528,10 +541,8 @@ def plot_utm_height_mpl(
             alpha=1,
             linestyle="None",
         )
-        ax2.plot(times, east, marker=".", c=color,
-                 ms=3, alpha=1, linestyle="None")
-        ax3.plot(times, height, marker=".", c=color,
-                 ms=3, alpha=1, linestyle="None")
+        ax2.plot(times, east, marker=".", c=color, ms=3, alpha=1, linestyle="None")
+        ax3.plot(times, height, marker=".", c=color, ms=3, alpha=1, linestyle="None")
 
     # Configure axes
     ax1.set_ylabel(cols.north)
@@ -563,8 +574,7 @@ def plot_utm_height_mpl(
 
     # Save plot
     suffix = "_enu_sd" if sd else "_enu"
-    fn_plot = os.path.join(
-        plots_dir, f"{ifn.replace('.', '_')}{suffix}_mpl.png")
+    fn_plot = os.path.join(plots_dir, f"{ifn.replace('.', '_')}{suffix}_mpl.png")
     fig.savefig(fn_plot, bbox_inches="tight", dpi=300)
     print(f"Plot saved to {fn_plot}")
 
