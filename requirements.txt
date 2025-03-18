@@ -1,4 +1,3 @@
--e git+ssh://git@gitlab.cylab.be/gnss/analysegnss.git@07c6242e093a8fb18147f06d32217e95e8e2addd#egg=analysegnss
 argcomplete==3.6.0
 markdown-it-py==3.0.0
 mdurl==0.1.2

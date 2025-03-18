@@ -1,5 +1,5 @@
 [build-system]
-requires = [ "setuptools>=42", "wheel" ]
+requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
 
@@ -8,10 +8,20 @@ name = "analysegnss"
 version = "2.0.2"
 description = "Package for processing GNSS data from various sources (RINEX, SBF, etc.) with EBH-operations support"
 readme = "README.md"
-keywords = [ "GNSS", "EBH", "RINEX", "SBF", "RTKLIB", "gLAB", "UTM" ]
+keywords = ["GNSS", "EBH", "RINEX", "SBF", "RTKLIB", "gLAB", "UTM"]
 requires-python = ">=3.8"
-dependencies = [ "pandas==2.2.2", "utm==0.7.0" ]
-
+dependencies = [
+    "numpy>=2.2.0",
+    "pandas>=2.2.0",
+    "polars>=0.24.0",
+    "matplotlib",                   # Add version if you rely on specific features
+    "plotly",                       # Add version if you rely on specific features
+    "python-dateutil>=2.9.0.post0",
+    "pytz>=2025.1",
+    "rich>=13.9.0",
+    "utm>=0.7.0",
+    "argcomplete>=3.6.0",
+]
 
 [[project.authors]]
 name = "Alain Muls"
@@ -57,4 +67,4 @@ include-package-data = true
 
 
 [tool.setuptools.packages.find]
-where = [ "src" ]
+where = ["src"]
