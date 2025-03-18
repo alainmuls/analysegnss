@@ -293,7 +293,12 @@ def standardize_pnt_df(
 
     # Add pnt source column to required columns
     required_columns.append("source")
-
+    
+    # add source column
+    if "source" not in df_source.columns:
+        df_source = df_source.with_columns(pl.lit(source).alias("source"))
+        logger.debug(f"Added source column to dataframe")
+    
     # Check for missing columns and add dummy data if needed
     existing_cols = df_source.columns
     missing_cols = [col for col in required_columns if col not in existing_cols]
@@ -324,7 +329,7 @@ def standardize_pnt_df(
             elif col == pnt_columns.quality_mapping.quality_column:
                 dummy_data.append(pl.lit("MANUAL").alias(col))
             elif col == "source":
-                dummy_data.append(pl.lit("UNKNOWN").alias(col))
+                dummy_data.append(pl.lit(source).alias(col))
             else:
                 dummy_data.append(pl.lit(None).alias(col))
 
@@ -333,10 +338,8 @@ def standardize_pnt_df(
             df_source = df_source.with_columns(dummy_data)
             logger.info(f"Added dummy data for missing columns: {missing_cols}")
 
+
     ### PNT SOURCE: ALL COLUMNS DATAFRAME ###
-    # add source column
-    if "source" not in df_source.columns:
-        df_source = df_source.with_columns(pl.lit(source).alias("source"))
         
     # Filter out null coordinate values
     df_source = df_source.filter(
@@ -354,6 +357,7 @@ def standardize_pnt_df(
     # Cast columns to their correct dtypes
     typecast_pl_cols = []
     for col_name, dtype in source_dtypes_map.items():
+        logger.debug(f"Casting column {col_name} to {dtype}")
         typecast_pl_cols.append(pl.col(col_name).cast(dtype).alias(col_name))
     
     # Apply casting
@@ -364,7 +368,7 @@ def standardize_pnt_df(
     df_source_all = df_source
     logger.info(f"PNT source all columns dataframe:\n{df_source_all}")
 
-    ### STANDARDIZE PNT DATAFRAME ###
+    ### STANDARDIZE PNT DATAFRAME [remaming and exluding columns] ###
     # rename columns to standard names
     standard_col_names_exprs = [] # by using alias() to rename pl.columns, the col names become Polars expressions. 
     # Use meta.output_name() to get the column name
@@ -375,8 +379,11 @@ def standardize_pnt_df(
             )
             standard_col_names_exprs.append(pl.col(source_col).alias(standard_col))
     
-    # Add source column
+    # Add source column to the list of columns to select
     standard_col_names_exprs.append(pl.lit(source).alias("source"))
+   
+    # apply the standard column names to the dataframe
+    df_source_standardized = df_source.select(standard_col_names_exprs)
     
     # Get the dtype mapping for the standard column names
     standard_dtypes_map, failed_standard_casting = get_column_dtypes(columns_to_cast=standard_col_names_exprs)
@@ -384,14 +391,15 @@ def standardize_pnt_df(
     if failed_standard_casting:
         logger.warning(f"Columns not found in COLUMN_DTYPE_MAPPINGS: {failed_standard_casting}")
     
-    # Create a selection with casting for standard column names
+    # create list of columns to cast
     standard_typecast_pl_cols = []
     for col_name, dtype in standard_dtypes_map.items():
         standard_typecast_pl_cols.append(pl.col(col_name).cast(dtype).alias(col_name))
     
     # Apply casting
     if standard_typecast_pl_cols:
-        df_source_standardized = df_source.with_columns(standard_typecast_pl_cols)
+        df_source_standardized = df_source_standardized.with_columns(standard_typecast_pl_cols)
+        
 #    for name_expr in standard_col_names_exprs:
 #        col_name = name_expr.meta.output_name()
 #        if col_name in standard_dtypes_map:
