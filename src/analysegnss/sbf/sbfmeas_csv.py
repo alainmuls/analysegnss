@@ -275,8 +275,6 @@ def convert_meas3_csv(
     # Convert parsed_args.gnss string into a list of characters to match
     gnss_list = list(parsed_args.gnss)
 
-    print(f"df_meas['Meas3Ranges'].columns:\n{df_meas['Meas3Ranges'].columns}")
-    print(f"df_meas['Meas3Ranges'].head(3):\n{df_meas['Meas3Ranges'].head(3)}")
     # create the CSV dataframe
     df_csv = (
         df_meas["Meas3Ranges"]

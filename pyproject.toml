@@ -1,92 +1,88 @@
 [build-system]
-requires = ["setuptools>=45", "wheel"]
+requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
+
 
 [project]
 name = "analysegnss"
-version = "2.0"
-description = """
-This package is a collection of tools for GNSS data analysis.
-"""
+version = "1.0.3"
+description = "Package for processing GNSS data from various sources (RINEX, SBF, etc.) with EBH-operations support"
+readme = "README.md"
+keywords = ["GNSS", "EBH", "RINEX", "SBF", "RTKLIB", "gLAB", "UTM"]
 requires-python = ">=3.8"
 dependencies = [
-    "annotated-types==0.7.0",
-    "argcomplete==3.4.0",
-    "contourpy==1.2.1",
-    "cycler==0.12.1",
-    "fonttools==4.53.0",
-    "kiwisolver==1.4.5",
-    "matplotlib==3.9.1",
-    "numpy==2.0.0",
-    "packaging==24.1",
-    "pandas==2.2.2",
-    "pillow==10.4.0",
-    "plotly==5.22.0",
-    "polars==0.20.31",
-    "pyarrow==16.1.0",
-    "pydantic==2.7.4",
-    "pydantic_core==2.18.4",
-    "pyparsing==3.1.2",
-    "python-dateutil==2.9.0.post0",
-    "pytz==2024.1",
-    "rich==13.9.4",
-    "seaborn==0.13.2",
-    "setuptools==75.8.0",
-    "six==1.16.0",
-    "tabulate==0.9.0",
-    "tenacity==8.4.2",
-    "termcolor==2.4.0",
-    "tqdm==4.66.4",
-    "typing_extensions==4.12.2",
-    "tzdata==2024.1",
-    "utm==0.7.0",
+    "argcomplete>=3.6.0",
+    "contourpy>=1.3.0",
+    "cycler>=0.12.0",
+    "fonttools>=4.56.0",
+    "kiwisolver>=1.4.0",
+    "markdown-it-py>=3.0.0",
+    "matplotlib>=3.10.0",
+    "mdurl>=0.1.0",
+    "narwhals>=1.31.0",
+    "numpy>=2.2.0",
+    "packaging>=24.0",
+    "pandas>=2.2.0",
+    "pillow>=11.1.0",
+    "plotly>=6.0.0",
+    "polars>=1.24.0",
+    "Pygments>=2.19.0",
+    "pynmea2>=1.19.0",
+    "pyparsing>=3.2.0",
+    "python-dateutil>=2.9.0.post0",
+    "pytz>=2025.0",
+    "rich>=13.9.0",
+    "six>=1.17.0",
+    "tabulate>=0.9.0",
+    "termcolor>=2.5.0",
+    "tzdata>=2025.0",
+    "utm>=0.7.0",
 ]
 
+[[project.authors]]
+name = "Alain Muls"
+email = "alain.muls@mil.be"
 
-[tool.setuptools]
-package-dir = { "" = "src" }
-include-package-data = true
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[[project.authors]]
+name = "Pieterjan De Meulemeester"
+email = "pieterjan.demeulemeester@mil.be"
+
+
+[project.license]
+text = "MIT License"
+
 
 [project.scripts]
-# launch scripts
+ebh_lines = "analysegnss.scripts.ebh.ebh_lines:main"
+get_base_coord_from_sbf = "analysegnss.sbf.get_base_coord_from_sbf:main"
+get_ebh_timings = "analysegnss.scripts.ebh.get_ebh_timings:main"
+get_rnx_files = "analysegnss.rinex.get_rnx_files:main"
+glab_parser = "analysegnss.glabng.glab_parser:main"
+gradient_ebhlines = "analysegnss.scripts.ebh.gradient_ebhlines:main"
 launch_ebh_process = "analysegnss.launch.launch_ebh_process:main"
 launch_rnx2rtkp = "analysegnss.launch.launch_rnx2rtkp:main"
-
-# GNSS data analysis
-cn0_dataframe = "analysegnss.analyse.cn0_dataframe:main"
-
-# PNT
-pnt_data_collector = "analysegnss.pnt.pnt_data_collector:main"
-
-# rinex
-get_rnx_files = "analysegnss.rinex.get_rnx_files:main"
+nmeaReader = "analysegnss.nmea.nmeaReader:main"
+plot_coords = "analysegnss.plots.plot_coords:main"
+ppk_rnx2rtkp = "analysegnss.rtkpos.ppk_rnx2rtkp:main"
+reformat_sbf_rnx_for_opus = "analysegnss.scripts.opus.reformat_sbf_rnx_for_opus:main"
 rnx_csv = "analysegnss.rinex.rnx_csv:main"
-rnxobs_csv = "analysegnss.rinex.rnxobs_csv:main"
 rnxnav_csv = "analysegnss.rinex.rnxnav_csv:main"
-
-# NMEA
-get_nmea_files = "analysegnss.nmea.get_nmea_files:main"
-nmea_reader = "analysegnss.nmea.nmea_reader:main"
-
-# SBF
-get_base_xyz_from_sbf = "analysegnss.sbf.get_base_xyz_from_sbf:main"
+rnxobs_csv = "analysegnss.rinex.rnxobs_csv:main"
 rtk_pvtgeod = "analysegnss.sbf.rtk_pvtgeod:main"
 sbfmeas_csv = "analysegnss.sbf.sbfmeas_csv:main"
 sbfnav_csv = "analysegnss.sbf.sbfnav_csv:main"
 
-# rtklib
-ppk_rnx2rtkp = "analysegnss.rtkpos.ppk_rnx2rtkp:main"
 
-# GLABNG
-glab_parser = "analysegnss.glabng.glab_parser:main"
+[tool.setuptools]
+include-package-data = true
 
-# ebh
-ebh_lines = "analysegnss.scripts.ebh.ebh_lines:main"
-get_ebh_timings = "analysegnss.scripts.ebh.get_ebh_timings:main"
-gradient_ebhlines = "analysegnss.scripts.ebh.gradient_ebhlines:main"
+[tool.setuptools.package-data]
+"analysegnss.gnss.geoids" = ["*.pgm"]
 
-# Plotting
-plot_coords = "analysegnss.plots.plot_coords:main"
+[tool.setuptools.package-dir]
+"" = "src"
+
+
+[tool.setuptools.packages.find]
+where = ["src"]

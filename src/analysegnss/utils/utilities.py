@@ -301,14 +301,18 @@ def combine_dfs(dfs: dict) -> pl.DataFrame:
     Returns:
         pl.DataFrame: Combined dataframe with all PVT information
     """
+    if len(dfs.keys()) == 1:
+        return dfs.values()[0]
+
     # Start with first dataframe
     combined_df = list(dfs.values())[0]
 
     # Join with remaining dataframes on DT column
     for df in list(dfs.values())[1:]:
-        combined_df = combined_df.join(df, on="DT", how="outer")
+        combined_df = combined_df.join(df, on="DT", how="inner")
 
     return combined_df
+
 
 def sf64(val, e_return_none: bool = True, logger: logging.Logger = None):
     """Safely convert to float if possible, else return original value
@@ -327,8 +331,9 @@ def sf64(val, e_return_none: bool = True, logger: logging.Logger = None):
             logger.debug(f"Could not cast {val} to float")
         if e_return_none:
             return None
-        else:    
+        else:
             return val
+
 
 def si64(val, e_return_none: bool = True, logger: logging.Logger = None):
     """Safely convert to int if possible, else return original value
@@ -349,3 +354,44 @@ def si64(val, e_return_none: bool = True, logger: logging.Logger = None):
             return None
         else:
             return val
+
+
+def print_df_in_chunks(
+    title: str, df: pl.DataFrame, chunk_size: int = 15, rows: int = 3
+) -> str:
+    """Print a dataframe in chunks of columns with a specified number of rows.
+
+    Args:
+        title (str): Title of the dataframe
+        df (pl.DataFrame): DataFrame to print
+        chunk_size (int): Number of columns to print in each chunk
+        rows (int): Number of rows to print for each chunk
+
+    Returns:
+        str: Log message to print
+    """
+    total_cols = len(df.columns)
+    log_message = f"{str_green(title)} has shape {str_green(df.shape)}\n"
+
+    for i in range(0, total_cols, chunk_size):
+        end_idx = min(i + chunk_size, total_cols)
+        log_message += f"\n{df.select(df.columns[i:end_idx])}"  # ".head(rows)}"
+
+    return log_message
+
+
+def df_schema_info(df: pl.DataFrame) -> str:
+    """
+    Returns a string with the schema of the dataframe
+
+    Args:
+        df (pl.DataFrame): DataFrame to print schema information
+
+    Returns:
+        str: Formatted string with column names and dtypes
+    """
+    # Create a formatted string of column names and dtypes
+    schema_info = "\n".join(
+        [f"Column: {name}, Type: {dtype}" for name, dtype in df.schema.items()]
+    )
+    return schema_info

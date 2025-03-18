@@ -201,6 +201,32 @@
                 "group": "pnt_collector_tests",
                 "order": 2
             }
+        },
+        {
+            "name": "plot utm coordinates (source: nmea)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/analysegnss/plots/plot_coords.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "purpose": [
+                "debug-in-terminal"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
+            "args": [
+                "--csv_ifn",
+                "data/merged_pnt_standard.csv",
+                "--display",
+                "--mpl",
+            ],
+            "stopOnEntry": false,
+            "presentation": {
+                "hidden": false,
+                "group": "plot_tests",
+                "order": 1
+            }
         }
     ]
 }

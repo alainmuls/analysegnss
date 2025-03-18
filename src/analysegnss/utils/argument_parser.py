@@ -39,8 +39,8 @@ def auto_populate_args_namespace(
     """
     # ----------------------------------------------------------------------------------#
     # to fetch the default values of the native parser function,
-    # we need to call the native parser function to fill a dictionary with the default 
-    # values of the arguments. However if an argument is required, the parser will exit 
+    # we need to call the native parser function to fill a dictionary with the default
+    # values of the arguments. However if an argument is required, the parser will exit
     # with an error. Therefore we need to make all arguments temporarily optional
     # The only 'clean' way of doing this is to temporarily patch the ArgumentParser class
     # ----------------------------------------------------------------------------------#
@@ -71,7 +71,6 @@ def auto_populate_args_namespace(
     # Update with all values from passed on parsed_args
     parsed_dict = vars(parsed_args)
     complete_args.update(parsed_dict)
-
 
     # Convert back to Namespace
     return argparse.Namespace(**complete_args)
@@ -332,7 +331,9 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
     return args
 
 
-def argument_parser_pnt_data_collector(script_name: str, args: list) -> argparse.Namespace:
+def argument_parser_pnt_data_collector(
+    script_name: str, args: list
+) -> argparse.Namespace:
     """parses the arguments
 
     Args:
@@ -343,11 +344,14 @@ def argument_parser_pnt_data_collector(script_name: str, args: list) -> argparse
     """
     baseName = str_yellow(script_name)
 
-    help_txt = baseName + " The PNT data collector is used to collect PNT data from multiple sources\
+    help_txt = (
+        baseName
+        + " The PNT data collector is used to collect PNT data from multiple sources\
                             and construct standardised dataframes. If multiple sources are provided, \
                             these can be merged. All dataframes can be written to a csv file.\
                             The constructed dataframes can be further processed by plot_coords.py\
                             or other gnss analysis tools."
+    )
 
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=help_txt)
@@ -435,7 +439,7 @@ def argument_parser_pnt_data_collector(script_name: str, args: list) -> argparse
         required=False,
         default=None,
     )
-    
+
     # Creating a group for PNT_CSV-specific arguments
     csv_group = parser.add_argument_group(
         "CSV input file options", "Options specific to CSV input files"
@@ -447,7 +451,7 @@ def argument_parser_pnt_data_collector(script_name: str, args: list) -> argparse
             The minimum required columns are: [UTM.E, UTM.N, orthoH]\
             The pnt_data_collector.py script can process the following columns:\
                 [UTM.E, UTM.N, orthoH, DT, pnt_qual, num_sats, sde(m), sdn(m), sdu(m)]\
-            Important: the no_header and skip_rows_after_header args (if applicable) must be configured accordingly",   
+            Important: the no_header and skip_rows_after_header args (if applicable) must be configured accordingly",
         type=cs_str_to_list,
         required=False,
         default="UTM.E, UTM.N, orthoH",
@@ -494,13 +498,12 @@ def argument_parser_pnt_data_collector(script_name: str, args: list) -> argparse
 
     # Validate that merge_dest is provided when both csv_out and merge are enabled
     if args.csv_out and args.merge and args.merge_dest is None:
-        parser.error("--merge_dest is required when both --csv_out and --merge are enabled")
+        parser.error(
+            "--merge_dest is required when both --csv_out and --merge are enabled"
+        )
 
     return args
 
-    
-    
-    
 
 def argument_parser_ebh_lines(script_name: str, args: list) -> argparse.Namespace:
     """parses the arguments
@@ -1504,7 +1507,70 @@ def argument_parser_nmea_reader(args: list, script_name: str) -> argparse.Namesp
         required=False,
         action="store_true",
     )
+    args = parser.parse_args(args)
 
+    return args
+
+
+def argument_parser_sbfnav_csv(script_name: str, args: list) -> argparse.Namespace:
+    """parses the arguments
+
+    Args:
+        argv (list): list of arguments
+
+    Returns:
+        argparse.Namespace: parsed arguments
+    """
+    baseName = str_yellow(script_name)
+
+    help_txt = baseName + " Convert SBF navigation blocks to CSV file"
+
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_txt)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+    )
+
+    parser.add_argument(
+        "--sbf_ifn",
+        help="SBF filename",
+        type=str,
+        required=True,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--csv_ofn",
+        "--csv_ofn",
+        help="CSV observation filename (defaults to filename with extension csv)",
+        type=str,
+        required=False,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--gnss",
+        help="GNSS systems to convert (default: GE, select between GREC)",
+        type=str,
+        required=False,
+        default="GE",
+    )
+
+    parser.add_argument(
+        "--archive",
+        help="Archives extracted sbf blocks to specified archive's directory name. (full or relative (@sbf_ifn) path) \
+            Default is no archiving.",
+        required=False,
+        default=None,
+        type=str,
+    )
+    # allow argument completion
+    argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
 
     return args

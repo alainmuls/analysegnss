@@ -12,12 +12,7 @@ def extract_semicircle_columns() -> dict:
         dict: dictionary of columns containing semi-circles for the GNSS type
     """
     # Map navigation block names to GNSS types
-    block_to_gnss = {
-        "GPSNav": "GPS",
-        "GALNav": "GAL",
-        # Add more mappings as needed
-        # "BDSNav": "BDS"  # Include when BeiDou navigation block is added
-    }
+    block_to_gnss = {"GPSNav": "GPS", "GALNav": "GAL", "BDSNav": "BDS"}
 
     # Initialize result dictionary with empty lists for each GNSS type
     result = {gnss_type: [] for gnss_type in set(block_to_gnss.values())}
@@ -158,8 +153,68 @@ GNSS_NAV_COLUMN_MAPPINGS = {
         "WNt_oe [w]": "WNt_oe",
     },
     "BDS": {
-        "WN ": "WN",
+        "TOW [0.001 s]": "TOW",
+        "WNc [w]": "WNc",
+        "WN [w]": "WN",
+        "PRN": "PRN",
+        "CAorPonL2": "CAorPonL2",
         "URA": "SVacc",
-        # ... BeiDou specific mappings
+        "SatH1": "SatH1",
+        "IODC": "IODC",
+        "IODE": "IODE",
+        "t_oc [s]": "toc",
+        "t_oe [s]": "toe",
+        "a_f0 [s]": "af0",
+        "a_f1 [s/s]": "af1",
+        "a_f2 [s/s²]": "af2",
+        "T_GD1 [s]": "TGD1",
+        "T_GD2 [s]": "TGD2",
+        "DEL_N [semi-circle/s]": "deltaN",
+        "M_0 [semi-circle]": "M0",
+        "e": "eccen",
+        "SQRT_A [m**1/2]": "sqrtA",
+        "OMEGA_0 [semi-circle]": "Omega0",
+        "i_0 [semi-circle]": "Io",
+        "omega [semi-circle]": "omega",
+        "OMEGADOT [semi-circle/s]": "omegaDot",
+        "IDOT [semi-circle/s]": "IDOT",
+        "C_rs [m]": "Crs",
+        "C_rc [m]": "Crc",
+        "C_uc [rad]": "Cuc",
+        "C_us [rad]": "Cus",
+        "C_ic [rad]": "Cic",
+        "C_is [rad]": "Cis",
+    },
+    "GLO": {
+        "TOW [0.001 s]": "TOW",
+        "WNc [w]": "WNc",
+        "SVID": "SVID",
+        "FreqNr": "FreqNr",
+        "X [1000 m]": "X",
+        "Y [1000 m]": "Y",
+        "Z [1000 m]": "Z",
+        "Dx [1000 m/s]": "Dx",
+        "Dy [1000 m/s]": "Dy",
+        "Dz [1000 m/s]": "Dz",
+        "Ddx [1000 m/s²]": "Ddx",
+        "Ddy [1000 m/s²]": "Ddy",
+        "Ddz [1000 m/s²]": "Ddz",
+        "gamma [Hz/Hz]": "gamma",
+        "tau [s]": "tau",
+        "dtau [s]": "dtau",
+        "t_oe [s]": "t_oe",
+        "WN_toe [w]": "WN_toe",
+        "P1 [min.]": "P1",
+        "P2": "P2",
+        "E [d]": "E",
+        "B": "B",
+        "tb [min.]": "tb",
+        "M": "M",
+        "P": "P",
+        "l": "l",
+        "P4": "P4",
+        "N_T [d]": "N_T",
+        "F_T [0.01 m]": "F_T",
+        "C": "C",
     },
 }
