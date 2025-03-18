@@ -77,6 +77,8 @@ sbfnav_csv = "analysegnss.sbf.sbfnav_csv:main"
 [tool.setuptools]
 include-package-data = true
 
+[tool.setuptools.package-data]
+"analysegnss.gnss.geoids" = ["*.pgm"]
 
 [tool.setuptools.package-dir]
 "" = "src"
