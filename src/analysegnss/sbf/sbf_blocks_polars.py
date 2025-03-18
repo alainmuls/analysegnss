@@ -2,16 +2,45 @@ import polars as pl
 
 SBF_BLOCK_COLUMNS_BIN2ASC = {
     "MeasEpoch2": {
-        pl.UInt32: ["TOW [0.001 s]"],
-        pl.UInt16: ["WNc [w]", "MeasType", "Antenna ID", "SignalType", "LockTime [s]"],
-        pl.String: ["SVID"],
-        pl.Float64: ["CN0_dBHz [dB-Hz]", "PR_m [m]", "Doppler_Hz", "L_cycles [cyc]"],
+        pl.UInt32: [
+            "TOW [0.001 s]",
+        ],
+        pl.UInt16: [
+            "WNc [w]",
+            "MeasType",
+            "Antenna ID",
+            "SignalType",
+            "LockTime [s]",
+        ],
+        pl.String: [
+            "SVID",
+        ],
+        pl.Float64: [
+            "CN0_dBHz [dB-Hz]",
+            "PR_m [m]",
+            "Doppler_Hz",
+            "L_cycles [cyc]",
+        ],
     },
     "Meas3Ranges": {
-        pl.Float32: ["TOW [s]"],
-        pl.UInt16: ["WNc [w]", "LockTime [s]"],
-        pl.String: ["SVID", "SignalType", "Antenna ID"],
-        pl.Float64: ["PR [m]", "L [cyc]", "Doppler [Hz]", "C/N0 [dB-Hz]"],
+        pl.UInt16: [
+            "WNc [w]",
+            "LockTime [s]",
+        ],
+        pl.String: [
+            "SVID",
+            "SignalType",
+            "Antenna ID",
+        ],
+        pl.Float64: [
+            "PR [m]",
+            "L [cyc]",
+            "Doppler [Hz]",
+            "C/N0 [dB-Hz]",
+        ],
+        pl.Float32: [
+            "TOW [s]",
+        ],
     },
     "PVTCartesian2": {
         pl.Float64: [
@@ -113,48 +142,128 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "Z [m]",
         ],
     },
+    "GPSNav": {
+        pl.UInt32: [
+            "TOW [0.001 s]",
+            "t_oc [s]",
+            "t_oe [s]",
+        ],
+        pl.UInt16: [
+            "WNc [w]",
+            "WN [w]",
+            "IODC",
+            "WNt_oc [w]",
+            "WNt_oe [w]",
+        ],
+        pl.UInt8: [
+            "PRN",
+            "CAorPonL2",
+            "URA",
+            "health",
+            "L2DataFlag",
+            "IODE2",
+            "IODE3",
+            "FitIntFlg",
+        ],
+        pl.Float32: [
+            "T_gd [s]",
+            "a_f2 [s/s²]",
+            "a_f1 [s/s]",
+            "a_f0 [s]",
+            "C_rs [m]",
+            "DEL_N [semi-circle/s]",
+            "C_uc [rad]",
+            "C_us [rad]",
+            "C_ic [rad]",
+            "C_is [rad]",
+            "C_rc [m]",
+            "OMEGADOT [semi-circle/s]",
+            "IDOT [semi-circle/s]",
+        ],
+        pl.Float64: [
+            "M_0 [semi-circle]",
+            "e",
+            "SQRT_A [m**1/2]",
+            "OMEGA_0 [semi-circle]",
+            "i_0 [semi-circle]",
+            "omega [semi-circle]",
+        ],
+        pl.Datetime: [
+            "DT",
+        ],
+    },
+    "GALNav": {
+        pl.UInt32: [
+            "TOW [0.001 s]",
+            "t_oe [s]",
+            "t_oc [s]",
+        ],
+        pl.UInt16: [
+            "WNc [w]",
+            "WNt_oe [w]",
+            "WNt_oc [w]",
+            "IODnav",
+        ],
+        pl.UInt8: [
+            "Source",
+            "Bits 1 to 3 valid",
+            "L1-BDVS",
+            "L1-BHS",
+            "Bits 5 to 7 valid",
+            "E5bDVS",
+            "E5bHS",
+            "Bits 9 to 11 valid",
+            "E5aDVS",
+            "E5aHS",
+            # "Bits 13 to 15 valid",
+            "Health_PRS",
+            "Bits 1 to 3 valid (PRS)",
+            "L1-ADVS",
+            "L1-AHS",
+            "Bits 5 to 7 valid (PRS)",
+            "E6-ADVS",
+            "E6-AHS",
+        ],
+        pl.Float64: [
+            "SQRT_A [m**1/2]",
+            "M_0 [semi-circle]",
+            "e",
+            "i_0 [semi-circle]",
+            "omega [semi-circle]",
+            "OMEGA_0 [semi-circle]",
+            "a_f0 [s]",
+        ],
+        pl.Float32: [
+            "OMEGADOT [semi-circle/s]",
+            "IDOT [semi-circle/s]",
+            "DEL_N [semi-circle/s]",
+            "C_uc [rad]",
+            "C_us [rad]",
+            "C_rc [m]",
+            "C_rs [m]",
+            "C_ic [rad]",
+            "C_is [rad]",
+            "a_f2 [s/s²]",
+            "a_f1 [s/s]",
+            "BGD_L1E5a [s]",
+            "BGD_L1E5b [s]",
+            "BGD_L1AE6A [s]",
+            "SISA_L1E5a",
+            "SISA_L1E5b",
+            "SISA_L1AE6A",
+            "CNAVenc",
+            "E6Benc",
+            "E6Cenc",
+        ],
+        pl.String: [
+            "PRN",
+        ],
+        pl.Datetime: [
+            "DT",
+        ],
+    },
 }
 
-# elif sbf_block == "PVTResiduals2":
-#     keep_cols = [
-#         "TOW [0.001 s]",
-#         "WNc [w]",
-#         "N",
-#         "SVID",
-#         "FreqNr",
-#         "Type",
-#         "MeasInfo",
-#         "ResidualType",
-#         "Pseudorange residuals",
-#         "Carrier-phase residuals",
-#         "Doppler residuals",
-#         "Fixed ambiguity",
-#         "Residual [m]",
-#         "Residual [cyc]",
-#         "Residual [m/s]",
-#     ]
-# elif sbf_block == "SatVisibility1":
-#     keep_cols = [
-#         "TOW [0.001 s]",
-#         "WNc [w]",
-#         "SVID",
-#         "Azimuth_deg",
-#         "Elevation_deg",
-#         "RiseSet",
-#         "SatelliteInfo",
-#     ]
-# elif sbf_block == "ReceiverTime":
-#     keep_cols = [
-#         "TOW [0.001 s]",
-#         "WNc [w]",
-#         "UTCYear [Y]",
-#         "UTCMonth [month]",
-#         "UTCDay [d]",
-#         "UTCHour [h]",
-#         "UTCMin [min.]",
-#         "UTCSec [s]",
-#         "DeltaLS [s]",
-#     ]
 
 SBF_BLOCK_COLUMNS_SBF2ASC = {
     "PVTCartesian2": [

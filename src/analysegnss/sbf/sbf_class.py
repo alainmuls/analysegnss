@@ -16,7 +16,10 @@ from rich import print as rprint
 
 from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.gnss.gnss_dt import gpsms2dt
-from analysegnss.gnss.general_pnt_quality_dict import sbf_to_general_pntqual, get_pntquality_info
+from analysegnss.gnss.general_pnt_quality_dict import (
+    sbf_to_general_pntqual,
+    get_pntquality_info,
+)
 from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.sbf.sbf_blocks_polars import (
     SBF_BLOCK_COLUMNS_BIN2ASC,
@@ -265,8 +268,6 @@ class SBF:
             else:
                 cmd_bin2asc.append(sbf_block)
 
-        
-        
         # add logging level to cmd_sbf2asc when self._console_loglevel is DEBUG
         if self._console_loglevel == logging.DEBUG:
             self.logger.debug("Adding verbose flag to cmd_sbf2asc")
@@ -301,22 +302,25 @@ class SBF:
                     )[0]
                 except Exception as e:
                     if self.logger:
-                        self.logger.error(f"Error finding created file for {sbf_block} sbf block: {e}")
+                        self.logger.error(
+                            f"Error finding created file for {sbf_block} sbf block: {e}"
+                        )
             else:
                 try:
-                    bin2asc_fns[sbf_block] = glob.glob(rf"{self.sbf_fn}_measurements.txt")[
-                        0
-                    ]
+                    bin2asc_fns[sbf_block] = glob.glob(
+                        rf"{self.sbf_fn}_measurements.txt"
+                    )[0]
                 except Exception as e:
                     if self.logger:
-                        self.logger.error(f"Error finding created file for {sbf_block} sbf block: {e}")
-        
+                        self.logger.error(
+                            f"Error finding created file for {sbf_block} sbf block: {e}"
+                        )
+
         if self.logger:
             self.logger.debug(f"bin2asc_fns: {bin2asc_fns}")
 
         # create dictionary for containing the obtained dataframes
         sbf_dfs = {}
-
 
         # iterate over the CVS files and convert them to dataframe
         for sbf_block, bin2asc_fn in bin2asc_fns.items():
@@ -353,8 +357,8 @@ class SBF:
                             "null",
                             "NaN",
                         ],  # First catch all null representations
-#                    ).fill_null(
-#                        float("nan")
+                        #                    ).fill_null(
+                        #                        float("nan")
                     )  # commented this out because it changes the type of all columns to float
 
                     # add columns to the dataframe
@@ -451,10 +455,14 @@ class SBF:
                     rf"{self.sbf_fn}_sbf2asc_{sbf_block}.txt"
                 )
                 if self.logger:
-                    self.logger.debug(f"Found created file {sbf2asc_fns[sbf_block]} for {sbf_block} sbf block")
+                    self.logger.debug(
+                        f"Found created file {sbf2asc_fns[sbf_block]} for {sbf_block} sbf block"
+                    )
             except Exception as e:
                 if self.logger:
-                    self.logger.error(f"Error finding created file for {sbf_block} sbf block: {e}")
+                    self.logger.error(
+                        f"Error finding created file for {sbf_block} sbf block: {e}"
+                    )
 
         # create dictionary for containing the obtained dataframes
         sbf_dfs = {}
@@ -497,7 +505,7 @@ class SBF:
                 if self.logger:
                     self.logger.error(f"File {sbf2asc_fn[0]} not created")
                     print(f"File {sbf2asc_fn[0]} not created")
-            
+
             # remove unused columns
             sbf_df = pl.DataFrame()
 
@@ -683,7 +691,6 @@ class SBF:
                 .alias("orthoH")
             ).lazy()
 
-        
         # If an SBF block doesn't contain a column used in this func,
         # the collect() will throw an error.
         if getattr(block_df, "collect", None) is not None:
@@ -700,7 +707,7 @@ class SBF:
         Returns:
                 list: column names we use
         """
-        if sbf_block not in SBF_BLOCK_COLUMNS_BIN2ASC:
+        if sbf_block not in SBF_BLOCK_COLUMNS_BIN2ASC.keys():
             if self.logger:
                 self.logger.error(f"Unknown SBF block type: {sbf_block}")
             return {}

@@ -1,7 +1,7 @@
-#!/bin/bash 
+#!/bin/bash
 
 # Add proper error handling
-set -e  # Exit on error
+set -e # Exit on error
 
 OPTIONS=$(getopt -o hvf:r:x:b:e: -l help,verbose,sbf_fn,rnx_dir,excl_GNSS,begin_epoch,end_epoch -- "$@")
 
@@ -25,8 +25,8 @@ if [ $# -eq 0 ]; then
 fi
 
 if [ $? -ne 0 ]; then
-  echo "getopt error"
-  exit 2
+    echo "getopt error"
+    exit 2
 fi
 
 eval set -- "${OPTIONS}"
@@ -52,29 +52,49 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-
 # set the default options
 RNX_DIR="."
 EXCL_GNSS="RSCJI"
 
 while true; do
-  case "$1" in
-        -h|--help)          usage; ;;
-        -f|--file)          SBF_FN="$2" ; shift ;;
-        -x|--excl_GNSS)     EXCL_GNSS="$2" ; shift ;;
-        -b|--begin_epoch)   BEGIN_EPOCH="$2" ; shift ;;
-        -e|--end_epoch)     END_EPOCH="$2" ; shift ;;
-        -r|--rnx_dir)       RNX_DIR="$2" ; shift ;;
-        -v|--verbose)       VERBOSE=true ;;
-        --)                 shift ; break ;;
-        *)                  echo "unknown option: $1" ; exit 1 ;;
-  esac
-  shift
+    case "$1" in
+    -h | --help) usage ;;
+    -f | --file)
+        SBF_FN="$2"
+        shift
+        ;;
+    -x | --excl_GNSS)
+        EXCL_GNSS="$2"
+        shift
+        ;;
+    -b | --begin_epoch)
+        BEGIN_EPOCH="$2"
+        shift
+        ;;
+    -e | --end_epoch)
+        END_EPOCH="$2"
+        shift
+        ;;
+    -r | --rnx_dir)
+        RNX_DIR="$2"
+        shift
+        ;;
+    -v | --verbose) VERBOSE=true ;;
+    --)
+        shift
+        break
+        ;;
+    *)
+        echo "unknown option: $1"
+        exit 1
+        ;;
+    esac
+    shift
 done
 
 if [ $# -ne 0 ]; then
-  echo "unknown option(s): $@"
-  exit 2
+    echo "unknown option(s): $@"
+    exit 2
 fi
 
 # locate sbf2rin executable
@@ -96,11 +116,10 @@ if [ ! -f "${SBF_FN}" ]; then
 fi
 
 # Add validation for EXCL_GNSS parameter to ensure only valid GNSS letters are used
-if ! [[ "$EXCL_GNSS" =~ ^[RSCJIG]+$ ]]; then
-    echo -e "\e[1;31mError: Invalid GNSS exclusion characters. Use only R,S,C,J,I,G\e[0m"
-  exit 1
+if ! [[ "$EXCL_GNSS" =~ ^[RSCJIGE]+$ ]]; then
+    echo -e "\e[1;31mError: Invalid GNSS exclusion characters. Use only R,S,C,J,I,G,E \e[0m"
+    exit 1
 fi
-
 
 opts_timing=""
 # check for existence of BEGIN_TIME, if specified in correct format, than add to opts_timing
@@ -125,14 +144,12 @@ if [ "${VERBOSE}" = true ]; then
     opts_timing="${opts_timing} -v"
 fi
 
-
-
 # create the OUT_DIR if it does not exist
 # SBF_DIR=$(dirname "${SBF_FN}")  # Get the directory of the input SBF file
 
 if [ "${RNX_DIR}" == "${RNX_DIR#/}" ]; then
     echo "Relative RNX_DIR, appending to current directory"
-    readonly RNX_DIR=$(readlink -f "${ORIG_DIR}/${RNX_DIR}")  # Combine paths to get absolute output directory
+    readonly RNX_DIR=$(readlink -f "${ORIG_DIR}/${RNX_DIR}") # Combine paths to get absolute output directory
 fi
 
 if [ ! -d "${RNX_DIR}" ]; then
@@ -149,7 +166,7 @@ NAV_OPTS=" -x "${EXCL_GNSS}" -v -R3 -l -O BEL -n P "${opts_timing}
 if ${SBF2RIN} ${OBS_OPTS} -f "${SBF_FN}"; then
     # move the output files to the RINEX directory
     CONVERSION_SUCCESS=true
-    RNX_OBS_FILE=`ls -t | grep -v "sbf2rin.*\.log" | head -n 1`
+    RNX_OBS_FILE=$(ls -t | grep -v "sbf2rin.*\.log" | head -n 1)
     /bin/mv "${RNX_OBS_FILE}" "${RNX_DIR}"
     echo -e "Created \e[1;34m${RNX_OBS_FILE}\e[0m file in \e[1;32m${RNX_DIR}\e[0m"
 else
@@ -161,7 +178,7 @@ fi
 if ${SBF2RIN} ${NAV_OPTS} -f "${SBF_FN}"; then
     # move the output files to the RINEX directory
     CONVERSION_SUCCESS=true
-    RNX_NAV_FILE=`ls -t | grep -v "sbf2rin.*\.log" | head -n 1`
+    RNX_NAV_FILE=$(ls -t | grep -v "sbf2rin.*\.log" | head -n 1)
     /bin/mv "${RNX_NAV_FILE}" "${RNX_DIR}"
     echo -e "Created \e[1;34m${RNX_NAV_FILE}\e[0m file in \e[1;32m${RNX_DIR}\e[0m"
 else

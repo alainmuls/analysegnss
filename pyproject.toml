@@ -3,19 +3,10 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "analysegnss-ebh-ops"
+name = "analysegnss"
 version = "2.0"
 description = """
-This package is tailored for the EBH-operations. 
-It executes the Equivalent Bump Height (EBH) processing flow using the logged SBF files and outputs ASSUR formatted files.
-v2.0: 
-    - added support for pip installation
-    - added ebh gradient calculation
-    - better PVT quality handling and EBH quality check 
-    - improved user output and logging
-    - better file handling, structure and documentation
-    - better error handling
-    - ... see commits for more details in ebh-ops-dev branch
+This package is a collection of tools for GNSS data analysis.
 """
 requires-python = ">=3.8"
 dependencies = [
@@ -48,12 +39,12 @@ dependencies = [
     "tqdm==4.66.4",
     "typing_extensions==4.12.2",
     "tzdata==2024.1",
-    "utm==0.7.0"
+    "utm==0.7.0",
 ]
 
 
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = { "" = "src" }
 include-package-data = true
 
 [tool.setuptools.packages.find]
@@ -64,11 +55,17 @@ where = ["src"]
 launch_ebh_process = "analysegnss.launch.launch_ebh_process:main"
 launch_rnx2rtkp = "analysegnss.launch.launch_rnx2rtkp:main"
 
+# GNSS data analysis
+cn0_dataframe = "analysegnss.analyse.cn0_dataframe:main"
+
 # PNT
 pnt_data_collector = "analysegnss.pnt.pnt_data_collector:main"
 
 # rinex
 get_rnx_files = "analysegnss.rinex.get_rnx_files:main"
+rnx_csv = "analysegnss.rinex.rnx_csv:main"
+rnxobs_csv = "analysegnss.rinex.rnxobs_csv:main"
+rnxnav_csv = "analysegnss.rinex.rnxnav_csv:main"
 
 # NMEA
 get_nmea_files = "analysegnss.nmea.get_nmea_files:main"
@@ -77,9 +74,14 @@ nmea_reader = "analysegnss.nmea.nmea_reader:main"
 # SBF
 get_base_xyz_from_sbf = "analysegnss.sbf.get_base_xyz_from_sbf:main"
 rtk_pvtgeod = "analysegnss.sbf.rtk_pvtgeod:main"
+sbfmeas_csv = "analysegnss.sbf.sbfmeas_csv:main"
+sbfnav_csv = "analysegnss.sbf.sbfnav_csv:main"
 
 # rtklib
 ppk_rnx2rtkp = "analysegnss.rtkpos.ppk_rnx2rtkp:main"
+
+# GLABNG
+glab_parser = "analysegnss.glabng.glab_parser:main"
 
 # ebh
 ebh_lines = "analysegnss.scripts.ebh.ebh_lines:main"
