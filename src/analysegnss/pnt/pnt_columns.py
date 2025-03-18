@@ -94,7 +94,33 @@ COLUMN_MAPPINGS: Dict[str, PNTColumns] = {
     #     sdu="sd.U",
     #     nrSVN="#SVs",
     # ),
+    "STANDARD_PNT_FORMAT": PNTColumns(
+        east="UTM.E",
+        north="UTM.N",
+        height="orthoH",
+        time="DT",
+        quality_mapping=PNTQualityMapping("pnt_qual", GENERAL_PNT_QUALITY_ID),
+        sde="sde(m)",
+        sdn="sdn(m)",
+        sdu="sdu(m)",
+        nrSVN="num_sats",
+    ),
 }
+
+COLUMN_DTYPE_MAPPINGS: Dict[pl.DataType, List[str]] = {
+    pl.Float64: [
+        "UTM.E", "UTM.N", "orthoH", 
+        "sde(m)", "sdn(m)", "sdu(m)",
+        "SD_lon [m]", "SD_lat [m]", "SD_hgt [m]",
+        "sd.E", "sd.N", "sd.U",
+        "sdlon(m)", "sdlat(m)", "sdH(m)",
+        "delta.E", "delta.N", "delta.U"
+    ],
+    pl.UInt8: ["num_sats", "NrSV", "ns", "#SVs"],
+    pl.Datetime: ["DT"],
+    pl.Utf8: ["pnt_qual", "source", "mode"],
+}
+
 
 
 def get_pnt_columns(source: str) -> PNTColumns:
@@ -102,43 +128,40 @@ def get_pnt_columns(source: str) -> PNTColumns:
     return COLUMN_MAPPINGS[source]
 
 
-def get_column_mapping_source_to_csv(
+def column_mapping_source_to_standard(
     source: str, include_sd: bool = True
-) -> Dict[str, Dict[str, pl.DataType]]:
-    """get a mapping of PNT source columns to standard PNT_CSV columns (which is the default output format of csv files)
+) -> Dict[str, str]:
+    """get a mapping of PNT source columns to standard PNT_FORMAT columns (which is the default output format of csv files)
 
     Args:
         source: Source type (RTK, PPK, GLABNG, NMEA, PNT_CSV)
         include_sd: Whether to include standard deviation columns
 
     Returns:
-        column_mapping_source_to_csv (dict): mapping of source columns to standard columns
+        column_mapping_source_to_standard (dict): mapping of source columns to standard columns
     """
     source_pnt_cols = get_pnt_columns(source)
-    standard_pnt_cols = get_pnt_columns("PNT_CSV")
+    standard_pnt_cols = get_pnt_columns("STANDARD_PNT_FORMAT")
 
-    column_mapping_source_to_csv = {
-        source_pnt_cols.east: dict(column_name=standard_pnt_cols.east, dtype=pl.Float64),
-        source_pnt_cols.north: dict(column_name=standard_pnt_cols.north, dtype=pl.Float64),
-        source_pnt_cols.height: dict(column_name=standard_pnt_cols.height, dtype=pl.Float64),
-        source_pnt_cols.time: dict(column_name=standard_pnt_cols.time, dtype=pl.Datetime),
-        source_pnt_cols.quality_mapping.quality_column: dict(
-            column_name=standard_pnt_cols.quality_mapping.quality_column,
-            dtype=pl.Utf8,
-        ),
-        source_pnt_cols.nrSVN: dict(column_name=standard_pnt_cols.nrSVN, dtype=pl.UInt8),
+    column_mapping_source_to_standard = {
+        source_pnt_cols.east: standard_pnt_cols.east,
+        source_pnt_cols.north: standard_pnt_cols.north,
+        source_pnt_cols.height: standard_pnt_cols.height,
+        source_pnt_cols.time: standard_pnt_cols.time,
+        source_pnt_cols.quality_mapping.quality_column: standard_pnt_cols.quality_mapping.quality_column,
+        source_pnt_cols.nrSVN: standard_pnt_cols.nrSVN,
     }
 
     if include_sd:
-        column_mapping_source_to_csv.update(
+        column_mapping_source_to_standard.update(
             {
-                source_pnt_cols.sdn: dict(column_name=standard_pnt_cols.sdn, dtype=pl.Float64),
-                source_pnt_cols.sde: dict(column_name=standard_pnt_cols.sde, dtype=pl.Float64),
-                source_pnt_cols.sdu: dict(column_name=standard_pnt_cols.sdu, dtype=pl.Float64),
+                source_pnt_cols.sdn: standard_pnt_cols.sdn,
+                source_pnt_cols.sde: standard_pnt_cols.sde,
+                source_pnt_cols.sdu: standard_pnt_cols.sdu,
             }
         )
 
-    return column_mapping_source_to_csv
+    return column_mapping_source_to_standard
 
 
 def get_required_columns_from_pnt_source(
@@ -174,3 +197,40 @@ def get_required_columns_from_pnt_source(
         )
 
     return required_pnt_cols
+
+def get_column_dtypes(columns_to_cast: List[str]) -> Tuple[Dict[str, pl.DataType], List[str]]:
+    """Get the mapping of column names to their data types
+    
+    Args:
+        columns_to_cast (list): List of column names or Polars expressions to determine data types for
+        
+    Returns:
+        Tuple:
+        - column_dtype (dict): Dict mapping column names to Polars dtypes
+        - failed_casting_columns (list): List of column names that are not in COLUMN_DTYPE_MAPPINGS
+    """
+    column_dtype = {}
+    
+    # Extract column names. When using alias() to rename pl.columns, 
+    # the col names become Polars expressions. Then use meta.output_name() to get the column name
+    column_names = []
+    for col in columns_to_cast:
+        if isinstance(col, pl.Expr):
+            column_names.append(col.meta.output_name())
+        elif isinstance(col, str):
+            column_names.append(col)
+        else:
+            column_names.append(str(col))
+    
+    # Get dtype mapping 
+    for dtype, columns in COLUMN_DTYPE_MAPPINGS.items():
+        for col_name in column_names:
+            if col_name in columns:
+                column_dtype[col_name] = dtype
+                
+    # Checking for columns that are not in COLUMN_DTYPE_MAPPINGS
+    failed_casting_columns = [col for col in column_names if col not in column_dtype]
+
+    return column_dtype, failed_casting_columns
+    
+    

@@ -17,7 +17,12 @@ import analysegnss.rtkpos.ppk_rnx2rtkp as ppk_rnx2rtkp
 import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
 import analysegnss.glabng.glab_parser as glab_parser
 from analysegnss.config import ERROR_CODES, rich_console
-from analysegnss.pnt.pnt_columns import get_pnt_columns, get_column_mapping_source_to_csv, get_required_columns_from_pnt_source
+from analysegnss.pnt.pnt_columns import (
+    get_pnt_columns,
+    column_mapping_source_to_standard,
+    get_required_columns_from_pnt_source,
+    get_column_dtypes,
+)
 from analysegnss.utils import init_logger
 from analysegnss.utils.argument_parser import argument_parser_pnt_data_collector
 
@@ -36,7 +41,7 @@ def pnt_data_collector(parsed_args: argparse.Namespace, logger: logging.Logger) 
     - pvt_qual: quality of the PVT solution
     - nrSVN: number of satellites used in the fix
     - source: source type
-    
+
     Args:
         parsed_args: Parsed arguments
 
@@ -72,9 +77,7 @@ def pnt_data_collector(parsed_args: argparse.Namespace, logger: logging.Logger) 
 
             # get absolute path
             source_pnt_dest = os.path.abspath(source_ifn)
-            logger.debug(
-                f"source_pnt_dest: {source_pnt_dest}"
-            )
+            logger.debug(f"source_pnt_dest: {source_pnt_dest}")
 
             # get source type [PPK, RTK, GLABNG, NMEA, PNT_CSV]
             source = file_handlers.get(source_type, "Source not found")
@@ -89,16 +92,16 @@ def pnt_data_collector(parsed_args: argparse.Namespace, logger: logging.Logger) 
             )
 
             # Standardize PNT dataframe
-            df_source_standardized = standardize_pnt_df(
+            df_source_standardized, df_source_all = standardize_pnt_df(
                 df_source=df_source,
                 source=source,
                 parsed_args=parsed_args,
                 logger=logger,
             )
 
+            # TODO: create an option to write the all columns dataframe to a file?
             # Add standardized PNT dataframe to dictionary
             standard_pnt_dfs[source_pnt_dest] = df_source_standardized
-
 
     ### MERGE PNT DATAFRAMES ###
 
@@ -107,7 +110,7 @@ def pnt_data_collector(parsed_args: argparse.Namespace, logger: logging.Logger) 
         merged_pnt_df = merge_pnt_sources(
             standard_pnt_dfs=standard_pnt_dfs, logger=logger
         )
-        
+
         if parsed_args.merge_dest is not None:
             # get destination directory of merged pnt dataframe
             merged_pnt_odir = os.path.dirname(os.path.abspath(parsed_args.merge_dest))
@@ -115,12 +118,13 @@ def pnt_data_collector(parsed_args: argparse.Namespace, logger: logging.Logger) 
             logger.info(f"Merged PNT dataframe will be written to: {merged_pnt_dest}")
         else:
             merged_pnt_dest = "merged.csv"
-            logger.warning(f"No destination directory provided for merged PNT dataframe. Not writing to file.")
-        
+            logger.warning(
+                f"No destination directory provided for merged PNT dataframe. Not writing to file."
+            )
+
         # add merged pnt dataframe to dictionary
         standard_pnt_dfs[merged_pnt_dest] = merged_pnt_df
         logger.info(f"Merged PNT dataframe:\n{merged_pnt_df}")
-
 
     ### PRINT STANDARDIZED PNT DATAFRAMES ###
     for source, pnt_df in standard_pnt_dfs.items():
@@ -129,14 +133,12 @@ def pnt_data_collector(parsed_args: argparse.Namespace, logger: logging.Logger) 
         rprint(f"\nPNT source: {source}")
         rprint(f"\nPNT dataframe:\n{pnt_df}")
 
-
     ### WRITE STANDARDIZED PNT DATAFRAMES TO CSV ###
     if parsed_args.csv_out:
         write_standardized_pnt_df_to_csv(
-            standard_pnt_dfs=standard_pnt_dfs,
-            logger=logger
+            standard_pnt_dfs=standard_pnt_dfs, logger=logger
         )
-    
+
     return standard_pnt_dfs
 
 
@@ -160,21 +162,21 @@ def get_source_df(
         case "PPK":
             # Create PPK position dataframe
             logger.debug(f"Creating PPK position dataframe")
-            if source_ifn is not None: # otherwise use the parsed_args.pos_ifn
+            if source_ifn is not None:  # otherwise use the parsed_args.pos_ifn
                 parsed_args.pos_ifn = source_ifn
             df_source = ppk_rnx2rtkp.rtkp_pos(parsed_args=parsed_args, logger=logger)
 
         case "RTK":
             # Create RTK position dataframe
             logger.debug(f"Creating RTK position dataframe")
-            if source_ifn is not None: # otherwise use the parsed_args.sbf_ifn
+            if source_ifn is not None:  # otherwise use the parsed_args.sbf_ifn
                 parsed_args.sbf_ifn = source_ifn
             df_source = rtk_pvtgeod.rtk_pvtgeod(parsed_args=parsed_args, logger=logger)
 
         case "GLABNG":
             # Create GLAB position dataframe
             logger.debug(f"Creating GLAB position dataframe")
-            if source_ifn is not None: # otherwise use the parsed_args.glab_ifn
+            if source_ifn is not None:  # otherwise use the parsed_args.glab_ifn
                 parsed_args.glab_ifn = source_ifn
             glab_parser_args = [
                 "glab_parser",
@@ -191,7 +193,7 @@ def get_source_df(
         case "NMEA":
             # Create NMEA dataframe
             logger.debug(f"Creating NMEA dataframe")
-            if source_ifn is not None: # otherwise use the parsed_args.nmea_ifn
+            if source_ifn is not None:  # otherwise use the parsed_args.nmea_ifn
                 parsed_args.nmea_ifn = source_ifn
             df_source, _ = nmea_reader.nmea_reader(
                 parsed_args=parsed_args, logger=logger
@@ -201,10 +203,12 @@ def get_source_df(
             try:
                 # Read PNT CSV file
                 logger.debug(f"Creating PNT_CSV dataframe")
-                if source_ifn is not None: # otherwise use the parsed_args.csv_ifn / source_ifn points to the source key when multiple PNT_CSV files are provided
+                if (
+                    source_ifn is not None
+                ):  # otherwise use the parsed_args.csv_ifn / source_ifn points to the source key when multiple PNT_CSV files are provided
                     parsed_args.csv_ifn = source_ifn
                 logger.debug(f"Parsed arguments: {parsed_args}")
-                
+
                 # first check if parsed_args.header is True. Then use the columns defined in the header.
                 # Otherwise, use the columns defined in the parsed_args.columns_csv
                 # TODO: maybe work with wildcards to select the correct columns?
@@ -215,7 +219,7 @@ def get_source_df(
                         parsed_args.csv_ifn,
                         separator=parsed_args.sep,
                         has_header=False,
-                        new_columns=parsed_args.columns_csv, # import columns names defined by the user
+                        new_columns=parsed_args.columns_csv,  # import columns names defined by the user
                         comment_prefix=parsed_args.comment_prefix,
                         skip_rows_after_header=parsed_args.skip_rows_after_header,
                     )
@@ -259,7 +263,7 @@ def standardize_pnt_df(
         (- sde: standard deviation of east coordinate)
         (- sdu: standard deviation of orthometric height)
         - source: source type
-    
+
     Args:
         df_source (pl.DataFrame): Input dataframe
         source (str): Source type [RTK, PPK, GLABNG, NMEA, PNT_CSV]
@@ -271,21 +275,34 @@ def standardize_pnt_df(
     Returns:
         pl.DataFrame: Standardized dataframe
     """
+
+    logger.info(f"standardizing PNT dataframe for source: {source}")
+    logger.debug(f"source dataframe:\n{df_source}")
+
     # Get column mappings and required columns for this source
     pnt_columns = get_pnt_columns(source=source)
-    required_columns = get_required_columns_from_pnt_source(source=source, include_sd=parsed_args.sd)
-    column_mapping_source_to_csv = get_column_mapping_source_to_csv(source=source, include_sd=parsed_args.sd)
-    
+    required_columns = get_required_columns_from_pnt_source(
+        source=source, include_sd=parsed_args.sd
+    )
+    colmap_source_to_standard = column_mapping_source_to_standard(
+        source=source, include_sd=parsed_args.sd
+    )
+
+    logger.info(f"required columns for source {source}: {required_columns}")
+    logger.info(f"column mapping source to standard: {colmap_source_to_standard}")
+
     # Add pnt source column to required columns
     required_columns.append("source")
 
     # Check for missing columns and add dummy data if needed
     existing_cols = df_source.columns
     missing_cols = [col for col in required_columns if col not in existing_cols]
-    
+
     if missing_cols:
-        logger.debug(f"Missing columns in {source}: {missing_cols}. Creating dummy columns.")
-        
+        logger.debug(
+            f"Missing columns in {source}: {missing_cols}. Creating dummy columns."
+        )
+
         # Create dummy data for missing columns
         dummy_data = []
         for col in missing_cols:
@@ -293,8 +310,13 @@ def standardize_pnt_df(
                 # create datetime series from user argument datetime_start or default which is GPS epoch
                 dummy_data.append(
                     pl.Series(
-                        [datetime.strptime(parsed_args.datetime_start, "%Y-%m-%d %H:%M:%S") + 
-                         timedelta(seconds=i) for i in range(len(df_source))]
+                        [
+                            datetime.strptime(
+                                parsed_args.datetime_start, "%Y-%m-%d %H:%M:%S"
+                            )
+                            + timedelta(seconds=i)
+                            for i in range(len(df_source))
+                        ]
                     ).alias(col)
                 )
             elif col == pnt_columns.nrSVN:
@@ -305,39 +327,87 @@ def standardize_pnt_df(
                 dummy_data.append(pl.lit("UNKNOWN").alias(col))
             else:
                 dummy_data.append(pl.lit(None).alias(col))
-        
+
         # Add all missing columns
         if dummy_data:
             df_source = df_source.with_columns(dummy_data)
-    
-    # Select and rename columns for CSV output and cast to correct dtypes according to pnt_columns.py
-    standard_pnt_cols_for_csv = []
-    for source_col, csv_col_info in column_mapping_source_to_csv.items():
-        if source_col in df_source.columns:
-            # Extract the column name and data type from the dict
-            csv_col_name = csv_col_info.get("column_name")
-            csv_col_dtype = csv_col_info.get("dtype")
-            
-            # Add renamed and casted column
-            standard_pnt_cols_for_csv.append(
-                pl.col(source_col).alias(csv_col_name).cast(csv_col_dtype)
-            )
-    
-    # Add source column
-    standard_pnt_cols_for_csv.append(pl.lit(source).alias("source"))
-    
-    # Apply selection, renaming, and casting in one operation
-    df_source_standardized = df_source.select(standard_pnt_cols_for_csv)
-    
-    # Filter out null values in coordinates
-    std_cols = get_pnt_columns("PNT_CSV")
-    df_source_standardized = df_source_standardized.filter(
-        pl.col(std_cols.east).is_not_null()
-        & pl.col(std_cols.north).is_not_null()
-        & pl.col(std_cols.height).is_not_null()
+            logger.info(f"Added dummy data for missing columns: {missing_cols}")
+
+    ### PNT SOURCE: ALL COLUMNS DATAFRAME ###
+    # add source column
+    if "source" not in df_source.columns:
+        df_source = df_source.with_columns(pl.lit(source).alias("source"))
+        
+    # Filter out null coordinate values
+    df_source = df_source.filter(
+        pl.col(pnt_columns.east).is_not_null()
+        & pl.col(pnt_columns.north).is_not_null()
+        & pl.col(pnt_columns.height).is_not_null()
     )
     
-    return df_source_standardized
+    # Get the dtype mapping for all columns in df_source
+    source_dtypes_map, failed_casting_columns = get_column_dtypes(df_source.columns)
+    logger.debug(f"source_dtypes_map: {source_dtypes_map}")
+    if failed_casting_columns:
+        logger.warning(f"Columns with unknown dtypes in source dataframe: {failed_casting_columns}")
+    
+    # Cast columns to their correct dtypes
+    typecast_pl_cols = []
+    for col_name, dtype in source_dtypes_map.items():
+        typecast_pl_cols.append(pl.col(col_name).cast(dtype).alias(col_name))
+    
+    # Apply casting
+    if typecast_pl_cols:
+        df_source = df_source.with_columns(typecast_pl_cols)
+   
+    # rename df
+    df_source_all = df_source
+    logger.info(f"PNT source all columns dataframe:\n{df_source_all}")
+
+    ### STANDARDIZE PNT DATAFRAME ###
+    # rename columns to standard names
+    standard_col_names_exprs = [] # by using alias() to rename pl.columns, the col names become Polars expressions. 
+    # Use meta.output_name() to get the column name
+    for source_col, standard_col in colmap_source_to_standard.items():
+        if source_col in df_source.columns:
+            logger.info(
+                f"pnt source: {source}: Renaming column {source_col} to {standard_col} for standardization"
+            )
+            standard_col_names_exprs.append(pl.col(source_col).alias(standard_col))
+    
+    # Add source column
+    standard_col_names_exprs.append(pl.lit(source).alias("source"))
+    
+    # Get the dtype mapping for the standard column names
+    standard_dtypes_map, failed_standard_casting = get_column_dtypes(columns_to_cast=standard_col_names_exprs)
+    logger.debug(f"standard_dtypes_map: {standard_dtypes_map}")
+    if failed_standard_casting:
+        logger.warning(f"Columns not found in COLUMN_DTYPE_MAPPINGS: {failed_standard_casting}")
+    
+    # Create a selection with casting for standard column names
+    standard_typecast_pl_cols = []
+    for col_name, dtype in standard_dtypes_map.items():
+        standard_typecast_pl_cols.append(pl.col(col_name).cast(dtype).alias(col_name))
+    
+    # Apply casting
+    if standard_typecast_pl_cols:
+        df_source_standardized = df_source.with_columns(standard_typecast_pl_cols)
+#    for name_expr in standard_col_names_exprs:
+#        col_name = name_expr.meta.output_name()
+#        if col_name in standard_dtypes_map:
+#            # Cast to the right type when selecting
+#            select_col_names_exprs.append(name_expr.cast(standard_dtypes_map[col_name]))
+#        else:
+#            # Keep as is if no dtype mapping is available
+#            select_col_names_exprs.append(name_expr)
+ 
+    
+    # Select and cast in one step
+    df_source_standardized = df_source.select(standard_col_names_exprs)
+    
+    logger.info(f"PNT source standardized dataframe:\n{df_source_standardized}")
+
+    return df_source_standardized, df_source_all
 
 
 def merge_pnt_sources(standard_pnt_dfs: dict, logger: logging.Logger) -> pl.DataFrame:
@@ -361,7 +431,6 @@ def merge_pnt_sources(standard_pnt_dfs: dict, logger: logging.Logger) -> pl.Data
     # Get list of pnt dataframes to merge
     dfs_to_merge = list(standard_pnt_dfs.values())
 
-
     # Merge all dataframes at once and sort by DT in one operation
     merged_df = pl.concat(dfs_to_merge, how="vertical").sort("DT")
 
@@ -372,38 +441,32 @@ def merge_pnt_sources(standard_pnt_dfs: dict, logger: logging.Logger) -> pl.Data
     return merged_df
 
 
-
 def write_standardized_pnt_df_to_csv(standard_pnt_dfs: dict, logger: logging.Logger):
     """Write standardized PNT dataframe to CSV
-    
+
     Args:
         standard_pnt_dfs (dict): Dictionary of standardized PNT dataframes
         logger: Logger object
-        
+
     """
-    
+
     ### WRITE STANDARDIZED PNT DATAFRAMES TO CSV ###
 
     for source_ifn_abs, standard_pnt_df in standard_pnt_dfs.items():
-        
-        
+
         # get destination directory for merged pnt dataframe
         output_dest = os.path.splitext(source_ifn_abs)[0] + "_pnt_standard.csv"
-        
+
         standard_pnt_df.write_csv(output_dest)
-        
+
         # check if file was written successfully
         if os.path.exists(output_dest):
             source = os.path.basename(source_ifn_abs)
             logger.info(f"Successfully wrote {source} PNT dataframe to {output_dest}")
-            rprint(
-                f"Successfully wrote {source} PNT dataframe to {output_dest}"
-            )
+            rprint(f"Successfully wrote {source} PNT dataframe to {output_dest}")
         else:
             source = os.path.basename(source_ifn_abs)
-            logger.error(
-                f"Failed to write {source} PNT dataframe to {output_dest}"
-            )
+            logger.error(f"Failed to write {source} PNT dataframe to {output_dest}")
             rprint(f"Failed to write {source} PNT dataframe to {output_dest}")
 
 

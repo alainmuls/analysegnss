@@ -450,7 +450,7 @@ def argument_parser_pnt_data_collector(script_name: str, args: list) -> argparse
             Important: the no_header and skip_rows_after_header args (if applicable) must be configured accordingly",   
         type=cs_str_to_list,
         required=False,
-        default="DT, UTM.E, UTM.N, orthoH",
+        default="UTM.E, UTM.N, orthoH",
     )
     csv_group.add_argument(
         "--sep",
