@@ -368,13 +368,13 @@ def print_df_in_chunks(
         str: Log message to print
     """
     total_cols = len(df.columns)
-    log_message = f"{str_green(title)} has shape {str_green(df.shape)}\n"
+    df_print = f"{str_green(title)} has shape {str_green(df.shape)}\n"
 
     for i in range(0, total_cols, chunk_size):
         end_idx = min(i + chunk_size, total_cols)
-        log_message += f"\n{df.select(df.columns[i:end_idx])}"  # ".head(rows)}"
+        df_print += f"\n{df.select(df.columns[i:end_idx])}"  # ".head(rows)}"
 
-    return log_message
+    return df_print
 
 
 def df_schema_info(df: pl.DataFrame) -> str:
