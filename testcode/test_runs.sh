@@ -1,3 +1,9 @@
+clear; gnss_predict --gnss galileo --verbose
+clear; gnss_predict --gnss gps-ops,beidou --observer "POLAR,80,5" --verbose 
+clear; gnss_predict --gnss gps-ops,beidou --observer "USA,45,-85" --verbose
+clear; gnss_predict --gnss gps-ops,beidou --observer "Eqautor,5,10" --verbose
+clear; rtcm3_parser --cfg_fn /home/amuls/cylab/TESTDATA/data2test/data/BRUX00BEL0.cfg
+clear; rtcm3_parser --cfg_fn ~/cylab/TESTDATA/data2test/cfg/ntrip_flepos.cfg
 clear; rtk_pvtgeod --sbf_ifn /home/amuls/GNSSData/USA_CA_2024/Ocotillo/rover/1342172Z.24_ -vvv --sd
 clear; ppk_rnx2rtkp  --pos_ifn /home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rtkp/134200BEL_R_20242751023_01H_10Z_MO.pos -vvv
 clear; plot_coords  --pos_ifn /home/amuls/cylab/SURVEYS/2024-10-01-Keiheuvel_Demo/rtkp/134200BEL_R_20242751023_01H_10Z_MO.pos -vvv --display --sd --mpl
