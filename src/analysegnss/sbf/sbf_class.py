@@ -353,10 +353,10 @@ class SBF:
                         if col_name in sbf_df.columns:
                             del keep_cols[col_name]
 
-                    for column_name in sbf_df.columns:
-                        print(
-                            f"Data type of {column_name}: {sbf_df.schema[column_name]}"
-                        )
+                    # for column_name in sbf_df.columns:
+                    #     print(
+                    #         f"Data type of {column_name}: {sbf_df.schema[column_name]}"
+                    #     )
 
                     # # set the dtype again after having added some columns
                     # # identify columns with null values and applies different strategies based on the target data type
@@ -403,16 +403,16 @@ class SBF:
                         )
 
                 sbf_dfs[sbf_block] = sbf_df
-                # print the column names and their dtypes
-                print(  # print the column names and their dtypes
-                    f"Columns and their dtypes for {sbf_block}:\n"
-                    + "\n".join(
-                        [
-                            f"{col_name}: {dtype}"
-                            for col_name, dtype in keep_cols.items()
-                        ]
-                    )
-                )
+                # # print the column names and their dtypes
+                # print(  # print the column names and their dtypes
+                #     f"Columns and their dtypes for {sbf_block}:\n"
+                #     + "\n".join(
+                #         [
+                #             f"{col_name}: {dtype}"
+                #             for col_name, dtype in keep_cols.items()
+                #         ]
+                #     )
+                # )
 
                 # print(f"archive = {archive}")
                 # archiving the converted sbf file
