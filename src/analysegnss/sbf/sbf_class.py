@@ -336,7 +336,8 @@ class SBF:
                             "NaN",
                         ],  # First catch all null representations
                     ).fill_null(
-                        float("nan")
+                        -1
+                        # float("nan")
                     )  # Then convert all nulls to NaN
 
                 with rich_console.status(
@@ -349,20 +350,13 @@ class SBF:
                     for col_name, col_dtype in added_cols.items():
                         keep_cols[col_name] = col_dtype
                     for col_name in removed_cols:
-                        del keep_cols[col_name]
-                    # print(f"\nupdated keep_cols = {keep_cols}\n")
-                    # print(f"sbf_df.columns = {sbf_df.columns}")
+                        if col_name in sbf_df.columns:
+                            del keep_cols[col_name]
 
-                    # # print the column names and their dtypes
-                    # print(  # print the column names and their dtypes
-                    #     f"Columns and their dtypes for {sbf_block}:\n"
-                    #     + "\n".join(
-                    #         [
-                    #             f"{col_name}: {dtype}"
-                    #             for col_name, dtype in keep_cols.items()
-                    #         ]
-                    #     )
-                    # )
+                    for column_name in sbf_df.columns:
+                        print(
+                            f"Data type of {column_name}: {sbf_df.schema[column_name]}"
+                        )
 
                     # # set the dtype again after having added some columns
                     # # identify columns with null values and applies different strategies based on the target data type
@@ -373,6 +367,9 @@ class SBF:
                     #         # For columns that might have nulls, first fill nulls with a default value
                     #         print(f"col_name = {col_name} | {dtype}")
                     #         print(f"sbf_df[{col_name}] = {sbf_df[col_name]}")
+                    #         # print all values of this column
+                    #         print(f"unique values = {sbf_df[col_name].unique()}")
+
                     #         print(f"null_count = {sbf_df[col_name].null_count()}")
 
                     #         if sbf_df[col_name].null_count() >= 0:
@@ -406,16 +403,16 @@ class SBF:
                         )
 
                 sbf_dfs[sbf_block] = sbf_df
-                # # print the column names and their dtypes
-                # print(  # print the column names and their dtypes
-                #     f"Columns and their dtypes for {sbf_block}:\n"
-                #     + "\n".join(
-                #         [
-                #             f"{col_name}: {dtype}"
-                #             for col_name, dtype in keep_cols.items()
-                #         ]
-                #     )
-                # )
+                # print the column names and their dtypes
+                print(  # print the column names and their dtypes
+                    f"Columns and their dtypes for {sbf_block}:\n"
+                    + "\n".join(
+                        [
+                            f"{col_name}: {dtype}"
+                            for col_name, dtype in keep_cols.items()
+                        ]
+                    )
+                )
 
                 # print(f"archive = {archive}")
                 # archiving the converted sbf file
@@ -596,6 +593,7 @@ class SBF:
 
         # get the column names of the block_df
         column_names = block_df.collect_schema().names()
+        print(f"column_names = {column_names}")
 
         # remove the rows where 'Type' equals 0 (no PVT available)
         if "Type" in column_names:
@@ -616,7 +614,7 @@ class SBF:
             ).lazy()
             added_cols["DT"] = pl.Datetime
 
-        # add date-time and PRN (as str) to the dataframe
+        # add date-time to the dataframe
         if "WNc [w]" in column_names and "TOW [s]" in column_names:
             if self.logger:
                 self.logger.debug("\tadding datetime column to the dataframe")
@@ -630,7 +628,20 @@ class SBF:
             ).lazy()
             added_cols["DT"] = pl.Datetime
 
-        # add date-time and PRN (as str) to the dataframe
+        # check if PRN is the column names and of type int or float, than convert to str using ssnerr_prn2str
+        if "PRN" in column_names and block_df.select(pl.col("PRN")).dtypes[0] in [
+            pl.Int64,
+            pl.Float64,
+        ]:
+            if self.logger:
+                self.logger.debug("\tconverting PRN to string")
+            block_df = block_df.with_columns(
+                pl.col("PRN").map_elements(
+                    lambda x: sbfc.ssnerr_prn2str(prn=x), return_dtype=pl.Utf8
+                )
+            ).lazy()
+
+        # convert SVID to PRN (as str) to the dataframe
         if (
             "SVID"
             in column_names
@@ -649,6 +660,7 @@ class SBF:
             block_df = block_df.drop(["SVID"]).lazy()
             added_cols["PRN"] = pl.Utf8
             removed_cols.append("SVID")
+            added_cols["PRN"] = pl.Utf8
 
         # add UTM coordinates
         if "Latitude [rad]" in column_names and "Longitude [rad]" in column_names:
