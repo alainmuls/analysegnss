@@ -38,7 +38,7 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
     try:
         sbf = SBF(sbf_fn=parsed_args.sbf_ifn, logger=logger)
     except Exception as e:
-        logger.error(f"Error creating SBF object: {e}")
+        logger.error(f"Error creating SBF object: {str_red(e)}")
         sys.exit(ERROR_CODES["E_SBF_OBJECT"])
     logger.info(f"sbf object: {sbf}")
 
@@ -90,6 +90,7 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
         gnss_abbrev = sbf_block[:3]
         # rprint(f"gnss_abbrev: {gnss_abbrev}")
 
+        # convert the columns containing semi-circles to radians
         if sbf_block != "GLONav":
             nav_df = convert_semicircles_to_radians(df=nav_df, gnss_type=gnss_abbrev)
 
