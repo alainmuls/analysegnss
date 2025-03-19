@@ -353,16 +353,16 @@ class SBF:
                     # print(f"\nupdated keep_cols = {keep_cols}\n")
                     # print(f"sbf_df.columns = {sbf_df.columns}")
 
-                    # print the column names and their dtypes
-                    print(  # print the column names and their dtypes
-                        f"Columns and their dtypes for {sbf_block}:\n"
-                        + "\n".join(
-                            [
-                                f"{col_name}: {dtype}"
-                                for col_name, dtype in keep_cols.items()
-                            ]
-                        )
-                    )
+                    # # print the column names and their dtypes
+                    # print(  # print the column names and their dtypes
+                    #     f"Columns and their dtypes for {sbf_block}:\n"
+                    #     + "\n".join(
+                    #         [
+                    #             f"{col_name}: {dtype}"
+                    #             for col_name, dtype in keep_cols.items()
+                    #         ]
+                    #     )
+                    # )
 
                     # # set the dtype again after having added some columns
                     # # identify columns with null values and applies different strategies based on the target data type
@@ -406,16 +406,16 @@ class SBF:
                         )
 
                 sbf_dfs[sbf_block] = sbf_df
-                # print the column names and their dtypes
-                print(  # print the column names and their dtypes
-                    f"Columns and their dtypes for {sbf_block}:\n"
-                    + "\n".join(
-                        [
-                            f"{col_name}: {dtype}"
-                            for col_name, dtype in keep_cols.items()
-                        ]
-                    )
-                )
+                # # print the column names and their dtypes
+                # print(  # print the column names and their dtypes
+                #     f"Columns and their dtypes for {sbf_block}:\n"
+                #     + "\n".join(
+                #         [
+                #             f"{col_name}: {dtype}"
+                #             for col_name, dtype in keep_cols.items()
+                #         ]
+                #     )
+                # )
 
                 # print(f"archive = {archive}")
                 # archiving the converted sbf file
