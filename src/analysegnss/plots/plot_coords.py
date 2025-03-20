@@ -13,10 +13,10 @@ import polars as pl
 from rich import print
 
 from analysegnss.config import ERROR_CODES, rich_console
-from analysegnss.glabng import glab_reader
+from analysegnss.glabng import glab_parser
 from analysegnss.nmea import nmea_reader
-from analysegnss.rtkpos import rtkpos_reader
-from analysegnss.sbf import sbf_reader
+from analysegnss.rtkpos import ppk_rnx2rtkp
+from analysegnss.sbf import rtk_pvtgeod
 from analysegnss.plots import plot_utm
 from analysegnss.plots.plot_columns import get_utm_columns
 from analysegnss.utils import init_logger
@@ -203,12 +203,12 @@ def get_source_df(
         case "PPK":
             # Create PPK position dataframe
             logger.debug(f"Creating PPK position dataframe")
-            df_source = rtkpos_reader.rtkp_pos(parsed_args=parsed_args, logger=logger)
+            df_source = ppk_rnx2rtkp.rtkp_pos(parsed_args=parsed_args, logger=logger)
 
         case "RTK":
             # Create RTK position dataframe
             logger.debug(f"Creating RTK position dataframe")
-            df_source = sbf_reader.sbf_reader(parsed_args=parsed_args, logger=logger)
+            df_source = rtk_pvtgeod.sbf_reader(parsed_args=parsed_args, logger=logger)
 
         case "GLABNG":
             # Create GLAB position dataframe
@@ -220,7 +220,7 @@ def get_source_df(
                 "--section",
                 "OUTPUT",
             ]
-            dfs_glab = glab_reader.glab_parser(argv=glab_parser_args)
+            dfs_glab = glab_parser.glab_parser(argv=glab_parser_args)
             df_source = dfs_glab["OUTPUT"]
             if logger:
                 logger.debug(f"GLAB OUTPUT dataframe:\n{df_source}")

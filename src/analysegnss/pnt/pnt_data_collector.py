@@ -14,9 +14,9 @@ from rich import print as rprint
 
 # Local application imports
 import analysegnss.nmea.nmea_reader as nmea_reader
-import analysegnss.rtkpos.rtkpos_reader as rtkpos_reader
-import analysegnss.sbf.sbf_reader as sbf_reader
-import analysegnss.glabng.glab_reader as glab_reader
+import analysegnss.rtkpos.ppk_rnx2rtkp as ppk_rnx2rtkp
+import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
+import analysegnss.glabng.glab_parser as glab_parser
 from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.pnt.pnt_columns import (
     get_pnt_columns,
@@ -215,16 +215,16 @@ def get_source_df(
             logger.debug(f"Creating PPK position dataframe")
             if source_ifn is not None:  # otherwise use the parsed_args.pos_ifn
                 parsed_args.pos_ifn = source_ifn
-            df_source, _ = rtkpos_reader.rtkp_pos(
-                parsed_args=parsed_args, logger=logger
-            )
+            df_source, _ = ppk_rnx2rtkp.rtkp_pos(parsed_args=parsed_args, logger=logger)
 
         case "RTK":
             # Create RTK position dataframe
             logger.debug(f"Creating RTK position dataframe")
             if source_ifn is not None:  # otherwise use the parsed_args.sbf_ifn
                 parsed_args.sbf_ifn = source_ifn
-            df_source, _ = sbf_reader.sbf_reader(parsed_args=parsed_args, logger=logger)
+            df_source, _ = rtk_pvtgeod.sbf_reader(
+                parsed_args=parsed_args, logger=logger
+            )
 
         case "GLABNG":
             # Create GLAB position dataframe
@@ -238,7 +238,7 @@ def get_source_df(
                 "--section",
                 "OUTPUT",
             ]
-            dfs_glab = glab_reader.glab_parser(argv=glab_parser_args)
+            dfs_glab = glab_parser.glab_parser(argv=glab_parser_args)
             df_source = dfs_glab["OUTPUT"]
             if logger:
                 logger.debug(f"GLAB OUTPUT dataframe:\n{df_source}")
