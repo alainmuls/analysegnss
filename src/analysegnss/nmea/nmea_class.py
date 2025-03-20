@@ -19,7 +19,7 @@ import utm
 
 # Local application imports
 from analysegnss.utils.utilities import sf64, si64
-from analysegnss.gnss.general_pnt_quality_dict import nmea_to_general_pntqual
+from analysegnss.gnss.standard_pnt_quality_dict import nmea_to_standard_pntqual
 
 
 # TODO Only NMEA RMC contains the datestamp, so if this message is not present, the datetime can not be generated
@@ -311,7 +311,7 @@ class NMEA:
             nmea_df = nmea_df.with_columns(
                 pl.struct(["gps_qual"])
                 .map_elements(
-                    lambda x: nmea_to_general_pntqual(x["gps_qual"]),
+                    lambda x: nmea_to_standard_pntqual(x["gps_qual"]),
                     return_dtype=pl.Utf8,
                 )
                 .alias("pnt_qual")

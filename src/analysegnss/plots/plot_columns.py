@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Dict
 
 # Local application imports
-from analysegnss.gnss.general_pnt_quality_dict import GENERAL_PNT_QUALITY_ID
+from analysegnss.gnss.standard_pnt_quality_dict import STANDARD_PNT_QUALITY_ID
 
 
 @dataclass
@@ -32,7 +32,7 @@ COLUMN_MAPPINGS: Dict[str, UTMColumns] = {
         north="UTM.N",
         height="orthoH",
         time="DT",
-        quality_mapping=UTMQualityMapping("pnt_qual", GENERAL_PNT_QUALITY_ID),
+        quality_mapping=UTMQualityMapping("pnt_qual", STANDARD_PNT_QUALITY_ID),
         sde="SD_lon [m]",
         sdn="SD_lat [m]",
         sdu="SD_hgt [m]",
@@ -43,7 +43,7 @@ COLUMN_MAPPINGS: Dict[str, UTMColumns] = {
         north="UTM.N",
         height="orthoH",
         time="DT",
-        quality_mapping=UTMQualityMapping("pnt_qual", GENERAL_PNT_QUALITY_ID),
+        quality_mapping=UTMQualityMapping("pnt_qual", STANDARD_PNT_QUALITY_ID),
         sde="sde(m)",
         sdn="sdn(m)",
         sdu="sdu(m)",
@@ -54,7 +54,7 @@ COLUMN_MAPPINGS: Dict[str, UTMColumns] = {
         north="UTM.N",
         height="orthoH",
         time="DT",
-        quality_mapping=UTMQualityMapping("pnt_qual", GENERAL_PNT_QUALITY_ID),
+        quality_mapping=UTMQualityMapping("pnt_qual", STANDARD_PNT_QUALITY_ID),
         sde="sd.E",
         sdn="sd.N",
         sdu="sd.U",
@@ -65,7 +65,7 @@ COLUMN_MAPPINGS: Dict[str, UTMColumns] = {
         north="UTM.N",
         height="orthoH",
         time="DT",
-        quality_mapping=UTMQualityMapping("pnt_qual", GENERAL_PNT_QUALITY_ID),
+        quality_mapping=UTMQualityMapping("pnt_qual", STANDARD_PNT_QUALITY_ID),
         sde="sdlon(m)",  # TODO convert sdlon to sdE (if region is small: (BETER= (nautical mile (=1852m) * 60 * 360) vor omtrek aarde: omtrek_aarde/360)*sdlon = sde). Or use PROJ lib
         sdn="sdlat(m)",
         sdu="sdH(m)",
@@ -76,7 +76,7 @@ COLUMN_MAPPINGS: Dict[str, UTMColumns] = {
         north="UTM.N",
         height="orthoH",
         time="DT",
-        quality_mapping=UTMQualityMapping("pnt_qual", GENERAL_PNT_QUALITY_ID),
+        quality_mapping=UTMQualityMapping("pnt_qual", STANDARD_PNT_QUALITY_ID),
         sde="sde(m)",
         sdn="sdn(m)",
         sdu="sdu(m)",

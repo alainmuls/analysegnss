@@ -16,8 +16,8 @@ from rich import print as rprint
 
 from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.gnss.gnss_dt import gpsms2dt
-from analysegnss.gnss.general_pnt_quality_dict import (
-    sbf_to_general_pntqual,
+from analysegnss.gnss.standard_pnt_quality_dict import (
+    sbf_to_standard_pntqual,
     get_pntquality_info,
 )
 from analysegnss.sbf import sbf_constants as sbfc
@@ -569,7 +569,7 @@ class SBF:
             block_df = block_df.with_columns(
                 pl.struct(["Type"])
                 .map_elements(
-                    lambda x: sbf_to_general_pntqual(x["Type"]),
+                    lambda x: sbf_to_standard_pntqual(x["Type"]),
                     return_dtype=pl.Utf8,
                 )
                 .alias("pnt_qual")

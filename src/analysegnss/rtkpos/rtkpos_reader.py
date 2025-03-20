@@ -13,8 +13,8 @@ from rich import print as rprint
 from tabulate import tabulate
 
 # Local application imports
-from analysegnss.gnss.general_pnt_quality_dict import (
-    rtklib_to_general_pntqual,
+from analysegnss.gnss.standard_pnt_quality_dict import (
+    rtklib_to_standard_pntqual,
     get_pntquality_info,
 )
 from analysegnss.rtkpos.rtkpos_class import Rtkpos
@@ -38,7 +38,7 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> list:
     for qual, qual_data in df_pos.group_by(["Q"]):
         qual_analysis.append(
             [
-                get_pntquality_info(rtklib_to_general_pntqual(qual[0]))["desc"],
+                get_pntquality_info(rtklib_to_standard_pntqual(qual[0]))["desc"],
                 qual_data.shape[0],
                 round(qual_data.shape[0] / total_obs * 100, 2),
                 total_obs,

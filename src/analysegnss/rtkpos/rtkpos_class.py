@@ -15,7 +15,7 @@ import utm
 from analysegnss.config import ERROR_CODES, GEOID_PATH, rich_console
 from analysegnss.gnss import geoid
 from analysegnss.gnss.gnss_dt import gpsms2dt
-from analysegnss.gnss.general_pnt_quality_dict import rtklib_to_general_pntqual
+from analysegnss.gnss.standard_pnt_quality_dict import rtklib_to_standard_pntqual
 from analysegnss.utils.utilities import str_red
 
 
@@ -464,7 +464,7 @@ class Rtkpos:
                 df_pos = df_pos.with_columns(
                     pl.struct(["Q"])
                     .map_elements(
-                        lambda x: rtklib_to_general_pntqual(x["Q"]),
+                        lambda x: rtklib_to_standard_pntqual(x["Q"]),
                         return_dtype=pl.Utf8,
                     )
                     .alias("pnt_qual")

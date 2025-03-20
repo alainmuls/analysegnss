@@ -13,8 +13,8 @@ from tabulate import tabulate
 
 # Local application imports
 from analysegnss.config import ERROR_CODES
-from analysegnss.gnss.general_pnt_quality_dict import (
-    sbf_to_general_pntqual,
+from analysegnss.gnss.standard_pnt_quality_dict import (
+    sbf_to_standard_pntqual,
     get_pntquality_info,
 )
 from analysegnss.sbf.sbf_class import SBF
@@ -39,7 +39,7 @@ def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:
     for qual, qual_data in geod_df.group_by(["Type"]):
         qual_analysis.append(
             [
-                get_pntquality_info(sbf_to_general_pntqual(qual[0]))["desc"],
+                get_pntquality_info(sbf_to_standard_pntqual(qual[0]))["desc"],
                 qual_data.shape[0],
                 round(qual_data.shape[0] / total_obs * 100, 2),
                 total_obs,
