@@ -13,29 +13,36 @@ from tabulate import tabulate
 
 # Local application imports
 from analysegnss.config import ERROR_CODES
-from analysegnss.gnss.general_pnt_quality_dict import sbf_to_general_pntqual, get_pntquality_info
+from analysegnss.gnss.general_pnt_quality_dict import (
+    sbf_to_general_pntqual,
+    get_pntquality_info,
+)
 from analysegnss.sbf.sbf_class import SBF
 from analysegnss.utils import init_logger
 from analysegnss.utils.utilities import combine_dfs
-from analysegnss.utils.argument_parser import argument_parser_rtk, auto_populate_args_namespace
+from analysegnss.utils.argument_parser import (
+    argument_parser_rtk,
+    auto_populate_args_namespace,
+)
+
 
 def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:
     """display the quality analysis
 
     Args:
-        df (pl.DataFrame): dataframe containing the RTK solution
+        geod_df (pl.DataFrame): dataframe containing the RTK solution
         logger (_type_): logger object
     """
     # analysis of the quality of the position data
     qual_analysis = []
     total_obs = geod_df.shape[0]
-    for qual, qual_data in geod_df.group_by("Type"):
+    for qual, qual_data in geod_df.group_by(["Type"]):
         qual_analysis.append(
             [
-                get_pntquality_info(sbf_to_general_pntqual(qual))["desc"],
+                get_pntquality_info(sbf_to_general_pntqual(qual[0]))["desc"],
                 qual_data.shape[0],
                 round(qual_data.shape[0] / total_obs * 100, 2),
-                total_obs
+                total_obs,
             ]
         )
 
@@ -46,7 +53,7 @@ def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:
     )
 
     # print the quality analysis
-    rprint(qual_tabular)
+    rprint(f"Quality analysis from sbf PVTGeodetic:\n{qual_tabular}")
 
     if logger is not None:
         logger.debug(f"Quality analysis:\n{qual_tabular}")
@@ -54,7 +61,7 @@ def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:
     return qual_analysis
 
 
-def rtk_pvtgeod(parsed_args: argparse.Namespace, logger: Logger) -> dict:
+def sbf_reader(parsed_args: argparse.Namespace, logger: Logger) -> dict:
     """
     Convert PVT Geodetic2 SBF block to dataframe and analyse quality of data
     Args:
@@ -68,9 +75,9 @@ def rtk_pvtgeod(parsed_args: argparse.Namespace, logger: Logger) -> dict:
         argument_parser_rtk,
         os.path.splitext(os.path.basename(__file__))[0],
     )
-    
+
     logger.debug(f"auto-populated parsed arguments: {parsed_args}")
-    
+
     # create a SBF class object
     try:
         sbf = SBF(sbf_fn=parsed_args.sbf_ifn, logger=logger)
@@ -111,6 +118,12 @@ def rtk_pvtgeod(parsed_args: argparse.Namespace, logger: Logger) -> dict:
             if "DT_right" in df_pvt.columns:
                 df_pvt = df_pvt.drop("DT_right")
 
+            logger.info(f"df_pvt from sbf PVTGeodetic: \n{df_pvt}")
+
+            qual_analysis = quality_analysis(geod_df=df_pvt, logger=logger)
+
+            return df_pvt, qual_analysis
+
         else:  # only use the PVTGeodetic, no StdDev required
             # extract the PVT Geodetic2 block from SBF file
             df_pvt = sbf.bin2asc_dataframe(
@@ -119,12 +132,12 @@ def rtk_pvtgeod(parsed_args: argparse.Namespace, logger: Logger) -> dict:
 
         # fill the null values with NaN
         # df_pvt = df_pvt.fill_null(float('nan')) # -- commented out because it changes the type of all columns to float
-        
-        logger.info(f"df_pvt = \n{df_pvt}")
+
+        logger.info(f"df_pvt from sbf PVTGeodetic: \n{df_pvt}")
         # analyse the quality of the solution
         qual_analysis = quality_analysis(geod_df=df_pvt, logger=logger)
 
-        return df_pvt
+        return df_pvt, qual_analysis
 
     else:  # conversion using sbf2asc # TODO: next part not yet finished
         df_pvt = sbf.sbf2asc_dataframe(
@@ -145,12 +158,12 @@ def rtk_pvtgeod(parsed_args: argparse.Namespace, logger: Logger) -> dict:
         if df_xyzcov is not None:
             logger.debug(f"df_xyzcov: \n{df_xyzcov}")
 
-        logger.info(f"df_pvt = \n{df_pvt}")
-        logger.info(f"df_xyz = \n{df_xyz}")
+        logger.info(f"df_pvt from sbf2asc PVTGeodetic: \n{df_pvt}")
+        logger.info(f"df_xyz from sbf2asc PVTCartesian: \n{df_xyz}")
         if df_xyzcov is not None:
-            logger.info(f"df_xyzcov = \n{df_xyzcov}")
+            logger.info(f"df_xyzcov from sbf2asc PosCovCartesian: \n{df_xyzcov}")
 
-        return df_pvt
+        return df_pvt, None
 
 
 def main():
@@ -165,7 +178,9 @@ def main():
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
     logger.debug(f"Parsed arguments: {args_parsed}")
 
-    geod_df, qual_analysis = rtk_pvtgeod(args_parsed=args_parsed, logger=logger)
+    df_pvt, qual_analysis = sbf_reader(parsed_args=args_parsed, logger=logger)
+    # print the quality analysis
+    rprint(f"sbf pvt dataframe: \n{df_pvt}")
 
 
 if __name__ == "__main__":

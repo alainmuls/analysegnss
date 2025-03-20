@@ -109,18 +109,29 @@ COLUMN_MAPPINGS: Dict[str, PNTColumns] = {
 
 COLUMN_DTYPE_MAPPINGS: Dict[pl.DataType, List[str]] = {
     pl.Float64: [
-        "UTM.E", "UTM.N", "orthoH", 
-        "sde(m)", "sdn(m)", "sdu(m)",
-        "SD_lon [m]", "SD_lat [m]", "SD_hgt [m]",
-        "sd.E", "sd.N", "sd.U",
-        "sdlon(m)", "sdlat(m)", "sdH(m)",
-        "delta.E", "delta.N", "delta.U"
+        "UTM.E",
+        "UTM.N",
+        "orthoH",
+        "sde(m)",
+        "sdn(m)",
+        "sdu(m)",
+        "SD_lon [m]",
+        "SD_lat [m]",
+        "SD_hgt [m]",
+        "sd.E",
+        "sd.N",
+        "sd.U",
+        "sdlon(m)",
+        "sdlat(m)",
+        "sdH(m)",
+        "delta.E",
+        "delta.N",
+        "delta.U",
     ],
     pl.UInt8: ["num_sats", "NrSV", "ns", "#SVs"],
     pl.Datetime: ["DT"],
     pl.Utf8: ["pnt_qual", "source", "mode"],
 }
-
 
 
 def get_pnt_columns(source: str) -> PNTColumns:
@@ -164,7 +175,7 @@ def column_mapping_source_to_standard(
     return column_mapping_source_to_standard
 
 
-def get_required_columns_from_pnt_source(
+def get_required_columns_for_pnt_source(
     source: str, include_sd: bool = True
 ) -> List[str]:
     """Get the list of required columns for a source
@@ -198,20 +209,23 @@ def get_required_columns_from_pnt_source(
 
     return required_pnt_cols
 
-def get_column_dtypes(columns_to_cast: List[str]) -> Tuple[Dict[str, pl.DataType], List[str]]:
+
+def get_column_dtypes(
+    columns_to_cast: List[str],
+) -> Tuple[Dict[str, pl.DataType], List[str]]:
     """Get the mapping of column names to their data types
-    
+
     Args:
         columns_to_cast (list): List of column names or Polars expressions to determine data types for
-        
+
     Returns:
         Tuple:
         - column_dtype (dict): Dict mapping column names to Polars dtypes
         - failed_casting_columns (list): List of column names that are not in COLUMN_DTYPE_MAPPINGS
     """
     column_dtype = {}
-    
-    # Extract column names. When using alias() to rename pl.columns, 
+
+    # Extract column names. When using alias() to rename pl.columns,
     # the col names become Polars expressions. Then use meta.output_name() to get the column name
     column_names = []
     for col in columns_to_cast:
@@ -221,16 +235,14 @@ def get_column_dtypes(columns_to_cast: List[str]) -> Tuple[Dict[str, pl.DataType
             column_names.append(col)
         else:
             column_names.append(str(col))
-    
-    # Get dtype mapping 
+
+    # Get dtype mapping
     for dtype, columns in COLUMN_DTYPE_MAPPINGS.items():
         for col_name in column_names:
             if col_name in columns:
                 column_dtype[col_name] = dtype
-                
+
     # Checking for columns that are not in COLUMN_DTYPE_MAPPINGS
     failed_casting_columns = [col for col in column_names if col not in column_dtype]
 
     return column_dtype, failed_casting_columns
-    
-    

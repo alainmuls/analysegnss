@@ -2,6 +2,100 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "PVT Data reader: sbf",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/analysegnss/sbf/sbf_reader.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "purpose": [
+                "debug-in-terminal"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src",
+            },
+            "args": [
+                "--sbf_ifn",
+                "data/20250210_testinghoeilaart_halflength/rover.sbf",
+                "--sd",
+            ],
+            "stopOnEntry": false,
+            "presentation": {
+                "hidden": false,
+                "group": "pvt_data_class_tests",
+                "order": 1
+            }
+        },
+        {
+            "name": "PVT Data reader: rtklib",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/analysegnss/rtkpos/rtkpos_reader.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "purpose": [
+                "debug-in-terminal"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src",
+            },
+            "args": [
+                "--pos_ifn",
+                "data/2024-12-19-LZ_Schaffen_Test/rtkl_pos/SEPT00BEL_R_20243540907_14M_10Z_MO_PPK.pos",
+            ],
+            "stopOnEntry": false,
+            "presentation": {
+                "hidden": false,
+                "group": "pvt_data_class_tests",
+                "order": 2
+            }
+        },
+        {
+            "name": "PVT Data reader: nmea",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/analysegnss/nmea/nmea_reader.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "purpose": [
+                "debug-in-terminal"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src",
+            },
+            "args": [
+                "--nmea_ifn",
+                "data/nmea/20241128-161759-usb-FTDI_FT230X_Basic_UART_DA0150ZY-if00-port0.out",
+            ],
+            "stopOnEntry": false,
+            "presentation": {
+                "hidden": false,
+                "group": "pvt_data_class_tests",
+                "order": 3
+            }
+        },
+        //        {
+        //            "name": "PVT Data reader: glabng",
+        //            "type": "debugpy",
+        //            "request": "launch",
+        //            "program": "src/analysegnss/glabng/glab_reader.py",
+        //            "console": "integratedTerminal",
+        //            "justMyCode": false,
+        //            "purpose": ["debug-in-terminal"],
+        //            "env": {
+        //                "PYTHONPATH": "${workspaceFolder}/src",
+        //            },
+        //            "args": [
+        //                "--glab_ifn",
+        //            ],
+        //            "stopOnEntry": false,
+        //            "presentation": {
+        //                "hidden": false,
+        //                "group": "pvt_data_class_tests",
+        //                "order": 4
+        //            }
+        //        },
+        {
             "name": "EBH Process: RTK+PPK (Hoeilaart)",
             "type": "debugpy",
             "request": "launch",

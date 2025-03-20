@@ -22,9 +22,10 @@ from analysegnss.utils.utilities import sf64, si64
 from analysegnss.gnss.general_pnt_quality_dict import nmea_to_general_pntqual
 
 
-#TODO Only NMEA RMC contains the datestamp, so if this message is not present, the datetime can not be generated
+# TODO Only NMEA RMC contains the datestamp, so if this message is not present, the datetime can not be generated
 #   This should raise an error or warning and enable the user to add the date manually
 #   The NMEA ZDA message also contains the date, however day, month and year are in separate fields ...
+
 
 @dataclass
 class NMEA:
@@ -68,7 +69,7 @@ class NMEA:
             list: a list containing the parsed NMEA messages
         """
         nmea_messages = []
-        nrfailed_parsed_lines = 0 # counts the non-NMEA lines
+        nrfailed_parsed_lines = 0  # counts the non-NMEA lines
         with open(self.nmea_ifn, "r") as file:
             for line in file:
                 try:
@@ -81,7 +82,7 @@ class NMEA:
             self.logger.info(
                 f"Successfully parsed {len(nmea_messages)} NMEA messages out of {len(nmea_messages) + nrfailed_parsed_lines} lines"
             )
-        
+
         # write parsed nmea messages to file
         with open(f"{self.nmea_ifn}.nmea", "w") as file:
             for msg in nmea_messages:
@@ -114,7 +115,7 @@ class NMEA:
             # update existing list of dictionaries if timestamp already exists
             msg_entry = data_dict[timestamp]
 
-            # pynmea2 doesn't always cast the values to the correct dtype, 
+            # pynmea2 doesn't always cast the values to the correct dtype,
             # so some values need to be manually casted using a safe conversion function which returns None if the cast fails without raising an error
             # we cast the values to the correct dtype now during the nmea data collection because we don't know which NMEA messages are available
             # Eventhough the timestamp is already saved as the key, we still store it also as a value for easier converion to dataframe
@@ -205,9 +206,8 @@ class NMEA:
                 if self.logger:
                     self.logger.warning(f"Unknown NMEA message type: {msg}")
 
-
         if self._console_loglevel <= logging.DEBUG:
-            
+
             # loop through first 5 entries in data_dict
             for i, (key, value) in enumerate(data_dict.items()):
                 if i < 10:
@@ -216,7 +216,7 @@ class NMEA:
                     )
                     self.logger.debug(
                         f"The NMEA message at timestamp {key} is: {value}"
-                        )
+                    )
 
         return list(data_dict.values())
 
@@ -233,10 +233,10 @@ class NMEA:
 
         # collect the NMEA values
         collected_nmea_values = self.collect_nmea_values()
-        
+
         # create a DataFrame with the NMEA values per timestamp
         nmea_df = pl.DataFrame(collected_nmea_values)
-        
+
         # Define dtype lookup table for each data column [ensures compatibility with the other pnt_data classes]
         dtype_lookup = {
             # Integer columns that should be uint8 (0-255)
@@ -244,10 +244,8 @@ class NMEA:
             "gps_qual": pl.UInt8,
             "day": pl.UInt8,
             "month": pl.UInt8,
-            
             # uint16 columns
             "year": pl.UInt16,
-            
             # Float columns
             "latitude(deg)": pl.Float64,
             "longitude(deg)": pl.Float64,
@@ -266,10 +264,9 @@ class NMEA:
             "sdlat(m)": pl.Float64,
             "sdlon(m)": pl.Float64,
             "sdH(m)": pl.Float64,
-            
             # dtype Date/time columns is set in add_df_columns()
         }
-        
+
         # Apply data type conversions
         for col_name, dtype in dtype_lookup.items():
             if col_name in nmea_df.columns:
@@ -279,8 +276,10 @@ class NMEA:
                     )
                 except Exception as e:
                     if self.logger:
-                        self.logger.warning(f"Could not cast column {col_name} to {dtype}: {e}")
-        
+                        self.logger.warning(
+                            f"Could not cast column {col_name} to {dtype}: {e}"
+                        )
+
         # add columns datatime and UTM coordinates if possible
         nmea_df = self.add_df_columns(nmea_df=nmea_df)
 
@@ -303,7 +302,7 @@ class NMEA:
             )
 
         # remove invalid PNT where GNSS quality equals 0 and add new column with general PNT quality ID from 'pnt_qual'
-        if "gps_qual" in nmea_df.columns:
+        if "gps_qual" in nmea_df.collect_schema().names():
             if self.logger:
                 self.logger.debug("Removing invalid PNT where GNSS quality equals 0")
             nmea_df = nmea_df.filter(pl.col("gps_qual") != 0).lazy()
@@ -320,41 +319,55 @@ class NMEA:
             if self.logger:
                 self.logger.debug(f"\tcreated new column 'pnt_qual' from 'gps_qual'")
 
-            
-        if "datestamp" in nmea_df.columns and "timestamp" in nmea_df.columns:
-            
+        if (
+            "datestamp" in nmea_df.collect_schema().names()
+            and "timestamp" in nmea_df.collect_schema().names()
+        ):
+
             # remove datestamp and timestamp columns with value None
             if self.logger:
-                self.logger.debug("Removing datestamp and timestamp columns with value None")
+                self.logger.debug(
+                    "Removing datestamp and timestamp columns with value None"
+                )
             nmea_df = nmea_df.filter(pl.col("datestamp").is_not_null()).lazy()
             nmea_df = nmea_df.filter(pl.col("timestamp").is_not_null()).lazy()
-            
+
             if self.logger:
                 self.logger.debug("Adding datetime column to the NMEA parsed DataFrame")
             nmea_df = nmea_df.with_columns(
                 pl.struct(["datestamp", "timestamp"])
                 .map_elements(
-                    lambda row: datetime.datetime.combine(row["datestamp"], row["timestamp"]),
+                    lambda row: datetime.datetime.combine(
+                        row["datestamp"], row["timestamp"]
+                    ),
                     return_dtype=datetime.datetime,
-                    )
+                )
                 .alias("DT")
             ).lazy()
-            
+
             # drop duplicate columns
-            nmea_df = nmea_df.drop(["datestamp","timestamp"]).lazy()
-            
+            nmea_df = nmea_df.drop(["datestamp", "timestamp"]).lazy()
+
             # stage DT as first column
             first_cols = ["DT"]
 
         # add UTM coordinates
-        if "latitude(deg)" in nmea_df.columns and "longitude(deg)" in nmea_df.columns:
+        if (
+            "latitude(deg)" in nmea_df.collect_schema().names()
+            and "longitude(deg)" in nmea_df.collect_schema().names()
+        ):
             if self.logger:
                 self.logger.debug("Adding UTM coordinates to the NMEA parsed DataFrame")
 
             # Function to convert lat/lon in degrees to UTM
             def latlon_to_utm(lat, lon):
-                easting, northing, _, _ = utm.from_latlon(lat, lon)
-                return {"easting": easting, "northing": northing}
+                easting, northing, zone_number, zone_letter = utm.from_latlon(lat, lon)
+                return {
+                    "easting": easting,
+                    "northing": northing,
+                    "zone_number": zone_number,
+                    "zone_letter": zone_letter,
+                }
 
             # Apply the conversion function lazily using map_elements with specified return_dtype
             nmea_df = nmea_df.with_columns(
@@ -367,6 +380,8 @@ class NMEA:
                         [
                             pl.Field("easting", pl.Float64),
                             pl.Field("northing", pl.Float64),
+                            pl.Field("zone_number", pl.Int64),
+                            pl.Field("zone_letter", pl.Utf8),
                         ]
                     ),
                 )
@@ -377,22 +392,27 @@ class NMEA:
                 [
                     pl.col("utm_coords").struct.field("easting").alias("UTM.E"),
                     pl.col("utm_coords").struct.field("northing").alias("UTM.N"),
+                    pl.col("utm_coords")
+                    .struct.field("zone_number")
+                    .cast(pl.UInt8)
+                    .alias("UTM.ZN"),
+                    pl.col("utm_coords").struct.field("zone_letter").alias("UTM.ZL"),
                 ]
             ).lazy()
-            
-            
+
             # drop duplicate columns
             nmea_df = nmea_df.drop(["utm_coords"]).lazy()
-            
+
             # stash UTM.E and UTM.N as first columns
-            first_cols.extend(["UTM.E", "UTM.N"]) 
-        
-            
+            first_cols.extend(["UTM.E", "UTM.N", "UTM.ZN", "UTM.ZL"])
+
         # add already existing columns to the first_cols list
         first_cols.extend(["latitude(deg)", "longitude(deg)", "orthoH"])
 
         # Get remaining columns that are not in first_cols
-        remaining_cols = [col for col in nmea_df.columns if col not in first_cols]
+        remaining_cols = [
+            col for col in nmea_df.collect_schema().names() if col not in first_cols
+        ]
 
         # Reorder DataFrame
         nmea_df = nmea_df.select(first_cols + remaining_cols).lazy()
@@ -416,6 +436,5 @@ class NMEA:
 
                 if self.logger:
                     self.logger.debug(nmea_df)
-                    
-                    
+
         return nmea_df

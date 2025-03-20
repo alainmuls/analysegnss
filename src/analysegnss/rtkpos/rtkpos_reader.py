@@ -35,10 +35,10 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> list:
     # analysis of the quality of the position data
     qual_analysis = []
     total_obs = df_pos.shape[0]
-    for qual, qual_data in df_pos.group_by("Q"):
+    for qual, qual_data in df_pos.group_by(["Q"]):
         qual_analysis.append(
             [
-                get_pntquality_info(rtklib_to_general_pntqual(qual))["desc"],
+                get_pntquality_info(rtklib_to_general_pntqual(qual[0]))["desc"],
                 qual_data.shape[0],
                 round(qual_data.shape[0] / total_obs * 100, 2),
                 total_obs,
@@ -52,7 +52,7 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> list:
     )
 
     # print the quality analysis
-    rprint(qual_tabular)
+    rprint(f"Analysis of the quality of the position data:\n{qual_tabular}")
 
     if logger is not None:
         logger.info(f"Analysis of the quality of the position data\n{qual_tabular}")
@@ -78,9 +78,8 @@ def rtkp_pos(parsed_args: argparse.Namespace, logger: Logger) -> pl.DataFrame:
         argument_parser_ppk,
         os.path.splitext(os.path.basename(__file__))[0],
     )
-    
+
     logger.debug(f"Parsed arguments: {parsed_args}")
-    
 
     # create a RTKlib pos class object
     try:
@@ -93,12 +92,11 @@ def rtkp_pos(parsed_args: argparse.Namespace, logger: Logger) -> pl.DataFrame:
     info_processing, pos_df = rtkpos.read_pos_file()
     logger.debug(f"Processing info:\n{json.dumps(info_processing, indent=4)}")
 
-    logger.debug(f"df_pos = \n{pos_df}")
-    rprint(f"df_pos = \n{pos_df}")
+    logger.info(f"rtkpos dataframe: \n{pos_df}")
     # analyse the quality of the solution
-    quality_analysis(df_pos=pos_df, logger=logger)
+    qual_analysis = quality_analysis(df_pos=pos_df, logger=logger)
 
-    return pos_df
+    return pos_df, qual_analysis
 
 
 def main():
@@ -114,7 +112,10 @@ def main():
     logger.debug(f"Parsed arguments: {args_parsed}")
 
     # call df_rtkpos to create dataframe from rtklib pos file
-    df_rtkpos = rtkp_pos(argv=sys.argv)
+    df_rtkpos, qual_analysis = rtkp_pos(parsed_args=args_parsed, logger=logger)
+
+    # print the quality analysis
+    rprint(f"rtkpos dataframe: \n{df_rtkpos}")
 
 
 if __name__ == "__main__":

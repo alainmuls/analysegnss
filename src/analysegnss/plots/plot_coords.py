@@ -13,10 +13,10 @@ import polars as pl
 from rich import print
 
 from analysegnss.config import ERROR_CODES, rich_console
-from analysegnss.glabng import glab_parser
+from analysegnss.glabng import glab_reader
 from analysegnss.nmea import nmea_reader
-from analysegnss.rtkpos import ppk_rnx2rtkp
-from analysegnss.sbf import rtk_pvtgeod
+from analysegnss.rtkpos import rtkpos_reader
+from analysegnss.sbf import sbf_reader
 from analysegnss.plots import plot_utm
 from analysegnss.plots.plot_columns import get_utm_columns
 from analysegnss.utils import init_logger
@@ -32,7 +32,7 @@ def get_source(parsed_args: argparse.Namespace) -> str:
     Returns:
         str: Source type (PPK, RTK, GLABNG, NMEA, PNT_CSV)
     """
-    
+
     # dictionary to map source type to argparse argument name
     file_handlers = {
         "pos_ifn": "PPK",
@@ -51,7 +51,7 @@ def get_source(parsed_args: argparse.Namespace) -> str:
 
     # Create instance and get source in one go
     source = file_handlers.get(file_attr, "Source not found")
-    
+
     return source
 
 
@@ -64,7 +64,6 @@ def plot_coords(args_parsed: argparse.Namespace, logger: logging.Logger):
 
     matplotlib.use("TkAgg")
 
-
     # get the source of the coordinates
     source = get_source(parsed_args=args_parsed)
 
@@ -75,7 +74,7 @@ def plot_coords(args_parsed: argparse.Namespace, logger: logging.Logger):
     utm_columns = get_utm_columns(source=source)
     logger.debug(f"utm_columns: {utm_columns}")
 
-	# create the df_utm dataframe from the dataframe obtained according to each source
+    # create the df_utm dataframe from the dataframe obtained according to each source
     try:
         if not args_parsed.sd:
             df_utm = df_source.select(
@@ -102,25 +101,31 @@ def plot_coords(args_parsed: argparse.Namespace, logger: logging.Logger):
                     utm_columns.sdu,
                 ]
             )
-    except pl.exceptions.ColumnNotFoundError as e: 
+    except pl.exceptions.ColumnNotFoundError as e:
         column_missing = e.args[0]
         logger.error(f"ERROR: Missing the column |{column_missing}| in the dataframe")
         sys.exit(1)
-        
+
     # Filter out null values in coordinates
     df_utm = df_utm.filter(
         pl.col(utm_columns.east).is_not_null()
         & pl.col(utm_columns.north).is_not_null()
         & pl.col(utm_columns.height).is_not_null()
-    )        
-    
+    )
+
     logger.debug(f"df_utm = \n{df_utm}")
 
     # find filename and directory from the position file
     # ifn_full = args_parsed.pos_ifn if args_parsed.pos_ifn else args_parsed.sbf_ifn
     ifn_full = next(
         ifn
-        for ifn in [args_parsed.pos_ifn, args_parsed.sbf_ifn, args_parsed.glab_ifn, args_parsed.nmea_ifn, args_parsed.csv_ifn]
+        for ifn in [
+            args_parsed.pos_ifn,
+            args_parsed.sbf_ifn,
+            args_parsed.glab_ifn,
+            args_parsed.nmea_ifn,
+            args_parsed.csv_ifn,
+        ]
         if ifn is not None
     )
 
@@ -198,12 +203,12 @@ def get_source_df(
         case "PPK":
             # Create PPK position dataframe
             logger.debug(f"Creating PPK position dataframe")
-            df_source = ppk_rnx2rtkp.rtkp_pos(parsed_args=parsed_args, logger=logger)
+            df_source = rtkpos_reader.rtkp_pos(parsed_args=parsed_args, logger=logger)
 
         case "RTK":
             # Create RTK position dataframe
             logger.debug(f"Creating RTK position dataframe")
-            df_source = rtk_pvtgeod.rtk_pvtgeod(parsed_args=parsed_args, logger=logger)
+            df_source = sbf_reader.sbf_reader(parsed_args=parsed_args, logger=logger)
 
         case "GLABNG":
             # Create GLAB position dataframe
@@ -215,7 +220,7 @@ def get_source_df(
                 "--section",
                 "OUTPUT",
             ]
-            dfs_glab = glab_parser.glab_parser(argv=glab_parser_args)
+            dfs_glab = glab_reader.glab_parser(argv=glab_parser_args)
             df_source = dfs_glab["OUTPUT"]
             if logger:
                 logger.debug(f"GLAB OUTPUT dataframe:\n{df_source}")
@@ -228,8 +233,9 @@ def get_source_df(
 
         case "PNT_CSV":
             try:
+
                 # Read PNT CSV file
-                
+
                 # first check if parsed_args.header is True. Then use the columns defined in the header.
                 # Otherwise, use the columns defined in the parsed_args.columns_csv
                 if parsed_args.no_header:
@@ -264,7 +270,7 @@ def get_source_df(
 
 
 def main():
-    
+
     # get the script name for passing to argument_parser
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 

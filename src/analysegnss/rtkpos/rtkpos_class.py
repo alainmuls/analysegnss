@@ -123,8 +123,8 @@ class Rtkpos:
             dict: processing information (header of rtklib pos file)
             dict: processing information (header of rtklib pos file)
             polars.DataFrame: RTK position data or None if error reading file (EMPTY CSV,..)
-            
-            
+
+
 
         """
         # get the processing information
@@ -178,7 +178,7 @@ class Rtkpos:
 
         if self.logger is not None:
             self.logger.debug(f"rtkpos_schema GPST format: {gpst_format}")
-        
+
         # Define column types based on GPST format
         if gpst_format == "YMD_HMS":
             col_types = {
@@ -283,12 +283,12 @@ class Rtkpos:
 
         # treat the column names to get the correct list of column names
         col_names = [col.strip() for col in col_names]
-        
+
         # Detect GPST format by examining the first data line
         # Check if the first column contains a date format (YYYY/MM/DD) or WNc format
         if first_data_line:
             first_column_data = first_data_line.split()[0]
-            if "/" in first_column_data:  # Y/M/D H/M/S format 
+            if "/" in first_column_data:  # Y/M/D H/M/S format
                 col_names = ["date", "time"] + col_names[2:]
                 info_processing["gpst_format"] = "YMD_HMS"
             else:  # WNc TOW format (e.g., "2345")
@@ -303,9 +303,9 @@ class Rtkpos:
             self.logger.debug(f"column names = \n{col_names}")
             self.logger.debug(f"GPST format detected: {info_processing['gpst_format']}")
             # self.logger.info(f"info_processing = \n{info_processing}")
-            #self.logger.debug(
+            # self.logger.debug(
             #    f"Processing info:\n{json.dumps(info_processing, indent=4)}"
-            #)
+            # )
 
         return info_processing, col_names
 
@@ -322,15 +322,27 @@ class Rtkpos:
         with rich_console.status("Collecting and adjusting data", spinner="aesthetic"):
             # Determine GPST format based on column names
             gpst_format = "WNc_TOW"  # Default format
-            if "date" in df_pos.columns and "time" in df_pos.columns:
+            if (
+                "date" in df_pos.collect_schema().names()
+                and "time" in df_pos.collect_schema().names()
+            ):
                 gpst_format = "YMD_HMS"
-            elif "WNc" in df_pos.columns and "TOW(s)" in df_pos.columns:
+            elif (
+                "WNc" in df_pos.collect_schema().names()
+                and "TOW(s)" in df_pos.collect_schema().names()
+            ):
                 gpst_format = "WNc_TOW"
-            
+
             # add date-time to the dataframe based on the GPST format
-            if gpst_format == "WNc_TOW" and "WNc" in df_pos.columns and "TOW(s)" in df_pos.columns:
+            if (
+                gpst_format == "WNc_TOW"
+                and "WNc" in df_pos.collect_schema().names()
+                and "TOW(s)" in df_pos.collect_schema().names()
+            ):
                 if self.logger is not None:
-                    self.logger.debug("\tadding datetime to the dataframe from WNc and TOW")
+                    self.logger.debug(
+                        "\tadding datetime to the dataframe from WNc and TOW"
+                    )
                 df_pos = df_pos.with_columns(
                     pl.struct(["WNc", "TOW(s)"])
                     .map_elements(
@@ -339,9 +351,15 @@ class Rtkpos:
                     )
                     .alias("DT")
                 ).lazy()
-            elif gpst_format == "YMD_HMS" and "date" in df_pos.columns and "time" in df_pos.columns:
+            elif (
+                gpst_format == "YMD_HMS"
+                and "date" in df_pos.collect_schema().names()
+                and "time" in df_pos.collect_schema().names()
+            ):
                 if self.logger is not None:
-                    self.logger.debug("\tadding datetime to the dataframe from date and time")
+                    self.logger.debug(
+                        "\tadding datetime to the dataframe from date and time"
+                    )
                 # Convert YMD HMS format to datetime
                 df_pos = df_pos.with_columns(
                     pl.struct(["date", "time"])
@@ -355,14 +373,24 @@ class Rtkpos:
                 ).lazy()
 
             # add UTM coordinates
-            if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
+            if (
+                "latitude(deg)" in df_pos.collect_schema().names()
+                and "longitude(deg)" in df_pos.collect_schema().names()
+            ):
                 if self.logger is not None:
                     self.logger.debug("\tadding UTM coordinates to the dataframe")
 
                 # Function to convert lat/lon in degrees to UTM
                 def latlon_to_utm(lat, lon):
-                    easting, northing, _, _ = utm.from_latlon(lat, lon)
-                    return {"easting": easting, "northing": northing}
+                    easting, northing, zone_number, zone_letter = utm.from_latlon(
+                        lat, lon
+                    )
+                    return {
+                        "easting": easting,
+                        "northing": northing,
+                        "zone_number": zone_number,
+                        "zone_letter": zone_letter,
+                    }
 
                 # Apply the conversion function lazily using map_elements with specified return_dtype
                 df_pos = df_pos.with_columns(
@@ -375,6 +403,8 @@ class Rtkpos:
                             [
                                 pl.Field("easting", pl.Float64),
                                 pl.Field("northing", pl.Float64),
+                                pl.Field("zone_number", pl.Int64),
+                                pl.Field("zone_letter", pl.Utf8),
                             ]
                         ),
                     )
@@ -386,6 +416,13 @@ class Rtkpos:
                     [
                         pl.col("utm_coords").struct.field("easting").alias("UTM.E"),
                         pl.col("utm_coords").struct.field("northing").alias("UTM.N"),
+                        pl.col("utm_coords")
+                        .struct.field("zone_number")
+                        .cast(pl.UInt8)
+                        .alias("UTM.ZN"),
+                        pl.col("utm_coords")
+                        .struct.field("zone_letter")
+                        .alias("UTM.ZL"),
                     ]
                 ).lazy()
 
@@ -393,7 +430,10 @@ class Rtkpos:
                 df_pos = df_pos.drop(["utm_coords"]).lazy()
 
             # add geoid undulation and orthometric height
-            if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
+            if (
+                "latitude(deg)" in df_pos.collect_schema().names()
+                and "longitude(deg)" in df_pos.collect_schema().names()
+            ):
                 if self.logger is not None:
                     self.logger.debug(
                         "\tadding geoid undulation & orthometric height to the dataframe"
@@ -404,9 +444,7 @@ class Rtkpos:
                 df_pos = df_pos.with_columns(
                     pl.struct(["latitude(deg)", "longitude(deg)"])
                     .map_elements(
-                        lambda x: gh_model.get(
-                            x["latitude(deg)"], x["longitude(deg)"]
-                        ),
+                        lambda x: gh_model.get(x["latitude(deg)"], x["longitude(deg)"]),
                         return_dtype=pl.Float64,
                     )
                     .alias("undulation")
@@ -420,12 +458,12 @@ class Rtkpos:
                     )
                     .alias("orthoH")
                 ).lazy()
-           
+
             # add new column with general PNT quality ID from 'Q'
-            if "Q" in df_pos.columns:
+            if "Q" in df_pos.collect_schema().names():
                 df_pos = df_pos.with_columns(
                     pl.struct(["Q"])
-                    .map_elements(  
+                    .map_elements(
                         lambda x: rtklib_to_general_pntqual(x["Q"]),
                         return_dtype=pl.Utf8,
                     )
@@ -433,8 +471,7 @@ class Rtkpos:
                 ).lazy()
                 if self.logger is not None:
                     self.logger.debug(f"\tcreated new column 'pnt_qual' from 'Q'")
-            
-            
+
             # collect the dataframe
             if self.logger is not None:
                 self.logger.info(

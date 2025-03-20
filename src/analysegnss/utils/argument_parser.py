@@ -363,6 +363,15 @@ def argument_parser_pnt_data_collector(
         default=None,
         help="verbose level... repeat up to three times.",
     )
+    parser.add_argument(
+        "--log_dest",
+        help="Specify log destination directory (full path). (Default is /tmp/logs/)",
+        type=str,
+        required=False,
+        default="/tmp/logs/",
+    )
+    ############################################
+
     # input pnt sources have the nargs option which allows for multiple files to be passed as arguments
     parser.add_argument(
         "--sbf_ifn",

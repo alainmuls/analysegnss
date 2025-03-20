@@ -563,7 +563,7 @@ class SBF:
         if self.logger:
             self.logger.debug("\tremoving rows with no PVT solution")
 
-        if "Type" in block_df.columns:
+        if "Type" in block_df.collect_schema().names():
             block_df = block_df.filter(pl.col("Type") != 0).lazy()
             # create new column with general PNT quality ID to general name pnt_qual
             block_df = block_df.with_columns(
@@ -579,7 +579,10 @@ class SBF:
             # print(f"block_df = \n{block_df}")
 
         # add date-time and PRN (as str) to the dataframe
-        if "WNc [w]" in block_df.columns and "TOW [0.001 s]" in block_df.columns:
+        if (
+            "WNc [w]" in block_df.collect_schema().names()
+            and "TOW [0.001 s]" in block_df.collect_schema().names()
+        ):
             if self.logger:
                 self.logger.debug("\tadding datetime column to the dataframe")
             block_df = block_df.with_columns(
@@ -592,7 +595,10 @@ class SBF:
             ).lazy()
 
         # add date-time and PRN (as str) to the dataframe
-        if "WNc [w]" in block_df.columns and "TOW [s]" in block_df.columns:
+        if (
+            "WNc [w]" in block_df.collect_schema().names()
+            and "TOW [s]" in block_df.collect_schema().names()
+        ):
             if self.logger:
                 self.logger.debug("\tadding datetime column to the dataframe")
             block_df = block_df.with_columns(
@@ -607,7 +613,7 @@ class SBF:
         # add date-time and PRN (as str) to the dataframe
         if (
             "SVID"
-            in block_df.columns
+            in block_df.collect_schema().names()
             # and not block_df.select(pl.col("SVID")).dtypes[0] == pl.String
         ):
             if self.logger:
@@ -627,16 +633,21 @@ class SBF:
 
         # add UTM coordinates
         if (
-            "Latitude [rad]" in block_df.columns
-            and "Longitude [rad]" in block_df.columns
+            "Latitude [rad]" in block_df.collect_schema().names()
+            and "Longitude [rad]" in block_df.collect_schema().names()
         ):
             if self.logger:
                 self.logger.debug("\tadding UTM coordinates to the dataframe")
 
             # Function to convert lat/lon in degrees to UTM
             def latlon_to_utm(lat, lon):
-                easting, northing, _, _ = utm.from_latlon(lat, lon)
-                return {"easting": easting, "northing": northing}
+                easting, northing, zone_number, zone_letter = utm.from_latlon(lat, lon)
+                return {
+                    "easting": easting,
+                    "northing": northing,
+                    "zone_number": zone_number,
+                    "zone_letter": zone_letter,
+                }
 
             # Convert latitude and longitude from radians to degrees
             block_df = block_df.with_columns(
@@ -658,6 +669,8 @@ class SBF:
                             [
                                 pl.Field("easting", pl.Float64),
                                 pl.Field("northing", pl.Float64),
+                                pl.Field("zone_number", pl.Int64),
+                                pl.Field("zone_letter", pl.Utf8),
                             ]
                         ),
                     )
@@ -670,6 +683,11 @@ class SBF:
                 [
                     pl.col("utm_coords").struct.field("easting").alias("UTM.E"),
                     pl.col("utm_coords").struct.field("northing").alias("UTM.N"),
+                    pl.col("utm_coords")
+                    .struct.field("zone_number")
+                    .cast(pl.UInt8)
+                    .alias("UTM.ZN"),
+                    pl.col("utm_coords").struct.field("zone_letter").alias("UTM.ZL"),
                 ]
             ).lazy()
 
@@ -679,12 +697,15 @@ class SBF:
             ).lazy()
 
         # add orthometric height to the dataframe
-        if "Height [m]" in block_df.columns and "Undulation [m]" in block_df.columns:
+        if (
+            "Height [m]" in block_df.collect_schema().names()
+            and "Undulation [m]" in block_df.collect_schema().names()
+        ):
             if self.logger:
                 self.logger.debug("\tadding orthometric height to the dataframe")
             block_df = block_df.with_columns(
                 pl.struct(["Height [m]", "Undulation [m]"])
-                .apply(
+                .map_elements(
                     lambda x: x["Height [m]"] - x["Undulation [m]"],
                     return_dtype=pl.Float64,
                 )

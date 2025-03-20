@@ -205,8 +205,13 @@ class GLABNG:
             Returns:
                 dict: containing UTM coordinates
             """
-            easting, northing, _, _ = utm.from_latlon(lat, lon)
-            return {"easting": easting, "northing": northing}
+            easting, northing, zone_number, zone_letter = utm.from_latlon(lat, lon)
+            return {
+                "easting": easting,
+                "northing": northing,
+                "zone_number": zone_number,
+                "zone_letter": zone_letter,
+            }
 
         # Create schema dictionary
         schema = {}
@@ -254,6 +259,8 @@ class GLABNG:
                         [
                             pl.Field("easting", pl.Float64),
                             pl.Field("northing", pl.Float64),
+                            pl.Field("zone_number", pl.Int64),
+                            pl.Field("zone_letter", pl.Utf8),
                         ]
                     ),
                 )
@@ -265,6 +272,11 @@ class GLABNG:
                 [
                     pl.col("utm_coords").struct.field("easting").alias("UTM.E"),
                     pl.col("utm_coords").struct.field("northing").alias("UTM.N"),
+                    pl.col("utm_coords")
+                    .struct.field("zone_number")
+                    .cast(pl.UInt8)
+                    .alias("UTM.ZN"),
+                    pl.col("utm_coords").struct.field("zone_letter").alias("UTM.ZL"),
                 ]
             ).lazy()
 
