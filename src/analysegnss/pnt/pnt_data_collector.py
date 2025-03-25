@@ -35,7 +35,8 @@ def pnt_data_collector(
     parsed_args: argparse.Namespace, logger: logging.Logger
 ) -> Tuple[dict[str, pl.DataFrame], dict[str, pl.DataFrame]]:
     """Collects PNT data from given sources and constructs standardized PNT dataframes
-    The function will return a dictionary with the source type as key and the standardized pnt dataframe as value.
+    The function will return a dictionary with the source type as key and the
+    standardized pnt dataframe as value.
     The standardized pnt dataframe will have the following columns:
     - DT: datetime
     - UTM.E: east coordinate

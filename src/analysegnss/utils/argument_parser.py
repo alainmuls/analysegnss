@@ -26,9 +26,12 @@ def auto_populate_args_namespace(
     parsed_args: argparse.Namespace, native_parser_func: callable, script_name: str
 ) -> argparse.Namespace:
     """
-    Automatically populates the argument namespace with default values from the native argument_parser_ function.
-    This is useful for scripts that are launched by other scripts and need to pass on the arguments used by the native argument_parser_ function.
-    This removes the need of checking each argument separately (by using hasattr()) if it is present and set to a default value.
+    Automatically populates the argument namespace with default values from the
+    native argument_parser_ function. This is useful for scripts that are launched
+    by other scripts and need to pass on the arguments used by the
+    native argument_parser_ function.
+    This removes the need of checking each argument separately (by using hasattr())
+    if it is present and set to a default value.
 
     Args:
         parsed_args (argparse.Namespace): The parsed arguments
