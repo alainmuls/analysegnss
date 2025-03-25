@@ -227,17 +227,33 @@ class GLABNG:
         ]
         df_section = df_section.select(columns_to_keep)
 
-        # Convert YEAR, DOY and SOD to datetime if present
-
-        df_section = df_section.with_columns(
-            pl.struct(["Year", "DOY", "SOD"])
-            .apply(
-                lambda x: datetime.datetime(year=int(x["Year"]), month=1, day=1)
-                + datetime.timedelta(days=int(x["DOY"]) - 1, seconds=float(x["SOD"])),
-                return_dtype=pl.Datetime,
+        if (
+            "Year" in columns_to_keep
+            and "DOY" in columns_to_keep
+            and "SOD" in columns_to_keep
+        ):
+            df_section = (
+                df_section.with_columns(
+                    pl.concat_list(
+                        [pl.col("Year"), pl.col("DOY"), pl.col("SOD")]
+                    ).alias("date_parts")
+                )
+                .with_columns(
+                    pl.col("date_parts")
+                    .map_elements(
+                        lambda x: datetime.datetime(year=int(x[0]), month=1, day=1)
+                        + datetime.timedelta(days=int(x[1]) - 1, seconds=float(x[2]))
+                    )
+                    .alias("DT")
+                )
+                .drop("date_parts")
+                .lazy()
             )
-            .alias("DT")
-        ).lazy()
+        else:
+            if self.logger:
+                self.logger.warning(
+                    f"Year, DOY or SOD not found in {str_yellow(section)} section, skipping DT creation"
+                )
 
         # Add UTM coordinates and orthometric height if section is OUTPUT
         if section == "OUTPUT":
@@ -253,7 +269,7 @@ class GLABNG:
             # Add UTM coordinates
             df_section = df_section.with_columns(
                 pl.struct(["lat", "lon"])
-                .apply(
+                .map_elements(
                     lambda row: latlon_to_utm(row["lat"], row["lon"]),
                     return_dtype=pl.Struct(
                         [
@@ -283,7 +299,7 @@ class GLABNG:
             # Add geoid undulation
             df_section = df_section.with_columns(
                 pl.struct(["lat", "lon"])
-                .apply(
+                .map_elements(
                     lambda x: gh_model.get(x["lat"], x["lon"]),
                     return_dtype=pl.Float64,
                 )
@@ -293,7 +309,9 @@ class GLABNG:
             # Calculate orthometric height
             df_section = df_section.with_columns(
                 pl.struct(["ellH", "undulation"])
-                .apply(lambda x: x["ellH"] - x["undulation"], return_dtype=pl.Float64)
+                .map_elements(
+                    lambda x: x["ellH"] - x["undulation"], return_dtype=pl.Float64
+                )
                 .alias("orthoH")
             ).lazy()
 
@@ -304,6 +322,6 @@ class GLABNG:
                     self.logger.debug(f"\trenaming column 'mode' to 'pnt_qual'")
 
             # Clean up intermediate columns
-            df_section = df_section.drop(["Year", "DOY", "SOD", "utm_coords"]).lazy()
+            df_section = df_section.drop(["utm_coords"]).lazy()  # "Year", "DOY", "SOD",
 
         return df_section.collect()

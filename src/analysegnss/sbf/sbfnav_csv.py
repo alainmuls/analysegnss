@@ -40,7 +40,7 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
     try:
         sbf = SBF(sbf_fn=parsed_args.sbf_ifn, logger=logger)
     except Exception as e:
-        logger.error(f"Error creating SBF object: {e}")
+        logger.error(f"Error creating SBF object: {str_red(e)}")
         sys.exit(ERROR_CODES["E_SBF_OBJECT"])
     logger.info(f"sbf object: {sbf}")
 
@@ -58,8 +58,6 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
         logger.error(f"No SBF Nav blocks found in {parsed_args.sbf_ifn}")
         sys.exit(ERROR_CODES["E_SBF_NAV_BLOCKS"])
 
-    # select the navigation SBF blocks for the selected GNSS
-    # select the navigation SBF blocks for the selected GNSSq
     # select the navigation SBF blocks for the selected GNSS
     sbf_nav_blocks_gnss = []
     for gnss in parsed_args.gnss:
@@ -91,15 +89,19 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
     for sbf_block, nav_df in nav_dfs.items():
         # identify the gnss type from the SBF block name
         gnss_abbrev = sbf_block[:3]
-        rprint(f"gnss_abbrev: {gnss_abbrev}")
+        # rprint(f"gnss_abbrev: {gnss_abbrev}")
 
-        # if sbf_block == "GPSNav":
-        nav_df = convert_semicircles_to_radians(df=nav_df, gnss_type=gnss_abbrev)
+        # convert the columns containing semi-circles to radians
+        if sbf_block != "GLONav":
+            nav_df = convert_semicircles_to_radians(df=nav_df, gnss_type=gnss_abbrev)
+
         nav_df = rename_nav_columns(df=nav_df, gnss_type=gnss_abbrev)
 
-        logger.info(
-            f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[:20]).head(3)}"
-            f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[20:]).head(3)}"
+        logger.debug(
+            print_df_in_chunks(
+                df=nav_df,
+                title=f"nav_df[{str_green(sbf_block)}]:",
+            )
         )
     for sbf_block, nav_df in nav_dfs.items():
         # identify the gnss type from the SBF block name
@@ -122,9 +124,6 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
         csv_filename = f"{parsed_args.sbf_ifn}_{sbf_block}.csv"  # Add a descriptive name to output.
         try:
             nav_df.write_csv(csv_filename)
-            logger.info(f"Successfully wrote {sbf_block} data to {csv_filename}")
-        except Exception as e:
-            logger.error(f"Failed to write {sbf_block} data to {csv_filename}: {e}")
             logger.info(
                 f"Successfully wrote {str_green(sbf_block)} data to {str_green(csv_filename)}"
             )

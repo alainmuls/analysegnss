@@ -273,6 +273,11 @@ class SBF:
             self.logger.debug("Adding verbose flag to cmd_sbf2asc")
             cmd_bin2asc.append("-v")
 
+        # add logging level to cmd_sbf2asc when self._console_loglevel is DEBUG
+        if self._console_loglevel == logging.DEBUG:
+            self.logger.debug("Adding verbose flag to cmd_sbf2asc")
+            cmd_bin2asc.append("-v")
+
         # Convert binary to text messages
         if self.logger:
             self.logger.debug(f"... running: {str_yellow(' '.join(cmd_bin2asc))}")
@@ -597,7 +602,7 @@ class SBF:
 
         return sbf_dfs
 
-    def add_columns(self, block_df: pl.DataFrame) -> pl.DataFrame:
+    def add_columns(self, block_df: pl.DataFrame) -> tuple[pl.DataFrame, dict, list]:
         """checks if we can create a datetime,PRN, UTM columns in the dataframe
 
         Args:
@@ -605,13 +610,22 @@ class SBF:
 
         Returns:
                 pl.DataFrame: dataframe with datetime and PRN columns added if possible
+                dict: columns added with dtype
+                list: columns removed with dtype
         """
-        # print(f"block_df = \n{block_df}")
+        # adding/removing columns based on information available, so keep track of those columns and dtypes
+        added_cols = {}
+        removed_cols = []
+
+        # get the column names of the block_df
+        column_names = block_df.collect_schema().names()
+        print(f"column_names = {column_names}")
+
         # remove the rows where 'Type' equals 0 (no PVT available)
         # if self.logger:
         #     self.logger.debug("\tremoving rows with no PVT solution")
 
-        if "Type" in block_df.collect_schema().names():
+        if "Type" in column_names:
             block_df = block_df.filter(pl.col("Type") != 0).lazy()
             # create new column with general PNT quality ID to general name pnt_qual
             block_df = block_df.with_columns(
@@ -624,13 +638,10 @@ class SBF:
             ).lazy()
             if self.logger:
                 self.logger.debug(f"\tcreated new column 'pnt_qual' from 'Type'")
-            # print(f"block_df = \n{block_df}")
+            added_cols["pnt_qual"] = pl.Utf8  # print(f"block_df = \n{block_df}")
 
         # add date-time and PRN (as str) to the dataframe
-        if (
-            "WNc [w]" in block_df.collect_schema().names()
-            and "TOW [0.001 s]" in block_df.collect_schema().names()
-        ):
+        if "WNc [w]" in column_names and "TOW [0.001 s]" in column_names:
             if self.logger:
                 self.logger.debug("\tadding datetime column to the dataframe")
             block_df = block_df.with_columns(
@@ -641,12 +652,10 @@ class SBF:
                 )
                 .alias("DT")
             ).lazy()
+            added_cols["DT"] = pl.Datetime
 
         # add date-time and PRN (as str) to the dataframe
-        if (
-            "WNc [w]" in block_df.collect_schema().names()
-            and "TOW [s]" in block_df.collect_schema().names()
-        ):
+        if "WNc [w]" in column_names and "TOW [s]" in column_names:
             if self.logger:
                 self.logger.debug("\tadding datetime column to the dataframe")
             block_df = block_df.with_columns(
@@ -657,11 +666,25 @@ class SBF:
                 )
                 .alias("DT")
             ).lazy()
+            added_cols["DT"] = pl.Datetime
 
-        # add date-time and PRN (as str) to the dataframe
+        # check if PRN is the column names and of type int or float, than convert to str using ssnerr_prn2str
+        if "PRN" in column_names and block_df.select(pl.col("PRN")).dtypes[0] in [
+            pl.Int64,
+            pl.Float64,
+        ]:
+            if self.logger:
+                self.logger.debug("\tconverting PRN to string")
+            block_df = block_df.with_columns(
+                pl.col("PRN").map_elements(
+                    lambda x: sbfc.ssnerr_prn2str(prn=x), return_dtype=pl.Utf8
+                )
+            ).lazy()
+
+        # convert SVID to PRN (as str) to the dataframe
         if (
             "SVID"
-            in block_df.collect_schema().names()
+            in column_names
             # and not block_df.select(pl.col("SVID")).dtypes[0] == pl.String
         ):
             if self.logger:
@@ -675,15 +698,12 @@ class SBF:
                 .alias("PRN")
             ).lazy()
             block_df = block_df.drop(["SVID"]).lazy()
-        # else:
-        #     # rename the column to PRN
-        #     block_df = block_df.rename({"SVID": "PRN"}).lazy()
+            added_cols["PRN"] = pl.Utf8
+            removed_cols.append("SVID")
+            added_cols["PRN"] = pl.Utf8
 
         # add UTM coordinates
-        if (
-            "Latitude [rad]" in block_df.collect_schema().names()
-            and "Longitude [rad]" in block_df.collect_schema().names()
-        ):
+        if "Latitude [rad]" in column_names and "Longitude [rad]" in column_names:
             if self.logger:
                 self.logger.debug("\tadding UTM coordinates to the dataframe")
 
@@ -743,12 +763,16 @@ class SBF:
             block_df = block_df.drop(
                 ["Latitude [rad]", "Longitude [rad]", "utm_coords"]
             ).lazy()
+            added_cols["latitude [deg]"] = pl.Float64
+            added_cols["longitude [deg]"] = pl.Float64
+            added_cols["UTM.E"] = pl.Float64
+            added_cols["UTM.N"] = pl.Float64
+            added_cols["UTM.ZN"] = pl.UInt8
+            added_cols["UTM.ZL"] = pl.Utf8
+            removed_cols.extend(["Latitude [rad]", "Longitude [rad]"])
 
         # add orthometric height to the dataframe
-        if (
-            "Height [m]" in block_df.collect_schema().names()
-            and "Undulation [m]" in block_df.collect_schema().names()
-        ):
+        if "Height [m]" in column_names and "Undulation [m]" in column_names:
             if self.logger:
                 self.logger.debug("\tadding orthometric height to the dataframe")
             block_df = block_df.with_columns(
@@ -759,13 +783,14 @@ class SBF:
                 )
                 .alias("orthoH")
             ).lazy()
+            added_cols["orthoH"] = pl.Float64
 
         # If an SBF block doesn't contain a column used in this func,
         # the collect() will throw an error.
         if getattr(block_df, "collect", None) is not None:
             block_df = block_df.collect()
 
-        return block_df
+        return block_df, added_cols, removed_cols
 
     def used_columns(self, sbf_block: str) -> list:
         """returns the column names and dtype we use when extracting a SBF block from the SBF file
@@ -807,6 +832,7 @@ class SBF:
             "Cov_latlat [m²]": "SD_lat [m]",
             "Cov_lonlon [m²]": "SD_lon [m]",
             "Cov_hgthgt [m²]": "SD_hgt [m]",
+            "Cov_bb [m²]": "SD_bb [m]",
         }
 
         return (

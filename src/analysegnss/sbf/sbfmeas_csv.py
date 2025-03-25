@@ -13,7 +13,7 @@ from analysegnss.config import DICT_GNSS, DICT_SIGNAL_TYPES, ERROR_CODES
 from analysegnss.sbf.sbf_class import SBF
 from analysegnss.utils import init_logger
 from analysegnss.utils.argument_parser import argument_parser_sbfmeas_csv
-from analysegnss.utils.utilities import str_red, str_green
+from analysegnss.utils.utilities import str_red, str_green, print_df_in_chunks
 
 
 def convert_meas3_csv(
@@ -275,8 +275,6 @@ def convert_meas3_csv(
     # Convert parsed_args.gnss string into a list of characters to match
     gnss_list = list(parsed_args.gnss)
 
-    print(f"df_meas['Meas3Ranges'].columns:\n{df_meas['Meas3Ranges'].columns}")
-    print(f"df_meas['Meas3Ranges'].head(3):\n{df_meas['Meas3Ranges'].head(3)}")
     # create the CSV dataframe
     df_csv = (
         df_meas["Meas3Ranges"]
@@ -285,13 +283,13 @@ def convert_meas3_csv(
             [
                 pl.col("SignalType")
                 .str.slice(0, 3)
-                .map_dict(gnss_mapping)
+                .replace(gnss_mapping)
                 .alias("GNSS"),
                 pl.col("SignalType").str.extract("_(.{2})").alias("cfreq"),
                 pl.col("SignalType")
                 .str.extract("_(.+)$")
                 .str.to_uppercase()
-                .map_dict(signal_mapping)
+                .replace(signal_mapping)
                 .alias("sigt"),
                 pl.col("PRN").str.slice(-2).cast(pl.UInt16).alias("PRN"),
                 (pl.col("TOW [s]") * 1000).cast(pl.UInt32).alias("TOW"),
@@ -335,22 +333,20 @@ def convert_meas3_csv(
         )
 
     if logger is not None:
-        logger.debug("Intermediate dataframe 'df_csv'")
-        logger.debug(df_csv)
+        # logger.debug("Intermediate dataframe 'df_csv'")
+        # logger.debug(df_csv)
 
         # these are checks on the correspondence of SignalType and the derived gnss, cfreq and sigt
         # Then get the unique mappings
-        logger.debug("Unique SignalTypes:")
-        logger.debug(df_csv.select("SignalType").unique())
+        # logger.debug(f"Unique SignalTypes:\n{df_csv.select('SignalType').unique()}")
 
-        logger.debug("\nUnique sigt values:")
-        logger.debug(df_csv.select("sigt").unique())
+        # logger.debug(f"Unique sigt values:\n{df_csv.select("sigt").unique()}")
 
-        logger.debug("Mapping between SignalType, frequency and sigt:")
         logger.debug(
-            df_csv.select(["SignalType", "GNSS", "cfreq", "sigt"])
+            f"Mapping between SignalType, frequency and sigt:\n"
+            f"{df_csv.select(['SignalType', 'GNSS', 'cfreq', 'sigt'])
             .unique()
-            .sort("SignalType")
+            .sort('SignalType')}"
         )
 
     # TODO: strange that we have to add the space after SignalType!!!!
@@ -384,7 +380,7 @@ def convert_meas_epoch2_csv(
     if "MeasEpoch2" not in df_meas.keys():
         raise ValueError("Key 'MeasEpoch2' not in dataframe dictionary")
 
-    print(df_meas)
+    # print(df_meas)
 
     # Create mapping dictionary from MeasType to code
     sigtype_mapping = {k: v["code"] for k, v in DICT_SIGNAL_TYPES.items()}
@@ -454,8 +450,7 @@ def convert_dataframe_csv(
     df_csv = df_csv.sort(["WKNR", "TOW"])
 
     if logger is not None:
-        logger.info("Intermediate dataframe 'df_csv'")
-        logger.info(df_csv)
+        logger.info(f"Intermediate dataframe 'df_csv'\n{df_csv}")
 
     if parsed_args.verbose is not None and parsed_args.verbose > 0:
         print("Intermediate dataframe 'df_csv':")
