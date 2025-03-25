@@ -28,14 +28,15 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> tuple:
     parsed_args: parsed_args.end_epoch
 
     returns:
-    rnx_odir (str): output directory for the RNX files
+    rnx_obs_ofp: full path to RINEX observation file
+    rnx_nav_ofp: full path to RINEX navigation file
     """
     
     # generating RNX files from sbf_ifn using sbf2rin.sh
 
     # Path to sbf2rin shell script
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    sbf2rin_path = os.path.join(current_dir, "../scripts/sbf/sbf2rin.sh")
+    sbf2rin_path = os.path.join(current_dir, "..", "scripts", "sbf", "sbf2rin.sh")
     logger.debug(f"Using sbf2rin.sh full path {sbf2rin_path}")
 
     # check if sbf_ifn exists
@@ -46,7 +47,7 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> tuple:
     # get basename of sbf_ifn without extension --> used for output directory otherwise it saved in the same directory as sbf2rin.sh script
     sbf_basename = os.path.basename(parsed_args.sbf_ifn).split(".")[0]
     # output directory of rinex files (this dir name will be unique for each SBF file) 
-    rnx_odir = os.path.join(os.path.dirname(parsed_args.sbf_ifn), sbf_basename + "_RNX")
+    rnx_odir = os.path.join(os.path.dirname(os.path.abspath(parsed_args.sbf_ifn)), sbf_basename + "_RNX")
 
     # Check if the directory already exists
     if not os.path.exists(rnx_odir):
@@ -55,6 +56,7 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> tuple:
             logger.info(f"Directory created: {rnx_odir}")
         except OSError as e:
             logger.info(f"Error creating directory {rnx_odir}: {e}")
+    """
     else:
         # checking if rinex files already exist
         existing_rnx_files = os.listdir(rnx_odir)
@@ -80,7 +82,7 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> tuple:
             logger.warning(
                 f"RNX dir {rnx_odir} already exists but no RINEX files found. Overwriting existing directory"
             )
-
+    """
 
     # define CLI arguments for sbf2rin.sh
     
@@ -119,12 +121,14 @@ def get_rnx_frm_sbf(parsed_args: argparse.Namespace, logger: Logger) -> tuple:
         
     except subprocess.CalledProcessError as e:
         logger.error(f"sbf2rin failed with error code {e}")
+        logger.error(f"Output: {e.stdout}")
         sys.exit(ERROR_CODES["E_PROCESS"])
 
-    logger.info(f"Created rinex files {rnx_obs_ofn} and {rnx_nav_ofn} in {rnx_odir}")
 
     rnx_obs_ofp = os.path.join(rnx_odir, rnx_obs_ofn) # full path to RINEX observation file
     rnx_nav_ofp = os.path.join(rnx_odir, rnx_nav_ofn) # full path to RINEX navigation file
+    
+    logger.debug(f"Created rinex files\n{rnx_obs_ofp}\n{rnx_nav_ofp}")
 
     return rnx_obs_ofp, rnx_nav_ofp
 

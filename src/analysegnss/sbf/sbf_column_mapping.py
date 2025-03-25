@@ -1,6 +1,20 @@
 import polars as pl
 import numpy as np
 
+# Define columns that need conversion from semi-circles to radians
+SEMICIRCLE_COLUMNS = {
+    "GPS": [
+        "IDOT [semi-circle/s]",  # [semi-circles/s] -> [rad/s]
+        "DEL_N [semi-circle/s]",  # [semi-circles/s] -> [rad/s]
+        "M_0 [semi-circle]",  # [semi-circles] -> [rad]
+        "OMEGA_0 [semi-circle]",  # [semi-circles] -> [rad]
+        "i_0 [semi-circle]",  # [semi-circles] -> [rad]
+        "omega [semi-circle]",  # [semi-circles] -> [rad]
+        "OMEGADOT [semi-circle/s]",  # [semi-circles/s] -> [rad/s]
+    ],
+    "GAL": [],
+    "BDS": [],
+}
 from analysegnss.sbf.sbf_blocks_polars import SBF_BLOCK_COLUMNS_BIN2ASC
 
 
@@ -95,6 +109,13 @@ def convert_and_rename_semicircles(df: pl.DataFrame, gnss_type: str) -> pl.DataF
 
 GNSS_NAV_COLUMN_MAPPINGS = {
     "GPS": {
+        "PRN": "prn",
+        "WNc [w]": "WNc",
+        "WN [w]": "WN",
+        "URA": "SVacc",
+        "CAorPonL2": "CodesL2",
+        "IDOT [semi-circle/s]": "IDOT",
+        "IODE2": "IODE",
         "TOW [0.001 s]": "TOW",
         "WNc [w]": "WNc",
         "WN [w]": "WN",
@@ -104,6 +125,7 @@ GNSS_NAV_COLUMN_MAPPINGS = {
         "a_f2 [s/s²]": "af2",
         "a_f1 [s/s]": "af1",
         "a_f0 [s]": "af0",
+        "IODC": "IODC",
         "C_rs [m]": "Crs",
         "DEL_N [semi-circle/s]": "deltaN",
         "M_0 [semi-circle]": "M0",
@@ -120,6 +142,18 @@ GNSS_NAV_COLUMN_MAPPINGS = {
         "omega [semi-circle]": "omega",
         "OMEGADOT [semi-circle/s]": "omegaDot",
         "T_gd [s]": "TGD",
+        "health": "health",
+        "L2DataFlag": "L2Pflag",
+        "FitIntFlg": "Fit",
+    },
+    "GAL": {
+        "PRN": "prn",
+        "WN ": "WN",
+        "SISA": "SVacc",  # Galileo uses SISA instead of URA
+        # ... Galileo specific mappings
+    },
+    "BDS": {
+        "PRN": "prn",
         "WNt_oc [w]": "WNt_oc",
         "WNt_oe [w]": "WNt_oe",
     },
@@ -153,6 +187,9 @@ GNSS_NAV_COLUMN_MAPPINGS = {
         "WNt_oe [w]": "WNt_oe",
     },
     "BDS": {
+        "WN ": "WN",
+        "URA": "SVacc",
+        # ... BeiDou specific mappings
         "TOW [0.001 s]": "TOW",
         "WNc [w]": "WNc",
         "WN [w]": "WN",

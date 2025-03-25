@@ -8,11 +8,13 @@ from logging import Logger
 from math import atan2, degrees, fabs, sqrt
 
 import polars as pl
+from rich import print as rprint
 from tabulate import tabulate
 
 from analysegnss.config import ERROR_CODES
 from analysegnss.gnss.gnss_dt import gnss2dt
 import analysegnss.rtkpos.ppk_rnx2rtkp as ppk_rnx2rtkp
+import analysegnss.rtkpos.rtklib_constants as rtklibc
 import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
 from analysegnss.utils import init_logger
 from analysegnss.utils.utilities import str_red, str_yellow
@@ -75,58 +77,63 @@ def get_rtk_dataframe(parsed_args: argparse.Namespace, logger: Logger) -> pl.Dat
     return df_pos
 
 
-def read_ebh_line_timings(timings_fn: str, logger: Logger) -> dict:
-    """read the ebh lines timings from the file
+def read_ebh_line_timings(timings_fn: str | None, timings: dict | None, logger: Logger) -> dict:
+    """read the ebh lines timings from the file or dict
 
     Args:
         timings_fn (str): text file with timings of ebh lines
-
+        timings (dict): dict with ebh keys and timestamps (week number and tow) as tuples
     Returns:
         dict: contains the ebh lines and begin- end-timings
     """
-    # check if the timings file is readable
-    if not os.path.isfile(timings_fn) or not os.access(timings_fn, os.R_OK):
-        # print(f"File {timings_fn} is not readable")
-        logger.error(f"File {timings_fn} is not readable")
-        sys.exit(ERROR_CODES["E_FILE_NOT_EXIST"])
+    if timings_fn is not None:
+        # check if the timings file is readable
+        if not os.path.isfile(timings_fn) or not os.access(timings_fn, os.R_OK):
+            logger.error(f"File {timings_fn} is not readable")
+            sys.exit(ERROR_CODES["E_FILE_NOT_EXIST"])
 
-    # Regular expression pattern to match both integers and float values
-    pattern = r"\d+\.\d+|\d+"
+        logger.debug(f"Reading ebh timings from file {timings_fn}")
 
-    # read the timings file
-    line_timings = dict()
-    with open(timings_fn, "r") as f:
-        while line := f.readline():
-            key = line.split(":")[0]
-            vals = line.split(":")[1:]
+        # Regular expression pattern to match both integers and float values
+        pattern = r"\d+\.\d+|\d+"
 
-            # Find all matches of the pattern in the input string
-            matches = re.findall(pattern, vals[0])
+        # read the timings file
+        line_timings = dict()
+        with open(timings_fn, "r") as f:
+            while line := f.readline():
+                key = line.split(":")[0]
+                vals = line.split(":")[1:]
 
-            # Convert the extracted strings to their appropriate types (int or float)
-            values = [float(value) if "." in value else int(value) for value in matches]
-            # print(f"values = {values}")
+                # Find all matches of the pattern in the input string
+                matches = re.findall(pattern, vals[0])
 
+                # Convert the extracted strings to their appropriate types (int or float)
+                values = [float(value) if "." in value else int(value) for value in matches]
+                # print(f"values = {values}")
+
+                line_timings[key] = [
+                    gnss2dt(week=values[0], tow=values[1]),
+                    gnss2dt(week=values[2], tow=values[3]),
+                ]
+
+    elif timings is not None:
+        logger.debug(f"ebh_timings from dict = {timings}")
+        line_timings = {}
+        for key, value in timings.items():
             line_timings[key] = [
-                gnss2dt(week=values[0], tow=values[1]),
-                gnss2dt(week=values[2], tow=values[3]),
+                gnss2dt(week=value[0][0], tow=value[0][1]),
+                gnss2dt(week=value[1][0], tow=value[1][1]),
             ]
+    
+    else:
+        logger.error("No ebh timings provided. EXITING.")
+        sys.exit(ERROR_CODES["E_NO_EBH_TIMINGS"])
 
-            # line_timings[key] = tuple(
-            #     [sod_to_time(float(value)) for value in vals[0].strip().split(",")]
-            # )
-
-    # for line, timings in line_timings.items():
-    #     print(
-    #         f"{line} = {timings[0].strftime('%Y/%m/%d %H:%M:%S')} - {timings[1].strftime('%Y/%m/%d %H:%M:%S')}"
-    #     )
 
     # check if the timings file is empty
     if not line_timings:
-        print(
-            str_red(
-                f"ERROR: File {timings_fn} is empty. Probably no timings key found in SBF comments or sbf comment are modified. Exiting"
-            )
+        rprint(
+                f"[red]ERROR: File {timings_fn} is empty. Probably no timings key found in SBF comments or sbf comment are modified. Exiting[/red]"
         )
         logger.critical(f"File {timings_fn} is empty. Exiting")
         sys.exit(ERROR_CODES["E_FILE_EMPTY"])
@@ -170,21 +177,20 @@ def ebh_lines_map_angle(
                 logger.debug(f"row_start = {row_start}")
                 logger.debug(f"row_end = {row_end}")
 
-        # calculate the map_angle
-        map_angle = atan2(
-            row_end["UTM.E"].to_numpy()[0] - row_start["UTM.E"].to_numpy()[0],
-            row_end["UTM.N"].to_numpy()[0] - row_start["UTM.N"].to_numpy()[0],
-        )
-        # print(f"map_angle = {map_angle} | {degrees(map_angle)}")
+            # calculate the map_angle
+            map_angle = atan2(
+                row_end["UTM.E"].to_numpy()[0] - row_start["UTM.E"].to_numpy()[0],
+                row_end["UTM.N"].to_numpy()[0] - row_start["UTM.N"].to_numpy()[0],
+            )
+            # print(f"map_angle = {map_angle} | {degrees(map_angle)}")
 
-        # add the map_angle to the ebh_timings dictionary
-        ebh_timings[ebh_key].append(degrees(map_angle))
+            # add the map_angle to the ebh_timings dictionary
+            ebh_timings[ebh_key].append(degrees(map_angle))
 
 
 def ebh_lines_extract(
     df_pos: pl.DataFrame,
     ebh_timings: dict,
-    parsed_args: argparse.Namespace,
     logger: Logger = None,
 ):
     """extract the EBH lines from the dataframe and order them according to the same map_angle
@@ -192,7 +198,6 @@ def ebh_lines_extract(
     Args:
         df_pos (pl.DataFrame): dataframe of whole measurement campaign
         ebh_timings (dict): timings and map_angle of each EBH line
-        parsed_args (argparse.Namespace): CLI arguments
         logger (Logger): logger object
     """
 
@@ -266,14 +271,14 @@ def ebh_line_thin_out(
         .alias("dist0")
     ).lazy()
 
-    # keep only the rows where the quality is 1 (FIX)
+    # keep only the rows where the quality is FIX and FLOAT (EBH_process warns user if assur results contain floats)
     if hasattr(parsed_args, "pos_ifn") and parsed_args.pos_ifn:
-        df_line = df_line.filter(pl.col("Q") == 1).lazy()
+        df_line = df_line.filter(pl.col("Q").is_in([1,2])).lazy()
     elif hasattr(parsed_args, "sbf_ifn") and parsed_args.sbf_ifn:
-        df_line = df_line.filter(pl.col("Type") == 4).lazy()
+        df_line = df_line.filter(pl.col("Type").is_in([4,5])).lazy()
     else:
         if logger is not None:
-            logger.error("No processing type 'Q' or 'Type' found. Exiting...")
+            logger.error("No GNSS qual type 'Q' or 'Type' relating to fix or float found. Exiting...")
         sys.exit(ERROR_CODES["E_NO_QUAL"])
 
     #  Thinning out the dataframe to keep positions every 0.5 meters
@@ -290,9 +295,7 @@ def ebh_line_thin_out(
     if logger is not None:
         pl.Config.set_tbl_rows(20)
         logger.debug(f"df_line = \n{df_line.collect()}")
-        # thin out the df_line to keep positions every 0.5 meters
         logger.debug(f"df_assur = \n{df_assur.collect()}")
-        # logger.debug(f"df_assur.head(30) = \n{df_assur.head(30)}")
 
     return df_assur.collect()
 
@@ -301,7 +304,12 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
     """get the ebh_lines from RTK or PPK processing and write to csv files
 
     Args:
-        parsed_args: parsed CLI arguments executed by argparse
+        parsed_args (argparse.Namespace): parsed CLI arguments.
+                                        - pos_ifn: path to the pos_ifn file
+                                        - sbf_ifn: path to the sbf_ifn file
+                                        - timing_ifn: path to the timing_ifn file
+                                        - (optional) ebh_timings: dictionary with ebh line keys and timestamps (week number and t of week)
+        logger (Logger): logger object
 
     return:
     qual_ebh_lines (dict):  dictionary containing the quality of the ebh lines
@@ -351,11 +359,25 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
 
     logger.debug(df_pos)
 
+    
     # read the timings for the ebh_lines
-    ebh_timings = read_ebh_line_timings(
-        timings_fn=parsed_args.timing_ifn, logger=logger
-    )
+    if hasattr(parsed_args, "timing_ifn") and parsed_args.timing_ifn:
+        ebh_timings = read_ebh_line_timings(
+            timings_fn=parsed_args.timing_ifn, timings=None, logger=logger
+        )
+        logger.debug(f"ebh_timings extracted from {parsed_args.timing_ifn}")
+        logger.debug(f"ebh_timings = {ebh_timings}")
+    elif hasattr(parsed_args, "ebh_timings") and parsed_args.ebh_timings:   
+        ebh_timings = read_ebh_line_timings(
+            timings_fn=None, timings=parsed_args.ebh_timings, logger=logger
+        )
+        logger.debug(f"ebh_timings extracted from parsed_args.ebh_timings")
+        logger.debug(f"ebh_timings = {ebh_timings}")
+    else:
+        logger.error("No ebh timings provided. EXITING.")
+        sys.exit(ERROR_CODES["E_NO_EBH_TIMINGS"])
 
+    
     # calculate the map_angle for each ebh_line
     ebh_lines_map_angle(df_pos=df_pos, ebh_timings=ebh_timings, logger=logger)
 
@@ -370,7 +392,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
 
     # extract the lines from the dataframe
     ebh_assur_lines = ebh_lines_extract(
-        df_pos=df_pos, ebh_timings=ebh_timings, parsed_args=parsed_args, logger=logger
+        df_pos=df_pos, ebh_timings=ebh_timings, logger=logger
     )
 
     qual_ebh_lines = {}  # dict to store the quality of the ebh lines
@@ -382,24 +404,22 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
         # Checking quality of each ebh line for ppk and rtk result.
         # This info is needed to decide whether rtk or ppk quality is sufficient for ASSUR
         if hasattr(parsed_args, "pos_ifn") and parsed_args.pos_ifn:
-            qual_ebh_lines[ebh_key] = rtk_pvtgeod.quality_analysis(
+            qual_ebh_lines[ebh_key] = ppk_rnx2rtkp.quality_analysis(
                 ebh_assur_line, logger=logger
             )
             logger.info(
                 f"The ppk quality of the line {ebh_key} is {qual_ebh_lines[ebh_key]}"
             )
-
-            # put here function (ebhrtk_to_csv) to save dataframes to csv files that can be used for plotting
-
+            #TODO put here function (ebhrtk_to_csv) to save dataframes to csv files that can be used for plotting
         else:
             qual_ebh_lines[ebh_key] = rtk_pvtgeod.quality_analysis(
                 ebh_assur_line, logger=logger
             )
-            logger.info(
+            logger.warning(
                 f"The rtk quality of the line {ebh_key} is {qual_ebh_lines[ebh_key]}"
             )
 
-            # put here function (ebhppk_to_csv) to save dataframes to csv files that can be used for plotting
+            #TODO put here function (ebhppk_to_csv) to save dataframes to csv files that can be used for plotting
 
         # thin out the df_line to keep positions every 0.5 meters and keep only RTK/PPK fixed results
         ebh_assur_line = ebh_line_thin_out(
@@ -407,9 +427,9 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
         )
         # name the file according to the ebh line key
         ebh_line_fn = f"{parsed_args.desc}_{ebh_key}.csv"
-        print(
-            f"Writing CSV AssurTool file for {str_yellow(ebh_key)} to "
-            f"{str_yellow(ebh_line_fn)}"
+        rprint(
+            f"\nWriting CSV AssurTool file for [yellow]{ebh_key}[/yellow] to "
+            f"[yellow]{ebh_line_fn}[/yellow]"
         )
         logger.debug(
             f"Writing CSV AssurTool file for {str_yellow(ebh_key)} to "
@@ -478,8 +498,12 @@ def ebh_to_assurfmt(
         ebh_assur_fp, separator=";", include_header=False, float_precision=3
     )
 
-    logger.info(f"Done writing ebh assur file to {ebh_assur_fp}")
-    print(f"Done writing ebh assur file to {ebh_assur_fp}")
+    # check if the file was written
+    if not os.path.isfile(ebh_assur_fp) or not os.access(ebh_assur_fp, os.R_OK):
+        logger.error(f"Error writing ebh assur file to {ebh_assur_fp}")
+    else:
+        logger.info(f"Done writing ebh assur file to {ebh_assur_fp}")
+        rprint(f"Done writing ebh assur file to [yellow]{ebh_assur_fp}[/yellow]\n")
 
 
 def ebhrtk_to_csv(

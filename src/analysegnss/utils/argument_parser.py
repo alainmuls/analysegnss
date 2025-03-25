@@ -1,13 +1,82 @@
 # Standard library imports
 import argparse
-import os
+from typing import Callable
 
 # Third party imports
 import argcomplete
-from rich import print
+from rich import print as rprint
 
 # Local application imports
 from analysegnss.utils.utilities import str_yellow
+
+
+def cs_str_to_list(value):
+    """Convert comma-separated string to list of strings.
+
+    Args:
+        value (str): Comma-separated string
+
+    Returns:
+        list: List of stripped strings
+    """
+    return [s.strip() for s in value.split(",")]
+
+
+def auto_populate_args_namespace(
+    parsed_args: argparse.Namespace, native_parser_func: callable, script_name: str
+) -> argparse.Namespace:
+    """
+    Automatically populates the argument namespace with default values from the
+    native argument_parser_ function. This is useful for scripts that are launched
+    by other scripts and need to pass on the arguments used by the
+    native argument_parser_ function.
+    This removes the need of checking each argument separately (by using hasattr())
+    if it is present and set to a default value.
+
+    Args:
+        parsed_args (argparse.Namespace): The parsed arguments
+        native_parser_func (callable): The native argument_parser_ function
+        script_name (str): The name of the script
+    Returns:
+        argparse.Namespace: The parsed arguments with all required arguments populated
+    """
+    # ----------------------------------------------------------------------------------#
+    # to fetch the default values of the native parser function,
+    # we need to call the native parser function to fill a dictionary with the default
+    # values of the arguments. However if an argument is required, the parser will exit
+    # with an error. Therefore we need to make all arguments temporarily optional
+    # The only 'clean' way of doing this is to temporarily patch the ArgumentParser class
+    # ----------------------------------------------------------------------------------#
+
+    # Store original add_argument method
+    original_argparse_add_argument = argparse.ArgumentParser.add_argument
+
+    # Create a wrapper that makes all arguments optional
+    def add_argument_optional(*args, **kwargs):
+        if "required" in kwargs:
+            kwargs["required"] = False
+        return original_argparse_add_argument(*args, **kwargs)
+
+    # Patch ArgumentParser temporarily
+    argparse.ArgumentParser.add_argument = add_argument_optional
+
+    try:
+        # Get defaults by calling the native parser function with empty args
+        native_default_args = vars(native_parser_func(script_name=script_name, args=[]))
+    finally:
+        # Restore original method
+        argparse.ArgumentParser.add_argument = original_argparse_add_argument
+    # ----------------------------------------------------------------------------------#
+
+    # Create complete args starting with defaults of the native parser function
+    complete_args = native_default_args.copy()
+
+    # Update with all values from passed on parsed_args
+    parsed_dict = vars(parsed_args)
+    complete_args.update(parsed_dict)
+
+    # Convert back to Namespace
+    return argparse.Namespace(**complete_args)
 
 
 def argument_parser_rtk(script_name: str, args: list) -> argparse.Namespace:
@@ -129,7 +198,6 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
         + """: Plot UTM scatter and line plots from data files.
 
         Note: The plotting options --sbf_fn, --pos_fn, and --glab_fn, --nmea_ifn, --csv_ifn are mutually exclusive.
-        Note: The plotting options --sbf_fn, --pos_fn, and --glab_fn, --nmea_ifn, --csv_ifn are mutually exclusive.
         You must choose exactly one of these options."""
     )
 
@@ -145,40 +213,83 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
     )
 
     # Create a mutually exclusive group
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.description = "Specify origin (POS, SBF or gLABng) (required)"
-    # parser.add_argument(
-    #     "--mutually-exclusive",
-    #     action="store_true",
-    #     help="One of the following options is required:",
-    # )
+    source_group = parser.add_mutually_exclusive_group(required=True)
+    source_group.description = (
+        "Specify coordinates source (POS, SBF, NMEA, CSV, gLABng) (required)"
+    )
 
-    group.add_argument(
+    source_group.add_argument(
         "--sbf_ifn",
         help="input SBF filename",
         type=str,
     )
-    group.add_argument(
+    source_group.add_argument(
         "--pos_ifn",
         help="input rnx2rtkp pos filename",
         type=str,
     )
-    group.add_argument(
+    source_group.add_argument(
         "--glab_ifn",
         help="input gLABng filename",
         type=str,
     )
-    group.add_argument(
+    source_group.add_argument(
         "--nmea_ifn",
         help="input NMEA filename (-sd standard deviation not yet supported!)",
         type=str,
     )
-    group.add_argument(
+    source_group.add_argument(
         "--csv_ifn",
-        help="input CSV filename (only csv sourced from nmea DF supported!)",
+        help="input CSV filename with PNT data.\
+            It is recommended to use pnt_data_collector.py to produce the compatible CSV files.\
+            (see additional CSV options if this is not the case)",
         type=str,
-    ),
-    
+    )
+
+    # Creating a group for PNT_CSV-specific arguments
+    csv_group = parser.add_argument_group(
+        "PNT_CSV file options", "Options specific to PNT_CSV input files"
+    )
+    csv_group.add_argument(
+        "--columns_csv",
+        help="Comma-separated list of columns to be read from CSV files.\
+            Enter columns in CLI as a list of strings. e.g. --columns_csv 'UTM.E, UTM.N, orthoH, DT, pnt_qual, num_sats'.\
+            The minimum required columns are: [UTM.E, UTM.N, orthoH, DT, pnt_qual, num_sats]\
+            [sde(m), sdn(m), sdu(m)] are optional.\
+            Important: the no_header and skip_rows_after_header args (if applicable) must be configured accordingly",
+        type=cs_str_to_list,
+        required=False,
+        default="UTM.E, UTM.N, orthoH, DT, pnt_qual, num_sats",
+    )
+    csv_group.add_argument(
+        "--sep",
+        help="separator for CSV files (default: ',')",
+        type=str,
+        required=False,
+        default=",",
+    )
+    csv_group.add_argument(
+        "--comment_prefix",
+        help="comment prefix for CSV files (default: #)",
+        type=str,
+        required=False,
+        default="#",
+    )
+    csv_group.add_argument(
+        "--no_header",
+        help="Disables processing of header for CSV files (default: False)",
+        action="store_true",
+        required=False,
+        default=False,
+    )
+    csv_group.add_argument(
+        "--skip_rows_after_header",
+        help="skip rows after header for CSV files (default: 0)",
+        type=int,
+        required=False,
+        default=0,
+    )
+
     parser.add_argument(
         "--sd",
         help="add standard deviation to the plot",
@@ -219,6 +330,189 @@ def argument_parser_plot_coords(script_name: str, args: list) -> argparse.Namesp
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
+
+    return args
+
+
+def argument_parser_pnt_data_collector(
+    script_name: str, args: list
+) -> argparse.Namespace:
+    """parses the arguments
+
+    Args:
+        argv (list): list of arguments
+
+    Returns:
+        argparse.Namespace: parsed arguments
+    """
+    baseName = str_yellow(script_name)
+
+    help_txt = (
+        baseName
+        + " The PNT data collector is used to collect PNT data from multiple sources\
+                            and construct standardised dataframes. If multiple sources are provided, \
+                            these can be merged. All dataframes can be written to a csv file.\
+                            The constructed dataframes can be further processed by plot_coords.py\
+                            or other gnss analysis tools."
+    )
+
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_txt)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+    )
+    parser.add_argument(
+        "--log_dest",
+        help="Specify log destination directory (full path). (Default is /tmp/logs/)",
+        type=str,
+        required=False,
+        default="/tmp/logs/",
+    )
+    ############################################
+
+    # input pnt sources have the nargs option which allows for multiple files to be passed as arguments
+    parser.add_argument(
+        "--sbf_ifn",
+        help="input SBF filename.\
+            To add multiple SBF files, only separate the filenames with a space. e.g. --sbf_ifn sbf1.sbf sbf2.sbf",
+        nargs="+",
+        type=str,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--pos_ifn",
+        help="input rnx2rtkp pos filename.\
+            To add multiple pos files, only separate the filenames with a space.",
+        nargs="+",
+        type=str,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--glab_ifn",
+        help="input gLABng filename.\
+            To add multiple gLABng files, only separate the filenames with a space.",
+        nargs="+",
+        type=str,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--nmea_ifn",
+        help="input NMEA filename (-sd standard deviation not yet supported!).\
+            To add multiple nmea files, only separate the filenames with a space.",
+        nargs="+",
+        type=str,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--csv_ifn",
+        help="input CSV filename with PNT data (see additional CSV options to correctly read out the file).\
+            To add multiple csv files, only separate the filenames with a space.",
+        nargs="+",
+        type=str,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--sd",
+        help="add standard deviations to the dataframe. (only enable if all input sources contain standard deviations)",
+        action="store_true",
+        required=False,
+        default=False,
+    )
+    parser.add_argument(
+        "--merge",
+        help="merge the input PNT sources into a single dataframe",
+        action="store_true",
+        required=False,
+        default=False,
+    )
+    parser.add_argument(
+        "--csv_out",
+        help="Enables output of CSV files containing the standardised dataframe collected from PNT sources.\
+            If multiple sources are provided and the merge option is disabled, the output filename will be \
+                the same as the input filename exended with pnt_standard.csv added.",
+        action="store_true",
+        required=False,
+        default=False,
+    )
+    parser.add_argument(
+        "--merge_dest",
+        help="Directory if where merged pnt csv file is written. Required when both --csv_out and --merge are enabled.",
+        type=str,
+        required=False,
+        default=None,
+    )
+
+    # Creating a group for PNT_CSV-specific arguments
+    csv_group = parser.add_argument_group(
+        "CSV input file options", "Options specific to CSV input files"
+    )
+    csv_group.add_argument(
+        "--columns_csv",
+        help="Comma-separated list of columns to be read from CSV files.\
+            Enter columns in CLI as a list of strings. e.g. --columns_csv 'UTM.E, UTM.N, orthoH, DT, pnt_qual, num_sats'.\
+            The minimum required columns are: [UTM.E, UTM.N, orthoH]\
+            The pnt_data_collector.py script can process the following columns:\
+                [UTM.E, UTM.N, orthoH, DT, pnt_qual, num_sats, sde(m), sdn(m), sdu(m)]\
+            Important: the no_header and skip_rows_after_header args (if applicable) must be configured accordingly",
+        type=cs_str_to_list,
+        required=False,
+        default="UTM.E, UTM.N, orthoH",
+    )
+    csv_group.add_argument(
+        "--sep",
+        help="separator for CSV files (default: ',')",
+        type=str,
+        required=False,
+        default=",",
+    )
+    csv_group.add_argument(
+        "--comment_prefix",
+        help="comment prefix for CSV files (default: #)",
+        type=str,
+        required=False,
+        default="#",
+    )
+    csv_group.add_argument(
+        "--no_header",
+        help="Disables processing of header for CSV files (default: False)",
+        action="store_true",
+        required=False,
+        default=False,
+    )
+    csv_group.add_argument(
+        "--skip_rows_after_header",
+        help="skip rows after header for CSV files (default: 0)",
+        type=int,
+        required=False,
+        default=0,
+    )
+    csv_group.add_argument(
+        "--datetime_start",
+        help="start datetime for CSV files if no DT column is present (default: 1980-01-06 00:00:00)",
+        type=str,
+        required=False,
+        default="1980-01-06 00:00:00",
+    )
+
+    # allow argument completion
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args(args)
+
+    # Validate that merge_dest is provided when both csv_out and merge are enabled
+    if args.csv_out and args.merge and args.merge_dest is None:
+        parser.error(
+            "--merge_dest is required when both --csv_out and --merge are enabled"
+        )
 
     return args
 
@@ -605,11 +899,23 @@ def argument_parser_get_ebh_timings(script_name: str, args: list) -> argparse.Na
         required=False,
     )
     parser.add_argument(
-        "-i",
-        "--sbf_ifn",
-        help="input sbf filename with sbf comments holding timestamp info",
+        "-txt",
+        "--ebh_timings_ifn",
+        help="input Comments file name (ASCII format) holding the EBH line timestamps. The Comments format is as follows: \
+            YYYYMMDD_HH-MM-SS_lineID_CLdeviation \
+            YYYYMMDD_HH-MM-SS = timestamp \
+            lineID + CLdeviation = key \
+            This file is formatted for ebh_lines.py \
+            If not provided, the ebh line timestamps are retrieved from the sbf file.",
         type=str,
-        required=True,
+        default=None,
+    )
+    parser.add_argument(
+        "-sbf",
+        "--sbf_ifn",
+        help="input sbf filename with sbf comments block holding EBH timestamps",
+        type=str,
+        default=None,
     )
     parser.add_argument(
         "-o",
@@ -618,10 +924,11 @@ def argument_parser_get_ebh_timings(script_name: str, args: list) -> argparse.Na
             is required by ebh_lines.py (default: {sbf_ifn}_ebh_timings.txt)",
         type=str,
         required=False,
+        default=None,
     )
     parser.add_argument(
         "--archive",
-        help="Specify archive's directory name. (full or relative (@sbf_ifn) path) \
+        help="Archives extracted sbf blocks to specified archive's directory name. (full or relative (@sbf_ifn) path) \
             Default is no archiving.",
         required=False,
         default=None,
@@ -637,6 +944,10 @@ def argument_parser_get_ebh_timings(script_name: str, args: list) -> argparse.Na
     # allow argument completion
     argcomplete.autocomplete(parser)
     args = parser.parse_args(args)
+
+    # Check that at least one an ascii or sbf file is specified that contains the timestamp info
+    if args.sbf_ifn is None and args.ascii_ifn is None:
+        parser.error("At least one of --sbf_ifn or --ascii_ifn must be specified")
 
     return args
 
@@ -674,6 +985,15 @@ def argument_parser_get_base_coord(script_name: str, args: list) -> argparse.Nam
         help="Date time instance of the base station coordinates in YYYY-MM-DD_HH:MM:SS(.s)",
         type=str,
         required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--archive",
+        help="Archives extracted sbf blocks to specified archive's directory name. (full or relative (@sbf_ifn) path) \
+            Default is no archiving.",
+        required=False,
+        default=None,
+        type=str,
     )
     parser.add_argument(
         "--log_dest",
@@ -688,7 +1008,9 @@ def argument_parser_get_base_coord(script_name: str, args: list) -> argparse.Nam
     return args
 
 
-def argument_parser_ebh_process_launcher(script_name: str, args: list) -> argparse.Namespace:
+def argument_parser_ebh_process_launcher(
+    script_name: str, args: list
+) -> argparse.Namespace:
     """Launches the appropriate functions to calculate the ebh_lines from the sbf_ifn file
     from which it retrievers the correct timings,
     decides whether the RTK or PPK solution has a sufficient quality,
@@ -784,7 +1106,9 @@ def argument_parser_ebh_process_launcher(script_name: str, args: list) -> argpar
     return args
 
 
-def argument_parser_rnx2rtkp_launcher(script_name: str, args: list) -> argparse.Namespace:
+def argument_parser_rnx2rtkp_launcher(
+    script_name: str, args: list
+) -> argparse.Namespace:
     """
     Parses the arguments and creates console/file logger for launch_ppk_rnx2rtkp.py
     """
@@ -1087,10 +1411,7 @@ def argument_parser_sbfmeas_csv(script_name: str, args: list) -> argparse.Namesp
     """
     baseName = str_yellow(script_name)
 
-    help_txt = (
-        baseName
-        + " Convert SBF measurement blocks to CSV file"
-    )
+    help_txt = baseName + " Convert SBF measurement blocks to CSV file"
 
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=help_txt)
@@ -1142,7 +1463,8 @@ def argument_parser_sbfmeas_csv(script_name: str, args: list) -> argparse.Namesp
 
     return args
 
-def argument_parser_nmeaReader(args: list, script_name: str) -> argparse.Namespace:
+
+def argument_parser_nmea_reader(args: list, script_name: str) -> argparse.Namespace:
     """
     Read a file with NMEA data and return a dataframe with extracted NMEA data
     and optionally write the dataframe to a csv file
@@ -1185,74 +1507,18 @@ def argument_parser_nmeaReader(args: list, script_name: str) -> argparse.Namespa
         help="Input file name that contains NMEA messages.",
         type=str,
         required=True,
-    )
-    parser.add_argument(
-        "-o",
-        "--csv_out",
-        help="Creates csv output file that contains NMEA messages in csv format. name: ifn + _df.csv",
-        required=False,
-        action="store_true",
-    )
-
-    args = parser.parse_args(args)
-
-    return args
-
-def argument_parser_nmeaReader(args: list, script_name: str) -> argparse.Namespace:
-    """
-    Read a file with NMEA data and return a dataframe with extracted NMEA data
-    and optionally write the dataframe to a csv file
-    """
-
-    baseName = str_yellow(script_name)
-
-    help_text = (
-        baseName
-        + """
-        Parses NMEA strings from a file and saves the output to a dataframe (and optionally to a csv file).
-        The output contains:
-            - all data contained in the NMEA messages/fields
-            - a dataframe containing the extracted NMEA data per column
-            - added UTM coordinates
-    """
-    )
-
-    parser = argparse.ArgumentParser(description=help_text)
-    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="count",
         default=None,
-        help="verbose level... repeat up to three times.",
-        required=False,
-    )
-    parser.add_argument(
-        "--log_dest",
-        help="Specify log destination directory (full path). (Default is /tmp/logs/)",
-        type=str,
-        required=False,
-        default="/tmp/logs/",
-    )
-    ############################################
-    parser.add_argument(
-        "-ifn",
-        "--nmea_ifn",
-        help="Input file name that contains NMEA messages.",
-        type=str,
-        required=True,
     )
     parser.add_argument(
         "-o",
         "--csv_out",
-        help="Creates csv output file that contains NMEA messages in csv format. name: ifn + _df.csv",
+        help="Creates csv output file that contains NMEA messages in csv format. name: ifn + _nmea.csv",
         required=False,
         action="store_true",
     )
     args = parser.parse_args(args)
 
     return args
-
 
 
 def argument_parser_sbfnav_csv(script_name: str, args: list) -> argparse.Namespace:
@@ -1266,10 +1532,7 @@ def argument_parser_sbfnav_csv(script_name: str, args: list) -> argparse.Namespa
     """
     baseName = str_yellow(script_name)
 
-    help_txt = (
-        baseName
-        + " Convert SBF navigation blocks to CSV file"
-    )
+    help_txt = baseName + " Convert SBF navigation blocks to CSV file"
 
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=help_txt)

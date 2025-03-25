@@ -16,12 +16,16 @@ from rich import print as rprint
 
 from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.gnss.gnss_dt import gpsms2dt
+from analysegnss.gnss.standard_pnt_quality_dict import (
+    sbf_to_standard_pntqual,
+    get_pntquality_info,
+)
 from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.sbf.sbf_blocks_polars import (
     SBF_BLOCK_COLUMNS_BIN2ASC,
     SBF_BLOCK_COLUMNS_SBF2ASC,
 )
-from analysegnss.utils.utilities import locate, str_red, str_yellow, print_df_in_chunks
+from analysegnss.utils.utilities import locate, str_red, str_yellow
 
 
 @dataclass
@@ -255,7 +259,7 @@ class SBF:
 
         # # add logging level to cmd_bin2asc when self._console_loglevel is DEBUG
         # if self._console_loglevel == logging.DEBUG:
-        #     cmd_bin2asc.append("-v")
+        #   cmd_bin2asc.append("-v")
 
         for sbf_block in lst_sbfblocks:
             cmd_bin2asc.append("-m")
@@ -263,13 +267,17 @@ class SBF:
             if sbf_block == "Meas3Ranges":
                 cmd_bin2asc.append("--extractGenMeas")
 
+        # add logging level to cmd_sbf2asc when self._console_loglevel is DEBUG
+        if self._console_loglevel == logging.DEBUG:
+            self.logger.debug("Adding verbose flag to cmd_sbf2asc")
+            cmd_bin2asc.append("-v")
+
         # Convert binary to text messages
         if self.logger:
             self.logger.debug(f"... running: {str_yellow(' '.join(cmd_bin2asc))}")
 
         with rich_console.status(
-            f"Converting SBF blocks [bold green]({lst_sbfblocks})[/bold green] to CSV files running:\n"
-            f"\t{' '.join(cmd_bin2asc)}\n",
+            f"Converting SBF [bold green]({lst_sbfblocks})[/bold green] to CSV files...",
             spinner="aesthetic",
         ):
             try:
@@ -287,13 +295,28 @@ class SBF:
         bin2asc_fns = {}
         for sbf_block in lst_sbfblocks:
             if sbf_block != "Meas3Ranges":
-                bin2asc_fns[sbf_block] = glob.glob(
-                    rf"{self.sbf_fn}_SBF_{sbf_block}.txt"
-                )[0]
+                try:
+                    bin2asc_fns[sbf_block] = glob.glob(
+                        rf"{self.sbf_fn}_SBF_{sbf_block}.txt"
+                    )[0]
+                except Exception as e:
+                    if self.logger:
+                        self.logger.error(
+                            f"Error finding created file for {sbf_block} sbf block: {e}"
+                        )
             else:
-                bin2asc_fns[sbf_block] = glob.glob(rf"{self.sbf_fn}_measurements.txt")[
-                    0
-                ]
+                try:
+                    bin2asc_fns[sbf_block] = glob.glob(
+                        rf"{self.sbf_fn}_measurements.txt"
+                    )[0]
+                except Exception as e:
+                    if self.logger:
+                        self.logger.error(
+                            f"Error finding created file for {sbf_block} sbf block: {e}"
+                        )
+
+        if self.logger:
+            self.logger.debug(f"bin2asc_fns: {bin2asc_fns}")
 
         # create dictionary for containing the obtained dataframes
         sbf_dfs = {}
@@ -315,11 +338,10 @@ class SBF:
 
                 # remove unused columns
                 keep_cols = self.used_columns(sbf_block)
-                # print(f"\ninital keep_cols = {keep_cols}\n")
 
                 # read csv file into dataframe
                 with rich_console.status(
-                    f"Reading from CSV file [bold green]{sbf_block}[/bold green]\n",
+                    f"Reading from CSV file [bold green]{sbf_block}[/bold green]",
                     spinner="aesthetic",
                 ):
                     sbf_df = pl.read_csv(
@@ -330,89 +352,68 @@ class SBF:
                         comment_prefix="#",
                         has_header=True,
                         skip_rows_after_header=1,  # Skip 1 row after the header
-                        # dtypes=keep_cols,
+                        dtypes=keep_cols,
                         null_values=[
                             "null",
                             "NaN",
                         ],  # First catch all null representations
-                    ).fill_null(
-                        -1
-                        # float("nan")
-                    )  # Then convert all nulls to NaN
+                        #                    ).fill_null(
+                        #                        float("nan")
+                    )  # commented this out because it changes the type of all columns to float
 
-                with rich_console.status(
-                    f"Adjusting columns for [bold green]{sbf_block}[/bold green]\n",
-                    spinner="aesthetic",
-                ):
                     # add columns to the dataframe
-                    sbf_df, added_cols, removed_cols = self.add_columns(block_df=sbf_df)
-                    # adjust the keep_cols adding and removing the columns
-                    for col_name, col_dtype in added_cols.items():
-                        keep_cols[col_name] = col_dtype
-                    for col_name in removed_cols:
-                        if col_name in sbf_df.columns:
-                            del keep_cols[col_name]
-
-                    # for column_name in sbf_df.columns:
-                    #     print(
-                    #         f"Data type of {column_name}: {sbf_df.schema[column_name]}"
-                    #     )
-
-                    # # set the dtype again after having added some columns
-                    # # identify columns with null values and applies different strategies based on the target data type
-                    # cast_expressions = []
-                    # for col_name, dtype in keep_cols.items():
-                    #     # For integer types, check if we need to handle nulls
-                    #     if str(dtype).startswith(("UInt", "Int")):
-                    #         # For columns that might have nulls, first fill nulls with a default value
-                    #         print(f"col_name = {col_name} | {dtype}")
-                    #         print(f"sbf_df[{col_name}] = {sbf_df[col_name]}")
-                    #         # print all values of this column
-                    #         print(f"unique values = {sbf_df[col_name].unique()}")
-
-                    #         print(f"null_count = {sbf_df[col_name].null_count()}")
-
-                    #         if sbf_df[col_name].null_count() >= 0:
-                    #             cast_expressions.append(
-                    #                 pl.col(col_name)
-                    #                 .fill_null(0)
-                    #                 .cast(dtype)
-                    #                 .alias(col_name)
-                    #             )
-                    #         else:
-                    #             cast_expressions.append(pl.col(col_name).cast(dtype))
-                    #     else:
-                    #         # For other types, just perform the regular cast
-                    #         cast_expressions.append(pl.col(col_name).cast(dtype))
-
-                    # for cast_expression in cast_expressions:
-                    #     print(f"cast_expression = {cast_expression}")
-                    #     sbf_df = sbf_df.with_columns(cast_expression)
-
-                    # drop the columns which are not in the keep_cols
+                    sbf_df = self.add_columns(block_df=sbf_df)
+                    print(
+                        f"sbf_df[{sbf_block}]:\n{sbf_df.select(sbf_df.columns[:20]).head(3)}"
+                        f"sbf_df[{sbf_block}]:\n{sbf_df.select(sbf_df.columns[20:]).head(3)}"
+                    )
+                    # print the column names of sbf_df one per line
                     for col_name in sbf_df.columns:
-                        if col_name not in keep_cols.keys():
-                            sbf_df = sbf_df.drop(col_name)
+                        print(col_name)
 
-                    if self.logger is not None:
-                        self.logger.debug(
-                            print_df_in_chunks(
-                                title=f"df_pvt[{sbf_block}]",
-                                df=sbf_df,
+                    # set the dtype again after having added some columns
+                    # sbf_df = sbf_df.with_columns(
+                    #     [
+                    #         pl.col(col_name).cast(dtype)
+                    #         for col_name, dtype in keep_cols.items()
+                    #     ]
+                    # )
+
+                    # identify columns with null values and applies different strategies based on the target data type
+                    cast_expressions = []
+                    for col_name, dtype in keep_cols.items():
+                        # For integer types, check if we need to handle nulls
+                        if str(dtype).startswith(("UInt", "Int")):
+                            # For columns that might have nulls, first fill nulls with a default value
+                            rprint(
+                                f"col_name = {col_name}\n{sbf_df[col_name]}\n{sbf_df[col_name].null_count()}"
                             )
-                        )
+                            if sbf_df[col_name].null_count() > 0:
+                                cast_expressions.append(
+                                    pl.col(col_name)
+                                    .fill_null(0)
+                                    .cast(dtype)
+                                    .alias(col_name)
+                                )
+                            else:
+                                cast_expressions.append(pl.col(col_name).cast(dtype))
+                        else:
+                            # For other types, just perform the regular cast
+                            cast_expressions.append(pl.col(col_name).cast(dtype))
+
+                    sbf_df = sbf_df.with_columns(cast_expressions)
+
+                    # set the dtype again after having added some columns
+                    sbf_df = sbf_df.with_columns(
+                        [
+                            pl.col(col_name).cast(dtype)
+                            for col_name, dtype in keep_cols.items()
+                        ]
+                    )
 
                 sbf_dfs[sbf_block] = sbf_df
-                # # print the column names and their dtypes
-                # print(  # print the column names and their dtypes
-                #     f"Columns and their dtypes for {sbf_block}:\n"
-                #     + "\n".join(
-                #         [
-                #             f"{col_name}: {dtype}"
-                #             for col_name, dtype in keep_cols.items()
-                #         ]
-                #     )
-                # )
+                if self.logger:
+                    self.logger.debug(f"sbf_dfs[{sbf_block}]:\n{sbf_dfs[sbf_block]}")
 
                 # print(f"archive = {archive}")
                 # archiving the converted sbf file
@@ -476,6 +477,7 @@ class SBF:
 
         # add logging level to cmd_sbf2asc when self._console_loglevel is DEBUG
         if self._console_loglevel == logging.DEBUG:
+            self.logger.debug("Adding verbose flag to cmd_sbf2asc")
             cmd_sbf2asc.append("-v")
 
         # Convert binary to text messages
@@ -495,9 +497,19 @@ class SBF:
         # find created files
         sbf2asc_fns = {}
         for sbf_block in lst_sbfblocks:
-            sbf2asc_fns[sbf_block] = glob.glob(
-                rf"{self.sbf_fn}_sbf2asc_{sbf_block}.txt"
-            )
+            try:
+                sbf2asc_fns[sbf_block] = glob.glob(
+                    rf"{self.sbf_fn}_sbf2asc_{sbf_block}.txt"
+                )
+                if self.logger:
+                    self.logger.debug(
+                        f"Found created file {sbf2asc_fns[sbf_block]} for {sbf_block} sbf block"
+                    )
+            except Exception as e:
+                if self.logger:
+                    self.logger.error(
+                        f"Error finding created file for {sbf_block} sbf block: {e}"
+                    )
 
         # create dictionary for containing the obtained dataframes
         sbf_dfs = {}
@@ -533,6 +545,14 @@ class SBF:
 
             with open(sbf2asc_fn[0], "w") as fd:
                 fd.write(content)
+            if os.path.exists(sbf2asc_fn[0]):
+                if self.logger:
+                    self.logger.debug(f"File {sbf2asc_fn[0]} created")
+            else:
+                if self.logger:
+                    self.logger.error(f"File {sbf2asc_fn[0]} not created")
+                    print(f"File {sbf2asc_fn[0]} not created")
+
             # remove unused columns
             sbf_df = pl.DataFrame()
 
@@ -543,12 +563,12 @@ class SBF:
                     separator=",",
                     new_columns=self.sbf2asc_sbfblock_colnames(sbf_block=sbf_block),
                 )
-            except Exception as e:
-                if self.logger:
-                    self.logger.error(f"Error reading file {sbf2asc_fn[0]}: {e}")
             except pl.exceptions.NoDataError as e:
                 if self.logger:
                     self.logger.error(f"Empty file {sbf2asc_fn[0]}: {e}")
+            except Exception as e:
+                if self.logger:
+                    self.logger.error(f"Error reading file {sbf2asc_fn[0]}: {e}")
 
             # Drop columns with only zeroes
             sbf_df = sbf_df.drop(
@@ -596,9 +616,23 @@ class SBF:
         print(f"column_names = {column_names}")
 
         # remove the rows where 'Type' equals 0 (no PVT available)
+        # if self.logger:
+        #     self.logger.debug("\tremoving rows with no PVT solution")
+
         if "Type" in column_names:
             block_df = block_df.filter(pl.col("Type") != 0).lazy()
-            # print(f"block_df = \n{block_df}")
+            # create new column with general PNT quality ID to general name pnt_qual
+            block_df = block_df.with_columns(
+                pl.struct(["Type"])
+                .map_elements(
+                    lambda x: sbf_to_standard_pntqual(x["Type"]),
+                    return_dtype=pl.Utf8,
+                )
+                .alias("pnt_qual")
+            ).lazy()
+            if self.logger:
+                self.logger.debug(f"\tcreated new column 'pnt_qual' from 'Type'")
+            added_cols["pnt_qual"] = pl.Utf8  # print(f"block_df = \n{block_df}")
 
         # add date-time and PRN (as str) to the dataframe
         if "WNc [w]" in column_names and "TOW [0.001 s]" in column_names:
@@ -614,7 +648,7 @@ class SBF:
             ).lazy()
             added_cols["DT"] = pl.Datetime
 
-        # add date-time to the dataframe
+        # add date-time and PRN (as str) to the dataframe
         if "WNc [w]" in column_names and "TOW [s]" in column_names:
             if self.logger:
                 self.logger.debug("\tadding datetime column to the dataframe")
@@ -669,8 +703,13 @@ class SBF:
 
             # Function to convert lat/lon in degrees to UTM
             def latlon_to_utm(lat, lon):
-                easting, northing, _, _ = utm.from_latlon(lat, lon)
-                return {"easting": easting, "northing": northing}
+                easting, northing, zone_number, zone_letter = utm.from_latlon(lat, lon)
+                return {
+                    "easting": easting,
+                    "northing": northing,
+                    "zone_number": zone_number,
+                    "zone_letter": zone_letter,
+                }
 
             # Convert latitude and longitude from radians to degrees
             block_df = block_df.with_columns(
@@ -692,6 +731,8 @@ class SBF:
                             [
                                 pl.Field("easting", pl.Float64),
                                 pl.Field("northing", pl.Float64),
+                                pl.Field("zone_number", pl.Int64),
+                                pl.Field("zone_letter", pl.Utf8),
                             ]
                         ),
                     )
@@ -704,6 +745,11 @@ class SBF:
                 [
                     pl.col("utm_coords").struct.field("easting").alias("UTM.E"),
                     pl.col("utm_coords").struct.field("northing").alias("UTM.N"),
+                    pl.col("utm_coords")
+                    .struct.field("zone_number")
+                    .cast(pl.UInt8)
+                    .alias("UTM.ZN"),
+                    pl.col("utm_coords").struct.field("zone_letter").alias("UTM.ZL"),
                 ]
             ).lazy()
 
@@ -715,6 +761,8 @@ class SBF:
             added_cols["longitude [deg]"] = pl.Float64
             added_cols["UTM.E"] = pl.Float64
             added_cols["UTM.N"] = pl.Float64
+            added_cols["UTM.ZN"] = pl.UInt8
+            added_cols["UTM.ZL"] = pl.Utf8
             removed_cols.extend(["Latitude [rad]", "Longitude [rad]"])
 
         # add orthometric height to the dataframe
@@ -840,7 +888,7 @@ class SBF:
         Returns:
                 list of correct column names for each sbfblocks
         """
-        print(
+        rprint(
             "sbf2asc is chosen as sbf converter. Looking up corresponding column names for each sbf block"
         )
         self.logger.info(

@@ -353,28 +353,25 @@ def si64(val, e_return_none: bool = True, logger: logging.Logger = None):
             return val
 
 
-def print_df_in_chunks(
-    title: str, df: pl.DataFrame, chunk_size: int = 15, rows: int = 3
-) -> str:
+def print_df_in_chunks(title: str, df: pl.DataFrame, chunk_size: int = 15) -> str:
     """Print a dataframe in chunks of columns with a specified number of rows.
 
     Args:
         title (str): Title of the dataframe
         df (pl.DataFrame): DataFrame to print
         chunk_size (int): Number of columns to print in each chunk
-        rows (int): Number of rows to print for each chunk
 
     Returns:
         str: Log message to print
     """
     total_cols = len(df.columns)
-    df_print = f"{str_green(title)} has shape {str_green(df.shape)}\n"
+    log_message = f"{str_green(title)} has shape {str_green(df.shape)}\n"
 
     for i in range(0, total_cols, chunk_size):
         end_idx = min(i + chunk_size, total_cols)
-        df_print += f"\n{df.select(df.columns[i:end_idx])}"  # ".head(rows)}"
+        log_message += f"\n{df.select(df.columns[i:end_idx])}"  # ".head(rows)}"
 
-    return df_print
+    return log_message
 
 
 def df_schema_info(df: pl.DataFrame) -> str:
