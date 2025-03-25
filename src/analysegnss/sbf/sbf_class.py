@@ -16,6 +16,10 @@ from rich import print as rprint
 
 from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.gnss.gnss_dt import gpsms2dt
+from analysegnss.gnss.standard_pnt_quality_dict import (
+    sbf_to_standard_pntqual,
+    get_pntquality_info,
+)
 from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.sbf.sbf_blocks_polars import (
     SBF_BLOCK_COLUMNS_BIN2ASC,
@@ -255,13 +259,19 @@ class SBF:
 
         # # add logging level to cmd_bin2asc when self._console_loglevel is DEBUG
         # if self._console_loglevel == logging.DEBUG:
-        #     cmd_bin2asc.append("-v")
+        #   cmd_bin2asc.append("-v")
 
         for sbf_block in lst_sbfblocks:
             cmd_bin2asc.append("-m")
-            cmd_bin2asc.append(sbf_block)
             if sbf_block == "Meas3Ranges":
                 cmd_bin2asc.append("--extractGenMeas")
+            else:
+                cmd_bin2asc.append(sbf_block)
+
+        # add logging level to cmd_sbf2asc when self._console_loglevel is DEBUG
+        if self._console_loglevel == logging.DEBUG:
+            self.logger.debug("Adding verbose flag to cmd_sbf2asc")
+            cmd_bin2asc.append("-v")
 
         # Convert binary to text messages
         if self.logger:
@@ -286,13 +296,28 @@ class SBF:
         bin2asc_fns = {}
         for sbf_block in lst_sbfblocks:
             if sbf_block != "Meas3Ranges":
-                bin2asc_fns[sbf_block] = glob.glob(
-                    rf"{self.sbf_fn}_SBF_{sbf_block}.txt"
-                )[0]
+                try:
+                    bin2asc_fns[sbf_block] = glob.glob(
+                        rf"{self.sbf_fn}_SBF_{sbf_block}.txt"
+                    )[0]
+                except Exception as e:
+                    if self.logger:
+                        self.logger.error(
+                            f"Error finding created file for {sbf_block} sbf block: {e}"
+                        )
             else:
-                bin2asc_fns[sbf_block] = glob.glob(rf"{self.sbf_fn}_measurements.txt")[
-                    0
-                ]
+                try:
+                    bin2asc_fns[sbf_block] = glob.glob(
+                        rf"{self.sbf_fn}_measurements.txt"
+                    )[0]
+                except Exception as e:
+                    if self.logger:
+                        self.logger.error(
+                            f"Error finding created file for {sbf_block} sbf block: {e}"
+                        )
+
+        if self.logger:
+            self.logger.debug(f"bin2asc_fns: {bin2asc_fns}")
 
         # create dictionary for containing the obtained dataframes
         sbf_dfs = {}
@@ -328,14 +353,14 @@ class SBF:
                         comment_prefix="#",
                         has_header=True,
                         skip_rows_after_header=1,  # Skip 1 row after the header
-                        # dtypes=keep_cols,
+                        dtypes=keep_cols,
                         null_values=[
                             "null",
                             "NaN",
                         ],  # First catch all null representations
-                    ).fill_null(
-                        float("nan")
-                    )  # Then convert all nulls to NaN
+                        #                    ).fill_null(
+                        #                        float("nan")
+                    )  # commented this out because it changes the type of all columns to float
 
                     # add columns to the dataframe
                     sbf_df = self.add_columns(block_df=sbf_df)
@@ -388,7 +413,8 @@ class SBF:
                     )
 
                 sbf_dfs[sbf_block] = sbf_df
-                # print(f"sbf_dfs[{sbf_block}]:\n{sbf_dfs[sbf_block]}")
+                if self.logger:
+                    self.logger.debug(f"sbf_dfs[{sbf_block}]:\n{sbf_dfs[sbf_block]}")
 
                 # print(f"archive = {archive}")
                 # archiving the converted sbf file
@@ -452,6 +478,7 @@ class SBF:
 
         # add logging level to cmd_sbf2asc when self._console_loglevel is DEBUG
         if self._console_loglevel == logging.DEBUG:
+            self.logger.debug("Adding verbose flag to cmd_sbf2asc")
             cmd_sbf2asc.append("-v")
 
         # Convert binary to text messages
@@ -471,9 +498,19 @@ class SBF:
         # find created files
         sbf2asc_fns = {}
         for sbf_block in lst_sbfblocks:
-            sbf2asc_fns[sbf_block] = glob.glob(
-                rf"{self.sbf_fn}_sbf2asc_{sbf_block}.txt"
-            )
+            try:
+                sbf2asc_fns[sbf_block] = glob.glob(
+                    rf"{self.sbf_fn}_sbf2asc_{sbf_block}.txt"
+                )
+                if self.logger:
+                    self.logger.debug(
+                        f"Found created file {sbf2asc_fns[sbf_block]} for {sbf_block} sbf block"
+                    )
+            except Exception as e:
+                if self.logger:
+                    self.logger.error(
+                        f"Error finding created file for {sbf_block} sbf block: {e}"
+                    )
 
         # create dictionary for containing the obtained dataframes
         sbf_dfs = {}
@@ -509,6 +546,14 @@ class SBF:
 
             with open(sbf2asc_fn[0], "w") as fd:
                 fd.write(content)
+            if os.path.exists(sbf2asc_fn[0]):
+                if self.logger:
+                    self.logger.debug(f"File {sbf2asc_fn[0]} created")
+            else:
+                if self.logger:
+                    self.logger.error(f"File {sbf2asc_fn[0]} not created")
+                    print(f"File {sbf2asc_fn[0]} not created")
+
             # remove unused columns
             sbf_df = pl.DataFrame()
 
@@ -519,12 +564,12 @@ class SBF:
                     separator=",",
                     new_columns=self.sbf2asc_sbfblock_colnames(sbf_block=sbf_block),
                 )
-            except Exception as e:
-                if self.logger:
-                    self.logger.error(f"Error reading file {sbf2asc_fn[0]}: {e}")
             except pl.exceptions.NoDataError as e:
                 if self.logger:
                     self.logger.error(f"Empty file {sbf2asc_fn[0]}: {e}")
+            except Exception as e:
+                if self.logger:
+                    self.logger.error(f"Error reading file {sbf2asc_fn[0]}: {e}")
 
             # Drop columns with only zeroes
             sbf_df = sbf_df.drop(
@@ -566,12 +611,26 @@ class SBF:
         # if self.logger:
         #     self.logger.debug("\tremoving rows with no PVT solution")
 
-        if "Type" in block_df.columns:
+        if "Type" in block_df.collect_schema().names():
             block_df = block_df.filter(pl.col("Type") != 0).lazy()
+            # create new column with general PNT quality ID to general name pnt_qual
+            block_df = block_df.with_columns(
+                pl.struct(["Type"])
+                .map_elements(
+                    lambda x: sbf_to_standard_pntqual(x["Type"]),
+                    return_dtype=pl.Utf8,
+                )
+                .alias("pnt_qual")
+            ).lazy()
+            if self.logger:
+                self.logger.debug(f"\tcreated new column 'pnt_qual' from 'Type'")
             # print(f"block_df = \n{block_df}")
 
         # add date-time and PRN (as str) to the dataframe
-        if "WNc [w]" in block_df.columns and "TOW [0.001 s]" in block_df.columns:
+        if (
+            "WNc [w]" in block_df.collect_schema().names()
+            and "TOW [0.001 s]" in block_df.collect_schema().names()
+        ):
             if self.logger:
                 self.logger.debug("\tadding datetime column to the dataframe")
             block_df = block_df.with_columns(
@@ -584,7 +643,10 @@ class SBF:
             ).lazy()
 
         # add date-time and PRN (as str) to the dataframe
-        if "WNc [w]" in block_df.columns and "TOW [s]" in block_df.columns:
+        if (
+            "WNc [w]" in block_df.collect_schema().names()
+            and "TOW [s]" in block_df.collect_schema().names()
+        ):
             if self.logger:
                 self.logger.debug("\tadding datetime column to the dataframe")
             block_df = block_df.with_columns(
@@ -599,7 +661,7 @@ class SBF:
         # add date-time and PRN (as str) to the dataframe
         if (
             "SVID"
-            in block_df.columns
+            in block_df.collect_schema().names()
             # and not block_df.select(pl.col("SVID")).dtypes[0] == pl.String
         ):
             if self.logger:
@@ -619,16 +681,21 @@ class SBF:
 
         # add UTM coordinates
         if (
-            "Latitude [rad]" in block_df.columns
-            and "Longitude [rad]" in block_df.columns
+            "Latitude [rad]" in block_df.collect_schema().names()
+            and "Longitude [rad]" in block_df.collect_schema().names()
         ):
             if self.logger:
                 self.logger.debug("\tadding UTM coordinates to the dataframe")
 
             # Function to convert lat/lon in degrees to UTM
             def latlon_to_utm(lat, lon):
-                easting, northing, _, _ = utm.from_latlon(lat, lon)
-                return {"easting": easting, "northing": northing}
+                easting, northing, zone_number, zone_letter = utm.from_latlon(lat, lon)
+                return {
+                    "easting": easting,
+                    "northing": northing,
+                    "zone_number": zone_number,
+                    "zone_letter": zone_letter,
+                }
 
             # Convert latitude and longitude from radians to degrees
             block_df = block_df.with_columns(
@@ -650,6 +717,8 @@ class SBF:
                             [
                                 pl.Field("easting", pl.Float64),
                                 pl.Field("northing", pl.Float64),
+                                pl.Field("zone_number", pl.Int64),
+                                pl.Field("zone_letter", pl.Utf8),
                             ]
                         ),
                     )
@@ -662,6 +731,11 @@ class SBF:
                 [
                     pl.col("utm_coords").struct.field("easting").alias("UTM.E"),
                     pl.col("utm_coords").struct.field("northing").alias("UTM.N"),
+                    pl.col("utm_coords")
+                    .struct.field("zone_number")
+                    .cast(pl.UInt8)
+                    .alias("UTM.ZN"),
+                    pl.col("utm_coords").struct.field("zone_letter").alias("UTM.ZL"),
                 ]
             ).lazy()
 
@@ -671,12 +745,15 @@ class SBF:
             ).lazy()
 
         # add orthometric height to the dataframe
-        if "Height [m]" in block_df.columns and "Undulation [m]" in block_df.columns:
+        if (
+            "Height [m]" in block_df.collect_schema().names()
+            and "Undulation [m]" in block_df.collect_schema().names()
+        ):
             if self.logger:
                 self.logger.debug("\tadding orthometric height to the dataframe")
             block_df = block_df.with_columns(
                 pl.struct(["Height [m]", "Undulation [m]"])
-                .apply(
+                .map_elements(
                     lambda x: x["Height [m]"] - x["Undulation [m]"],
                     return_dtype=pl.Float64,
                 )
@@ -791,7 +868,7 @@ class SBF:
         Returns:
                 list of correct column names for each sbfblocks
         """
-        print(
+        rprint(
             "sbf2asc is chosen as sbf converter. Looking up corresponding column names for each sbf block"
         )
         self.logger.info(

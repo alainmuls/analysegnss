@@ -8,11 +8,9 @@ import sys
 import polars as pl
 from rich import print as rprint
 
-<<<<<<< HEAD
 from analysegnss.config import DICT_GNSS, DICT_SIGNAL_TYPES, ERROR_CODES
-=======
 from analysegnss.config import DICT_GNSS, ERROR_CODES
->>>>>>> devam
+from analysegnss.config import DICT_GNSS, ERROR_CODES
 from analysegnss.sbf.sbf_class import SBF
 from analysegnss.sbf.sbf_column_mapping import (
     GNSS_NAV_COLUMN_MAPPINGS,
@@ -21,6 +19,7 @@ from analysegnss.sbf.sbf_column_mapping import (
 )
 from analysegnss.utils import init_logger
 from analysegnss.utils.argument_parser import argument_parser_sbfnav_csv
+from analysegnss.utils.utilities import str_green, str_red, print_df_in_chunks
 
 
 def sbfnav_csv(parsed_args: argparse.Namespace):
@@ -59,47 +58,41 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
         logger.error(f"No SBF Nav blocks found in {parsed_args.sbf_ifn}")
         sys.exit(ERROR_CODES["E_SBF_NAV_BLOCKS"])
 
-<<<<<<< HEAD
     # select the navigation SBF blocks for the selected GNSS
-=======
     # select the navigation SBF blocks for the selected GNSSq
->>>>>>> devam
+    # select the navigation SBF blocks for the selected GNSS
     sbf_nav_blocks_gnss = []
     for gnss in parsed_args.gnss:
         gnss_abbrev = DICT_GNSS[gnss]["abbrev"]
         logger.debug(f"Selected GNSS: {gnss_abbrev}")
-        sbf_nav_blocks_gnss.append(
-            [block for block in sbf_nav_blocks if gnss_abbrev in block][0]
+
+        # Find matching blocks
+        matching_blocks = [block for block in sbf_nav_blocks if gnss_abbrev in block]
+
+        # Check if any matching blocks were found
+        if matching_blocks:
+            sbf_nav_blocks_gnss.append(matching_blocks[0])
+        else:
+            logger.warning(
+                f"{str_red("No navigation blocks")} found for {str_red(gnss)} ({str_red(gnss_abbrev)}). Skipping this GNSS."
+            )
+
+    if not sbf_nav_blocks_gnss:
+        logger.error(
+            f"{str_red("No navigation blocks")} found for selected GNSS systems "
+            f"{str_red(parsed_args.gnss)}. Exiting."
         )
+        sys.exit(ERROR_CODES["E_SBF_NAV_BLOCKS"])
 
     # create a list of dictionaries to hold the dataframes for each navigation SBF block
     nav_dfs = sbf.bin2asc_dataframe(
         lst_sbfblocks=sbf_nav_blocks_gnss, archive=parsed_args.archive
     )
-<<<<<<< HEAD
-=======
-
->>>>>>> devam
     for sbf_block, nav_df in nav_dfs.items():
         # identify the gnss type from the SBF block name
         gnss_abbrev = sbf_block[:3]
         rprint(f"gnss_abbrev: {gnss_abbrev}")
 
-<<<<<<< HEAD
-        if sbf_block == "GPSNav":
-            nav_df = convert_semicircles_to_radians(df=nav_df, gnss_type=gnss_abbrev)
-            nav_df = rename_nav_columns(df=nav_df, gnss_type=gnss_abbrev)
-
-            logger.info(
-                f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[:20]).head(2)}"
-            )
-            logger.info(
-                f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[20:]).head(2)}"
-            )
-            rprint(f"nav_df.columns[{sbf_block}]:\n{nav_df.columns}")
-
-            # convert the polars dataframe to CSV for each navigation SBF block
-=======
         # if sbf_block == "GPSNav":
         nav_df = convert_semicircles_to_radians(df=nav_df, gnss_type=gnss_abbrev)
         nav_df = rename_nav_columns(df=nav_df, gnss_type=gnss_abbrev)
@@ -107,6 +100,22 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
         logger.info(
             f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[:20]).head(3)}"
             f"nav_df[{sbf_block}]:\n{nav_df.select(nav_df.columns[20:]).head(3)}"
+        )
+    for sbf_block, nav_df in nav_dfs.items():
+        # identify the gnss type from the SBF block name
+        gnss_abbrev = sbf_block[:3]
+        # rprint(f"gnss_abbrev: {gnss_abbrev}")
+
+        if sbf_block != "GLONav":
+            nav_df = convert_semicircles_to_radians(df=nav_df, gnss_type=gnss_abbrev)
+
+        nav_df = rename_nav_columns(df=nav_df, gnss_type=gnss_abbrev)
+
+        logger.debug(
+            print_df_in_chunks(
+                df=nav_df,
+                title=f"nav_df[{str_green(sbf_block)}]:",
+            )
         )
 
         # convert the polars dataframe to CSV for each navigation SBF block
@@ -116,7 +125,13 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
             logger.info(f"Successfully wrote {sbf_block} data to {csv_filename}")
         except Exception as e:
             logger.error(f"Failed to write {sbf_block} data to {csv_filename}: {e}")
->>>>>>> devam
+            logger.info(
+                f"Successfully wrote {str_green(sbf_block)} data to {str_green(csv_filename)}"
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to write {str_red(sbf_block)} data to {str_red(csv_filename)}: {e}"
+            )
 
 
 def main():
@@ -125,11 +140,9 @@ def main():
         args=sys.argv[1:], script_name=os.path.basename(__file__)
     )
 
-<<<<<<< HEAD
     print(f"args_parsed: {args_parsed}")
-=======
     # print(f"args_parsed: {args_parsed}")
->>>>>>> devam
+    # print(f"args_parsed: {args_parsed}")
 
     sbfnav_csv(parsed_args=args_parsed)
 

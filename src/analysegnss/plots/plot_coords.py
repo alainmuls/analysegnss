@@ -1,260 +1,291 @@
 #!/usr/bin/env python
 
+# standard imports
 import os
 import sys
+import argparse
+import logging
 
+# third party imports
 import matplotlib
 import matplotlib.pyplot as plt
 import polars as pl
 from rich import print
 
-import analysegnss.glabng.glab_parser as glab_parser
-import analysegnss.nmea.nmeaReader as nmeaReader
-import analysegnss.rtkpos.ppk_rnx2rtkp as ppk_rnx2rtkp
-import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
 from analysegnss.config import ERROR_CODES, rich_console
+from analysegnss.glabng import glab_parser
+from analysegnss.nmea import nmea_reader
+from analysegnss.rtkpos import ppk_rnx2rtkp
+from analysegnss.sbf import rtk_pvtgeod
 from analysegnss.plots import plot_utm
 from analysegnss.plots.plot_columns import get_utm_columns
 from analysegnss.utils import init_logger
 from analysegnss.utils.argument_parser import argument_parser_plot_coords
 
 
-def get_origin(parsed_args: list) -> str: # TODO replace 'origin' naming to 'source'? # TODO replace 'origin' naming to 'source'?
-	"""determines the origin  of the coordinates
+def get_source(parsed_args: argparse.Namespace) -> str:
+    """Determines the source of the coordinates
 
-	Args:
-		parsed_args (list): list of parsed arguments
+    Args:
+        parsed_args: Parsed arguments containing file paths
 
-	Returns:
-		tuple[str, str]: origin and filename
-	"""
-	# set the origin of the coordinates
-	# set the origin of the coordinates
-	file_handlers = {"pos_ifn": "PPK", "sbf_ifn": "RTK", "glab_ifn": "GLABNG", "nmea_ifn": "NMEA", "csv_ifn": "PNT_CSV"}
+    Returns:
+        str: Source type (PPK, RTK, GLABNG, NMEA, PNT_CSV)
+    """
 
-	# Get the first non-None filename and its attribute name
-	file_attr = next(
-		attr
-		for attr in ["pos_ifn", "sbf_ifn", "glab_ifn", "nmea_ifn", "csv_ifn"]
-		if getattr(parsed_args, attr) is not None
-	)
-	# filename = getattr(parsed_args, file_attr)
+    # dictionary to map source type to argparse argument name
+    file_handlers = {
+        "pos_ifn": "PPK",
+        "sbf_ifn": "RTK",
+        "glab_ifn": "GLABNG",
+        "nmea_ifn": "NMEA",
+        "csv_ifn": "PNT_CSV",
+    }
 
-	# Create instance and get origin in one go
-	origin = file_handlers[file_attr]
-	return origin
+    # Get the first non-None filename and its attribute name
+    file_attr = next(
+        attr
+        for attr in ["pos_ifn", "sbf_ifn", "glab_ifn", "nmea_ifn", "csv_ifn"]
+        if getattr(parsed_args, attr) is not None
+    )
 
+    # Create instance and get source in one go
+    source = file_handlers.get(file_attr, "Source not found")
 
-def plot_coords(argv: list):
-	"""analyses the rnx2rtkp output file and extracts the position information
-
-	Args:
-		argv (list): CLI arguments
-	"""
- 
-	matplotlib.use('TkAgg')
-
-	# get the script name for passing to argument_parser
-	script_name = os.path.splitext(os.path.basename(__file__))[0]
- 
-	# parse the CLI arguments
-	args_parsed = argument_parser_plot_coords(
-		args=argv[1:], script_name=os.path.basename(__file__)
-	)
-	# print(f"\nParsed arguments: {args_parsed}")
-
-	# create the file/console logger
-	logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
-	# # test logger
-	logger.info(f"Parsed arguments: {args_parsed}")
- 
-	# get the origin of the coordinates
-	origin = get_origin(parsed_args=args_parsed)
-
-	# get the needed columns from the dataframe according to the origin
-
-	match origin:
-		case "PPK":
-			# create the PPK position dataframe by calling ppk_rnx2rtkp.py
-			pos_ifn_index = argv.index("--pos_ifn")
-			pos_ifn_value = argv[pos_ifn_index + 1]
-
-			ppk_rnx2rtkp_args = ["ppk_rnx2rtkp.py", "--pos_ifn", pos_ifn_value]
-			df_origin = ppk_rnx2rtkp.rtkp_pos(argv=ppk_rnx2rtkp_args)
-			ppk_rnx2rtkp_args = ["ppk_rnx2rtkp.py", "--pos_ifn", pos_ifn_value]
-			df_origin = ppk_rnx2rtkp.rtkp_pos(argv=ppk_rnx2rtkp_args)
-
-		case "RTK":
-			# create the RTK position dataframe by calling rtk_pvtgeod.py
-			sbf_ifn_index = argv.index("--sbf_ifn")
-			sbf_ifn_value = argv[sbf_ifn_index + 1]
-
-			rtk_pvtgeod_args = (
-				["rtk_pvtgeod.py", "--sbf_ifn", sbf_ifn_value]
-				if not args_parsed.sd
-				else [
-					"rtk_pvtgeod.py",
-					"--sbf_ifn",
-					sbf_ifn_value,
-					"--sd",
-				]
-			)
-
-			df_origin = rtk_pvtgeod.rtk_pvtgeod(argv=rtk_pvtgeod_args)
-
-		case "GLABNG":
-			# create the GLAB position dataframe by calling glab_parser
-			glab_ifn_index = argv.index("--glab_ifn")
-			glab_ifn_value = argv[glab_ifn_index + 1]
-   
-			glab_parser_args = [
-				"glab_parser",
-				"--glab_ifn",
-				glab_ifn_value,
-				"--section",
-				"OUTPUT",
-			]
-			dfs_glab = glab_parser.glab_parser(argv=glab_parser_args)
-
-			for section, df_section in dfs_glab.items():
-				if section == "OUTPUT":
-					print(
-						f"dataframe from [green][bold]{section}[/bold][/green] section"
-					)
-					print(df_section)
-
-			df_origin = dfs_glab["OUTPUT"]
-
-		case "NMEA":
-			# create the NMEA dataframe by calling nmeaReader.py
-			df_origin, qual_analysis = nmeaReader.nmeaReader(parsed_args=args_parsed, logger=logger)
-
-		case "PNT_CSV":
-			# create a PNT_CSV dataframe by reading PNT_CSV file written by nmeaReader.py, rtk_pvtgeod.py, ppk_rnx2rtkp.py or glab_parser.py
-			df_origin = pl.read_csv(args_parsed.csv_ifn, schema_overrides={"DT": pl.Datetime})
-
-		case _:
-			logger.error(f"Invalid origin: {origin}")
-			sys.exit(ERROR_CODES["E_INVALID_ORIGIN"])
-
-	logger.debug(f"print source dataframe:\n{df_origin}")
-
-	# get the utm columns names according to the origin
-	utm_columns = get_utm_columns(origin=origin)
-	# print(f"utm_columns: {utm_columns}")
-	# print(f"type(utm_columns): {type(utm_columns)}")
-	logger.debug(f"print source dataframe:\n{df_origin}")
-
-	# create the df_utm dataframe from the dataframe obtained according to each origin
-	try:
-		if not args_parsed.sd:
-			df_utm = df_origin.select(
-				[
-					utm_columns.time,
-					utm_columns.quality_mapping.columns,
-					utm_columns.nrSVN,
-					utm_columns.east,
-					utm_columns.north,
-					utm_columns.height,
-				]
-			)
-		else:
-			df_utm = df_origin.select(
-				[
-					utm_columns.time,
-					utm_columns.quality_mapping.columns,
-					utm_columns.nrSVN,
-					utm_columns.east,
-					utm_columns.north,
-					utm_columns.height,
-					utm_columns.sdn,
-					utm_columns.sde,
-					utm_columns.sdu,
-				]
-			)
-	except pl.exceptions.ColumnNotFoundError as e: 
-		column_missing = e.args[0]
-		logger.error(f"ERROR: Missing the column |{column_missing}| in the dataframe")
-		sys.exit(1)
-		
-	# Filter out rows with null/nan values in UTM coordinates and height
-	df_utm = df_utm.filter(
-		pl.col(utm_columns.east).is_not_null() & 
-		pl.col(utm_columns.north).is_not_null() & 
-		pl.col(utm_columns.height).is_not_null()
-	)
-
-	if logger is not None:
-		logger.info(f"df_utm = \n{df_utm}")
-
-	# find filename and directory from the position file
-	# ifn_full = args_parsed.pos_ifn if args_parsed.pos_ifn else args_parsed.sbf_ifn
-	ifn_full = next(
-		ifn
-		for ifn in [args_parsed.pos_ifn, args_parsed.sbf_ifn, args_parsed.glab_ifn]
-		if ifn is not None
-	)
+    return source
 
 
-	# separate the filename from the path
-	filename_in = os.path.basename(ifn_full)
-	dir_fn = os.path.dirname(ifn_full)
+def plot_coords(args_parsed: argparse.Namespace, logger: logging.Logger):
+    """Plots the coordinates from multiple PNT sources [PPK, RTK, GLABNG, NMEA, PNT_CSV]
 
-	# origin = "PPK" if args_parsed.pos_ifn else "RTK"
-	print(f"creating plot for {origin} position file {filename_in}")
+    Args:
+            argv (list): CLI arguments
+    """
 
-	# plot the UTM and orthoH coordinates
-	if args_parsed.mpl == False:
-		with rich_console.status(f"Creating UTM scatter plot.\t", spinner="aesthetic"):
-			# use plotly for creating html plots
-			plot_utm.plot_utm_scatter(
-				utm_df=df_utm,
-				origin=origin,
-				ifn=filename_in,
-				dir_fn=dir_fn,
-				logger=logger,
-				display=args_parsed.display,
-			)
+    matplotlib.use("TkAgg")
 
-		with rich_console.status(f"Creating NEU vs DT plot.\t", spinner="aesthetic"):
-			plot_utm.plot_utm_height(
-				utm_df=df_utm,
-				origin=origin,
-				ifn=filename_in,
-				dir_fn=dir_fn,
-				sd=args_parsed.sd,
-				logger=logger,
-				display=args_parsed.display,
-			)
-	else:
-		with rich_console.status(f"Creating UTM scatter plot.\t", spinner="aesthetic"):
-			plot_utm.plot_utm_scatter_mpl(
-				utm_df=df_utm,
-				origin=origin,
-				ifn=filename_in,
-				dir_fn=dir_fn,
-				logger=logger,
-				display=args_parsed.display,
-			)
-		with rich_console.status(f"Creating NEU vs DT plot.\t", spinner="aesthetic"):
-			plot_utm.plot_utm_height_mpl(
-				utm_df=df_utm,
-				origin=origin,
-				ifn=filename_in,
-				dir_fn=dir_fn,
-				sd=args_parsed.sd,
-				logger=logger,
-				display=args_parsed.display,
-			)
+    # get the source of the coordinates
+    source = get_source(parsed_args=args_parsed)
 
-		if args_parsed.display:
-			with rich_console.status(f"Displaying plots.\t", spinner="aesthetic"):
-				plt.show(block=True)
+    # get the source dataframe and standardize it
+    df_source = get_source_df(source=source, parsed_args=args_parsed, logger=logger)
+
+    # Get column mappings for this source
+    utm_columns = get_utm_columns(source=source)
+    logger.debug(f"utm_columns: {utm_columns}")
+
+    # create the df_utm dataframe from the dataframe obtained according to each source
+    try:
+        if not args_parsed.sd:
+            df_utm = df_source.select(
+                [
+                    utm_columns.time,
+                    utm_columns.quality_mapping.quality_column,
+                    utm_columns.nrSVN,
+                    utm_columns.east,
+                    utm_columns.north,
+                    utm_columns.height,
+                ]
+            )
+        else:
+            df_utm = df_source.select(
+                [
+                    utm_columns.time,
+                    utm_columns.quality_mapping.quality_column,
+                    utm_columns.nrSVN,
+                    utm_columns.east,
+                    utm_columns.north,
+                    utm_columns.height,
+                    utm_columns.sdn,
+                    utm_columns.sde,
+                    utm_columns.sdu,
+                ]
+            )
+    except pl.exceptions.ColumnNotFoundError as e:
+        column_missing = e.args[0]
+        logger.error(f"ERROR: Missing the column |{column_missing}| in the dataframe")
+        sys.exit(1)
+
+    # Filter out null values in coordinates
+    df_utm = df_utm.filter(
+        pl.col(utm_columns.east).is_not_null()
+        & pl.col(utm_columns.north).is_not_null()
+        & pl.col(utm_columns.height).is_not_null()
+    )
+
+    logger.debug(f"df_utm = \n{df_utm}")
+
+    # find filename and directory from the position file
+    # ifn_full = args_parsed.pos_ifn if args_parsed.pos_ifn else args_parsed.sbf_ifn
+    ifn_full = next(
+        ifn
+        for ifn in [
+            args_parsed.pos_ifn,
+            args_parsed.sbf_ifn,
+            args_parsed.glab_ifn,
+            args_parsed.nmea_ifn,
+            args_parsed.csv_ifn,
+        ]
+        if ifn is not None
+    )
+
+    # separate the filename from the path
+    filename_in = os.path.basename(ifn_full)
+    dir_fn = os.path.dirname(ifn_full)
+
+    print(f"creating plot for {source} position file {filename_in}")
+
+    # plot the UTM and orthoH coordinates
+    if args_parsed.mpl == False:
+        with rich_console.status(f"Creating UTM scatter plot.\t", spinner="aesthetic"):
+            # use plotly for creating html plots
+            plot_utm.plot_utm_scatter(
+                utm_df=df_utm,
+                source=source,
+                ifn=filename_in,
+                dir_fn=dir_fn,
+                logger=logger,
+                display=args_parsed.display,
+            )
+
+        with rich_console.status(f"Creating NEU vs DT plot.\t", spinner="aesthetic"):
+            plot_utm.plot_utm_height(
+                utm_df=df_utm,
+                source=source,
+                ifn=filename_in,
+                dir_fn=dir_fn,
+                sd=args_parsed.sd,
+                logger=logger,
+                display=args_parsed.display,
+            )
+    else:
+        with rich_console.status(f"Creating UTM scatter plot.\t", spinner="aesthetic"):
+            plot_utm.plot_utm_scatter_mpl(
+                utm_df=df_utm,
+                source=source,
+                ifn=filename_in,
+                dir_fn=dir_fn,
+                logger=logger,
+                display=args_parsed.display,
+            )
+        with rich_console.status(f"Creating NEU vs DT plot.\t", spinner="aesthetic"):
+            plot_utm.plot_utm_height_mpl(
+                utm_df=df_utm,
+                source=source,
+                ifn=filename_in,
+                dir_fn=dir_fn,
+                sd=args_parsed.sd,
+                logger=logger,
+                display=args_parsed.display,
+            )
+
+        if args_parsed.display:
+            with rich_console.status(f"Displaying plots.\t", spinner="aesthetic"):
+                plt.show(block=True)
+
+
+def get_source_df(
+    source: str,
+    parsed_args: argparse.Namespace,
+    logger: logging.Logger,
+) -> pl.DataFrame:
+    """Get dataframe from a specific source
+
+    Args:
+        source (str): Source type (RTK, PPK, GLABNG, NMEA, PNT_CSV)
+        parsed_args: Parsed arguments
+        logger: Logger object
+
+    Returns:
+        pl.DataFrame: DataFrame with standardized columns
+    """
+    match source:
+        case "PPK":
+            # Create PPK position dataframe
+            logger.debug(f"Creating PPK position dataframe")
+            df_source = ppk_rnx2rtkp.rtkp_pos(parsed_args=parsed_args, logger=logger)
+
+        case "RTK":
+            # Create RTK position dataframe
+            logger.debug(f"Creating RTK position dataframe")
+            df_source = rtk_pvtgeod.sbf_reader(parsed_args=parsed_args, logger=logger)
+
+        case "GLABNG":
+            # Create GLAB position dataframe
+            logger.debug(f"Creating GLAB position dataframe")
+            glab_parser_args = [
+                "glab_parser",
+                "--glab_ifn",
+                parsed_args.glab_ifn,
+                "--section",
+                "OUTPUT",
+            ]
+            dfs_glab = glab_parser.glab_parser(argv=glab_parser_args)
+            df_source = dfs_glab["OUTPUT"]
+            if logger:
+                logger.debug(f"GLAB OUTPUT dataframe:\n{df_source}")
+
+        case "NMEA":
+            # Create NMEA dataframe
+            df_source, _ = nmea_reader.nmea_reader(
+                parsed_args=parsed_args, logger=logger
+            )
+
+        case "PNT_CSV":
+            try:
+
+                # Read PNT CSV file
+
+                # first check if parsed_args.header is True. Then use the columns defined in the header.
+                # Otherwise, use the columns defined in the parsed_args.columns_csv
+                if parsed_args.no_header:
+                    # If no header, use the specified column names
+                    df_source = pl.read_csv(
+                        parsed_args.csv_ifn,
+                        separator=parsed_args.sep,
+                        has_header=False,
+                        new_columns=parsed_args.columns_csv,
+                        comment_prefix=parsed_args.comment_prefix,
+                        skip_rows_after_header=parsed_args.skip_rows_after_header,
+                    )
+                else:
+                    # Read the CSV with existing column names from header
+                    df_source = pl.read_csv(
+                        parsed_args.csv_ifn,
+                        separator=parsed_args.sep,
+                        comment_prefix=parsed_args.comment_prefix,
+                        has_header=True,
+                        skip_rows_after_header=parsed_args.skip_rows_after_header,
+                        schema_overrides={"DT": pl.Datetime()},
+                    )
+            except Exception as e:
+                logger.error(f"Error creating PNT_CSV dataframe: {str(e)}")
+                raise
+
+        case _:
+            logger.error(f"Invalid source: {source}")
+            sys.exit(ERROR_CODES["E_INVALID_SOURCE"])
+
+    return df_source
 
 
 def main():
-	df_utm = plot_coords(argv=sys.argv)  # type: ignore
+
+    # get the script name for passing to argument_parser
+    script_name = os.path.splitext(os.path.basename(__file__))[0]
+
+    # parse the CLI arguments
+    args_parsed = argument_parser_plot_coords(
+        args=sys.argv[1:], script_name=script_name
+    )
+
+    # create the file/console logger
+    logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
+    logger.debug(f"Parsed arguments: {args_parsed}")
+
+    # plot the coordinates
+    plot_coords(args_parsed=args_parsed, logger=logger)  # type: ignore
 
 
 if __name__ == "__main__":
-	main()
+    main()

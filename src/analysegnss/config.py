@@ -94,6 +94,7 @@ ERROR_CODES = {
     "E_WRONG_GNSS": 49,
     "E_SBF_BLOCKS": 50,
     "E_SBF_NAV_BLOCKS": 51,
+    "E_INVALID_SOURCE": 61,
     "E_PROCESS": 90,
     "E_FAILURE": 99,
 }

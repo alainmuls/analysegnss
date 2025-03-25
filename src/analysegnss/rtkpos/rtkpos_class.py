@@ -15,6 +15,7 @@ import utm
 from analysegnss.config import ERROR_CODES, GEOID_PATH, rich_console
 from analysegnss.gnss import geoid
 from analysegnss.gnss.gnss_dt import gpsms2dt
+from analysegnss.gnss.standard_pnt_quality_dict import rtklib_to_standard_pntqual
 from analysegnss.utils.utilities import str_red
 
 
@@ -119,14 +120,18 @@ class Rtkpos:
         """read the RTK position file
 
         Returns:
-            polars.DataFrame: RTK position data
+            dict: processing information (header of rtklib pos file)
+            dict: processing information (header of rtklib pos file)
+            polars.DataFrame: RTK position data or None if error reading file (EMPTY CSV,..)
+
+
 
         """
         # get the processing information
         processing_info, col_names = self.info_processing()
 
         # get the schema for the RTK position dataframe
-        pos_schema = self.rtkpos_schema()
+        pos_schema = self.rtkpos_schema(info_processing=processing_info)
         # print(f"pos_schema = \n{pos_schema}")
 
         # REMOVING WHITESPACES from the file content
@@ -161,39 +166,69 @@ class Rtkpos:
 
         return processing_info, pos_df
 
-    def rtkpos_schema(self) -> dict:
+    def rtkpos_schema(self, info_processing: dict) -> dict:
         """determines header and dtypes to the dataframe
 
         Returns:
             dict: schema for the RTK position dataframe
         """
-        col_types = {
-            pl.Int16: ["WNc"],
-            pl.Float64: [
-                "TOW(s)",
-                "latitude(deg)",
-                "longitude(deg)",
-                "height(m)",
-            ],
-            pl.Int16: ["Q", "ns"],
-            pl.Float32: [
-                "sdn(m)",
-                "sde(m)",
-                "sdu(m)",
-                "sdne(m)",
-                "sdeu(m)",
-                "sdun(m)",
-                "age(s)",
-                "ratio",
-            ],
-        }
+        # Check the GPST format by examining the first data line directly
+        # to avoid circular dependency with info_processing
+        gpst_format = info_processing.get("gpst_format", "WNc_TOW")  # Default format
+
+        if self.logger is not None:
+            self.logger.debug(f"rtkpos_schema GPST format: {gpst_format}")
+
+        # Define column types based on GPST format
+        if gpst_format == "YMD_HMS":
+            col_types = {
+                pl.Utf8: ["date", "time"],
+                pl.Float64: [
+                    "latitude(deg)",
+                    "longitude(deg)",
+                    "height(m)",
+                ],
+                pl.UInt8: ["Q", "ns"],
+                pl.Float32: [
+                    "sdn(m)",
+                    "sde(m)",
+                    "sdu(m)",
+                    "sdne(m)",
+                    "sdeu(m)",
+                    "sdun(m)",
+                    "age(s)",
+                    "ratio",
+                ],
+            }
+        else:  # WNc_TOW format
+            col_types = {
+                pl.UInt16: ["WNc"],
+                pl.Float64: [
+                    "TOW(s)",
+                    "latitude(deg)",
+                    "longitude(deg)",
+                    "height(m)",
+                ],
+                pl.UInt8: ["Q", "ns"],
+                pl.Float32: [
+                    "sdn(m)",
+                    "sde(m)",
+                    "sdu(m)",
+                    "sdne(m)",
+                    "sdeu(m)",
+                    "sdun(m)",
+                    "age(s)",
+                    "ratio",
+                ],
+            }
 
         pos_schema = {}
         for dtype, columns in col_types.items():
             for col in columns:
                 pos_schema[col] = dtype
 
-        # print(pos_schema)
+        if self.logger is not None:
+            self.logger.debug(f"Using schema for GPST format: {gpst_format}")
 
         return pos_schema
 
@@ -206,12 +241,16 @@ class Rtkpos:
         """
         # read from the position file line per line until the line no longer starts with '%'
         # to get processing information
+        # TODO: Make this compatible with rtklib pos files which are parsed as csv files
+
         hdr_lines = []
+        first_data_line = None
         with open(self.pos_fn, "r") as f:
             line = f.readline()
             while line.startswith("%"):
                 hdr_lines.append(line)
                 line = f.readline()
+            first_data_line = line.strip()  # Store the first data line to check format
 
         counter = 0
         info_processing = {}
@@ -245,14 +284,28 @@ class Rtkpos:
         # treat the column names to get the correct list of column names
         col_names = [col.strip() for col in col_names]
 
-        col_names = ["WNc", "TOW(s)"] + col_names[2:]
+        # Detect GPST format by examining the first data line
+        # Check if the first column contains a date format (YYYY/MM/DD) or WNc format
+        if first_data_line:
+            first_column_data = first_data_line.split()[0]
+            if "/" in first_column_data:  # Y/M/D H/M/S format
+                col_names = ["date", "time"] + col_names[2:]
+                info_processing["gpst_format"] = "YMD_HMS"
+            else:  # WNc TOW format (e.g., "2345")
+                col_names = ["WNc", "TOW(s)"] + col_names[2:]
+                info_processing["gpst_format"] = "WNc_TOW"
+        else:
+            # Default to WNc TOW if we can't determine the format
+            col_names = ["WNc", "TOW(s)"] + col_names[2:]
+            info_processing["gpst_format"] = "WNc_TOW"
 
         if self.logger is not None:
             self.logger.debug(f"column names = \n{col_names}")
+            self.logger.debug(f"GPST format detected: {info_processing['gpst_format']}")
             # self.logger.info(f"info_processing = \n{info_processing}")
-            self.logger.debug(
-                f"Processing info:\n{json.dumps(info_processing, indent=4)}"
-            )
+            # self.logger.debug(
+            #    f"Processing info:\n{json.dumps(info_processing, indent=4)}"
+            # )
 
         return info_processing, col_names
 
@@ -267,33 +320,82 @@ class Rtkpos:
         """
 
         with rich_console.status("Collecting and adjusting data", spinner="aesthetic"):
-            # add date-time and PRN (as str) to the dataframe
-            if "WNc" in df_pos.columns and "TOW(s)" in df_pos.columns:
+            # Determine GPST format based on column names
+            gpst_format = "WNc_TOW"  # Default format
+            if (
+                "date" in df_pos.collect_schema().names()
+                and "time" in df_pos.collect_schema().names()
+            ):
+                gpst_format = "YMD_HMS"
+            elif (
+                "WNc" in df_pos.collect_schema().names()
+                and "TOW(s)" in df_pos.collect_schema().names()
+            ):
+                gpst_format = "WNc_TOW"
+
+            # add date-time to the dataframe based on the GPST format
+            if (
+                gpst_format == "WNc_TOW"
+                and "WNc" in df_pos.collect_schema().names()
+                and "TOW(s)" in df_pos.collect_schema().names()
+            ):
                 if self.logger is not None:
-                    self.logger.debug("\tadding datetime to the dataframe")
+                    self.logger.debug(
+                        "\tadding datetime to the dataframe from WNc and TOW"
+                    )
                 df_pos = df_pos.with_columns(
                     pl.struct(["WNc", "TOW(s)"])
-                    .apply(
+                    .map_elements(
                         lambda x: gpsms2dt(x["WNc"], x["TOW(s)"] * 1000),
+                        return_dtype=datetime.datetime,
+                    )
+                    .alias("DT")
+                ).lazy()
+            elif (
+                gpst_format == "YMD_HMS"
+                and "date" in df_pos.collect_schema().names()
+                and "time" in df_pos.collect_schema().names()
+            ):
+                if self.logger is not None:
+                    self.logger.debug(
+                        "\tadding datetime to the dataframe from date and time"
+                    )
+                # Convert YMD HMS format to datetime
+                df_pos = df_pos.with_columns(
+                    pl.struct(["date", "time"])
+                    .map_elements(
+                        lambda x: datetime.datetime.strptime(
+                            f"{x['date']} {x['time']}", "%Y/%m/%d %H:%M:%S.%f"
+                        ),
                         return_dtype=datetime.datetime,
                     )
                     .alias("DT")
                 ).lazy()
 
             # add UTM coordinates
-            if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
+            if (
+                "latitude(deg)" in df_pos.collect_schema().names()
+                and "longitude(deg)" in df_pos.collect_schema().names()
+            ):
                 if self.logger is not None:
                     self.logger.debug("\tadding UTM coordinates to the dataframe")
 
                 # Function to convert lat/lon in degrees to UTM
                 def latlon_to_utm(lat, lon):
-                    easting, northing, _, _ = utm.from_latlon(lat, lon)
-                    return {"easting": easting, "northing": northing}
+                    easting, northing, zone_number, zone_letter = utm.from_latlon(
+                        lat, lon
+                    )
+                    return {
+                        "easting": easting,
+                        "northing": northing,
+                        "zone_number": zone_number,
+                        "zone_letter": zone_letter,
+                    }
 
                 # Apply the conversion function lazily using map_elements with specified return_dtype
                 df_pos = df_pos.with_columns(
                     pl.struct(["latitude(deg)", "longitude(deg)"])
-                    .apply(
+                    .map_elements(
                         lambda row: latlon_to_utm(
                             row["latitude(deg)"], row["longitude(deg)"]
                         ),
@@ -301,6 +403,8 @@ class Rtkpos:
                             [
                                 pl.Field("easting", pl.Float64),
                                 pl.Field("northing", pl.Float64),
+                                pl.Field("zone_number", pl.Int64),
+                                pl.Field("zone_letter", pl.Utf8),
                             ]
                         ),
                     )
@@ -312,6 +416,13 @@ class Rtkpos:
                     [
                         pl.col("utm_coords").struct.field("easting").alias("UTM.E"),
                         pl.col("utm_coords").struct.field("northing").alias("UTM.N"),
+                        pl.col("utm_coords")
+                        .struct.field("zone_number")
+                        .cast(pl.UInt8)
+                        .alias("UTM.ZN"),
+                        pl.col("utm_coords")
+                        .struct.field("zone_letter")
+                        .alias("UTM.ZL"),
                     ]
                 ).lazy()
 
@@ -319,29 +430,21 @@ class Rtkpos:
                 df_pos = df_pos.drop(["utm_coords"]).lazy()
 
             # add geoid undulation and orthometric height
-            if "latitude(deg)" in df_pos.columns and "longitude(deg)" in df_pos.columns:
+            if (
+                "latitude(deg)" in df_pos.collect_schema().names()
+                and "longitude(deg)" in df_pos.collect_schema().names()
+            ):
                 if self.logger is not None:
                     self.logger.debug(
                         "\tadding geoid undulation & orthometric height to the dataframe"
                     )
                 # initialise the geodheight class
-                """
-                Initializes a GeoidHeight object with the specified geoid model file.
-                
-                Args:
-                    geoid_file (str): The path to the geoid model file (e.g. GEOID_PATH).
-                
-                Returns:
-                    GeoidHeight: An instance of the GeoidHeight class initialized with the specified geoid model.
-                """
                 gh_model = geoid.GeoidHeight(GEOID_PATH)
 
                 df_pos = df_pos.with_columns(
                     pl.struct(["latitude(deg)", "longitude(deg)"])
-                    .apply(
-                        lambda x: gh_model.get(
-                            x["latitude(deg)"], x["longitude(deg)"]
-                        ),
+                    .map_elements(
+                        lambda x: gh_model.get(x["latitude(deg)"], x["longitude(deg)"]),
                         return_dtype=pl.Float64,
                     )
                     .alias("undulation")
@@ -349,35 +452,37 @@ class Rtkpos:
 
                 df_pos = df_pos.with_columns(
                     pl.struct(["height(m)", "undulation"])
-                    .apply(
+                    .map_elements(
                         lambda x: x["height(m)"] - x["undulation"],
                         return_dtype=pl.Float64,
                     )
                     .alias("orthoH")
                 ).lazy()
-            # if self.logger is not None:
-            #     self.logger.info(
-            #         f"\tcollecting the dataframe. {str_red('Be patient.')}"
-            #     )
+
+            # add new column with general PNT quality ID from 'Q'
+            if "Q" in df_pos.collect_schema().names():
+                df_pos = df_pos.with_columns(
+                    pl.struct(["Q"])
+                    .map_elements(
+                        lambda x: rtklib_to_standard_pntqual(x["Q"]),
+                        return_dtype=pl.Utf8,
+                    )
+                    .alias("pnt_qual")
+                ).lazy()
+                if self.logger is not None:
+                    self.logger.debug(f"\tcreated new column 'pnt_qual' from 'Q'")
+
+            # collect the dataframe
+            if self.logger is not None:
+                self.logger.info(
+                    f"\tcollecting the dataframe. {str_red('Be patient.')}"
+                )
 
             try:
                 df_pos = df_pos.collect()
             except pl.exceptions.ComputeError as e:
-                sys.stderr.write(
-                    f"""{str_red("""
-                    \r[ERROR] Probably a dtype error.
-                    \rCheck if RTKlib date time is set to WkNr/TOW and not HMS.
-                    """)}
-                """
-                )
                 if self.logger is not None:
-                    self.logger.error(
-                        f"""
-                        \r Error collecting dataframe: {e}\n
-                        \rProbably a dtype error.
-                        \rCheck if RTKlib date time is set to WkNr/TOW and not HMS.
-                    """
-                    )
-                sys.exit(ERROR_CODES["E_FAILURE"])
+                    self.logger.error(f"Error collecting dataframe: {e}")
+                raise e
 
         return df_pos

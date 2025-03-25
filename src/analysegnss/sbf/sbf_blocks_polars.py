@@ -51,6 +51,10 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "Vy [m/s]",
             "Vz [m/s]",
             "COG [°]",
+            "RxClkBias [ms]",
+        ],
+        pl.Float32: [
+            "RxClkDrift [ppm]",
         ],
         pl.UInt32: [
             "TOW [0.001 s]",
@@ -70,10 +74,12 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "Latitude [rad]",
             "Longitude [rad]",
             "Height [m]",
+            "RxClkBias [ms]",
         ],
         pl.Float32: [
             "Undulation [m]",
             "COG [°]",
+            "RxClkDrift [ppm]",
         ],
         pl.UInt32: [
             "TOW [0.001 s]",
@@ -108,6 +114,7 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "Cov_latlat [m²]",
             "Cov_lonlon [m²]",
             "Cov_hgthgt [m²]",
+            "Cov_bb [m²]",
         ],
         pl.UInt32: [
             "TOW [0.001 s]",
@@ -124,13 +131,18 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "WNc [w]",
             "CommentLn",
         ],
-        pl.Utf8: ["Comment"],
+        pl.Utf8: [
+            "Comment",
+        ],
     },
     "BaseStation1": {
         pl.UInt32: [
             "TOW [0.001 s]",
         ],
-        pl.UInt16: ["WNc [w]", "BaseStationID"],
+        pl.UInt16: [
+            "WNc [w]",
+            "BaseStationID",
+        ],
         pl.UInt8: [
             "BaseType",
             "Source",
@@ -156,7 +168,6 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "WNt_oe [w]",
         ],
         pl.UInt8: [
-            "PRN",
             "CAorPonL2",
             "URA",
             "health",
@@ -164,6 +175,9 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "IODE2",
             "IODE3",
             "FitIntFlg",
+        ],
+        pl.String: [
+            "PRN",
         ],
         pl.Float32: [
             "T_gd [s]",
@@ -188,8 +202,6 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "i_0 [semi-circle]",
             "omega [semi-circle]",
         ],
-<<<<<<< HEAD
-=======
         pl.Datetime: [
             "DT",
         ],
@@ -263,10 +275,102 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
         pl.Datetime: [
             "DT",
         ],
->>>>>>> devam
+    },
+    "BDSNav": {
+        pl.UInt32: [
+            "TOW [0.001 s]",
+            "t_oe [s]",
+            "t_oc [s]",
+        ],
+        pl.UInt16: [
+            "WNc [w]",
+            "WN [w]",
+        ],
+        pl.String: [
+            "PRN",
+        ],
+        pl.UInt8: [
+            "URA",
+            "SatH1",
+            "IODC",
+            "IODE",
+        ],
+        pl.Float32: [
+            "T_GD1 [s]",
+            "T_GD2 [s]",
+            "a_f2 [s/s²]",
+            "a_f1 [s/s]",
+            "a_f0 [s]",
+            "DEL_N [semi-circle/s]",
+            "C_uc [rad]",
+            "C_us [rad]",
+            "C_ic [rad]",
+            "C_is [rad]",
+            "C_rc [m]",
+            "C_rs [m]",
+            "OMEGADOT [semi-circle/s]",
+            "IDOT [semi-circle/s]",
+        ],
+        pl.Float64: [
+            "M_0 [semi-circle]",
+            "e",
+            "SQRT_A [m**1/2]",
+            "OMEGA_0 [semi-circle]",
+            "i_0 [semi-circle]",
+            "omega [semi-circle]",
+        ],
+        pl.Datetime: [
+            "DT",
+        ],
+    },
+    "GLONav": {
+        pl.UInt32: [
+            "TOW [0.001 s]",
+            "t_oe [s]",
+        ],
+        pl.UInt16: [
+            "WNc [w]",
+            "WN_toe [w]",
+            "tb [min.]",
+            "N_T [d]",
+            "F_T [0.01 m]",
+        ],
+        pl.UInt8: [
+            "FreqNr",
+            "P1 [min.]",
+            "P2",
+            "E [d]",
+            "B",
+            "M",
+            "P",
+            "l",
+            "P4",
+            "C",
+        ],
+        pl.Float64: [
+            "X [1000 m]",
+            "Y [1000 m]",
+            "Z [1000 m]",
+        ],
+        pl.Float32: [
+            "Dx [1000 m/s]",
+            "Dy [1000 m/s]",
+            "Dz [1000 m/s]",
+            "Ddx [1000 m/s²]",
+            "Ddy [1000 m/s²]",
+            "Ddz [1000 m/s²]",
+            "gamma [Hz/Hz]",
+            "tau [s]",
+            "dtau [s]",
+        ],
+        pl.String: [
+            "PRN",
+        ],
+        pl.Datetime: [
+            "DT",
+        ],
     },
 }
-
 
 SBF_BLOCK_COLUMNS_SBF2ASC = {
     "PVTCartesian2": [

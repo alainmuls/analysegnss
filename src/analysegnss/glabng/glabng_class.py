@@ -205,8 +205,13 @@ class GLABNG:
             Returns:
                 dict: containing UTM coordinates
             """
-            easting, northing, _, _ = utm.from_latlon(lat, lon)
-            return {"easting": easting, "northing": northing}
+            easting, northing, zone_number, zone_letter = utm.from_latlon(lat, lon)
+            return {
+                "easting": easting,
+                "northing": northing,
+                "zone_number": zone_number,
+                "zone_letter": zone_letter,
+            }
 
         # Create schema dictionary
         schema = {}
@@ -254,6 +259,8 @@ class GLABNG:
                         [
                             pl.Field("easting", pl.Float64),
                             pl.Field("northing", pl.Float64),
+                            pl.Field("zone_number", pl.Int64),
+                            pl.Field("zone_letter", pl.Utf8),
                         ]
                     ),
                 )
@@ -265,6 +272,11 @@ class GLABNG:
                 [
                     pl.col("utm_coords").struct.field("easting").alias("UTM.E"),
                     pl.col("utm_coords").struct.field("northing").alias("UTM.N"),
+                    pl.col("utm_coords")
+                    .struct.field("zone_number")
+                    .cast(pl.UInt8)
+                    .alias("UTM.ZN"),
+                    pl.col("utm_coords").struct.field("zone_letter").alias("UTM.ZL"),
                 ]
             ).lazy()
 
@@ -272,7 +284,7 @@ class GLABNG:
             df_section = df_section.with_columns(
                 pl.struct(["lat", "lon"])
                 .apply(
-                    lambda x: gh_model.get(x["lat"], x["lon"], gh_model),
+                    lambda x: gh_model.get(x["lat"], x["lon"]),
                     return_dtype=pl.Float64,
                 )
                 .alias("undulation")
@@ -284,6 +296,12 @@ class GLABNG:
                 .apply(lambda x: x["ellH"] - x["undulation"], return_dtype=pl.Float64)
                 .alias("orthoH")
             ).lazy()
+
+            if "mode" in df_section.columns:
+                # Rename Column with PVT quality to general name
+                df_section = df_section.rename({"mode": "pnt_qual"}).lazy()
+                if self.logger:
+                    self.logger.debug(f"\trenaming column 'mode' to 'pnt_qual'")
 
             # Clean up intermediate columns
             df_section = df_section.drop(["Year", "DOY", "SOD", "utm_coords"]).lazy()

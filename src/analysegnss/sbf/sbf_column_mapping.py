@@ -1,7 +1,6 @@
 import polars as pl
 import numpy as np
 
-<<<<<<< HEAD
 # Define columns that need conversion from semi-circles to radians
 SEMICIRCLE_COLUMNS = {
     "GPS": [
@@ -16,7 +15,6 @@ SEMICIRCLE_COLUMNS = {
     "GAL": [],
     "BDS": [],
 }
-=======
 from analysegnss.sbf.sbf_blocks_polars import SBF_BLOCK_COLUMNS_BIN2ASC
 
 
@@ -28,12 +26,7 @@ def extract_semicircle_columns() -> dict:
         dict: dictionary of columns containing semi-circles for the GNSS type
     """
     # Map navigation block names to GNSS types
-    block_to_gnss = {
-        "GPSNav": "GPS",
-        "GALNav": "GAL",
-        # Add more mappings as needed
-        # "BDSNav": "BDS"  # Include when BeiDou navigation block is added
-    }
+    block_to_gnss = {"GPSNav": "GPS", "GALNav": "GAL", "BDSNav": "BDS"}
 
     # Initialize result dictionary with empty lists for each GNSS type
     result = {gnss_type: [] for gnss_type in set(block_to_gnss.values())}
@@ -51,7 +44,6 @@ def extract_semicircle_columns() -> dict:
                 result[gnss_type].extend(semicircle_cols)
 
     return result
->>>>>>> devam
 
 
 def convert_semicircles_to_radians(df: pl.DataFrame, gnss_type: str) -> pl.DataFrame:
@@ -67,12 +59,12 @@ def convert_semicircles_to_radians(df: pl.DataFrame, gnss_type: str) -> pl.DataF
     # Conversion factor: 1 semi-circle = π radians
     SEMI_TO_RAD = np.pi
 
-<<<<<<< HEAD
-=======
     # Replace your hardcoded SEMICIRCLE_COLUMNS with this
     SEMICIRCLE_COLUMNS = extract_semicircle_columns()
 
->>>>>>> devam
+    # Replace your hardcoded SEMICIRCLE_COLUMNS with this
+    SEMICIRCLE_COLUMNS = extract_semicircle_columns()
+
     # Convert each column containing semi-circles
     for col in SEMICIRCLE_COLUMNS[gnss_type]:
         if col in df.columns:
@@ -94,11 +86,10 @@ def rename_nav_columns(df: pl.DataFrame, gnss_type: str) -> pl.DataFrame:
     return df.rename(GNSS_NAV_COLUMN_MAPPINGS[gnss_type])
 
 
-<<<<<<< HEAD
 def convert_and_rename_semicircles(df):
     SEMI_TO_RAD = np.pi
 
-=======
+
 def convert_and_rename_semicircles(df: pl.DataFrame, gnss_type: str) -> pl.DataFrame:
     """converts the columns using semi-circles to radians and renames the columns
     according to the GNSS type
@@ -116,7 +107,6 @@ def convert_and_rename_semicircles(df: pl.DataFrame, gnss_type: str) -> pl.DataF
     # Replace your hardcoded SEMICIRCLE_COLUMNS with this
     SEMICIRCLE_COLUMNS = extract_semicircle_columns(gnss=gnss_type)
 
->>>>>>> devam
     for orig_col in SEMICIRCLE_COLUMNS.keys():
         if orig_col in df.columns:
             df = df.with_columns(pl.col(orig_col) * SEMI_TO_RAD)
@@ -126,7 +116,6 @@ def convert_and_rename_semicircles(df: pl.DataFrame, gnss_type: str) -> pl.DataF
 
 GNSS_NAV_COLUMN_MAPPINGS = {
     "GPS": {
-<<<<<<< HEAD
         "PRN": "prn",
         "WNc [w]": "WNc",
         "WN [w]": "WN",
@@ -134,21 +123,16 @@ GNSS_NAV_COLUMN_MAPPINGS = {
         "CAorPonL2": "CodesL2",
         "IDOT [semi-circle/s]": "IDOT",
         "IODE2": "IODE",
-=======
         "TOW [0.001 s]": "TOW",
         "WNc [w]": "WNc",
         "WN [w]": "WN",
         "CAorPonL2": "CodesL2",
         "IDOT [semi-circle/s]": "IDOT",
->>>>>>> devam
         "t_oc [s]": "toc",
         "a_f2 [s/s²]": "af2",
         "a_f1 [s/s]": "af1",
         "a_f0 [s]": "af0",
-<<<<<<< HEAD
         "IODC": "IODC",
-=======
->>>>>>> devam
         "C_rs [m]": "Crs",
         "DEL_N [semi-circle/s]": "deltaN",
         "M_0 [semi-circle]": "M0",
@@ -165,7 +149,6 @@ GNSS_NAV_COLUMN_MAPPINGS = {
         "omega [semi-circle]": "omega",
         "OMEGADOT [semi-circle/s]": "omegaDot",
         "T_gd [s]": "TGD",
-<<<<<<< HEAD
         "health": "health",
         "L2DataFlag": "L2Pflag",
         "FitIntFlg": "Fit",
@@ -178,7 +161,6 @@ GNSS_NAV_COLUMN_MAPPINGS = {
     },
     "BDS": {
         "PRN": "prn",
-=======
         "WNt_oc [w]": "WNt_oc",
         "WNt_oe [w]": "WNt_oe",
     },
@@ -212,9 +194,71 @@ GNSS_NAV_COLUMN_MAPPINGS = {
         "WNt_oe [w]": "WNt_oe",
     },
     "BDS": {
->>>>>>> devam
         "WN ": "WN",
         "URA": "SVacc",
         # ... BeiDou specific mappings
+        "TOW [0.001 s]": "TOW",
+        "WNc [w]": "WNc",
+        "WN [w]": "WN",
+        "PRN": "PRN",
+        "CAorPonL2": "CAorPonL2",
+        "URA": "SVacc",
+        "SatH1": "SatH1",
+        "IODC": "IODC",
+        "IODE": "IODE",
+        "t_oc [s]": "toc",
+        "t_oe [s]": "toe",
+        "a_f0 [s]": "af0",
+        "a_f1 [s/s]": "af1",
+        "a_f2 [s/s²]": "af2",
+        "T_GD1 [s]": "TGD1",
+        "T_GD2 [s]": "TGD2",
+        "DEL_N [semi-circle/s]": "deltaN",
+        "M_0 [semi-circle]": "M0",
+        "e": "eccen",
+        "SQRT_A [m**1/2]": "sqrtA",
+        "OMEGA_0 [semi-circle]": "Omega0",
+        "i_0 [semi-circle]": "Io",
+        "omega [semi-circle]": "omega",
+        "OMEGADOT [semi-circle/s]": "omegaDot",
+        "IDOT [semi-circle/s]": "IDOT",
+        "C_rs [m]": "Crs",
+        "C_rc [m]": "Crc",
+        "C_uc [rad]": "Cuc",
+        "C_us [rad]": "Cus",
+        "C_ic [rad]": "Cic",
+        "C_is [rad]": "Cis",
+    },
+    "GLO": {
+        "TOW [0.001 s]": "TOW",
+        "WNc [w]": "WNc",
+        "SVID": "SVID",
+        "FreqNr": "FreqNr",
+        "X [1000 m]": "X",
+        "Y [1000 m]": "Y",
+        "Z [1000 m]": "Z",
+        "Dx [1000 m/s]": "Dx",
+        "Dy [1000 m/s]": "Dy",
+        "Dz [1000 m/s]": "Dz",
+        "Ddx [1000 m/s²]": "Ddx",
+        "Ddy [1000 m/s²]": "Ddy",
+        "Ddz [1000 m/s²]": "Ddz",
+        "gamma [Hz/Hz]": "gamma",
+        "tau [s]": "tau",
+        "dtau [s]": "dtau",
+        "t_oe [s]": "t_oe",
+        "WN_toe [w]": "WN_toe",
+        "P1 [min.]": "P1",
+        "P2": "P2",
+        "E [d]": "E",
+        "B": "B",
+        "tb [min.]": "tb",
+        "M": "M",
+        "P": "P",
+        "l": "l",
+        "P4": "P4",
+        "N_T [d]": "N_T",
+        "F_T [0.01 m]": "F_T",
+        "C": "C",
     },
 }
