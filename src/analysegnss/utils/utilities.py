@@ -369,7 +369,12 @@ def print_df_in_chunks(title: str, df: pl.DataFrame, chunk_size: int = 15) -> st
 
     for i in range(0, total_cols, chunk_size):
         end_idx = min(i + chunk_size, total_cols)
-        log_message += f"\n{df.select(df.columns[i:end_idx])}"  # ".head(rows)}"
+        # Capture the chunk's string representation without printing it directly
+        chunk_str = df.select(df.columns[i:end_idx]).__str__().splitlines()
+        # Remove the shape line from the chunk's string representation
+        if len(chunk_str) > 0 and chunk_str[0].startswith("shape:"):
+            chunk_str = chunk_str[1:]
+        log_message += "\n" + "\n".join(chunk_str)
 
     return log_message
 
