@@ -25,7 +25,12 @@ from analysegnss.sbf.sbf_blocks_polars import (
     SBF_BLOCK_COLUMNS_BIN2ASC,
     SBF_BLOCK_COLUMNS_SBF2ASC,
 )
-from analysegnss.utils.utilities import locate, str_red, str_yellow
+from analysegnss.utils.utilities import (
+    locate,
+    str_red,
+    str_yellow,
+    print_df_in_chunks,
+)
 
 
 @dataclass
@@ -267,10 +272,10 @@ class SBF:
             if sbf_block == "Meas3Ranges":
                 cmd_bin2asc.append("--extractGenMeas")
 
-        # add logging level to cmd_sbf2asc when self._console_loglevel is DEBUG
-        if self._console_loglevel == logging.DEBUG:
-            self.logger.debug("Adding verbose flag to cmd_sbf2asc")
-            cmd_bin2asc.append("-v")
+        # # add logging level to cmd_sbf2asc when self._console_loglevel is DEBUG
+        # if self._console_loglevel == logging.DEBUG:
+        #     self.logger.debug("Adding verbose flag to cmd_sbf2asc")
+        #     cmd_bin2asc.append("-v")
 
         # Convert binary to text messages
         if self.logger:
@@ -341,7 +346,7 @@ class SBF:
 
                 # read csv file into dataframe
                 with rich_console.status(
-                    f"Reading from CSV file [bold green]{sbf_block}[/bold green]",
+                    f"Reading from CSV file [bold green]{sbf_block}[/bold green]\n",
                     spinner="aesthetic",
                 ):
                     sbf_df = pl.read_csv(
@@ -362,14 +367,12 @@ class SBF:
                     )  # commented this out because it changes the type of all columns to float
 
                     # add columns to the dataframe
-                    sbf_df = self.add_columns(block_df=sbf_df)
-                    print(
-                        f"sbf_df[{sbf_block}]:\n{sbf_df.select(sbf_df.columns[:20]).head(3)}"
-                        f"sbf_df[{sbf_block}]:\n{sbf_df.select(sbf_df.columns[20:]).head(3)}"
-                    )
-                    # print the column names of sbf_df one per line
-                    for col_name in sbf_df.columns:
-                        print(col_name)
+                    sbf_df, keep_cols, cols_removed = self.add_columns(block_df=sbf_df)
+                    print(print_df_in_chunks(title=f"sbf_df[{sbf_block}]", df=sbf_df))
+
+                    # # print the column names of sbf_df one per line
+                    # for col_name in sbf_df.columns:
+                    #     print(col_name)
 
                     # set the dtype again after having added some columns
                     # sbf_df = sbf_df.with_columns(
@@ -413,7 +416,11 @@ class SBF:
 
                 sbf_dfs[sbf_block] = sbf_df
                 if self.logger:
-                    self.logger.debug(f"sbf_dfs[{sbf_block}]:\n{sbf_dfs[sbf_block]}")
+                    self.logger.debug(
+                        print_df_in_chunks(
+                            title=f"sbf_dfs[{sbf_block}]", df=sbf_dfs[sbf_block]
+                        )
+                    )
 
                 # print(f"archive = {archive}")
                 # archiving the converted sbf file

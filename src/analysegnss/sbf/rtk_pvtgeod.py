@@ -19,7 +19,7 @@ from analysegnss.gnss.standard_pnt_quality_dict import (
 )
 from analysegnss.sbf.sbf_class import SBF
 from analysegnss.utils import init_logger
-from analysegnss.utils.utilities import combine_dfs
+from analysegnss.utils.utilities import combine_dfs, print_df_in_chunks
 from analysegnss.utils.argument_parser import (
     argument_parser_rtk,
     auto_populate_args_namespace,
@@ -118,11 +118,7 @@ def sbf_reader(parsed_args: argparse.Namespace, logger: Logger) -> dict:
             if "DT_right" in df_pvt.columns:
                 df_pvt = df_pvt.drop("DT_right")
 
-            logger.info(f"df_pvt from sbf PVTGeodetic: \n{df_pvt}")
-
-            qual_analysis = quality_analysis(geod_df=df_pvt, logger=logger)
-
-            return df_pvt, qual_analysis
+            # return df_pvt, qual_analysis
 
         else:  # only use the PVTGeodetic, no StdDev required
             # extract the PVT Geodetic2 block from SBF file
@@ -133,7 +129,7 @@ def sbf_reader(parsed_args: argparse.Namespace, logger: Logger) -> dict:
         # fill the null values with NaN
         # df_pvt = df_pvt.fill_null(float('nan')) # -- commented out because it changes the type of all columns to float
 
-        logger.info(f"df_pvt from sbf PVTGeodetic: \n{df_pvt}")
+        logger.info(print_df_in_chunks(title="df_pvt from SBF", df=df_pvt))
         # analyse the quality of the solution
         qual_analysis = quality_analysis(geod_df=df_pvt, logger=logger)
 
@@ -180,7 +176,9 @@ def main():
 
     df_pvt, qual_analysis = sbf_reader(parsed_args=args_parsed, logger=logger)
     # print the quality analysis
-    rprint(f"sbf pvt dataframe: \n{df_pvt}")
+    print(print_df_in_chunks(title="df_pvt from SBF", df=df_pvt))
+    if qual_analysis is not None:
+        rprint(qual_analysis)
 
 
 if __name__ == "__main__":
