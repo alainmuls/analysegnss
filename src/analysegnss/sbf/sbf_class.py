@@ -367,7 +367,7 @@ class SBF:
                     )  # .lazy()  # Use lazy evaluation right away if possible
 
                     # sbf_df.collect()
-                    print(print_df_in_chunks(title="sbf_df", df=sbf_df))
+                    # print(print_df_in_chunks(title="sbf_df", df=sbf_df))
                 rich_console.print()
 
                 # add columns to the dataframe
@@ -584,7 +584,7 @@ class SBF:
 
         # get the column names of the block_df
         column_names = block_df.collect_schema().names()
-        print(f"column_names = {column_names}")
+        # print(f"column_names = {column_names}")
 
         # remove the rows where 'Type' equals 0 (no PVT available)
         # if self.logger:
@@ -763,8 +763,11 @@ class SBF:
 
         # If an SBF block doesn't contain a column used in this func,
         # the collect() will throw an error.
-        if getattr(block_df, "collect", None) is not None:
-            block_df = block_df.collect()
+        with rich_console.status(
+            "Please wait - Collecting dataframe:...\n", spinner="aesthetic"
+        ):
+            if getattr(block_df, "collect", None) is not None:
+                block_df = block_df.collect()
 
         return block_df, added_cols, removed_cols
 

@@ -53,7 +53,7 @@ def quality_analysis(geod_df: pl.DataFrame, logger: Logger = None) -> list:
     )
 
     # print the quality analysis
-    rprint(f"Quality analysis from sbf PVTGeodetic:\n{qual_tabular}")
+    # rprint(f"Quality analysis from sbf PVTGeodetic:\n{qual_tabular}")
 
     if logger is not None:
         logger.debug(f"Quality analysis:\n{qual_tabular}")
@@ -176,7 +176,7 @@ def main():
 
     df_pvt, qual_analysis = sbf_reader(parsed_args=args_parsed, logger=logger)
     # print the quality analysis
-    print(print_df_in_chunks(title="df_pvt from SBF", df=df_pvt))
+    rprint(print_df_in_chunks(title="df_pvt from SBF", df=df_pvt))
     if qual_analysis is not None:
         qual_tabular = tabulate(
             qual_analysis,
