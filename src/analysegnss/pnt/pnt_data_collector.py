@@ -14,9 +14,9 @@ from rich import print as rprint
 
 # Local application imports
 import analysegnss.nmea.nmea_reader as nmea_reader
-import analysegnss.rtkpos.ppk_rnx2rtkp as ppk_rnx2rtkp
-import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
-import analysegnss.glabng.glab_parser as glab_parser
+import analysegnss.rtkpos.rtkpos_reader as rtkpos_reader
+import analysegnss.sbf.sbf_reader as sbf_reader
+import analysegnss.glabng.glab_reader as glab_reader
 from analysegnss.config import ERROR_CODES, rich_console
 from analysegnss.pnt.pnt_columns import (
     get_pnt_columns,
@@ -35,8 +35,7 @@ def pnt_data_collector(
     parsed_args: argparse.Namespace, logger: logging.Logger
 ) -> Tuple[dict[str, pl.DataFrame], dict[str, pl.DataFrame]]:
     """Collects PNT data from given sources and constructs standardized PNT dataframes
-    The function will return a dictionary with the source type as key and the
-    standardized pnt dataframe as value.
+    The function will return a dictionary with the source type as key and the standardized pnt dataframe as value.
     The standardized pnt dataframe will have the following columns:
     - DT: datetime
     - UTM.E: east coordinate
@@ -150,18 +149,13 @@ def pnt_data_collector(
             standard_pnt_dfs=standard_pnt_dfs, logger=logger
         )
 
-        if parsed_args.merge_dest is not None:
-            # get destination directory of merged pnt dataframe
-            merged_pnt_odir = os.path.dirname(os.path.abspath(parsed_args.merge_dest))
-            merged_pnt_dest = os.path.join(
-                merged_pnt_odir, "_merged_standard_pnt_sources.csv"
-            )
-            logger.info(f"Merged PNT dataframe will be written to: {merged_pnt_dest}")
+        # create merged pnt dataframe destination for writing to file
+        if parsed_args.merge_ofn is not None:
+            merged_pnt_dest = parsed_args.merge_ofn + "_merged"
         else:
-            merged_pnt_dest = "_merged_standard_pnt_sources.csv"
-            logger.warning(
-                f"No destination directory provided for merged PNT dataframe. Not writing to file."
-            )
+            merged_pnt_dest = "_merged_"
+
+        logger.info(f"Merged PNT dataframe will be written to: {merged_pnt_dest}")
 
         # add merged pnt dataframe to dictionary
         standard_pnt_dfs[merged_pnt_dest] = merged_pnt_df
@@ -172,23 +166,31 @@ def pnt_data_collector(
         logger.info(f"PNT source: {source}")
         logger.info(f"PNT Standardized dataframe:\n{pnt_df}")
         rprint(f"\nPNT source: {source}")
-        rprint(f"\nPNT Standardized dataframe:\n{pnt_df}")
+        rprint(f"\nPNT [bold yellow]Standardized dataframe:[/bold yellow]\n{pnt_df}")
 
     ### PRINT DEFAULT PNT DATAFRAMES ###
     for source, pnt_df in default_pnt_dfs.items():
         logger.info(f"PNT source: {source}")
         logger.info(f"PNT Default dataframe:\n{pnt_df}")
         rprint(f"\nPNT source: {source}")
-        rprint(f"\nPNT Default dataframe:\n{pnt_df}")
+        rprint(f"\nPNT [bold yellow]Default dataframe:[/bold yellow]\n{pnt_df}")
 
     ### WRITE SOURCED PNT DATAFRAMES TO CSV ###
     if parsed_args.csv_out:
+        # write standardized PNT dataframes to csv
         write_pnt_df_dict_to_csv(
-            logger=logger, pnt_dfs=standard_pnt_dfs, suffix="pnt_standardized"
+            logger=logger,
+            pnt_dfs=standard_pnt_dfs,
+            suffix="_pnt_standardized",
+            output_dir=parsed_args.output_dir,
         )
 
+        # write default PNT dataframes to csv
         write_pnt_df_dict_to_csv(
-            logger=logger, pnt_dfs=default_pnt_dfs, suffix="pnt_default"
+            logger=logger,
+            pnt_dfs=default_pnt_dfs,
+            suffix="_pnt_default",
+            output_dir=parsed_args.output_dir,
         )
 
     return standard_pnt_dfs, default_pnt_dfs
@@ -216,16 +218,16 @@ def get_source_df(
             logger.debug(f"Creating PPK position dataframe")
             if source_ifn is not None:  # otherwise use the parsed_args.pos_ifn
                 parsed_args.pos_ifn = source_ifn
-            df_source, _ = ppk_rnx2rtkp.rtkp_pos(parsed_args=parsed_args, logger=logger)
+            df_source, _ = rtkpos_reader.rtkp_pos(
+                parsed_args=parsed_args, logger=logger
+            )
 
         case "RTK":
             # Create RTK position dataframe
             logger.debug(f"Creating RTK position dataframe")
             if source_ifn is not None:  # otherwise use the parsed_args.sbf_ifn
                 parsed_args.sbf_ifn = source_ifn
-            df_source, _ = rtk_pvtgeod.sbf_reader(
-                parsed_args=parsed_args, logger=logger
-            )
+            df_source, _ = sbf_reader.sbf_reader(parsed_args=parsed_args, logger=logger)
 
         case "GLABNG":
             # Create GLAB position dataframe
@@ -239,7 +241,7 @@ def get_source_df(
                 "--section",
                 "OUTPUT",
             ]
-            dfs_glab = glab_parser.glab_parser(argv=glab_parser_args)
+            dfs_glab = glab_reader.glab_parser(argv=glab_parser_args)
             df_source = dfs_glab["OUTPUT"]
             if logger:
                 logger.debug(f"GLAB OUTPUT dataframe:\n{df_source}")
@@ -294,6 +296,7 @@ def get_source_df(
                     )
             except Exception as e:
                 logger.error(f"Error creating PNT_CSV dataframe: {str(e)}")
+                logger.error(f"Debugging: Check if seperator (--sep) is correctly set")
                 raise
 
         case _:
@@ -506,7 +509,7 @@ def merge_pnt_sources(standard_pnt_dfs: dict, logger: logging.Logger) -> pl.Data
 
 
 def write_pnt_df_dict_to_csv(
-    logger: logging.Logger, pnt_dfs: dict, suffix: str = "_pnt"
+    logger: logging.Logger, pnt_dfs: dict, suffix: str = "_pnt", output_dir: str = None
 ):
     """Write PNT dataframe to CSV
 
@@ -519,9 +522,31 @@ def write_pnt_df_dict_to_csv(
     ### WRITE PNT DATAFRAMES TO CSV ###
 
     for source_ifn_abs, pnt_df in pnt_dfs.items():
-        # get destination directory for merged pnt dataframe
-        output_dest = os.path.splitext(source_ifn_abs)[0] + suffix + ".csv"
+        # get full path destination for all PNT dataframes which is extracted from the pnt_dfs dictionary key
 
+        # check if user provided an output directory
+        if output_dir is not None:
+            output_dir = os.path.abspath(output_dir)
+            # check if output directory exists
+            if not os.path.exists(output_dir):
+                logger.info(f"Output directory {output_dir} does not exist")
+                logger.info(f"Creating output directory {output_dir}")
+                # create output directory if it does not exist
+                os.makedirs(output_dir, exist_ok=True)
+
+            output_dest = os.path.abspath(
+                os.path.join(
+                    output_dir, os.path.basename(source_ifn_abs) + suffix + ".csv"
+                )
+            )
+        else:
+            output_dest = os.path.abspath(
+                os.path.splitext(source_ifn_abs)[0] + suffix + ".csv"
+            )
+
+        logger.info(f"Writing PNT dataframe to {output_dest}")
+
+        # write pnt dataframe to csv
         pnt_df.write_csv(output_dest)
 
         # check if file was written successfully

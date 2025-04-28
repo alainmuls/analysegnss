@@ -1,5 +1,6 @@
-#!/usr/bin:env python
+#!/usr/bin/env python
 
+# Standard library imports
 import logging
 import os
 import shutil
@@ -7,13 +8,86 @@ import subprocess
 import sys
 from datetime import date, datetime, timedelta
 
+# Third party imports
 import numpy as np
 import polars as pl
+from rich import print as rprint
 from termcolor import colored
 
+# Local application imports
 from analysegnss.config import ERROR_CODES
 
-__author__ = "amuls"
+########################
+### Utility classes ####
+########################
+
+
+class ProcessOutputCollector:
+    """
+    A utility class for collecting and saving process output messages.
+
+    This class provides functionality to collect text messages throughout a process
+    and save them to a file at the end. It's useful for creating process summaries
+    and audit trails.
+
+    Attributes:
+        messages (list): List of collected messages
+    """
+
+    def __init__(self):
+        """Initialize an empty message collector."""
+        self.messages = []
+
+    def add_message(self, message: str, timestamp: bool = True) -> None:
+        """
+        Add a message to the collector.
+
+        Args:
+            message (str): The message to add
+            timestamp (bool, optional): Whether to add a timestamp. Defaults to False.
+        """
+
+        if timestamp:
+            timestamp_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            message = f"[{timestamp_str}] {message}"
+        self.messages.append(message)
+
+    def save_to_file(self, output_path: str) -> None:
+        """
+        Save all collected messages to a file.
+
+        Args:
+            output_path (str): output file path
+        """
+        try:
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            with open(output_path, "a") as f:
+                f.write("\n".join(self.messages))
+        except Exception as e:
+            rprint(f"Error saving message collector output: [red]{str(e)}[/red]")
+
+        if os.path.exists(output_path):
+            rprint(f"Message collector output saved to: [green]{output_path}[/green]\n")
+        else:
+            rprint(f"Error saving message collector output: [red]{str(e)}[/red]\n")
+
+    def clear(self) -> None:
+        """Clear all collected messages."""
+        self.messages = []
+
+    def get_messages(self) -> list:
+        """
+        Get all collected messages.
+
+        Returns:
+            list: List of all collected messages
+        """
+        return self.messages.copy()
+
+
+#########################
+### Utility functions ###
+#########################
 
 
 def change_directory(mydir: str, name_logger: str = None) -> bool:
@@ -353,13 +427,16 @@ def si64(val, e_return_none: bool = True, logger: logging.Logger = None):
             return val
 
 
-def print_df_in_chunks(title: str, df: pl.DataFrame, chunk_size: int = 15) -> str:
+def print_df_in_chunks(
+    title: str, df: pl.DataFrame, chunk_size: int = 15, rows: int = 3
+) -> str:
     """Print a dataframe in chunks of columns with a specified number of rows.
 
     Args:
         title (str): Title of the dataframe
         df (pl.DataFrame): DataFrame to print
         chunk_size (int): Number of columns to print in each chunk
+        rows (int): Number of rows to print for each chunk
 
     Returns:
         str: Log message to print
@@ -369,12 +446,7 @@ def print_df_in_chunks(title: str, df: pl.DataFrame, chunk_size: int = 15) -> st
 
     for i in range(0, total_cols, chunk_size):
         end_idx = min(i + chunk_size, total_cols)
-        # Capture the chunk's string representation without printing it directly
-        chunk_str = df.select(df.columns[i:end_idx]).__str__().splitlines()
-        # Remove the shape line from the chunk's string representation
-        if len(chunk_str) > 0 and chunk_str[0].startswith("shape:"):
-            chunk_str = chunk_str[1:]
-        log_message += "\n" + "\n".join(chunk_str)
+        log_message += f"\n{df.select(df.columns[i:end_idx])}"  # ".head(rows)}"
 
     return log_message
 

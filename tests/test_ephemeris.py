@@ -1,7 +1,7 @@
 import sys
 import numpy as np
 import pytest
-from rich import print
+from rich import print as rprint
 
 from src.analysegnss.config import GPS_BDS_WEEK_DIFF
 

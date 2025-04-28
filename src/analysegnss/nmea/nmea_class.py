@@ -11,10 +11,8 @@ import sys
 # Third-party imports
 import polars as pl
 import pynmea2
-from rich import print
-from rich import print
+from rich import print as rprint
 from rich.console import Console
-import utm
 import utm
 
 # Local application imports
@@ -422,7 +420,7 @@ class NMEA:
         # Reorder DataFrame
         nmea_df = nmea_df.select(first_cols + remaining_cols).lazy()
 
-        # TODO orthoH column is already present in the NMEA messages, however, it can't be interesting to double check if it is correct
+        # TODO orthoH column is already present in the NMEA messages, however, it can be interesting to double check if it is correct
 
         # cast nmea gnss mode/type to gnss
 

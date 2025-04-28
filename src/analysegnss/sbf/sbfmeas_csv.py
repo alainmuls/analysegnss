@@ -342,11 +342,11 @@ def convert_meas3_csv(
 
         # logger.debug(f"Unique sigt values:\n{df_csv.select("sigt").unique()}")
 
+        logger.debug("Mapping between SignalType, frequency and sigt:")
         logger.debug(
-            f"Mapping between SignalType, frequency and sigt:\n"
-            f"{df_csv.select(['SignalType', 'GNSS', 'cfreq', 'sigt'])
+            df_csv.select(["SignalType", "GNSS", "cfreq", "sigt"])
             .unique()
-            .sort('SignalType')}"
+            .sort("SignalType")
         )
 
     # TODO: strange that we have to add the space after SignalType!!!!
@@ -450,7 +450,8 @@ def convert_dataframe_csv(
     df_csv = df_csv.sort(["WKNR", "TOW"])
 
     if logger is not None:
-        logger.info(f"Intermediate dataframe 'df_csv'\n{df_csv}")
+        logger.info(f"Intermediate dataframe 'df_csv'\n"
+					f"{print_df_in_chunks(title='fd_csv', df=df_csv}")
 
     if parsed_args.verbose is not None and parsed_args.verbose > 0:
         print("Intermediate dataframe 'df_csv':")

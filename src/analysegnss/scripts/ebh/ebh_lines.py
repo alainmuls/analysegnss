@@ -11,11 +11,12 @@ import polars as pl
 from rich import print as rprint
 from tabulate import tabulate
 
+from analysegnss.analyse.pnt_quality_analysis import quality_analysis
 from analysegnss.config import ERROR_CODES
 from analysegnss.gnss.gnss_dt import gnss2dt
-import analysegnss.rtkpos.ppk_rnx2rtkp as ppk_rnx2rtkp
+import analysegnss.rtkpos.rtkpos_reader as rtkpos_reader
 import analysegnss.rtkpos.rtklib_constants as rtklibc
-import analysegnss.sbf.rtk_pvtgeod as rtk_pvtgeod
+import analysegnss.sbf.sbf_reader as sbf_reader
 from analysegnss.utils import init_logger
 from analysegnss.utils.utilities import str_red, str_yellow
 from analysegnss.utils.argument_parser import argument_parser_ebh_lines
@@ -30,21 +31,8 @@ def get_ppk_dataframe(parsed_args: argparse.Namespace, logger: Logger) -> pl.Dat
     Returns:
         pl.DataFrame: dataframe with PPK solution
     """
-    ppk_rnx2rtkp_args = ["ppk_rnx2rtkp.py"]
-    ppk_rnx2rtkp_args.append("--pos_ifn")
-    ppk_rnx2rtkp_args.append(parsed_args.pos_ifn)
-    if parsed_args.verbose:
-        match parsed_args.verbose:
-            case 1:
-                ppk_rnx2rtkp_args.append("-v")
-            case 2:
-                ppk_rnx2rtkp_args.append("-vv")
-            case 3:
-                ppk_rnx2rtkp_args.append("-vvv")
 
-    logger.debug(f"ppk_rnx2rtkp_args = {ppk_rnx2rtkp_args}")
-
-    df_pos = ppk_rnx2rtkp.rtkp_pos(argv=ppk_rnx2rtkp_args)
+    df_pos, _ = rtkpos_reader.rtkp_pos(parsed_args=parsed_args, logger=logger)
 
     return df_pos
 
@@ -58,26 +46,15 @@ def get_rtk_dataframe(parsed_args: argparse.Namespace, logger: Logger) -> pl.Dat
     Returns:
         pl.DataFrame: dataframe with RTK solution
     """
-    rtk_pvtgeod_args = ["rtk_pvtgeod.py"]
-    rtk_pvtgeod_args.append("--sbf_ifn")
-    rtk_pvtgeod_args.append(parsed_args.sbf_ifn)
-    if parsed_args.verbose:
-        match parsed_args.verbose:
-            case 1:
-                rtk_pvtgeod_args.append("-v")
-            case 2:
-                rtk_pvtgeod_args.append("-vv")
-            case 3:
-                rtk_pvtgeod_args.append("-vvv")
 
-    logger.debug(f"rtk_pvtgeod_args = {rtk_pvtgeod_args}")
-
-    df_pos = rtk_pvtgeod.rtk_pvtgeod(argv=rtk_pvtgeod_args)
+    df_pos, _ = sbf_reader.sbf_reader(parsed_args=parsed_args, logger=logger)
 
     return df_pos
 
 
-def read_ebh_line_timings(timings_fn: str | None, timings: dict | None, logger: Logger) -> dict:
+def read_ebh_line_timings(
+    timings_fn: str | None, timings: dict | None, logger: Logger
+) -> dict:
     """read the ebh lines timings from the file or dict
 
     Args:
@@ -108,7 +85,9 @@ def read_ebh_line_timings(timings_fn: str | None, timings: dict | None, logger: 
                 matches = re.findall(pattern, vals[0])
 
                 # Convert the extracted strings to their appropriate types (int or float)
-                values = [float(value) if "." in value else int(value) for value in matches]
+                values = [
+                    float(value) if "." in value else int(value) for value in matches
+                ]
                 # print(f"values = {values}")
 
                 line_timings[key] = [
@@ -124,16 +103,15 @@ def read_ebh_line_timings(timings_fn: str | None, timings: dict | None, logger: 
                 gnss2dt(week=value[0][0], tow=value[0][1]),
                 gnss2dt(week=value[1][0], tow=value[1][1]),
             ]
-    
+
     else:
         logger.error("No ebh timings provided. EXITING.")
         sys.exit(ERROR_CODES["E_NO_EBH_TIMINGS"])
 
-
     # check if the timings file is empty
     if not line_timings:
         rprint(
-                f"[red]ERROR: File {timings_fn} is empty. Probably no timings key found in SBF comments or sbf comment are modified. Exiting[/red]"
+            f"[red]ERROR: File {timings_fn} is empty. Probably no timings key found in SBF comments or sbf comment are modified. Exiting[/red]"
         )
         logger.critical(f"File {timings_fn} is empty. Exiting")
         sys.exit(ERROR_CODES["E_FILE_EMPTY"])
@@ -169,7 +147,7 @@ def ebh_lines_map_angle(
         # Checking if dataframe is not empty. The following if clause handles the case when fewer lines are processed (for PPK) than there are key in ebh_timings
         if row_start.is_empty():
             logger.warning(
-                f"No data found for {timings[0].strftime('%Y/%m/%d %H:%M:%S')}. Breaking."
+                f"No data found for {timings[0].strftime('%Y/%m/%d %H:%M:%S')}. Skipping line {ebh_key}."
             )
 
         else:
@@ -273,12 +251,14 @@ def ebh_line_thin_out(
 
     # keep only the rows where the quality is FIX and FLOAT (EBH_process warns user if assur results contain floats)
     if hasattr(parsed_args, "pos_ifn") and parsed_args.pos_ifn:
-        df_line = df_line.filter(pl.col("Q").is_in([1,2])).lazy()
+        df_line = df_line.filter(pl.col("Q").is_in([1, 2])).lazy()
     elif hasattr(parsed_args, "sbf_ifn") and parsed_args.sbf_ifn:
-        df_line = df_line.filter(pl.col("Type").is_in([4,5])).lazy()
+        df_line = df_line.filter(pl.col("Type").is_in([4, 5])).lazy()
     else:
         if logger is not None:
-            logger.error("No GNSS qual type 'Q' or 'Type' relating to fix or float found. Exiting...")
+            logger.error(
+                "No GNSS qual type 'Q' or 'Type' relating to fix or float found. Exiting..."
+            )
         sys.exit(ERROR_CODES["E_NO_QUAL"])
 
     #  Thinning out the dataframe to keep positions every 0.5 meters
@@ -332,12 +312,11 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
             [
                 "DT",
                 "Q",
+                "pnt_qual",
                 "ns",
                 "UTM.E",
                 "UTM.N",
                 "orthoH",
-                # "latitude(deg)",
-                # "longitude(deg)",
             ]
         )
     elif hasattr(parsed_args, "sbf_ifn") and parsed_args.sbf_ifn:
@@ -352,14 +331,15 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
         #    f"Dataframe obtained from {str_yellow('RTK')} processing of "
         #    f"{str_yellow(parsed_args.sbf_ifn)}"
         # )
-        df_pos = pos_df.select(["DT", "Type", "NrSV", "UTM.E", "UTM.N", "orthoH"])
+        df_pos = pos_df.select(
+            ["DT", "Type", "pnt_qual", "NrSV", "UTM.E", "UTM.N", "orthoH"]
+        )
     else:
         logger.error("No processing type selected or no input file provided. EXITING.")
         sys.exit(ERROR_CODES["E_FILE_NOT_EXIST"])
 
     logger.debug(df_pos)
 
-    
     # read the timings for the ebh_lines
     if hasattr(parsed_args, "timing_ifn") and parsed_args.timing_ifn:
         ebh_timings = read_ebh_line_timings(
@@ -367,7 +347,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
         )
         logger.debug(f"ebh_timings extracted from {parsed_args.timing_ifn}")
         logger.debug(f"ebh_timings = {ebh_timings}")
-    elif hasattr(parsed_args, "ebh_timings") and parsed_args.ebh_timings:   
+    elif hasattr(parsed_args, "ebh_timings") and parsed_args.ebh_timings:
         ebh_timings = read_ebh_line_timings(
             timings_fn=None, timings=parsed_args.ebh_timings, logger=logger
         )
@@ -377,7 +357,6 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
         logger.error("No ebh timings provided. EXITING.")
         sys.exit(ERROR_CODES["E_NO_EBH_TIMINGS"])
 
-    
     # calculate the map_angle for each ebh_line
     ebh_lines_map_angle(df_pos=df_pos, ebh_timings=ebh_timings, logger=logger)
 
@@ -396,6 +375,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
     )
 
     qual_ebh_lines = {}  # dict to store the quality of the ebh lines
+    qual_ebh_lines_tabular = {}
     # check quality of each ebh line
     # Thin out line, keep RTK/PPK fixed results
     # save in CSV files using ";" as separator
@@ -404,22 +384,28 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
         # Checking quality of each ebh line for ppk and rtk result.
         # This info is needed to decide whether rtk or ppk quality is sufficient for ASSUR
         if hasattr(parsed_args, "pos_ifn") and parsed_args.pos_ifn:
-            qual_ebh_lines[ebh_key] = ppk_rnx2rtkp.quality_analysis(
-                ebh_assur_line, logger=logger
+            qual_ebh_lines[ebh_key], qual_ebh_lines_tabular[ebh_key] = quality_analysis(
+                df_pnt=ebh_assur_line,
+                file_name=os.path.basename(parsed_args.pos_ifn),
+                logger=logger,
             )
             logger.info(
                 f"The ppk quality of the line {ebh_key} is {qual_ebh_lines[ebh_key]}"
             )
-            #TODO put here function (ebhrtk_to_csv) to save dataframes to csv files that can be used for plotting
-        else:
-            qual_ebh_lines[ebh_key] = rtk_pvtgeod.quality_analysis(
-                ebh_assur_line, logger=logger
+            # TODO put here function (ebhrtk_to_csv) to save dataframes to csv files that can be used for plotting
+        elif hasattr(parsed_args, "sbf_ifn") and parsed_args.sbf_ifn:
+            qual_ebh_lines[ebh_key], qual_ebh_lines_tabular[ebh_key] = quality_analysis(
+                df_pnt=ebh_assur_line,
+                file_name=os.path.basename(parsed_args.sbf_ifn),
+                logger=logger,
             )
             logger.warning(
                 f"The rtk quality of the line {ebh_key} is {qual_ebh_lines[ebh_key]}"
             )
 
-            #TODO put here function (ebhppk_to_csv) to save dataframes to csv files that can be used for plotting
+            # TODO put here function (ebhppk_to_csv) to save dataframes to csv files that can be used for plotting
+        else:
+            pass
 
         # thin out the df_line to keep positions every 0.5 meters and keep only RTK/PPK fixed results
         ebh_assur_line = ebh_line_thin_out(
@@ -437,7 +423,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
             f"{ebh_assur_line.select(['UTM.E', 'UTM.N', 'orthoH'])}"
         )
 
-        # keep the columns UTM.E, UTM.N and ortoH
+        # keep the columns UTM.E, UTM.N and orthoH
         ebh_assur_df = ebh_assur_line.select(["UTM.E", "UTM.N", "orthoH"])
 
         # if ebh destination directory is not specified it will write to EBH_ASSUR dir in the directory of the input sbf or pos file
@@ -466,7 +452,7 @@ def ebh_lines(parsed_args: argparse.Namespace, logger: Logger):
             logger=logger,
         )
 
-    return qual_ebh_lines
+    return qual_ebh_lines, qual_ebh_lines_tabular
 
 
 def ebh_to_assurfmt(

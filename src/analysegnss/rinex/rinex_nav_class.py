@@ -4,17 +4,12 @@ from dataclasses import dataclass, field
 from io import StringIO
 
 import polars as pl
-from rich import print as rprint
+# from rich import print as rprint
 
-import analysegnss.rinex.rinex_column_names as rcn
-from analysegnss.config import DICT_GNSS, rich_console
 from analysegnss.rinex.rinex_class import RINEX
-from analysegnss.utils.utilities import (
-    str_green,
-    str_red,
-    str_yellow,
-    print_df_in_chunks,
-)
+from analysegnss.config import DICT_GNSS, rich_console
+import analysegnss.rinex.rinex_column_names as rcn
+from analysegnss.utils.utilities import str_green, str_red, str_yellow
 
 
 @dataclass
@@ -169,8 +164,14 @@ class RINEX_NAV(RINEX):
                 r_nav_dict = self.gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
                 if r_nav_dict is not None:
                     gnss_nav_dict.update(r_nav_dict)
-
+                    
             rich_console.print(f"GNSS [green]{has_glonass}[/green] processed.")
+            
+            r_nav_dict = self.gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
+            if r_nav_dict is not None:
+                gnss_nav_dict.update(r_nav_dict)
+                    
+            rich_console.print(f"GNSS {has_glonass} processed.")
 
         return gnss_nav_dict
 

@@ -178,7 +178,12 @@ def main():
     # print the quality analysis
     print(print_df_in_chunks(title="df_pvt from SBF", df=df_pvt))
     if qual_analysis is not None:
-        rprint(qual_analysis)
+        qual_tabular = tabulate(
+            qual_analysis,
+            headers=["PNT Mode", "Count", "Percentage", "Total Observations"],
+            tablefmt="fancy_outline",
+        )
+        rprint(f"Analysis of the quality of SBF position data:\n{qual_tabular}")
 
 
 if __name__ == "__main__":

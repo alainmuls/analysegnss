@@ -242,7 +242,8 @@ class GLABNG:
                     pl.col("date_parts")
                     .map_elements(
                         lambda x: datetime.datetime(year=int(x[0]), month=1, day=1)
-                        + datetime.timedelta(days=int(x[1]) - 1, seconds=float(x[2]))
+                        + datetime.timedelta(days=int(x[1]) - 1, seconds=float(x[2])),
+                        return_dtype=pl.Datetime,
                     )
                     .alias("DT")
                 )

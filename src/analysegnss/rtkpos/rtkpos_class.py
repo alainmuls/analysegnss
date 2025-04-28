@@ -450,14 +450,16 @@ class Rtkpos:
                     .alias("undulation")
                 ).lazy()
 
-                df_pos = df_pos.with_columns(
-                    pl.struct(["height(m)", "undulation"])
-                    .map_elements(
-                        lambda x: x["height(m)"] - x["undulation"],
-                        return_dtype=pl.Float64,
-                    )
-                    .alias("orthoH")
-                ).lazy()
+                # add orthometric height
+                if "height(m)" in df_pos.collect_schema().names():
+                    df_pos = df_pos.with_columns(
+                        pl.struct(["height(m)", "undulation"])
+                        .map_elements(
+                            lambda x: x["height(m)"] - x["undulation"],
+                            return_dtype=pl.Float64,
+                        )
+                        .alias("orthoH")
+                    ).lazy()
 
             # add new column with general PNT quality ID from 'Q'
             if "Q" in df_pos.collect_schema().names():
