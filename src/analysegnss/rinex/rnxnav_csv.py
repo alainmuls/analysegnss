@@ -5,7 +5,7 @@ import os
 import sys
 
 import polars as pl
-from rich import print
+from rich import print as rprint
 
 from analysegnss.config import ERROR_CODES, DICT_GNSS
 from analysegnss.rinex.rinex_nav_class import RINEX_NAV
@@ -50,7 +50,7 @@ def rnxnav_csv(argv: list):
     try:
         gnss_nav_dict = rnxnav.gfzrnx_tabnav()
     except RuntimeError:
-        print("No data available for selected GNSS")
+        rprint(f"No data available for (some) selected GNSS {args_parsed.gnss}")
         return 1
 
     # get directory part and filename without extension part of the RINEX navigation file
@@ -70,7 +70,7 @@ def rnxnav_csv(argv: list):
             )
 
         if rnxnav._console_loglevel > logging.WARNING:
-            print(f"Created for {DICT_GNSS[gnss]["name"]}-{nav_type}: {csv_fn}")
+            rprint(f"Created for {DICT_GNSS[gnss]["name"]}-{nav_type}: {csv_fn}")
 
         nav_df.write_csv(
             csv_fn,

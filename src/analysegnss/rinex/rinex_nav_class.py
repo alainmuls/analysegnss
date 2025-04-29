@@ -4,12 +4,17 @@ from dataclasses import dataclass, field
 from io import StringIO
 
 import polars as pl
-# from rich import print as rprint
+from rich import print as rprint
 
-from analysegnss.rinex.rinex_class import RINEX
-from analysegnss.config import DICT_GNSS, rich_console
 import analysegnss.rinex.rinex_column_names as rcn
-from analysegnss.utils.utilities import str_green, str_red, str_yellow
+from analysegnss.config import DICT_GNSS, rich_console
+from analysegnss.rinex.rinex_class import RINEX
+from analysegnss.utils.utilities import (
+    print_df_in_chunks,
+    str_green,
+    str_red,
+    str_yellow,
+)
 
 
 @dataclass
@@ -141,7 +146,7 @@ class RINEX_NAV(RINEX):
                 gec_nav_dict = self.gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
                 gnss_nav_dict.update(gec_nav_dict)
 
-            rich_console.print(f"GNSS [green]{other_gnss}[/green] processed.")
+            rprint(f"GNSS [green]{other_gnss}[/green] processed.")
 
         # Add GLONASS separately if present
         if has_glonass:
@@ -164,14 +169,14 @@ class RINEX_NAV(RINEX):
                 r_nav_dict = self.gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
                 if r_nav_dict is not None:
                     gnss_nav_dict.update(r_nav_dict)
-                    
-            rich_console.print(f"GNSS [green]{has_glonass}[/green] processed.")
-            
+
+            rprint(f"GNSS [green]{has_glonass}[/green] processed.")
+
             r_nav_dict = self.gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
             if r_nav_dict is not None:
                 gnss_nav_dict.update(r_nav_dict)
-                    
-            rich_console.print(f"GNSS {has_glonass} processed.")
+
+            rprint(f"GNSS {has_glonass} processed.")
 
         return gnss_nav_dict
 
