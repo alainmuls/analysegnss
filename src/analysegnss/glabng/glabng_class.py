@@ -12,6 +12,7 @@ from analysegnss.config import GEOID_PATH
 from analysegnss.glabng.glab_msg_headers import GLAB_OUTPUTS
 from analysegnss.gnss import geoid
 from analysegnss.utils.utilities import str_red, str_yellow
+from analysegnss.gnss.standard_pnt_quality_dict import glab_to_standard_pntqual
 
 
 @dataclass
@@ -219,7 +220,7 @@ class GLABNG:
             schema[k] = v["dtype"]
 
         # Load data into polars DataFrame
-        df_section = pl.DataFrame(section_data, schema=schema).lazy()
+        df_section = pl.DataFrame(section_data, schema=schema, orient="row").lazy()
 
         # Filter columns based on 'keep' field
         columns_to_keep = [
@@ -316,11 +317,15 @@ class GLABNG:
                 .alias("orthoH")
             ).lazy()
 
-            if "mode" in df_section.columns:
-                # Rename Column with PVT quality to general name
-                df_section = df_section.rename({"mode": "pnt_qual"}).lazy()
-                if self.logger:
-                    self.logger.debug(f"\trenaming column 'mode' to 'pnt_qual'")
+            # create new column with general PNT quality ID to general name pnt_qual
+            df_section = df_section.with_columns(
+                pl.struct(["mode"])
+                .map_elements(
+                    lambda x: glab_to_standard_pntqual(x["mode"]),
+                    return_dtype=pl.Utf8,
+                )
+                .alias("pnt_qual")
+            ).lazy()
 
             # Clean up intermediate columns
             df_section = df_section.drop(["utm_coords"]).lazy()  # "Year", "DOY", "SOD",
