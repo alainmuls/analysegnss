@@ -430,10 +430,10 @@ class NMEA:
             with self.rich_console.status(
                 "[bold green]Adding columns to the NMEA DataFrame...", spinner="dots"
             ):
-                if self.logger:
-                    self.logger.info(
-                        f"Collecting the new added columns to nmea dataframe. Be patient, this may take a while..."
-                    )
+                # if self.logger:
+                #     self.logger.info(
+                #         f"Collecting the new added columns to nmea dataframe. Be patient, this may take a while..."
+                #     )
 
                 nmea_df = nmea_df.collect()
 
