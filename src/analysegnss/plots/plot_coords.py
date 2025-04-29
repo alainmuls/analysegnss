@@ -20,6 +20,7 @@ from analysegnss.sbf import sbf_reader
 from analysegnss.plots import plot_utm
 from analysegnss.plots.plot_columns import get_utm_columns
 from analysegnss.utils import init_logger
+from analysegnss.utils.utilities import print_df_in_chunks
 from analysegnss.utils.argument_parser import (
     argument_parser_plot_coords,
     auto_populate_args_namespace,
@@ -237,7 +238,9 @@ def get_source_df(
             dfs_glab = glab_reader.glab_parser(argv=glab_parser_args)
             df_source = dfs_glab["OUTPUT"]
             if logger:
-                logger.debug(f"GLAB OUTPUT dataframe:\n{df_source}")
+                logger.debug(
+                    print_df_in_chunks(title="GLAB OUTPUT dataframe", df=df_source)
+                )
 
         case "NMEA":
             # Create NMEA dataframe

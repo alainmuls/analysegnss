@@ -32,9 +32,8 @@ def parse_glab_section(
     # parse the OUTPUT section of glab file
     glab_dfs = glab.glab_dataframe(lst_sections=section)
 
-    #     for section, df_section in glab_dfs.items():
-    #         print(f"dataframe from [green][bold]{section}[/bold][/green] section")
-    #         print(df_section)
+    for section, df_section in glab_dfs.items():
+        rprint(print_df_in_chunks(title=f"dataframe from {section}", df=df_section))
 
     return glab_dfs
 
