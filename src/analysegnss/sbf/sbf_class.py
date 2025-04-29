@@ -283,7 +283,7 @@ class SBF:
             self.logger.debug(f"... running: {str_yellow(' '.join(cmd_bin2asc))}")
 
         with rich_console.status(
-            f"Converting SBF [bold green]({lst_sbfblocks})[/bold green] to CSV files...",
+            f"Converting SBF [bold green]({lst_sbfblocks})[/bold green] to CSV files",
             spinner="aesthetic",
         ):
             try:
@@ -348,27 +348,19 @@ class SBF:
                 column_names_to_read = list(keep_cols.keys())
 
                 # read csv file into dataframe
-                with rich_console.status(
-                    f"Reading from CSV file [bold green]{sbf_block}[/bold green]\n",
-                    spinner="aesthetic",
-                ):
-                    sbf_df = pl.read_csv(
-                        source=bin2asc_fn,
-                        separator=",",
-                        columns=column_names_to_read,  # <-- Specify columns to read
-                        comment_prefix="#",
-                        has_header=True,
-                        skip_rows_after_header=1,  # Skip 1 row after the header
-                        dtypes=keep_cols,  # Still useful for type inference on read columns
-                        null_values=[
-                            "null",
-                            "NaN",
-                        ],
-                    )  # .lazy()  # Use lazy evaluation right away if possible
-
-                    # sbf_df.collect()
-                    # print(print_df_in_chunks(title="sbf_df", df=sbf_df))
-                rich_console.print()
+                sbf_df = pl.read_csv(
+                    source=bin2asc_fn,
+                    separator=",",
+                    columns=column_names_to_read,  # <-- Specify columns to read
+                    comment_prefix="#",
+                    has_header=True,
+                    skip_rows_after_header=1,  # Skip 1 row after the header
+                    dtypes=keep_cols,  # Still useful for type inference on read columns
+                    null_values=[
+                        "null",
+                        "NaN",
+                    ],
+                )  # .lazy()  # Use lazy evaluation right away if possible
 
                 # add columns to the dataframe
                 # Note: add_columns now operates on a lazy frame
@@ -764,7 +756,7 @@ class SBF:
         # If an SBF block doesn't contain a column used in this func,
         # the collect() will throw an error.
         with rich_console.status(
-            "Please wait - Collecting dataframe:...\n", spinner="aesthetic"
+            "Please wait - Collecting dataframe", spinner="aesthetic"
         ):
             if getattr(block_df, "collect", None) is not None:
                 block_df = block_df.collect()
