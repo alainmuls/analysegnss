@@ -110,7 +110,7 @@ class NMEA:
 
         for msg in self.parse_nmea_file():
 
-            # get timestamp from nmea message and update last_timstamp
+            # get timestamp from nmea message and update last_timestamp
             timestamp = getattr(msg, "timestamp", last_timestamp)
             if timestamp is not None:
                 last_timestamp = timestamp
@@ -121,7 +121,7 @@ class NMEA:
             # pynmea2 doesn't always cast the values to the correct dtype,
             # so some values need to be manually casted using a safe conversion function which returns None if the cast fails without raising an error
             # we cast the values to the correct dtype now during the nmea data collection because we don't know which NMEA messages are available
-            # Eventhough the timestamp is already saved as the key, we still store it also as a value for easier converion to dataframe
+            # Even though the timestamp is already saved as the key, we still store it also as a value for easier conversion to dataframe
             if isinstance(msg, pynmea2.types.talker.RMC):
                 msg_entry.update(
                     {
@@ -283,7 +283,7 @@ class NMEA:
                             f"Could not cast column {col_name} to {dtype}: {e}"
                         )
 
-        # add columns datatime and UTM coordinates if possible
+        # add columns datetime and UTM coordinates if possible
         nmea_df = self.add_df_columns(nmea_df=nmea_df)
 
         return nmea_df
@@ -296,7 +296,7 @@ class NMEA:
             nmea_df (pl.DataFrame): DataFrame containing the parsed NMEA messages
 
         Returns:
-            pl.DataFrame: DataFrame containing the parsed NMEA messages with the added datetime UTM (easting, northing) columnsif possible
+            pl.DataFrame: DataFrame containing the parsed NMEA messages with the added datetime UTM (easting, northing) columns if possible
         """
 
         if self.logger:
