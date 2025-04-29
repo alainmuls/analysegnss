@@ -298,7 +298,7 @@ def main():
     logger.debug(f"Parsed arguments: {args_parsed}")
 
     # plot the coordinates
-    plot_coords(args_parsed=args_parsed, logger=logger)  # type: ignore
+    plot_coords(parsed_args=args_parsed, logger=logger)  # type: ignore
 
 
 if __name__ == "__main__":
