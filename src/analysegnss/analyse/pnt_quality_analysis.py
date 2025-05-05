@@ -58,16 +58,27 @@ def quality_analysis(
 
     qual_tabular = tabulate(
         qual_analysis,
+        # headers=[
+        #     "PNT Mode",
+        #     "PNT Mode Count",
+        #     "Percentage",
+        #     "Total Observations",
+        #     "Distance between First and Last Point of PNT Mode",
+        #     "Distance between First and Last Point across All Observations",
+        #     "Source File",
+        # ],
+        # tablefmt="fancy_outline",
         headers=[
             "PNT Mode",
-            "PNT Mode Count",
+            "Count",
             "Percentage",
-            "Total Observations",
-            "Distance between First and Last Point of PNT Mode",
-            "Distance between First and Last Point across All Observations",
+            "Total",
+            "Distance First to Last Point Mode",
+            "Distance First to Last Point All",
             "Source File",
         ],
-        tablefmt="fancy_outline",
+        tablefmt="grid",
+        maxcolwidths=[32, None, None, None, 10, 10, None],
     )
 
     if logger is not None:
