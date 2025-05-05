@@ -59,7 +59,7 @@ def rnxnav_csv(argv: list):
 
     # change to the directory part of the RINEX navigation file in try block
     # so that the CSV file is created in the same directory as the RINEX navigation file
-    os.chdir(rnxnav_dir)
+    # os.chdir(rnxnav_dir)
 
     # convert each GNSS / Navigation type dataframe to CSV file
     for (gnss, nav_type), nav_df in gnss_nav_dict.items():
