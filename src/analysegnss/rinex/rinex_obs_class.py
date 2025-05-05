@@ -115,9 +115,7 @@ class RINEX_OBS(RINEX):
         # Run gfzrnx and capture output
         try:
             # add a spinner while waiting for the conversion to complete
-            with rich_console.status(
-                "Please wait - Loading observations\n", spinner="aesthetic"
-            ):
+            with rich_console.status("Loading observations\n", spinner="aesthetic"):
 
                 result = subprocess.run(
                     gfzrnx_args, capture_output=True, text=True, check=True

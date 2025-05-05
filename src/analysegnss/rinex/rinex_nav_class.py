@@ -136,9 +136,7 @@ class RINEX_NAV(RINEX):
                     f"Processing GNSS: {str_green(', '.join(other_gnss))}\n"
                 )
             # add a spinner while waiting for the conversion to complete
-            with rich_console.status(
-                "Please wait - Processing GNSS:...\n", spinner="aesthetic"
-            ):
+            with rich_console.status("Processing GNSS:...\n", spinner="aesthetic"):
                 # process GEC systems without Glonass
                 gfzrnx_args.extend(["-satsys", "".join(other_gnss)])
 
@@ -160,9 +158,7 @@ class RINEX_NAV(RINEX):
             if self.logger is not None:
                 self.logger.debug(f"str_yellow('Processing GNSS: R')")
             # add a spinner while waiting for the conversion to complete
-            with rich_console.status(
-                "Please wait - Processing GNSS R:...\n", spinner="aesthetic"
-            ):
+            with rich_console.status("Processing GNSS R:...\n", spinner="aesthetic"):
                 gfzrnx_args.extend(["-satsys", "R"])
                 # print(f"GLONASS gfzrnx_args = {' '.join(gfzrnx_args)}")
                 # Process GLONASS separately
