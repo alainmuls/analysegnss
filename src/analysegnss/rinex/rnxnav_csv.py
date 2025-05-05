@@ -69,14 +69,16 @@ def rnxnav_csv(argv: list):
                 f"Created for {str_green(DICT_GNSS[gnss]["name"])}-{str_green(nav_type)}: {str_yellow(csv_fn)}"
             )
 
-        if rnxnav._console_loglevel > logging.WARNING:
-            rprint(f"Created for {DICT_GNSS[gnss]["name"]}-{nav_type}: {csv_fn}")
-
         nav_df.write_csv(
             csv_fn,
             separator=",",
             include_header=True,
         )
+
+        if rnxnav._console_loglevel > logging.WARNING:
+            rprint(
+                f"Created for [green]{DICT_GNSS[gnss]["name"]}-{nav_type}[/green]: [blue]{csv_fn}[/blue]"
+            )
 
 
 def main():
