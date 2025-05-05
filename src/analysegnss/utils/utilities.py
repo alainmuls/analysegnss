@@ -442,7 +442,8 @@ def print_df_in_chunks(
         str: Log message to print
     """
     total_cols = len(df.columns)
-    log_message = f"{title} has shape {df.shape}\n"
+    log_message = f"{title}\n"
+    # log_message += f"Dataframe has shape {df.shape}\n"
 
     for i in range(0, total_cols, chunk_size):
         end_idx = min(i + chunk_size, total_cols)
