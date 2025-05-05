@@ -466,12 +466,12 @@ def convert_dataframe_csv(
             f"{print_df_in_chunks(title='df_csv', df=df_csv)}"
         )
 
-    if parsed_args.verbose is not None and parsed_args.verbose > 0:
-        rprint(print_df_in_chunks(title="Intermediate dataframe df_csv", df=df_csv))
+    # if parsed_args.verbose is not None and parsed_args.verbose > 0:
+    #     rprint(print_df_in_chunks(title="Intermediate dataframe df_csv", df=df_csv))
 
     try:
         if parsed_args.csv_ofn is not None:
-            cvs_ofn = parsed_args.csv_ofn
+            csv_ofn = parsed_args.csv_ofn
         else:
             # change the "." into "_" and add _meas.csv to sbf_ifn
             csv_ofn = parsed_args.sbf_ifn.replace(".", "_") + f"_{origin}.csv"
