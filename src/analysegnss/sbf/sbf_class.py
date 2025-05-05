@@ -269,6 +269,7 @@ class SBF:
         for sbf_block in lst_sbfblocks:
             cmd_bin2asc.append("-m")
             if sbf_block == "Meas3Ranges":
+                cmd_bin2asc.append("Meas3Ranges")
                 cmd_bin2asc.append("--extractGenMeas")
             else:
                 cmd_bin2asc.append(sbf_block)
