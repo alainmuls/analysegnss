@@ -427,27 +427,32 @@ def si64(val, e_return_none: bool = True, logger: logging.Logger = None):
             return val
 
 
-def print_df_in_chunks(
-    title: str, df: pl.DataFrame, chunk_size: int = 15, rows: int = 3
-) -> str:
-    """Print a dataframe in chunks of columns with a specified number of rows.
+def print_df_in_chunks(title: str, df: pl.DataFrame, chunk_size: int = 15) -> str:
+    """Print a dataframe in chunks of columns, hiding individual chunk shapes.
 
     Args:
         title (str): Title of the dataframe
         df (pl.DataFrame): DataFrame to print
         chunk_size (int): Number of columns to print in each chunk
-        rows (int): Number of rows to print for each chunk
 
     Returns:
-        str: Log message to print
+        str: Log message string containing formatted DataFrame chunks.
     """
     total_cols = len(df.columns)
+    # Print title and overall shape once at the beginning
     log_message = f"{title}\n"
-    # log_message += f"Dataframe has shape {df.shape}\n"
+    log_message += f"\thas shape {df.shape}"
 
     for i in range(0, total_cols, chunk_size):
         end_idx = min(i + chunk_size, total_cols)
-        log_message += f"\n{df.select(df.columns[i:end_idx])}"  # ".head(rows)}"
+        chunk_df = df.select(df.columns[i:end_idx])
+
+        # Use Polars config context manager to temporarily hide shape for this chunk's string representation
+        with pl.Config() as cfg:
+            cfg.set_tbl_hide_dataframe_shape(True)
+            chunk_str = str(chunk_df)  # Convert chunk to string *without* its shape
+
+        log_message += f"\n{chunk_str}"  # Append the formatted chunk string
 
     return log_message
 
