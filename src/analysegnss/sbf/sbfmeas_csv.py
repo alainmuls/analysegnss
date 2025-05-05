@@ -234,21 +234,25 @@ def convert_dataframe_csv(
 
     try:
         if parsed_args.csv_ofn is not None:
-            df_csv.write_csv(parsed_args.csv_ofn)
-            if logger is not None:
-                logger.info(f"CSV file written to {str_green(parsed_args.csv_ofn)}")
+            csv_ofn = parsed_args.csv_ofn
 
-            rprint(
-                f"CSV file written to [bold green]{parsed_args.csv_ofn}[/bold green]"
-            )
+            # df_csv.write_csv(csv_ofn)
+            # if logger is not None:
+            #     logger.info(f"CSV file written to {str_green(parsed_args.csv_ofn)}")
+
+            # rprint(
+            #     f"CSV file written to [bold green]{parsed_args.csv_ofn}[/bold green]"
+            # )
         else:
             # change the "." into "_" and add _meas.csv to sbf_ifn
             csv_ofn = parsed_args.sbf_ifn.replace(".", "_") + f"_{origin}.csv"
-            df_csv.write_csv(csv_ofn)
-            if logger is not None:
-                logger.info(f"CSV file written to {str_green(csv_ofn)}")
 
-            rprint(f"CSV file written to [bold green]{csv_ofn}[/bold green]")
+        rprint(print_df_in_chunks(title="Intermediate dataframe df_csv", df=df_csv))
+        df_csv.write_csv(csv_ofn)
+        if logger is not None:
+            logger.info(f"CSV file written to {str_green(csv_ofn)}")
+
+        rprint(f"CSV file written to [bold green]{csv_ofn}[/bold green]")
     except IOError as e:
         raise IOError(f"Failed to write CSV file {csv_ofn}: {e}")
     except (ComputeError, SchemaError, ValueError) as e:
@@ -467,21 +471,17 @@ def convert_dataframe_csv(
 
     try:
         if parsed_args.csv_ofn is not None:
-            df_csv.write_csv(parsed_args.csv_ofn)
-            if logger is not None:
-                logger.info(f"CSV file written to {str_green(parsed_args.csv_ofn)}")
-
-            rprint(
-                f"CSV file written to [bold green]{parsed_args.csv_ofn}[/bold green]"
-            )
+            cvs_ofn = parsed_args.csv_ofn
         else:
             # change the "." into "_" and add _meas.csv to sbf_ifn
             csv_ofn = parsed_args.sbf_ifn.replace(".", "_") + f"_{origin}.csv"
-            df_csv.write_csv(csv_ofn)
-            if logger is not None:
-                logger.info(f"CSV file written to {str_green(csv_ofn)}")
 
-            rprint(f"CSV file written to [bold green]{csv_ofn}[/bold green]")
+        df_csv.write_csv(csv_ofn)
+        if logger is not None:
+            logger.info(f"CSV file written to {str_green(csv_ofn)}")
+
+        rprint(print_df_in_chunks(title="Intermediate dataframe df_csv", df=df_csv))
+        rprint(f"CSV file written to [bold green]{csv_ofn}[/bold green]")
     except IOError as e:
         raise IOError(f"Failed to write CSV file {csv_ofn}: {e}")
     except (ComputeError, SchemaError, ValueError) as e:
