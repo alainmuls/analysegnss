@@ -575,15 +575,10 @@ class SBF:
         added_cols = {}
         removed_cols = []
 
-        # get the column names of the block_df
-        column_names = block_df.collect_schema().names()
-        # print(f"column_names = {column_names}")
+        # get the column names and their dtypes of the block_df
+        column_infos = block_df.collect_schema()
 
-        # remove the rows where 'Type' equals 0 (no PVT available)
-        # if self.logger:
-        #     self.logger.debug("\tremoving rows with no PVT solution")
-
-        if "Type" in column_names:
+        if "Type" in column_infos.keys():
             block_df = block_df.filter(pl.col("Type") != 0).lazy()
             # create new column with general PNT quality ID to general name pnt_qual
             block_df = block_df.with_columns(
@@ -599,7 +594,7 @@ class SBF:
             added_cols["pnt_qual"] = pl.Utf8  # print(f"block_df = \n{block_df}")
 
         # add date-time and PRN (as str) to the dataframe
-        if "WNc [w]" in column_names and "TOW [0.001 s]" in column_names:
+        if "WNc [w]" in column_infos.keys() and "TOW [0.001 s]" in column_infos.keys():
             if self.logger:
                 self.logger.debug("\tadding datetime column to the dataframe")
             block_df = block_df.with_columns(
@@ -613,7 +608,11 @@ class SBF:
             added_cols["DT"] = pl.Datetime
 
         # check if PRN is the column names and of type int or float, than convert to str using ssnerr_prn2str
-        if "PRN" in column_names and block_df.select(pl.col("PRN")).dtypes[0] in [
+        # if "PRN" in column_names and block_df.select(pl.col("PRN")).dtypes[0] in [
+        #     pl.Int64,
+        #     pl.Float64,
+        # ]:
+        if "PRN" in column_infos.keys() and column_infos["PRN"] in [
             pl.Int64,
             pl.Float64,
         ]:
@@ -627,11 +626,7 @@ class SBF:
             added_cols["PRN"] = pl.Utf8
 
         # convert SVID to PRN (as str) to the dataframe
-        if (
-            "SVID"
-            in block_df.collect_schema().names()
-            # and not block_df.select(pl.col("SVID")).dtypes[0] == pl.String
-        ):
+        if "SVID" in column_infos.keys():
             if self.logger:
                 self.logger.debug("\tadding PRN column to the dataframe")
             block_df = block_df.with_columns(
@@ -648,8 +643,8 @@ class SBF:
 
         # add UTM coordinates and orthometric height
         if (
-            "Latitude [rad]" in block_df.collect_schema().names()
-            and "Longitude [rad]" in block_df.collect_schema().names()
+            "Latitude [rad]" in column_infos.keys()
+            and "Longitude [rad]" in column_infos.keys()
         ):
             if self.logger:
                 self.logger.debug("\tadding UTM coordinates to the dataframe")
@@ -719,7 +714,7 @@ class SBF:
             added_cols["UTM.ZL"] = pl.Utf8
             removed_cols.extend(["Latitude [rad]", "Longitude [rad]"])
 
-            if "Undulation [m]" in block_df.collect_schema().names():
+            if "Undulation [m]" in column_infos.keys():
                 if self.logger is not None:
                     self.logger.debug(
                         "\tdropping undulation [m] column as it is based on outdated geoid model"
@@ -742,7 +737,7 @@ class SBF:
                 .alias("undulation [m]")
             ).lazy()
 
-            if "Height [m]" in block_df.collect_schema().names():
+            if "Height [m]" in column_infos.keys():
                 if self.logger:
                     self.logger.debug("\tadding orthometric height to the dataframe")
                 block_df = block_df.with_columns(
@@ -766,10 +761,10 @@ class SBF:
         """returns the column names and dtype we use when extracting a SBF block from the SBF file
 
         Args:
-                sbf_block (str): the SBF block we are extracting
+            sbf_block (str): the SBF block we are extracting
 
         Returns:
-                list: column names we use with dtype
+            list: column names we use with dtype
         """
         if sbf_block not in SBF_BLOCK_COLUMNS_BIN2ASC.keys():
             if self.logger:
