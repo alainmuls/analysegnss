@@ -5,12 +5,12 @@ import os
 import sys
 
 import polars as pl
-from rich import print
+from rich import print as rprint
 
 from analysegnss.config import ERROR_CODES, DICT_GNSS
 from analysegnss.rinex.rinex_obs_class import RINEX_OBS
 from analysegnss.utils import init_logger
-from analysegnss.utils.utilities import str_green, str_yellow
+from analysegnss.utils.utilities import str_green, print_df_in_chunks
 from analysegnss.utils.argument_parser import argument_parser_rnxobs_csv
 
 
@@ -70,8 +70,14 @@ def rnxobs_csv(argv: list):
         logger.warning(f"Saved CSV file: {str_green(csv_ofn)}")
 
     if rnxobs._console_loglevel > logging.WARNING:
-        gnss_list = [DICT_GNSS[gnss] for gnss in args_parsed.gnss]
-        print(f"Created for {gnss_list}: {csv_ofn}")
+        gnss_list = [DICT_GNSS[gnss]["name"] for gnss in args_parsed.gnss]
+        # rprint(f"Created for {gnss_list}: {csv_ofn}")
+        rprint(
+            print_df_in_chunks(
+                df=csv_df,
+                title=f"Converted RINEX observation file for [green]{gnss_list}[/green] to {csv_ofn}",
+            )
+        )
 
 
 def main():
