@@ -756,9 +756,7 @@ class SBF:
 
         # If an SBF block doesn't contain a column used in this func,
         # the collect() will throw an error.
-        with rich_console.status(
-            "Please wait - Collecting dataframe", spinner="aesthetic"
-        ):
+        with rich_console.status("Collecting dataframe", spinner="aesthetic"):
             if getattr(block_df, "collect", None) is not None:
                 block_df = block_df.collect()
 
