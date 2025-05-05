@@ -7,7 +7,7 @@ import sys
 
 import polars as pl
 from polars.exceptions import ComputeError, SchemaError, ColumnNotFoundError
-from rich import print
+from rich import print as rprint
 
 from analysegnss.config import DICT_GNSS, DICT_SIGNAL_TYPES, ERROR_CODES
 from analysegnss.sbf.sbf_class import SBF
@@ -150,7 +150,12 @@ def convert_meas_epoch2_csv(
     if "MeasEpoch2" not in df_meas.keys():
         raise ValueError("Key 'MeasEpoch2' not in dataframe dictionary")
 
-    print(df_meas)
+    rprint(
+        print_df_in_chunks(
+            title="df_meas['MeasEpoch2']",
+            df=df_meas["MeasEpoch2"],
+        )
+    )
 
     # Create mapping dictionary from MeasType to code
     sigtype_mapping = {k: v["code"] for k, v in DICT_SIGNAL_TYPES.items()}
@@ -223,9 +228,9 @@ def convert_dataframe_csv(
         logger.info("Intermediate dataframe 'df_csv'")
         logger.info(df_csv)
 
-    if parsed_args.verbose is not None and parsed_args.verbose > 0:
-        print("Intermediate dataframe 'df_csv':")
-        print(df_csv)
+    # if parsed_args.verbose is not None and parsed_args.verbose > 0:
+    # if sbf._console_loglevel > logging.WARNING:
+    rprint(print_df_in_chunks(title="Intermediate dataframe df_csv", df=df_csv))
 
     try:
         if parsed_args.csv_ofn is not None:
@@ -233,7 +238,9 @@ def convert_dataframe_csv(
             if logger is not None:
                 logger.info(f"CSV file written to {str_green(parsed_args.csv_ofn)}")
 
-            print(f"CSV file written to [bold green]{parsed_args.csv_ofn}[/bold green]")
+            rprint(
+                f"CSV file written to [bold green]{parsed_args.csv_ofn}[/bold green]"
+            )
         else:
             # change the "." into "_" and add _meas.csv to sbf_ifn
             csv_ofn = parsed_args.sbf_ifn.replace(".", "_") + f"_{origin}.csv"
@@ -241,7 +248,7 @@ def convert_dataframe_csv(
             if logger is not None:
                 logger.info(f"CSV file written to {str_green(csv_ofn)}")
 
-            print(f"CSV file written to [bold green]{csv_ofn}[/bold green]")
+            rprint(f"CSV file written to [bold green]{csv_ofn}[/bold green]")
     except IOError as e:
         raise IOError(f"Failed to write CSV file {csv_ofn}: {e}")
     except (ComputeError, SchemaError, ValueError) as e:
@@ -306,7 +313,7 @@ def convert_meas3_csv(
                 "LockTime [s]": "locktime",
             }
         )
-        .drop(["TOW [s]", "Antenna ID", "DT"])
+        .drop(["TOW [s]", "Antenna ID"])
         .select(
             [
                 "GNSS",
@@ -450,12 +457,13 @@ def convert_dataframe_csv(
     df_csv = df_csv.sort(["WKNR", "TOW"])
 
     if logger is not None:
-        logger.info(f"Intermediate dataframe 'df_csv'\n"
-					f"{print_df_in_chunks(title='fd_csv', df=df_csv}")
+        logger.info(
+            f"Intermediate dataframe 'df_csv'\n"
+            f"{print_df_in_chunks(title='df_csv', df=df_csv)}"
+        )
 
     if parsed_args.verbose is not None and parsed_args.verbose > 0:
-        print("Intermediate dataframe 'df_csv':")
-        print(df_csv)
+        rprint(print_df_in_chunks(title="Intermediate dataframe df_csv", df=df_csv))
 
     try:
         if parsed_args.csv_ofn is not None:
@@ -463,7 +471,9 @@ def convert_dataframe_csv(
             if logger is not None:
                 logger.info(f"CSV file written to {str_green(parsed_args.csv_ofn)}")
 
-            print(f"CSV file written to [bold green]{parsed_args.csv_ofn}[/bold green]")
+            rprint(
+                f"CSV file written to [bold green]{parsed_args.csv_ofn}[/bold green]"
+            )
         else:
             # change the "." into "_" and add _meas.csv to sbf_ifn
             csv_ofn = parsed_args.sbf_ifn.replace(".", "_") + f"_{origin}.csv"
@@ -471,7 +481,7 @@ def convert_dataframe_csv(
             if logger is not None:
                 logger.info(f"CSV file written to {str_green(csv_ofn)}")
 
-            print(f"CSV file written to [bold green]{csv_ofn}[/bold green]")
+            rprint(f"CSV file written to [bold green]{csv_ofn}[/bold green]")
     except IOError as e:
         raise IOError(f"Failed to write CSV file {csv_ofn}: {e}")
     except (ComputeError, SchemaError, ValueError) as e:

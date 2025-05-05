@@ -69,7 +69,7 @@ def rnxobs_csv(argv: list):
     if logger is not None:
         logger.warning(f"Saved CSV file: {str_green(csv_ofn)}")
 
-    if rnxobs._console_loglevel > logging.WARNING:
+    if rnxobs._console_loglevel >= logging.WARNING:
         gnss_list = [DICT_GNSS[gnss]["name"] for gnss in args_parsed.gnss]
         # rprint(f"Created for {gnss_list}: {csv_ofn}")
         rprint(
