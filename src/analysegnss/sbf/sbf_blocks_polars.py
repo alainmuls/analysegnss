@@ -363,9 +363,9 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "tau [s]",
             "dtau [s]",
         ],
-        pl.String: [
-            "PRN",
-        ],
+        # pl.String: [
+        #     "PRN",
+        # ],
         # pl.Datetime: [
         #     "DT",
         # ],
