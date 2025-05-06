@@ -26,7 +26,7 @@ def eph2pos(time, eph):
     tk = time - eph["toe"]
 
     sys = eph["sys"]
-    prn = eph["prn"]
+    prn = eph["PRN"]
 
     if sys == "GAL":
         mu = MU_GAL
