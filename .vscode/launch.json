@@ -217,7 +217,7 @@
             "console": "integratedTerminal",
             "args": [
                 "--sbf_ifn",
-                "~/GNSSData/20241001-KEIHEUVEL/base_sbf/BASE275Z.24_",
+                "data/keiheuvel/BASE275Z.24_",
                 "-vvv",
                 "--archive",
                 "/tmp",
@@ -233,7 +233,7 @@
             "console": "integratedTerminal",
             "args": [
                 "--sbf_ifn",
-                "~/cylab/TESTDATA/MosaicX5/MoX3345Z.22_",
+                "data/sbf/MoX3345Z.22_",
                 "-vvv",
                 "--archive",
                 "/tmp",
