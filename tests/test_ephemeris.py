@@ -52,7 +52,7 @@ def test_read_gnss_nav_csv():
             print(line)
 
         assert eph is not None
-        assert hasattr(eph, "prn")
+        assert hasattr(eph, "PRN")
         assert hasattr(eph, "health")
 
 
@@ -154,7 +154,6 @@ def test_satellite_position_calculation():
             dist_brdc = np.sqrt(
                 pos_brdc[i][5] ** 2 + pos_brdc[i][6] ** 2 + pos_brdc[i][7] ** 2
             )
-
 
             dist_glab = np.sqrt(
                 pos_glab[i][5] ** 2 + pos_glab[i][6] ** 2 + pos_glab[i][7] ** 2
