@@ -1,21 +1,22 @@
-import polars as pl
 import numpy as np
+import polars as pl
 
-# Define columns that need conversion from semi-circles to radians
-SEMICIRCLE_COLUMNS = {
-    "GPS": [
-        "IDOT [semi-circle/s]",  # [semi-circles/s] -> [rad/s]
-        "DEL_N [semi-circle/s]",  # [semi-circles/s] -> [rad/s]
-        "M_0 [semi-circle]",  # [semi-circles] -> [rad]
-        "OMEGA_0 [semi-circle]",  # [semi-circles] -> [rad]
-        "i_0 [semi-circle]",  # [semi-circles] -> [rad]
-        "omega [semi-circle]",  # [semi-circles] -> [rad]
-        "OMEGADOT [semi-circle/s]",  # [semi-circles/s] -> [rad/s]
-    ],
-    "GAL": [],
-    "BDS": [],
-}
 from analysegnss.sbf.sbf_blocks_polars import SBF_BLOCK_COLUMNS_BIN2ASC
+
+# # Define columns that need conversion from semi-circles to radians
+# SEMICIRCLE_COLUMNS = {
+#     "GPS": [
+#         "IDOT [semi-circle/s]",  # [semi-circles/s] -> [rad/s]
+#         "DEL_N [semi-circle/s]",  # [semi-circles/s] -> [rad/s]
+#         "M_0 [semi-circle]",  # [semi-circles] -> [rad]
+#         "OMEGA_0 [semi-circle]",  # [semi-circles] -> [rad]
+#         "i_0 [semi-circle]",  # [semi-circles] -> [rad]
+#         "omega [semi-circle]",  # [semi-circles] -> [rad]
+#         "OMEGADOT [semi-circle/s]",  # [semi-circles/s] -> [rad/s]
+#     ],
+#     "GAL": [],
+#     "BDS": [],
+# }
 
 
 def extract_semicircle_columns() -> dict:
@@ -116,7 +117,7 @@ def convert_and_rename_semicircles(df: pl.DataFrame, gnss_type: str) -> pl.DataF
 
 GNSS_NAV_COLUMN_MAPPINGS = {
     "GPS": {
-        "PRN": "prn",
+        "PRN": "PRN",
         "WNc [w]": "WNc",
         "WN [w]": "WN",
         "URA": "SVacc",
@@ -154,17 +155,6 @@ GNSS_NAV_COLUMN_MAPPINGS = {
         "FitIntFlg": "Fit",
     },
     "GAL": {
-        "PRN": "prn",
-        "WN ": "WN",
-        "SISA": "SVacc",  # Galileo uses SISA instead of URA
-        # ... Galileo specific mappings
-    },
-    "BDS": {
-        "PRN": "prn",
-        "WNt_oc [w]": "WNt_oc",
-        "WNt_oe [w]": "WNt_oe",
-    },
-    "GAL": {
         "TOW [0.001 s]": "TOW",
         "WNc [w]": "WNc",
         "t_oc [s]": "toc",
@@ -194,9 +184,6 @@ GNSS_NAV_COLUMN_MAPPINGS = {
         "WNt_oe [w]": "WNt_oe",
     },
     "BDS": {
-        "WN ": "WN",
-        "URA": "SVacc",
-        # ... BeiDou specific mappings
         "TOW [0.001 s]": "TOW",
         "WNc [w]": "WNc",
         "WN [w]": "WN",

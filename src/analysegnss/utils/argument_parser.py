@@ -50,22 +50,38 @@ def auto_populate_args_namespace(
 
     # Store original add_argument method
     original_argparse_add_argument = argparse.ArgumentParser.add_argument
+    original_add_mutually_exclusive_group = (
+        argparse.ArgumentParser.add_mutually_exclusive_group
+    )
 
     # Create a wrapper that makes all arguments optional
     def add_argument_optional(*args, **kwargs):
         if "required" in kwargs:
             kwargs["required"] = False
-        return original_argparse_add_argument(*args, **kwargs)
+        args_optional = original_argparse_add_argument(*args, **kwargs)
+        return args_optional
+
+    # Create a wrapper that makes mutually exclusive groups optional
+    def add_mutually_exclusive_group_optional(self, **kwargs):
+        group_optional = original_add_mutually_exclusive_group(self, **kwargs)
+        group_optional.required = False
+        return group_optional
 
     # Patch ArgumentParser temporarily
     argparse.ArgumentParser.add_argument = add_argument_optional
+    argparse.ArgumentParser.add_mutually_exclusive_group = (
+        add_mutually_exclusive_group_optional
+    )
 
     try:
         # Get defaults by calling the native parser function with empty args
         native_default_args = vars(native_parser_func(script_name=script_name, args=[]))
     finally:
-        # Restore original method
+        # Restore original methods
         argparse.ArgumentParser.add_argument = original_argparse_add_argument
+        argparse.ArgumentParser.add_mutually_exclusive_group = (
+            original_add_mutually_exclusive_group
+        )
     # ----------------------------------------------------------------------------------#
 
     # Create complete args starting with defaults of the native parser function
@@ -437,16 +453,21 @@ def argument_parser_pnt_data_collector(
     )
     parser.add_argument(
         "--csv_out",
-        help="Enables output of CSV files containing the standardised dataframe collected from PNT sources.\
-            If multiple sources are provided and the merge option is disabled, the output filename will be \
-                the same as the input filename exended with pnt_standard.csv added.",
+        help="Enables output of CSV files containing the standardised dataframe collected from PNT sources.",
         action="store_true",
         required=False,
         default=False,
     )
     parser.add_argument(
-        "--merge_dest",
-        help="Directory if where merged pnt csv file is written. Required when both --csv_out and --merge are enabled.",
+        "--merge_ofn",
+        help="Output file name path of merged dataframe of multiple PNT sources. (Default is _merged_pnt.csv in the current working directory)",
+        type=str,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--output_dir",
+        help="Output directory of all produced files. (Default is the location of the input files)",
         type=str,
         required=False,
         default=None,
@@ -509,10 +530,10 @@ def argument_parser_pnt_data_collector(
     args = parser.parse_args(args)
 
     # Validate that merge_dest is provided when both csv_out and merge are enabled
-    if args.csv_out and args.merge and args.merge_dest is None:
-        parser.error(
-            "--merge_dest is required when both --csv_out and --merge are enabled"
-        )
+    # if args.csv_out and args.merge and args.merge_odir is None:
+    #    parser.error(
+    #        "--merge_odir is required when both --csv_out and --merge are enabled"
+    #    )
 
     return args
 
@@ -732,7 +753,6 @@ def argument_parser_rnx_csv(script_name: str, args: list) -> argparse.Namespace:
 
     parser.add_argument(
         "--obs_ifn",
-        "--obs_ifn",
         help="RINEX observation filename",
         type=str,
         required=True,
@@ -740,7 +760,6 @@ def argument_parser_rnx_csv(script_name: str, args: list) -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--nav_ifn",
         "--nav_ifn",
         help="RINEX navigation filename",
         type=str,
@@ -946,8 +965,10 @@ def argument_parser_get_ebh_timings(script_name: str, args: list) -> argparse.Na
     args = parser.parse_args(args)
 
     # Check that at least one an ascii or sbf file is specified that contains the timestamp info
-    if args.sbf_ifn is None and args.ascii_ifn is None:
-        parser.error("At least one of --sbf_ifn or --ascii_ifn must be specified")
+    if args.sbf_ifn is None and args.ebh_timings_ifn is None:
+        rprint(
+            f"[orange]WARNING[/orange] For get_ebh_timings.py, at least one of --sbf_ifn or --ebh_timings_ifn must be specified"
+        )
 
     return args
 
@@ -1046,6 +1067,18 @@ def argument_parser_ebh_process_launcher(
         required=True,
     )
     parser.add_argument(
+        "--ebh_timings_ifn",
+        help="input Comments file name (ASCII format) holding the EBH line timestamps. The Comments format is as follows: \
+            YYYYMMDD_HH-MM-SS_lineID_CLdeviation \
+            YYYYMMDD_HH-MM-SS = timestamp \
+            lineID + CLdeviation = key \
+            This file is formatted for ebh_lines.py \
+            If not provided, the ebh line timestamps are retrieved from the sbf file.",
+        type=str,
+        default=None,
+        required=False,
+    )
+    parser.add_argument(
         "--base_corr",
         help="base correction filename. RNX OBS or SBF file obtained from GNSS base station. If provided, a PPK solution is calculated \
             for each RTK solution that is not of sufficient quality.",
@@ -1055,10 +1088,11 @@ def argument_parser_ebh_process_launcher(
     parser.add_argument(
         "-cfg",
         "--config_ppk",
-        help="File name of config file used for RTKLib rnx2rtkp calculation. Default: rtkpos/rnx2rtkp_config/rnx2rtkp_EBH_PPK_default.conf",
+        help="File name of config file used for RTKLib rnx2rtkp calculation. A default file is found in\
+        src/analysegnss/rtkpos/rnx2rtkp_config/rnx2rtkp_EBH_PPK_default.conf",
         type=str,
         required=False,
-        default="rtkpos/rnx2rtkp_config/rnx2rtkp_EBH_PPK_default.conf",
+        default=None,
     )
     # TODO add sbf2asc compatibility (check if sbf2asc can extract sbf comments, ...)
     """
@@ -1411,7 +1445,10 @@ def argument_parser_sbfmeas_csv(script_name: str, args: list) -> argparse.Namesp
     """
     baseName = str_yellow(script_name)
 
-    help_txt = baseName + " Convert SBF measurement blocks to CSV file"
+    help_txt = (
+        baseName
+        + " Convert SBF file to CSV file similar to those created by rtcm3_parser.py"
+    )
 
     # create the parser for command line arguments
     parser = argparse.ArgumentParser(description=help_txt)
@@ -1580,6 +1617,123 @@ def argument_parser_sbfnav_csv(script_name: str, args: list) -> argparse.Namespa
     )
     # allow argument completion
     argcomplete.autocomplete(parser)
+    args = parser.parse_args(args)
+
+    return args
+
+
+def argument_parser_compute_position_error(
+    script_name: str, args: list
+) -> argparse.Namespace:
+    """
+    Parses the arguments and creates console/file logger for compute_position_error.py
+    """
+    baseName = str_yellow(script_name)
+
+    help_txt = (
+        baseName
+        + " computes the position error of a fixed measurement \
+        it outputs the Root Mean Square Error (RMSE) if the true position is provided otherwise only the standard error deviation is computed\
+        relative to the mean of the position error. The 95th percentile of the position error is also computed.\
+    "
+        ""
+    )
+
+    parser = argparse.ArgumentParser(description=help_txt)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+        required=False,
+    )
+    parser.add_argument(
+        "--log_dest",
+        help="Specify log destination directory (full path). (Default is /tmp/logs/)",
+        type=str,
+        required=False,
+        default="/tmp/logs/",
+    )
+    ############################################
+    # input pnt sources have the nargs option which allows for multiple files to be passed as arguments
+    parser.add_argument(
+        "--sbf_ifn",
+        help="input SBF filename.\
+            To add multiple SBF files, only separate the filenames with a space. e.g. --sbf_ifn sbf1.sbf sbf2.sbf",
+        nargs="+",
+        type=str,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--pos_ifn",
+        help="input rnx2rtkp pos filename.\
+            To add multiple pos files, only separate the filenames with a space.",
+        nargs="+",
+        type=str,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--glab_ifn",
+        help="input gLABng filename.\
+            To add multiple gLABng files, only separate the filenames with a space.",
+        nargs="+",
+        type=str,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--nmea_ifn",
+        help="input NMEA filename (-sd standard deviation not yet supported!).\
+            To add multiple nmea files, only separate the filenames with a space.",
+        nargs="+",
+        type=str,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--csv_ifn",
+        help="input CSV filename with PNT data (see additional CSV options to correctly read out the file).\
+            To add multiple csv files, only separate the filenames with a space.",
+        nargs="+",
+        type=str,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--sd",
+        help="add standard deviations to the dataframe. (only enable if all input sources contain standard deviations)",
+        action="store_true",
+        required=False,
+        default=False,
+    )
+    parser.add_argument(
+        "--true_pos",
+        help="True position coordinates (UTM.E, UTM.N, orthometric Height). If provided, the Root Mean Square Error (RMSE) is also computed.\
+            To add multiple true positions, only separate the coordinates with a space. e.g. --true_pos UTM.E1 UTM.N1 orthoH1 UTM.E2 UTM.N2 orthoH2",
+        nargs="+",
+        type=float,
+        required=False,
+        default=None,
+    )
+    true_pos_group = parser.add_argument_group("True coordinates options")
+    true_pos_group.add_argument(
+        "--ecef",
+        help="If ECEF coordinates (x, y, z) are provided instead of UTM coordinates. (Default is False)",
+        action="store_true",
+        required=False,
+        default=False,
+    )
+    true_pos_group.add_argument(
+        "--llh",
+        help="If latitude, longitude and height coordinates are provided instead of UTM coordinates",
+        action="store_true",
+        required=False,
+        default=False,
+    )
     args = parser.parse_args(args)
 
     return args

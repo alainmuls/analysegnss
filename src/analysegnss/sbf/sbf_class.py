@@ -14,18 +14,22 @@ import polars as pl
 import utm
 from rich import print as rprint
 
-from analysegnss.config import ERROR_CODES, rich_console
+# Local imports
+from analysegnss.config import ERROR_CODES, GEOID_PATH, rich_console
+from analysegnss.gnss import geoid
 from analysegnss.gnss.gnss_dt import gpsms2dt
-from analysegnss.gnss.standard_pnt_quality_dict import (
-    sbf_to_standard_pntqual,
-    get_pntquality_info,
-)
+from analysegnss.gnss.standard_pnt_quality_dict import sbf_to_standard_pntqual
 from analysegnss.sbf import sbf_constants as sbfc
 from analysegnss.sbf.sbf_blocks_polars import (
     SBF_BLOCK_COLUMNS_BIN2ASC,
     SBF_BLOCK_COLUMNS_SBF2ASC,
 )
-from analysegnss.utils.utilities import locate, str_red, str_yellow
+from analysegnss.utils.utilities import (
+    locate,
+    str_red,
+    str_yellow,
+    print_df_in_chunks,
+)
 
 
 @dataclass
@@ -222,7 +226,8 @@ class SBF:
 
         Arguments:
                 lst_sbfblocks: list of SBF blocks to convert to a dataframe
-                (Remark; sbfblocks starting with Meas3... are not decoded using bin2asc)
+                (Remark; sbfblocks starting with Meas3... are decoded using
+                         "bin2asc -m Meas3Ranges --extractGenMeas")
 
         Raises:
                 Exception when the bin2asc program fails
@@ -264,26 +269,22 @@ class SBF:
         for sbf_block in lst_sbfblocks:
             cmd_bin2asc.append("-m")
             if sbf_block == "Meas3Ranges":
+                cmd_bin2asc.append("Meas3Ranges")
                 cmd_bin2asc.append("--extractGenMeas")
             else:
                 cmd_bin2asc.append(sbf_block)
 
-        # add logging level to cmd_sbf2asc when self._console_loglevel is DEBUG
-        if self._console_loglevel == logging.DEBUG:
-            self.logger.debug("Adding verbose flag to cmd_sbf2asc")
-            cmd_bin2asc.append("-v")
-
-        # add logging level to cmd_sbf2asc when self._console_loglevel is DEBUG
-        if self._console_loglevel == logging.DEBUG:
-            self.logger.debug("Adding verbose flag to cmd_sbf2asc")
-            cmd_bin2asc.append("-v")
+        # # add logging level to cmd_sbf2asc when self._console_loglevel is DEBUG
+        # if self._console_loglevel == logging.DEBUG:
+        #     self.logger.debug("Adding verbose flag to cmd_sbf2asc")
+        #     cmd_bin2asc.append("-v")
 
         # Convert binary to text messages
         if self.logger:
             self.logger.debug(f"... running: {str_yellow(' '.join(cmd_bin2asc))}")
 
         with rich_console.status(
-            f"Converting SBF [bold green]({lst_sbfblocks})[/bold green] to CSV files...",
+            f"Converting SBF [bold green]({lst_sbfblocks})[/bold green] to CSV files",
             spinner="aesthetic",
         ):
             try:
@@ -344,85 +345,42 @@ class SBF:
 
                 # remove unused columns
                 keep_cols = self.used_columns(sbf_block)
+                # Get just the names for the 'columns' parameter
+                column_names_to_read = list(keep_cols.keys())
 
                 # read csv file into dataframe
-                with rich_console.status(
-                    f"Reading from CSV file [bold green]{sbf_block}[/bold green]",
-                    spinner="aesthetic",
-                ):
-                    sbf_df = pl.read_csv(
-                        source=bin2asc_fn,
-                        separator=",",
-                        # columns=original_cols,
-                        # new_columns=original_cols,  # This preserves exact column names
-                        comment_prefix="#",
-                        has_header=True,
-                        skip_rows_after_header=1,  # Skip 1 row after the header
-                        dtypes=keep_cols,
-                        null_values=[
-                            "null",
-                            "NaN",
-                        ],  # First catch all null representations
-                        #                    ).fill_null(
-                        #                        float("nan")
-                    )  # commented this out because it changes the type of all columns to float
+                sbf_df = pl.read_csv(
+                    source=bin2asc_fn,
+                    separator=",",
+                    columns=column_names_to_read,  # <-- Specify columns to read
+                    comment_prefix="#",
+                    has_header=True,
+                    skip_rows_after_header=1,  # Skip 1 row after the header
+                    dtypes=keep_cols,  # Still useful for type inference on read columns
+                    null_values=[
+                        "null",
+                        "NaN",
+                    ],
+                )  # .lazy()  # Use lazy evaluation right away if possible
 
-                    # add columns to the dataframe
-                    sbf_df = self.add_columns(block_df=sbf_df)
-                    print(
-                        f"sbf_df[{sbf_block}]:\n{sbf_df.select(sbf_df.columns[:20]).head(3)}"
-                        f"sbf_df[{sbf_block}]:\n{sbf_df.select(sbf_df.columns[20:]).head(3)}"
-                    )
-                    # print the column names of sbf_df one per line
-                    for col_name in sbf_df.columns:
-                        print(col_name)
+                # add columns to the dataframe
+                # Note: add_columns now operates on a lazy frame
+                sbf_df, added_cols, removed_cols = self.add_columns(block_df=sbf_df)
+                # print(print_df_in_chunks(title=f"sbf_df[{sbf_block}]", df=sbf_df.collect())) # Collect only for printing if needed
 
-                    # set the dtype again after having added some columns
-                    # sbf_df = sbf_df.with_columns(
-                    #     [
-                    #         pl.col(col_name).cast(dtype)
-                    #         for col_name, dtype in keep_cols.items()
-                    #     ]
-                    # )
+                # Update keep_cols with added columns and remove the ones that were dropped
+                keep_cols.update(added_cols)
+                for col in removed_cols:
+                    keep_cols.pop(col, None)  # Remove safely
 
-                    # identify columns with null values and applies different strategies based on the target data type
-                    cast_expressions = []
-                    for col_name, dtype in keep_cols.items():
-                        # For integer types, check if we need to handle nulls
-                        if str(dtype).startswith(("UInt", "Int")):
-                            # For columns that might have nulls, first fill nulls with a default value
-                            rprint(
-                                f"col_name = {col_name}\n{sbf_df[col_name]}\n{sbf_df[col_name].null_count()}"
-                            )
-                            if sbf_df[col_name].null_count() > 0:
-                                cast_expressions.append(
-                                    pl.col(col_name)
-                                    .fill_null(0)
-                                    .cast(dtype)
-                                    .alias(col_name)
-                                )
-                            else:
-                                cast_expressions.append(pl.col(col_name).cast(dtype))
-                        else:
-                            # For other types, just perform the regular cast
-                            cast_expressions.append(pl.col(col_name).cast(dtype))
-
-                    sbf_df = sbf_df.with_columns(cast_expressions)
-
-                    # set the dtype again after having added some columns
-                    sbf_df = sbf_df.with_columns(
-                        [
-                            pl.col(col_name).cast(dtype)
-                            for col_name, dtype in keep_cols.items()
-                        ]
-                    )
-
-                sbf_dfs[sbf_block] = sbf_df
+                sbf_dfs[sbf_block] = sbf_df  # .collect()
                 if self.logger:
-                    self.logger.debug(f"sbf_dfs[{sbf_block}]:\n{sbf_dfs[sbf_block]}")
+                    self.logger.debug(
+                        print_df_in_chunks(
+                            title=f"sbf_dfs[{sbf_block}]", df=sbf_dfs[sbf_block]
+                        )
+                    )
 
-                # print(f"archive = {archive}")
-                # archiving the converted sbf file
                 if not archive == None:
                     self.archive_file(fn=bin2asc_fn, dest_dir=archive)
 
@@ -617,15 +575,10 @@ class SBF:
         added_cols = {}
         removed_cols = []
 
-        # get the column names of the block_df
-        column_names = block_df.collect_schema().names()
-        print(f"column_names = {column_names}")
+        # get the column names and their dtypes of the block_df
+        column_infos = block_df.collect_schema()
 
-        # remove the rows where 'Type' equals 0 (no PVT available)
-        # if self.logger:
-        #     self.logger.debug("\tremoving rows with no PVT solution")
-
-        if "Type" in column_names:
+        if "Type" in column_infos.keys():
             block_df = block_df.filter(pl.col("Type") != 0).lazy()
             # create new column with general PNT quality ID to general name pnt_qual
             block_df = block_df.with_columns(
@@ -641,7 +594,7 @@ class SBF:
             added_cols["pnt_qual"] = pl.Utf8  # print(f"block_df = \n{block_df}")
 
         # add date-time and PRN (as str) to the dataframe
-        if "WNc [w]" in column_names and "TOW [0.001 s]" in column_names:
+        if "WNc [w]" in column_infos.keys() and "TOW [0.001 s]" in column_infos.keys():
             if self.logger:
                 self.logger.debug("\tadding datetime column to the dataframe")
             block_df = block_df.with_columns(
@@ -654,22 +607,12 @@ class SBF:
             ).lazy()
             added_cols["DT"] = pl.Datetime
 
-        # add date-time and PRN (as str) to the dataframe
-        if "WNc [w]" in column_names and "TOW [s]" in column_names:
-            if self.logger:
-                self.logger.debug("\tadding datetime column to the dataframe")
-            block_df = block_df.with_columns(
-                pl.struct(["WNc [w]", "TOW [s]"])
-                .map_elements(
-                    lambda x: gpsms2dt(week=x["WNc [w]"], towms=x["TOW [s]"]),
-                    return_dtype=pl.Datetime,
-                )
-                .alias("DT")
-            ).lazy()
-            added_cols["DT"] = pl.Datetime
-
         # check if PRN is the column names and of type int or float, than convert to str using ssnerr_prn2str
-        if "PRN" in column_names and block_df.select(pl.col("PRN")).dtypes[0] in [
+        # if "PRN" in column_names and block_df.select(pl.col("PRN")).dtypes[0] in [
+        #     pl.Int64,
+        #     pl.Float64,
+        # ]:
+        if "PRN" in column_infos.keys() and column_infos["PRN"] in [
             pl.Int64,
             pl.Float64,
         ]:
@@ -680,13 +623,10 @@ class SBF:
                     lambda x: sbfc.ssnerr_prn2str(prn=x), return_dtype=pl.Utf8
                 )
             ).lazy()
+            added_cols["PRN"] = pl.Utf8
 
         # convert SVID to PRN (as str) to the dataframe
-        if (
-            "SVID"
-            in column_names
-            # and not block_df.select(pl.col("SVID")).dtypes[0] == pl.String
-        ):
+        if "SVID" in column_infos.keys():
             if self.logger:
                 self.logger.debug("\tadding PRN column to the dataframe")
             block_df = block_df.with_columns(
@@ -700,10 +640,12 @@ class SBF:
             block_df = block_df.drop(["SVID"]).lazy()
             added_cols["PRN"] = pl.Utf8
             removed_cols.append("SVID")
-            added_cols["PRN"] = pl.Utf8
 
-        # add UTM coordinates
-        if "Latitude [rad]" in column_names and "Longitude [rad]" in column_names:
+        # add UTM coordinates and orthometric height
+        if (
+            "Latitude [rad]" in column_infos.keys()
+            and "Longitude [rad]" in column_infos.keys()
+        ):
             if self.logger:
                 self.logger.debug("\tadding UTM coordinates to the dataframe")
 
@@ -763,6 +705,7 @@ class SBF:
             block_df = block_df.drop(
                 ["Latitude [rad]", "Longitude [rad]", "utm_coords"]
             ).lazy()
+
             added_cols["latitude [deg]"] = pl.Float64
             added_cols["longitude [deg]"] = pl.Float64
             added_cols["UTM.E"] = pl.Float64
@@ -771,24 +714,46 @@ class SBF:
             added_cols["UTM.ZL"] = pl.Utf8
             removed_cols.extend(["Latitude [rad]", "Longitude [rad]"])
 
-        # add orthometric height to the dataframe
-        if "Height [m]" in column_names and "Undulation [m]" in column_names:
-            if self.logger:
-                self.logger.debug("\tadding orthometric height to the dataframe")
+            if "Undulation [m]" in column_infos.keys():
+                if self.logger is not None:
+                    self.logger.debug(
+                        "\tdropping undulation [m] column as it is based on outdated geoid model"
+                    )
+                block_df = block_df.drop("Undulation [m]")
+
+            if self.logger is not None:
+                self.logger.debug(
+                    "\tadding geoid undulation based on EGM2008 & orthometric height to the dataframe"
+                )
+            # initialise the geodheight class
+            gh_model = geoid.GeoidHeight(GEOID_PATH)
+
             block_df = block_df.with_columns(
-                pl.struct(["Height [m]", "Undulation [m]"])
+                pl.struct(["latitude [deg]", "longitude [deg]"])
                 .map_elements(
-                    lambda x: x["Height [m]"] - x["Undulation [m]"],
+                    lambda x: gh_model.get(x["latitude [deg]"], x["longitude [deg]"]),
                     return_dtype=pl.Float64,
                 )
-                .alias("orthoH")
+                .alias("undulation [m]")
             ).lazy()
-            added_cols["orthoH"] = pl.Float64
+
+            if "Height [m]" in column_infos.keys():
+                if self.logger:
+                    self.logger.debug("\tadding orthometric height to the dataframe")
+                block_df = block_df.with_columns(
+                    pl.struct(["Height [m]", "undulation [m]"])
+                    .map_elements(
+                        lambda x: x["Height [m]"] - x["undulation [m]"],
+                        return_dtype=pl.Float64,
+                    )
+                    .alias("orthoH")
+                ).lazy()
 
         # If an SBF block doesn't contain a column used in this func,
         # the collect() will throw an error.
-        if getattr(block_df, "collect", None) is not None:
-            block_df = block_df.collect()
+        with rich_console.status("Collecting dataframe", spinner="aesthetic"):
+            if getattr(block_df, "collect", None) is not None:
+                block_df = block_df.collect()
 
         return block_df, added_cols, removed_cols
 
@@ -796,10 +761,10 @@ class SBF:
         """returns the column names and dtype we use when extracting a SBF block from the SBF file
 
         Args:
-                sbf_block (str): the SBF block we are extracting
+            sbf_block (str): the SBF block we are extracting
 
         Returns:
-                list: column names we use with dtype
+            list: column names we use with dtype
         """
         if sbf_block not in SBF_BLOCK_COLUMNS_BIN2ASC.keys():
             if self.logger:
@@ -814,7 +779,9 @@ class SBF:
                 keep_cols[col] = dtype
 
         if self.logger is not None:
-            self.logger.debug(f"Keeping columns: \n{keep_cols}")
+            self.logger.debug(
+                f"Keeping columns: \n{keep_cols} | {len(keep_cols.keys())}"
+            )
 
         return keep_cols
 

@@ -5,7 +5,7 @@ import os
 import sys
 
 import polars as pl
-from rich import print
+from rich import print as rprint
 
 from analysegnss.config import ERROR_CODES, DICT_GNSS
 from analysegnss.rinex.rinex_nav_class import RINEX_NAV
@@ -50,7 +50,7 @@ def rnxnav_csv(argv: list):
     try:
         gnss_nav_dict = rnxnav.gfzrnx_tabnav()
     except RuntimeError:
-        print("No data available for selected GNSS")
+        rprint(f"No data available for (some) selected GNSS {args_parsed.gnss}")
         return 1
 
     # get directory part and filename without extension part of the RINEX navigation file
@@ -59,7 +59,7 @@ def rnxnav_csv(argv: list):
 
     # change to the directory part of the RINEX navigation file in try block
     # so that the CSV file is created in the same directory as the RINEX navigation file
-    os.chdir(rnxnav_dir)
+    # os.chdir(rnxnav_dir)
 
     # convert each GNSS / Navigation type dataframe to CSV file
     for (gnss, nav_type), nav_df in gnss_nav_dict.items():
@@ -69,14 +69,16 @@ def rnxnav_csv(argv: list):
                 f"Created for {str_green(DICT_GNSS[gnss]["name"])}-{str_green(nav_type)}: {str_yellow(csv_fn)}"
             )
 
-        if rnxnav._console_loglevel > logging.WARNING:
-            print(f"Created for {DICT_GNSS[gnss]["name"]}-{nav_type}: {csv_fn}")
-
         nav_df.write_csv(
             csv_fn,
             separator=",",
             include_header=True,
         )
+
+        if rnxnav._console_loglevel > logging.WARNING:
+            rprint(
+                f"Created for [green]{DICT_GNSS[gnss]["name"]}-{nav_type}[/green]: [blue]{csv_fn}[/blue]"
+            )
 
 
 def main():

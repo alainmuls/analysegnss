@@ -7,6 +7,7 @@ from datetime import datetime
 import sys
 from logging import Logger
 from rich import print as rprint
+import glob
 
 # Local imports
 from analysegnss.config import ERROR_CODES
@@ -25,12 +26,14 @@ from analysegnss.scripts.ebh.ebh_print import (
     print_starting_ppk_process,
 )
 from analysegnss.utils.utilities import ProcessOutputCollector
+from analysegnss.pnt.pnt_data_collector import pnt_data_collector
+from analysegnss.plots.plot_coords import plot_coords
 
 """
 This script orchestrates the complete EBH (Equivalent Bump Height) processing workflow.
 It implements a quality-based decision system for processing GNSS data and calculates runway gradients.
 """
-
+# TODO: remove case one-EBH-OK. If one line is rejected, calculate PPK for all lines. (Also risk of map angle being wrong when only one line is processed)
 # TODO: improve the RTK/PPK quality check by also checking standard deviation error of RTK/PPK solution
 
 EBH_REJECTION_LEVEL = 99  # if the number of fixed RTK/PPK points is below this level, the ebh line is rejected
@@ -42,42 +45,59 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
     outputs ASSUR formatted files for each ebh line, and calculates runway gradients.
 
     Args:
-    parsed_args: parsed CLI arguments (check argument_parser.py for more info)
+        parsed_args: parsed CLI arguments (check argument_parser.py for more info)
+        logger: logger object for logging messages
 
     Returns:
-    sys.exit(0) if ebh lines are of sufficient quality
-    sys.exit(1) if ebh lines are not of sufficient quality
+        None, but exits with appropriate exit code:
+        - EBH_MEASUREMENT_SUCCESS (0) if ebh lines are of sufficient quality
+        - EBH_MEASUREMENT_INSUFFICIENT (1) if ebh lines are not of sufficient quality
+        - EBH_MEASUREMENT_FAILED (2) if there was an error in processing
     """
-    message_collector = (
-        ProcessOutputCollector()
-    )  # collects EBH checkpoint messages and saves them to a file
+    message_collector = ProcessOutputCollector()
+    output_dir = os.path.join(
+        os.path.dirname(os.path.abspath(parsed_args.sbf_ifn)), "EBH_ASSUR"
+    )
+    summary_file = os.path.join(output_dir, "EBH_process_summary.txt")
+
+    message_collector.add_message(
+        f"[START] Starting EBH process for {parsed_args.sbf_ifn} with {parsed_args.desc} as description\n"
+    )
 
     try:
         # Step 1: Get EBH timings
+        logger.info("Starting EBH timing extraction")
         ebh_timings = get_ebh_timings(parsed_args=parsed_args, logger=logger)
+        logger.info(f"Successfully extracted timings for {len(ebh_timings)} EBH lines")
 
         # Step 2: Process RTK solution
+        logger.info("Starting RTK solution processing")
+        message_collector.add_message("Starting RTK solution processing")
         rtk_result = process_rtk_solution(
             parsed_args=parsed_args, ebh_timings=ebh_timings, logger=logger
         )
 
-        ## store RTK process EBH decision and PVT quality analysis
-        message_collector.add_message(rtk_result.get("msg_pvt_qanalysis", ""))
+        # Store RTK process results
+        message_collector.add_message(rtk_result.get("msg_pnt_analysis", ""))
         message_collector.add_message(rtk_result.get("msg_ebh_decision", ""))
 
         if rtk_result.get("success", False):
-            # Calculate and save runway gradients if RTK was successful
+            logger.info("RTK solution meets quality criteria")
             calculate_runway_gradients(parsed_args=parsed_args, logger=logger)
-            message_collector.save_to_file(
-                output_path=os.path.join(
-                    os.path.dirname(os.path.abspath(parsed_args.sbf_ifn)),
-                    "EBH_ASSUR",
-                    "EBH_process_summary.txt",
-                )
+            message_collector.add_message(
+                "Calculation of runway gradients successful.\n"
             )
+            # Collect and plot EBH data
+            collect_and_plot_ebh_data(parsed_args=parsed_args, logger=logger)
+            message_collector.add_message(
+                "PNT data collection and plotting successful.\n"
+            )
+            message_collector.save_to_file(output_path=summary_file)
             sys.exit(EBH_EXIT_CODES["EBH_MEASUREMENT_SUCCESS"])
 
         # Step 3: Process PPK solution if RTK wasn't sufficient
+        logger.info("Starting PPK solution processing")
+        message_collector.add_message("Starting PPK solution processing")
         ppk_result = process_ppk_solution(
             parsed_args=parsed_args,
             rtk_result=rtk_result,
@@ -85,10 +105,10 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
             logger=logger,
         )
 
-        ## store PPK process EBH decision and PVT quality analysis
+        # Store PPK process results
         message_collector.add_message(
             ppk_result.get(
-                "msg_pvt_qanalysis",
+                "msg_pnt_analysis",
                 "[WARNING] Unable to calculate PPK. Check logs for more info.\n",
             )
         )
@@ -100,47 +120,54 @@ def ebh_process_launcher(parsed_args: argparse.Namespace, logger: Logger) -> Non
         )
 
         if ppk_result.get("success", False):
-            # Calculate and save runway gradients if PPK was successful
+            logger.info("PPK solution meets quality criteria")
             calculate_runway_gradients(parsed_args=parsed_args, logger=logger)
-            message_collector.save_to_file(
-                output_path=os.path.join(
-                    os.path.dirname(os.path.abspath(parsed_args.sbf_ifn)),
-                    "EBH_ASSUR",
-                    "EBH_process_summary.txt",
-                )
+            message_collector.add_message(
+                "Calculation of runway gradients successful.\n"
             )
+            # Collect and plot EBH data
+            collect_and_plot_ebh_data(parsed_args=parsed_args, logger=logger)
+            message_collector.add_message(
+                "PNT data collection and plotting successful.\n"
+            )
+            message_collector.save_to_file(output_path=summary_file)
             sys.exit(EBH_EXIT_CODES["EBH_MEASUREMENT_SUCCESS"])
 
-        else:
-            try:
-                logger.warning(
-                    "Trying to calculate runway gradients using insufficient RTK/PPK solution."
-                )
-                calculate_runway_gradients(parsed_args=parsed_args, logger=logger)
-                message_collector.save_to_file(
-                    output_path=os.path.join(
-                        os.path.dirname(os.path.abspath(parsed_args.sbf_ifn)),
-                        "EBH_ASSUR",
-                        "EBH_process_summary.txt",
-                    )
-                )
-            except Exception as e:
-                logger.error(f"Calculation of runway gradients failed: {e}")
-                rprint(f"[red]Calculation of runway gradients failed: {e}[/red]")
-
+        # If both RTK and PPK failed, try to calculate gradients with insufficient data
+        logger.warning(
+            "Both RTK and PPK solutions failed quality check. Attempting to calculate gradients with insufficient data."
+        )
+        try:
+            calculate_runway_gradients(parsed_args=parsed_args, logger=logger)
+            message_collector.add_message(
+                "Calculation of runway gradients successful.\n"
+            )
+            # Collect and plot EBH data even with insufficient quality
+            collect_and_plot_ebh_data(parsed_args=parsed_args, logger=logger)
+            message_collector.add_message(
+                "PNT data collection and plotting successful.\n"
+            )
+            message_collector.save_to_file(output_path=summary_file)
             sys.exit(EBH_EXIT_CODES["EBH_MEASUREMENT_INSUFFICIENT"])
+        except Exception as e:
+            logger.error(f"Calculation of runway gradients failed: {e}")
+            rprint(f"[red]Calculation of runway gradients failed: {e}[/red]")
+
+        message_collector.add_message(
+            "[WARNING] Determined ASSUR EBH files are not of sufficient quality.\n"
+        )
+        message_collector.save_to_file(output_path=summary_file)
+
+        sys.exit(EBH_EXIT_CODES["EBH_MEASUREMENT_INSUFFICIENT"])
 
     except Exception as e:
-        logger.error(f"Error in ebh_process_launcher: {e}")
+        error_msg = f"Error in ebh_process_launcher: {e}"
+        logger.error(error_msg)
         rprint(f"[red]ERROR {e} in measurements. Redo measurement.[/red]")
-        message_collector.add_message(f"ERROR {e} in measurements. Redo measurement.")
-        message_collector.save_to_file(
-            output_path=os.path.join(
-                os.path.dirname(os.path.abspath(parsed_args.sbf_ifn)),
-                "EBH_ASSUR",
-                "EBH_process_summary.txt",
-            )
+        message_collector.add_message(
+            f"[ERROR] {error_msg} in measurements. Redo measurement.\n"
         )
+        message_collector.save_to_file(output_path=summary_file)
         sys.exit(EBH_EXIT_CODES["EBH_MEASUREMENT_FAILED"])
 
 
@@ -163,7 +190,9 @@ def process_rtk_solution(
     try:
         # Get RTK solution
         parsed_args.ebh_timings = ebh_timings
-        ebh_qual_rtk = ebh_lines(parsed_args=parsed_args, logger=logger)
+        ebh_qual_rtk, ebh_qual_rtk_tabular = ebh_lines(
+            parsed_args=parsed_args, logger=logger
+        )
 
         # Check RTK quality
         rejected_lines, qual_decision = rtk_ppk_qual_check(
@@ -173,18 +202,18 @@ def process_rtk_solution(
         )
 
         if qual_decision == "ALL-EBH-OK":
-            msg_ebh_decision, msg_pvt_qanalysis = print_ebh_ok(
-                logger=logger, pvt_qanalysis=ebh_qual_rtk, source="RTK"
+            msg_ebh_decision, msg_pnt_analysis = print_ebh_ok(
+                logger=logger, pnt_analysis=ebh_qual_rtk_tabular, source="RTK"
             )
             return {
                 "success": True,
                 "msg_ebh_decision": msg_ebh_decision,
-                "msg_pvt_qanalysis": msg_pvt_qanalysis,
+                "msg_pnt_analysis": msg_pnt_analysis,
             }
         else:
-            msg_ebh_decision, msg_pvt_qanalysis = print_ebh_nok(
+            msg_ebh_decision, msg_pnt_analysis = print_ebh_nok(
                 logger=logger,
-                pvt_qanalysis=ebh_qual_rtk,
+                pnt_analysis=ebh_qual_rtk_tabular,
                 rejected_lines=rejected_lines,
                 rejection_level=EBH_REJECTION_LEVEL,
                 source="RTK",
@@ -194,7 +223,7 @@ def process_rtk_solution(
                 "rejected_lines": rejected_lines,
                 "qual_decision": qual_decision,
                 "msg_ebh_decision": msg_ebh_decision,
-                "msg_pvt_qanalysis": msg_pvt_qanalysis,
+                "msg_pnt_analysis": msg_pnt_analysis,
             }
 
     except Exception as e:
@@ -248,7 +277,7 @@ def process_ppk_solution(
             parsed_args.sbf_ifn
         )  # delete sbf_ifn from parsed_args to avoid it being used in the ebh_lines function
         # ebh_lines function is called with pos_ifn as input
-        ebh_qual_ppk = ebh_lines(
+        ebh_qual_ppk, ebh_qual_ppk_tabular = ebh_lines(
             parsed_args=parsed_args, logger=logger
         )  # TODO maybe adapt mutually exclusive group to only allow sbf_ifn or pos_ifn?
         parsed_args.sbf_ifn = sbf_ifn  # restore sbf_ifn in parsed_args
@@ -261,18 +290,18 @@ def process_ppk_solution(
         )
 
         if qual_decision == "ALL-EBH-OK":
-            msg_ebh_decision, msg_pvt_qanalysis = print_ebh_ok(
-                logger=logger, pvt_qanalysis=ebh_qual_ppk, source="PPK"
+            msg_ebh_decision, msg_pnt_analysis = print_ebh_ok(
+                logger=logger, pnt_analysis=ebh_qual_ppk_tabular, source="PPK"
             )
             return {
                 "success": True,
                 "msg_ebh_decision": msg_ebh_decision,
-                "msg_pvt_qanalysis": msg_pvt_qanalysis,
+                "msg_pnt_analysis": msg_pnt_analysis,
             }
         else:
-            msg_ebh_decision, msg_pvt_qanalysis = print_ebh_nok(
+            msg_ebh_decision, msg_pnt_analysis = print_ebh_nok(
                 logger=logger,
-                pvt_qanalysis=ebh_qual_ppk,
+                pnt_analysis=ebh_qual_ppk_tabular,
                 rejected_lines=rejected_lines,
                 rejection_level=EBH_REJECTION_LEVEL,
                 source="PPK",
@@ -280,7 +309,7 @@ def process_ppk_solution(
             return {
                 "success": False,
                 "msg_ebh_decision": msg_ebh_decision,
-                "msg_pvt_qanalysis": msg_pvt_qanalysis,
+                "msg_pnt_analysis": msg_pnt_analysis,
             }
 
     except Exception as e:
@@ -321,92 +350,70 @@ def calculate_runway_gradients(parsed_args: argparse.Namespace, logger: Logger) 
 
 def rtk_ppk_qual_check(
     qual_analysis: dict, rejection_level: float, logger: Logger
-) -> list:
-    """Checks the RTK or PPK solutions and checks if the line is of sufficient quality
-    to be used for the ebh_lines calculation and ASSURtool. It returns the rejected lines.
+) -> tuple[list, str]:
+    """Checks the RTK or PPK solutions and determines if the lines are of sufficient quality
+    to be used for the ebh_lines calculation and ASSURtool.
 
     Args:
-    qual_analysis (dict):       dictionary with the quality analysis of the RTK/PPK solution
-                                for each ebh line
-    rejection level (float):    a level of fixed_points/total (percentage) that needs to be met.
-                                Otherwise the results is rejected.
+        qual_analysis (dict): Dictionary with the quality analysis of the RTK/PPK solution
+                            for each ebh line
+        rejection_level (float): Minimum percentage of fixed_points/total that needs to be met
+        logger (Logger): Logger object for logging messages
 
     Returns:
-    rejected_ebh_lines (list):  list of ebh lines that are rejected
-    ebh_qual_decision (str):    string with the decision (ALL-EBH-OK, 1-EBH-OK or ALL-EBH-NOK)
+        tuple[list, str]: A tuple containing:
+            - rejected_ebh_lines (list): List of ebh lines that are rejected
+            - ebh_qual_decision (str): Decision string ("ALL-EBH-OK" or "ALL-EBH-NOK")
     """
-
-    logger.info(
-        f"RTK/PPK checker launched for {qual_analysis} with a rejection level of ebh {rejection_level}% fixed PNT points."
-    )
-
-    number_ebh_lines = len(qual_analysis)
-
-    if number_ebh_lines == 0:
+    if not qual_analysis:
         logger.critical("No quality analysis available. No ebh lines to check.")
         rprint(
             "[red]No quality analysis available. No ebh lines to check. Redo measurement.[/red]"
         )
-        sys.exit(1)
+        return [], "ALL-EBH-NOK"
 
-    logger.info(f"Number of measured ebh lines: {number_ebh_lines}")
+    logger.info(
+        f"RTK/PPK checker launched for {len(qual_analysis)} lines with rejection level of {rejection_level}% fixed PNT points."
+    )
 
-    rejected_ebh_lines = []  # list to store the decision for each ebh line
+    rejected_ebh_lines = []
     for ebh_key, ebh_qual_value in qual_analysis.items():
+        # check if FIXED quality is met by checking the standard_pnt_quality lookup table (standard_pnt_quality_dict.py)
 
-        # check if FIXED quality is met by matching RTKLIB AND SBF PVT QUAL TABLES
-        # loop though the saved quality tables to select only the FIXED quality / TODO: CREATE general GNSS qual lookup table
-        for n in range(len(ebh_qual_value)):
-            if (
-                ebh_qual_value[n][0] == "RTK with ﬁxed ambiguities"
-                or ebh_qual_value[n][0] == "PPK with ﬁxed ambiguities"
-            ):
+        # Find the first entry with "RTK with fixed ambiguities" quality
+        fixed_quality_entry = next(
+            (
+                entry
+                for entry in ebh_qual_value
+                if entry[0] == "RTK with fixed ambiguities"
+            ),
+            None,
+        )
 
-                if (
-                    ebh_qual_value[n][1] > 0
-                ):  # checks if ebh lines holds any data with fixed quality
-                    logger.info(
-                        f"Number of measured points with FIXED quality for {ebh_key}: {ebh_qual_value[n][1]}/{ebh_qual_value[n][3]}"
-                    )
+        if (
+            fixed_quality_entry and fixed_quality_entry[1] > 0
+        ):  # checks if ebh lines holds any data with fixed quality
+            fixed_points, total_points = fixed_quality_entry[1], fixed_quality_entry[3]
+            percentage = fixed_quality_entry[2]
 
-                    if ebh_qual_value[n][2] >= rejection_level:
-                        logger.info(
-                            f"ebh line {ebh_key} passed with {ebh_qual_value[n][2]}"
-                        )
-                    else:
-                        rejected_ebh_lines.append(ebh_key)
-                        logger.warning(
-                            f"ebh line {ebh_key} is rejected with the quality of {ebh_qual_value[n][2]} against the rejection level of {rejection_level}% fixed PNT points."
-                        )
-                    break
+            logger.info(
+                f"Line {ebh_key}: {fixed_points}/{total_points} points with FIXED quality ({percentage}%)"
+            )
+
+            if percentage >= rejection_level:
+                logger.info(f"Line {ebh_key} passed quality check")
             else:
-                logger.debug(
-                    f"<{ebh_qual_value[n][0]}> does not match <RTK with fixed ambiguities> or <PPK with fixed ambiguities>"
-                )
-                logger.warning(
-                    f"measurements for ebh line {ebh_key} do not contain any FIXED PNT quality points."
-                )
                 rejected_ebh_lines.append(ebh_key)
+                logger.warning(
+                    f"Line {ebh_key} rejected: {percentage}% < {rejection_level}% threshold"
+                )
+        else:
+            logger.warning(f"Line {ebh_key} has no FIXED quality points")
+            rejected_ebh_lines.append(ebh_key)
 
-    # Checking PNT solution quality of each ebh line and deciding whether to continue with RTK or PPK solution
-    # If more than one RTK ebh line is not sufficient, all the ebh lines will be recalculated in PPK mode
-    # If only one is insufficient, the PPK is calculated for this line only
-    if len(rejected_ebh_lines) == 0:
-
-        ebh_qual_decision = "ALL-EBH-OK"
-
-        logger.info(f"ebh_qual_decision: {ebh_qual_decision}")
-
-    elif len(rejected_ebh_lines) == 1:
-
-        ebh_qual_decision = "1-EBH-NOK"
-
-        logger.info(f"ebh_qual_decision: {ebh_qual_decision}")
-
-    else:
-        ebh_qual_decision = "ALL-EBH-NOK"
-
-        logger.info(f"ebh_qual_decision: {ebh_qual_decision}")
+    # Determine overall quality decision
+    ebh_qual_decision = "ALL-EBH-OK" if not rejected_ebh_lines else "ALL-EBH-NOK"
+    logger.info(f"Quality decision: {ebh_qual_decision}")
 
     return rejected_ebh_lines, ebh_qual_decision
 
@@ -418,32 +425,32 @@ def do_ppk_by_decision(
     parsed_args: argparse.Namespace,
     logger: Logger,
 ) -> str:
-    """A ppk process is launched for the ebh lines according to ebh quality decision.
+    """Process PPK solution based on quality decision.
 
-    args:
-    rejected_ebh_lines (list): list of ebh lines that are rejected
-    ebh_qual_decision (str): defines which condition is met for three possible outcomes
-                        case 1: ebh_qual_sol = "ALL-EBH-OK"
-                        case 2: ebh_qual_sol = "1-EBH-NOK"
-                        case 3: ebh_qual_sol = "ALL-EBH-NOK"
-    ebh_timings (dict): timings of each ebh line [ebh_line_key: wnc tow, wnc tow]
-    parsed_args: RNX Obs, RNX Nav, base corrections (RNX or RTCM) and PPK configuration file.
+    Args:
+        rejected_ebh_lines (list): List of rejected EBH lines
+        ebh_qual_decision (str): Quality decision ("ALL-EBH-OK" or "ALL-EBH-NOK")
+        ebh_timings (dict): Dictionary of EBH line timings
+        parsed_args (argparse.Namespace): Command line arguments
+        logger (Logger): Logger object for logging messages
 
-    return:
-    ppk_pos_ofn (str):  path to the ppk pos file
-    #ebh_timings (dict): dictionary with the ebh_lines and the corresponding timings used in the ppk solution
-
+    Returns:
+        str: Path to the PPK position output file, or None if processing fails
     """
+    if not parsed_args.base_corr:
+        logger.warning("Base corrections are not available. Cannot calculate PPK.")
+        rprint(
+            "[yellow][WARNING] Base corrections are not available. Cannot calculate PPK.[/yellow]"
+        )
+        return None
 
-    # initialize ppk_pos output file name and rnx navigation filename list (if PPK is needed)
+    # Initialize output file name and navigation file list
     ppk_pos_ofn = ""
-    parsed_args.nav = (
-        []
-    )  # parsed_args.nav is configured with nargs=+ option in argument_parser_rnx2rtkp_launcher. This option requires the argument to be a list of strings.
+    # parsed_args.nav is configured with nargs=+ option in argument_parser_rnx2rtkp_launcher. This option requires the argument to be a list of strings.
+    parsed_args.nav = []
 
-    # configure rtklib PPK config file if not specified
+    # Configure RTKlib PPK config file if not specified
     if parsed_args.config_ppk is None:
-        # get relative path of the rtklib PPK config file
         rtklib_ppk_config = os.path.join(
             os.path.dirname(__file__),
             "..",
@@ -452,132 +459,46 @@ def do_ppk_by_decision(
             "rnx2rtkp_EBH_PPK_default.conf",
         )
         parsed_args.config_ppk = os.path.normpath(rtklib_ppk_config)
-        logger.debug(
-            f"PPK configuration file not specified. Using default configuration file {parsed_args.config_ppk}"
+        logger.debug(f"Using default PPK configuration file: {parsed_args.config_ppk}")
+
+    if ebh_qual_decision == "ALL-EBH-OK":
+        logger.info("No PPK processing needed - all lines meet quality criteria")
+        return None
+
+    # Process PPK for all lines
+    print_starting_ppk_process(logger, rejected_ebh_lines, ebh_timings)
+
+    try:
+        # Get rover data
+        rnx_obs_fn, rnx_nav_fn = get_rnx_files.get_rnx_frm_sbf(
+            parsed_args=parsed_args, logger=logger
+        )
+        parsed_args.obs = rnx_obs_fn
+        parsed_args.nav.append(rnx_nav_fn)
+
+        # Get base data
+        rnx_obs_fn, rnx_nav_fn, base_coord_X, base_coord_Y, base_coord_Z = (
+            get_base_data_for_PPK(parsed_args=parsed_args, logger=logger)
         )
 
-    match ebh_qual_decision:
-        case "ALL-EBH-OK":
-            pass
+        # Update parsed_args with base data
+        parsed_args.base_corr = rnx_obs_fn
+        parsed_args.nav.append(rnx_nav_fn)
+        parsed_args.base_coord_X = base_coord_X
+        parsed_args.base_coord_Y = base_coord_Y
+        parsed_args.base_coord_Z = base_coord_Z
 
-        case "1-EBH-NOK":
-            print_starting_ppk_process(logger, rejected_ebh_lines, ebh_timings)
+        # Calculate PPK
+        logger.info("Starting PPK calculation")
+        ppk_pos_ofn = rnx2rtkp_ppk(parsed_args=parsed_args, logger=logger)
+        logger.info(f"PPK solution saved to: {ppk_pos_ofn}")
 
-            ### EXTRACTING EBH TIMING INFO OF REJECTED EBH LINE ###
-            wnctow_start = ebh_timings[rejected_ebh_lines[0]][0]  # start of ebh line
-            wnctow_end = ebh_timings[rejected_ebh_lines[0]][1]  # end of ebh line
+        return ppk_pos_ofn
 
-            # gnss_dt.gnss2dt returns a datetime object however get_base_coord_from_sbf used in get_base_data_for_PPK expects a string in the format of YYYY-MM-DD_HH:MM:SS.s
-            parsed_args.datetime = datetime.strftime(
-                gnss_dt.gnss2dt(wnctow_start[0], wnctow_start[1]),
-                "%Y-%m-%d_%H:%M:%S.%f",
-            )
-            # Converting timings to RTKlib fmt. gnss_dt.gnss2dt returns a datetime object however rnx2rtkp expects a string in the format of YYYY-MM-DD_HH:MM:SS
-            parsed_args.datetime_start = datetime.strftime(
-                gnss_dt.gnss2dt(wnctow_start[0], wnctow_start[1]), "%Y-%m-%d_%H:%M:%S"
-            )
-            parsed_args.datetime_end = datetime.strftime(
-                gnss_dt.gnss2dt(wnctow_end[0], wnctow_end[1]), "%Y-%m-%d_%H:%M:%S"
-            )
-
-            ### GET ROVER DATA FOR PPK ###
-            rnx_obs_fn, rnx_nav_fn = get_rnx_files.get_rnx_frm_sbf(
-                parsed_args=parsed_args, logger=logger
-            )
-            parsed_args.obs = rnx_obs_fn
-            parsed_args.nav.append(rnx_nav_fn)
-
-            ### GET BASE COORDINATES ###
-            if parsed_args.base_corr is None:
-                logger.error(
-                    f"Base correction file = {parsed_args.base_corr} is not imported correctly. Breaking PPK process"
-                )
-                ppk_pos_ofn = None
-
-                return ppk_pos_ofn
-            else:
-                logger.debug(
-                    f"base correction file is imported correctly: {parsed_args.base_corr}"
-                )
-
-                # getting obs, nav and base coordinates from sbf_ifn
-                rnx_obs_fn, rnx_nav_fn, base_coord_X, base_coord_Y, base_coord_Z = (
-                    get_base_data_for_PPK(parsed_args=parsed_args, logger=logger)
-                )
-
-                # adding obs and nav file to parsed_args.base_corr and parsed_args.nav
-                parsed_args.base_corr = rnx_obs_fn
-                parsed_args.nav.append(rnx_nav_fn)
-
-                # adding base coordinates to parsed_args
-                parsed_args.base_coord_X = base_coord_X
-                parsed_args.base_coord_Y = base_coord_Y
-                parsed_args.base_coord_Z = base_coord_Z
-
-            ### CALCULATING PPK ###
-            logger.info(
-                f"Starting PPK calculation for ebh line {rejected_ebh_lines[0]} with timings {ebh_timings[rejected_ebh_lines[0]]}"
-            )
-            logger.debug(
-                f"running rnx2rtkp_ppk function with parsed_args {parsed_args}"
-            )
-            ppk_pos_ofn = rnx2rtkp_ppk(parsed_args=parsed_args, logger=logger)
-
-            logger.info(
-                f"Finished calculating PPK solution for ebh line {rejected_ebh_lines}. Solution saved to {ppk_pos_ofn}"
-            )
-
-        case "ALL-EBH-NOK":
-            print_starting_ppk_process(logger, rejected_ebh_lines, ebh_timings)
-
-            ### GET ROVER DATA FOR PPK ###
-            rnx_obs_fn, rnx_nav_fn = get_rnx_files.get_rnx_frm_sbf(
-                parsed_args=parsed_args, logger=logger
-            )
-            parsed_args.obs = rnx_obs_fn
-            parsed_args.nav.append(
-                rnx_nav_fn
-            )  # parsed_args.nav is configured with nargs=+ option. This option requires the argument to be a list of strings.
-
-            ### GET BASE DATA FOR PPK ###
-            if parsed_args.base_corr is None:
-                logger.error(
-                    f"Base correction file = {parsed_args.base_corr} is not imported correctly. Breaking PPK process"
-                )
-                ppk_pos_ofn = None
-
-                return ppk_pos_ofn
-            else:
-
-                logger.debug(
-                    f"base correction file is imported correctly: {parsed_args.base_corr}"
-                )
-
-                # getting obs, nav and base coordinates from sbf_ifn
-                rnx_obs_fn, rnx_nav_fn, base_coord_X, base_coord_Y, base_coord_Z = (
-                    get_base_data_for_PPK(parsed_args=parsed_args, logger=logger)
-                )
-
-                # adding obs and nav file to parsed_args.base_corr and parsed_args.nav
-                parsed_args.base_corr = rnx_obs_fn
-                parsed_args.nav.append(rnx_nav_fn)
-
-                # adding base coordinates to parsed_args
-                parsed_args.base_coord_X = base_coord_X
-                parsed_args.base_coord_Y = base_coord_Y
-                parsed_args.base_coord_Z = base_coord_Z
-
-            ### CALCULATING PPK ###
-            logger.debug(
-                f"running rnx2rtkp_ppk function with parsed_args {parsed_args}"
-            )
-            ppk_pos_ofn = rnx2rtkp_ppk(parsed_args=parsed_args, logger=logger)
-
-            logger.info(
-                f"Finished calculating PPK solution for ebh lines {rejected_ebh_lines} with timings {ebh_timings}. Saved solution to {ppk_pos_ofn}"
-            )
-
-    return ppk_pos_ofn
+    except Exception as e:
+        logger.error(f"Error in PPK processing: {e}")
+        rprint(f"[red]Failed to calculate PPK: {e}[/red]")
+        return None
 
 
 def get_base_data_for_PPK(
@@ -631,6 +552,69 @@ def get_base_data_for_PPK(
     logger.info(f"using base rinex correction file {rnx_obs_fn}")
 
     return rnx_obs_fn, rnx_nav_fn, base_coord_X, base_coord_Y, base_coord_Z
+
+
+def collect_and_plot_ebh_data(parsed_args: argparse.Namespace, logger: Logger) -> None:
+    """Collect PNT data from EBH files and create plots.
+
+    Args:
+        parsed_args (argparse.Namespace): Parsed arguments
+        logger (Logger): Logger object
+    """
+    try:
+        # get absolute path of sbf_ifn
+        sbf_ifn_abs = os.path.abspath(parsed_args.sbf_ifn)
+
+        # Create EBH-analysis directory if it doesn't exist
+        ebh_analysis_dir = os.path.join(os.path.dirname(sbf_ifn_abs), "EBH_analysis")
+        os.makedirs(ebh_analysis_dir, exist_ok=True)
+        logger.info(f"Created EBH-analysis directory: {ebh_analysis_dir}")
+
+        # Get the directory containing the ASSUR files (csv files)
+        assur_dir = os.path.join(os.path.dirname(sbf_ifn_abs), "EBH_ASSUR")
+
+        # Find all matching CSV files using glob
+        csv_files = glob.glob(os.path.join(assur_dir, f"{parsed_args.desc}_*.csv"))
+
+        if not csv_files:
+            logger.warning(
+                f"No CSV files found matching pattern: {parsed_args.desc}_*.csv in {assur_dir}"
+            )
+            return
+
+        # Set up arguments for PNT data collection
+        pnt_args = argparse.Namespace(
+            csv_ifn=csv_files,  # Pass the list of matched files directly
+            output_dir=ebh_analysis_dir,
+            csv_out=True,
+            merge=True,
+            merge_ofn=os.path.join(ebh_analysis_dir, parsed_args.desc),
+            columns_csv=["UTM.E", "UTM.N", "orthoH"],
+            no_header=True,
+            sep=";",
+        )
+
+        # Collect and merge PNT data
+        logger.info("Collecting and merging PNT data from EBH files")
+        logger.debug(f"calling pnt_data_collector with pnt_args: {pnt_args}")
+        standard_pnt_dfs, _ = pnt_data_collector(parsed_args=pnt_args, logger=logger)
+
+        # Set up arguments for plotting
+        plot_args = argparse.Namespace(
+            csv_ifn=os.path.join(
+                ebh_analysis_dir, f"{parsed_args.desc}_merged_pnt_standardized.csv"
+            ),
+            mpl=True,
+        )
+
+        # Create plots
+        logger.info("Creating plots from merged PNT data")
+        logger.debug(f"calling plot_coords with plot_args: {plot_args}")
+        plot_coords(parsed_args=plot_args, logger=logger)
+
+    except Exception as e:
+        logger.error(f"Error in collect_and_plot_ebh_data: {e}")
+        rprint(f"[yellow]Warning: Could not create plots: {e}[/yellow]")
 
 
 def main():

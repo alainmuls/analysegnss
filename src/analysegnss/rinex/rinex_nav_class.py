@@ -10,10 +10,10 @@ import analysegnss.rinex.rinex_column_names as rcn
 from analysegnss.config import DICT_GNSS, rich_console
 from analysegnss.rinex.rinex_class import RINEX
 from analysegnss.utils.utilities import (
+    print_df_in_chunks,
     str_green,
     str_red,
     str_yellow,
-    print_df_in_chunks,
 )
 
 
@@ -136,9 +136,7 @@ class RINEX_NAV(RINEX):
                     f"Processing GNSS: {str_green(', '.join(other_gnss))}\n"
                 )
             # add a spinner while waiting for the conversion to complete
-            with rich_console.status(
-                "Please wait - Processing GNSS:...\n", spinner="aesthetic"
-            ):
+            with rich_console.status("Processing GNSS:...\n", spinner="aesthetic"):
                 # process GEC systems without Glonass
                 gfzrnx_args.extend(["-satsys", "".join(other_gnss)])
 
@@ -146,7 +144,7 @@ class RINEX_NAV(RINEX):
                 gec_nav_dict = self.gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
                 gnss_nav_dict.update(gec_nav_dict)
 
-            rich_console.print(f"GNSS [green]{other_gnss}[/green] processed.")
+            rprint(f"GNSS [green]{other_gnss}[/green] processed.")
 
         # Add GLONASS separately if present
         if has_glonass:
@@ -160,9 +158,7 @@ class RINEX_NAV(RINEX):
             if self.logger is not None:
                 self.logger.debug(f"str_yellow('Processing GNSS: R')")
             # add a spinner while waiting for the conversion to complete
-            with rich_console.status(
-                "Please wait - Processing GNSS R:...\n", spinner="aesthetic"
-            ):
+            with rich_console.status("Processing GNSS R:...\n", spinner="aesthetic"):
                 gfzrnx_args.extend(["-satsys", "R"])
                 # print(f"GLONASS gfzrnx_args = {' '.join(gfzrnx_args)}")
                 # Process GLONASS separately
@@ -170,7 +166,13 @@ class RINEX_NAV(RINEX):
                 if r_nav_dict is not None:
                     gnss_nav_dict.update(r_nav_dict)
 
-            rich_console.print(f"GNSS [green]{has_glonass}[/green] processed.")
+            rprint(f"GNSS [green]{has_glonass}[/green] processed.")
+
+            r_nav_dict = self.gnss_nav_to_tabnav(gfzrnx_opts=gfzrnx_args)
+            if r_nav_dict is not None:
+                gnss_nav_dict.update(r_nav_dict)
+
+            rprint(f"GNSS {has_glonass} processed.")
 
         return gnss_nav_dict
 

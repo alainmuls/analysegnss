@@ -12,46 +12,13 @@ from rich import print as rprint
 from tabulate import tabulate
 
 # Local application imports
+from analysegnss.analyse.pnt_quality_analysis import quality_analysis
 from analysegnss.gnss.standard_pnt_quality_dict import (
     nmea_to_standard_pntqual,
     get_pntquality_info,
 )
 from analysegnss.nmea.nmea_class import NMEA
 from analysegnss.utils import argument_parser, init_logger
-
-
-def quality_analysis(df_pvt: pl.DataFrame, logger: logging.Logger = None) -> list:
-    """display the quality analysis
-
-    Args:
-        df (pl.DataFrame): dataframe containing the PNT solution
-        logger (logging.Logger): logger object
-    """
-    # analysis of the quality of the position data
-    qual_analysis = []
-    total_obs = df_pvt.shape[0]
-    for qual, qual_data in df_pvt.group_by(["gps_qual"]):
-        qual_analysis.append(
-            [
-                get_pntquality_info(nmea_to_standard_pntqual(qual[0]))["desc"],
-                qual_data.shape[0],
-                round(qual_data.shape[0] / total_obs * 100, 2),
-                total_obs,
-            ]
-        )
-
-    qual_tabular = tabulate(
-        qual_analysis,
-        headers=["PNT Mode", "Count", "Percentage", "Total Observations"],
-        tablefmt="fancy_outline",
-    )
-
-    if logger is not None:
-        logger.info(f"Analysis of the quality of NMEA position data:\n{qual_tabular}")
-
-    rprint(f"Analysis of the quality of NMEA position data:\n{qual_tabular}")
-
-    return qual_analysis
 
 
 def nmea_reader(
@@ -87,7 +54,15 @@ def nmea_reader(
     nmea_df = nmea_data.get_nmea_dataframe()
 
     # do quality analysis
-    qual_analysis = quality_analysis(df_pvt=nmea_df, logger=logger)
+    qual_analysis, qual_tabular = quality_analysis(
+        df_pnt=nmea_df, file_name=os.path.basename(parsed_args.nmea_ifn), logger=logger
+    )
+
+    # print quality in tabular form
+    rprint(
+        f"Analysis of the quality of NMEA position data for\
+            {os.path.basename(parsed_args.nmea_ifn)}:\n{qual_tabular}"
+    )
 
     if nmea_data._console_loglevel <= logging.INFO:
         # print number of observations

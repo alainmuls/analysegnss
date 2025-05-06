@@ -11,10 +11,8 @@ import sys
 # Third-party imports
 import polars as pl
 import pynmea2
-from rich import print
-from rich import print
+from rich import print as rprint
 from rich.console import Console
-import utm
 import utm
 
 # Local application imports
@@ -27,7 +25,7 @@ from analysegnss.gnss.standard_pnt_quality_dict import nmea_to_standard_pntqual
 #   The NMEA ZDA message also contains the date, however day, month and year are in separate fields ...
 from analysegnss.utils.utilities import sf64, si64
 
-#TODO Only NMEA RMC contains the datestamp, so if this message is not present, the datetime can not be generated
+# TODO Only NMEA RMC contains the datestamp, so if this message is not present, the datetime can not be generated
 #   This should raise an error or warning and enable the user to add the date manually
 #   The NMEA ZDA message also contains the date, however day, month and year are in separate fields ...
 
@@ -112,7 +110,7 @@ class NMEA:
 
         for msg in self.parse_nmea_file():
 
-            # get timestamp from nmea message and update last_timstamp
+            # get timestamp from nmea message and update last_timestamp
             timestamp = getattr(msg, "timestamp", last_timestamp)
             if timestamp is not None:
                 last_timestamp = timestamp
@@ -123,7 +121,7 @@ class NMEA:
             # pynmea2 doesn't always cast the values to the correct dtype,
             # so some values need to be manually casted using a safe conversion function which returns None if the cast fails without raising an error
             # we cast the values to the correct dtype now during the nmea data collection because we don't know which NMEA messages are available
-            # Eventhough the timestamp is already saved as the key, we still store it also as a value for easier converion to dataframe
+            # Even though the timestamp is already saved as the key, we still store it also as a value for easier conversion to dataframe
             if isinstance(msg, pynmea2.types.talker.RMC):
                 msg_entry.update(
                     {
@@ -285,7 +283,7 @@ class NMEA:
                             f"Could not cast column {col_name} to {dtype}: {e}"
                         )
 
-        # add columns datatime and UTM coordinates if possible
+        # add columns datetime and UTM coordinates if possible
         nmea_df = self.add_df_columns(nmea_df=nmea_df)
 
         return nmea_df
@@ -298,7 +296,7 @@ class NMEA:
             nmea_df (pl.DataFrame): DataFrame containing the parsed NMEA messages
 
         Returns:
-            pl.DataFrame: DataFrame containing the parsed NMEA messages with the added datetime UTM (easting, northing) columnsif possible
+            pl.DataFrame: DataFrame containing the parsed NMEA messages with the added datetime UTM (easting, northing) columns if possible
         """
 
         if self.logger:
@@ -422,7 +420,7 @@ class NMEA:
         # Reorder DataFrame
         nmea_df = nmea_df.select(first_cols + remaining_cols).lazy()
 
-        # TODO orthoH column is already present in the NMEA messages, however, it can't be interesting to double check if it is correct
+        # TODO orthoH column is already present in the NMEA messages, however, it can be interesting to double check if it is correct
 
         # cast nmea gnss mode/type to gnss
 
@@ -432,10 +430,10 @@ class NMEA:
             with self.rich_console.status(
                 "[bold green]Adding columns to the NMEA DataFrame...", spinner="dots"
             ):
-                if self.logger:
-                    self.logger.info(
-                        f"Collecting the new added columns to nmea dataframe. Be patient, this may take a while..."
-                    )
+                # if self.logger:
+                #     self.logger.info(
+                #         f"Collecting the new added columns to nmea dataframe. Be patient, this may take a while..."
+                #     )
 
                 nmea_df = nmea_df.collect()
 

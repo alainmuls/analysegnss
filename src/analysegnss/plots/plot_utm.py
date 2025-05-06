@@ -397,7 +397,7 @@ def plot_utm_scatter_mpl(
     if logger is not None:
         logger.debug(f"valid_utm_df:\n{valid_utm_df}")
 
-    for qual, qual_data in valid_utm_df.groupby(cols.quality_mapping.quality_column):
+    for qual, qual_data in valid_utm_df.group_by(cols.quality_mapping.quality_column):
         # print(f"qual:\n{qual}")
         qual_value = qual[0] if isinstance(qual, tuple) else qual
         ax.scatter(
@@ -497,7 +497,7 @@ def plot_utm_height_mpl(
         logger.debug(f"valid_utm_df:\n{valid_utm_df}")
 
     # Plot data for each quality level
-    for qual, qual_data in valid_utm_df.groupby(cols.quality_mapping.quality_column):
+    for qual, qual_data in valid_utm_df.group_by(cols.quality_mapping.quality_column):
         qual_value = qual[0] if isinstance(qual, tuple) else qual
         color = cols.quality_mapping.quality_dict[qual_value]["color"]
         label = cols.quality_mapping.quality_dict[qual_value]["desc"]

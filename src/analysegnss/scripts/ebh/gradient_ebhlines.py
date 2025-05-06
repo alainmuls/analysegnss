@@ -34,6 +34,7 @@ from analysegnss.utils import argument_parser, init_logger
 #############################################################
 
 
+# TODO: investigate case between 2 UTM zones
 # gradient_ebhlines is the main function that calls other functions to get the gradient of the EBH lines
 def gradient_ebhlines(parsed_args: argparse.Namespace, logger: Logger) -> str:
     """
@@ -60,7 +61,9 @@ def gradient_ebhlines(parsed_args: argparse.Namespace, logger: Logger) -> str:
     """
 
     # collect the ebh lines from the directory #TODO get the ebh lines from the ebh_lines.py script?
-    ebh_lines, ebh_project_name = collect_ebh_lines(parsed_args=parsed_args, logger=logger)
+    ebh_lines, ebh_project_name = collect_ebh_lines(
+        parsed_args=parsed_args, logger=logger
+    )
 
     # calculate the length of the runway
     length_of_runway = euclidean_distance(
@@ -110,7 +113,9 @@ def gradient_ebhlines(parsed_args: argparse.Namespace, logger: Logger) -> str:
     ########################################################
 
     # Find the outermost lines
-    outer_line1, outer_line2, max_dist = outermost_lines(ebh_lines=ebh_lines, logger=logger)
+    outer_line1, outer_line2, max_dist = outermost_lines(
+        ebh_lines=ebh_lines, logger=logger
+    )
     # Determine the max TRANSVERSAL gradient across the width of the runway
     max_transversal_gradient_rwy = max_transversal_gradient(
         outer_line1=ebh_lines[outer_line1],
@@ -251,28 +256,30 @@ def collect_ebh_lines(parsed_args: argparse.Namespace, logger: Logger) -> dict:
 
     # collect the ebh lines from the directory + metadata
     ebh_project_name = None
-    ebh_line_metadata = {} # ebh_line_metadata = {ebh_line_key: ebh_line_fn}
-    ebh_lines = {} # ebh_lines = {ebh_line_key: pl.DataFrame}
+    ebh_line_metadata = {}  # ebh_line_metadata = {ebh_line_key: ebh_line_fn}
+    ebh_lines = {}  # ebh_lines = {ebh_line_key: pl.DataFrame}
     for file in os.listdir(parsed_args.input_dir):
-        
+
         # if no tag is provided, collect all ebh lines
         if parsed_args.desc is None:
             if file.endswith(".csv"):
                 logger.info(
                     f"Collecting ebh line {file} from directory {parsed_args.input_dir}"
                 )
-                
+
                 if ebh_project_name is None:
-                    # get the ebh project name from the first key/ file name 
+                    # get the ebh project name from the first key/ file name
                     ebh_project_name = "_".join(file.split("_")[:-1])
                     logger.info(f"Identified ebh project name: {ebh_project_name}")
-                
+
                 # create a key for the ebh line sourced from the filename
-                ebh_line_key = file.split(".")[0].split("_")[-1]                
+                ebh_line_key = file.split(".")[0].split("_")[-1]
                 # store the ebh line filename in the metadata
                 ebh_line_metadata[ebh_line_key] = file
 
-                logger.debug(f"Collected ebh line metadata: {ebh_line_metadata[ebh_line_key]}")
+                logger.debug(
+                    f"Collected ebh line metadata: {ebh_line_metadata[ebh_line_key]}"
+                )
 
         # if a tag is provided, collect only the ebh lines with the given tag
         elif parsed_args.desc is not None:
@@ -282,7 +289,7 @@ def collect_ebh_lines(parsed_args: argparse.Namespace, logger: Logger) -> dict:
                 )
 
                 if ebh_project_name is None:
-                    # get the ebh project name from the first key/ file name 
+                    # get the ebh project name from the first key/ file name
                     ebh_project_name = "_".join(file.split("_")[:-1])
                     logger.info(f"Identified ebh project name: {ebh_project_name}")
 
@@ -292,25 +299,28 @@ def collect_ebh_lines(parsed_args: argparse.Namespace, logger: Logger) -> dict:
                 # store the ebh line filename in the metadata
                 ebh_line_metadata[ebh_line_key] = file
 
-                logger.debug(f"Collected ebh line metadata: {ebh_line_metadata[ebh_line_key]}")
+                logger.debug(
+                    f"Collected ebh line metadata: {ebh_line_metadata[ebh_line_key]}"
+                )
         else:
-                pass
-           
+            pass
+
         # reading the collected ebh lines from dir and storing them in a ebh_lines dictionary {ebh_line_key: pl.DataFrame}
         for ebh_line_key, ebh_line_fn in ebh_line_metadata.items():
             # read the ebh line from the file
             ebh_lines[ebh_line_key] = pl.read_csv(
                 source=os.path.join(parsed_args.input_dir, ebh_line_fn),
-                separator=";", 
+                separator=";",
                 columns=["UTM.E", "UTM.N", "orthoH"],
                 comment_prefix="#",
                 has_header=True,
                 dtypes={"UTM.E": float, "UTM.N": float, "orthoH": float},
                 null_values="NaN",
-                )
+            )
 
-            logger.debug(f"Extracted {len(ebh_lines[ebh_line_key])} rows from ebh line {ebh_line_fn}")
-                
+            logger.debug(
+                f"Extracted {len(ebh_lines[ebh_line_key])} rows from ebh line {ebh_line_fn}"
+            )
 
     logger.info(
         f"Extracted ebh lines {ebh_lines.keys()} from directory {parsed_args.input_dir}"

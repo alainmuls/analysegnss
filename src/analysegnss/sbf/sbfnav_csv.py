@@ -97,10 +97,10 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
 
         nav_df = rename_nav_columns(df=nav_df, gnss_type=gnss_abbrev)
 
-        logger.debug(
+        rprint(
             print_df_in_chunks(
                 df=nav_df,
-                title=f"nav_df[{str_green(sbf_block)}]:",
+                title=f"nav_df[{sbf_block}]:",
             )
         )
     for sbf_block, nav_df in nav_dfs.items():
@@ -124,8 +124,8 @@ def sbfnav_csv(parsed_args: argparse.Namespace):
         csv_filename = f"{parsed_args.sbf_ifn}_{sbf_block}.csv"  # Add a descriptive name to output.
         try:
             nav_df.write_csv(csv_filename)
-            logger.info(
-                f"Successfully wrote {str_green(sbf_block)} data to {str_green(csv_filename)}"
+            rprint(
+                f"Successfully wrote [green]{sbf_block}[/green] data to [blue]{csv_filename}[/blue]"
             )
         except Exception as e:
             logger.error(

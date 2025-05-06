@@ -23,6 +23,7 @@ from analysegnss.utils.argument_parser import (
     argument_parser_ppk,
     auto_populate_args_namespace,
 )
+from analysegnss.utils.utilities import print_df_in_chunks
 
 
 def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> list:
@@ -51,8 +52,8 @@ def quality_analysis(df_pos: pl.DataFrame, logger: Logger = None) -> list:
         tablefmt="fancy_outline",
     )
 
-    # print the quality analysis
-    rprint(f"Analysis of the quality of the position data:\n{qual_tabular}")
+    # # print the quality analysis
+    # rprint(f"Analysis of the quality of the position data:\n{qual_tabular}")
 
     if logger is not None:
         logger.info(f"Analysis of the quality of the position data\n{qual_tabular}")
@@ -115,7 +116,14 @@ def main():
     df_rtkpos, qual_analysis = rtkp_pos(parsed_args=args_parsed, logger=logger)
 
     # print the quality analysis
-    rprint(f"rtkpos dataframe: \n{df_rtkpos}")
+    rprint(f"rtkpos dataframe: \n{print_df_in_chunks(title='df_rtkpos', df=df_rtkpos)}")
+
+    qual_tabular = tabulate(
+        qual_analysis,
+        headers=["PNT Mode", "PNT Mode Count", "Percentage", "Total Observations"],
+        tablefmt="fancy_outline",
+    )
+    rprint(f"Quality analysis:\n{qual_tabular}")
 
 
 if __name__ == "__main__":

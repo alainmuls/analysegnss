@@ -39,6 +39,16 @@ def rnx2rtkp_ppk(
     pos_ofn (str): output filename of PPK solution
 
     """
+    logger.debug(f"calling rnx2rtkp_ppk with parsed_args: {parsed_args}")
+
+    # auto populate args namespace
+    parsed_args = argument_parser.auto_populate_args_namespace(
+        parsed_args=parsed_args,
+        native_parser_func=argument_parser.argument_parser_rnx2rtkp_launcher,
+        script_name=os.path.basename(__file__),
+    )
+
+    logger.debug(f"after auto populate args namespace parsed_args: {parsed_args}")
 
     # configure output filename
     if hasattr(parsed_args, "pos_ofn") and parsed_args.pos_ofn:
@@ -52,6 +62,16 @@ def rnx2rtkp_ppk(
     if rnx2rtkp_path is None:
         rprint(
             "[red]rnx2rtkp not found in PATH. Please install RTKLIB. Program exits.[/red]"
+        )
+        sys.exit(ERROR_CODES["E_PROCESS"])
+
+    # check if config_ppk is a valid file
+    if not os.path.isfile(parsed_args.config_ppk):
+        logger.error(
+            f"config_ppk file {parsed_args.config_ppk} not found. Program exits."
+        )
+        rprint(
+            f"[red]config_ppk file {parsed_args.config_ppk} not found. Program exits.[/red]"
         )
         sys.exit(ERROR_CODES["E_PROCESS"])
 
@@ -113,7 +133,7 @@ def rnx2rtkp_ppk(
     cmd_rnx2rtkp.extend(["-o", pos_ofn])
 
     # TODO Get effective log level from logger
-    #if logger.getEffectiveLevel() == logging.DEBUG:
+    # if logger.getEffectiveLevel() == logging.DEBUG:
     #    logger.info(f"Putting rnx2rtkp in debugging mode")
     #    rprint("[yellow]rnx2rtkp in debugging mode[/yellow]")
     #    cmd_rnx2rtkp.extend(["-x", "2"])

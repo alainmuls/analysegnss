@@ -202,9 +202,9 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "i_0 [semi-circle]",
             "omega [semi-circle]",
         ],
-        pl.Datetime: [
-            "DT",
-        ],
+        # pl.Datetime: [
+        #     "DT",
+        # ],
     },
     "GALNav": {
         pl.UInt32: [
@@ -270,11 +270,11 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "E6Cenc",
         ],
         pl.String: [
-            "PRN",
+            "SVID",
         ],
-        pl.Datetime: [
-            "DT",
-        ],
+        # pl.Datetime: [
+        #     "DT",
+        # ],
     },
     "BDSNav": {
         pl.UInt32: [
@@ -319,9 +319,9 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "i_0 [semi-circle]",
             "omega [semi-circle]",
         ],
-        pl.Datetime: [
-            "DT",
-        ],
+        # pl.Datetime: [
+        #     "DT",
+        # ],
     },
     "GLONav": {
         pl.UInt32: [
@@ -363,12 +363,12 @@ SBF_BLOCK_COLUMNS_BIN2ASC = {
             "tau [s]",
             "dtau [s]",
         ],
-        pl.String: [
-            "PRN",
-        ],
-        pl.Datetime: [
-            "DT",
-        ],
+        # pl.String: [
+        #     "PRN",
+        # ],
+        # pl.Datetime: [
+        #     "DT",
+        # ],
     },
 }
 

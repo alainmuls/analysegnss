@@ -35,6 +35,8 @@ def get_ebh_timings(parsed_args: argparse.Namespace, logger: Logger) -> dict:
         ebh_timings(dict): dict with ebh keys and timestamps (week number and t of week) correctly formatted for ebh_lines.py
     """
 
+    logger.debug(f"calling get_ebh_timings with parsed_args: {parsed_args}")
+
     # ******************************************************* #
     # To ensure compatibility when passing on parsed_args     #
     # from a higher level scripti                             #
@@ -44,15 +46,17 @@ def get_ebh_timings(parsed_args: argparse.Namespace, logger: Logger) -> dict:
         argument_parser.argument_parser_get_ebh_timings,
         os.path.splitext(os.path.basename(__file__))[0],
     )
-    # ******************************************************* # 
+    # ******************************************************* #
 
-    logger.debug(f"parsed_args: {parsed_args}")
-    
+    logger.debug(f"after auto_populate_args_namespace parsed_args: {parsed_args}")
+
     # it first checks if the ebh_timings_ifn is provided. If not, it checks if the sbf_ifn is provided.
     if parsed_args.ebh_timings_ifn is not None:
         # convert ascii file name to absolute path
         parsed_args.ebh_timings_ifn = os.path.abspath(parsed_args.ebh_timings_ifn)
-        logger.info(f"Reading EBH comments from text file: {parsed_args.ebh_timings_ifn}")
+        logger.info(
+            f"Reading EBH comments from text file: {parsed_args.ebh_timings_ifn}"
+        )
         # Get EBH comments with EBH timestamps from ASCII file
         df_EBH_comments = get_EBH_comments_from_text(
             parsed_args=parsed_args, logger=logger
@@ -100,7 +104,6 @@ def get_ebh_timings(parsed_args: argparse.Namespace, logger: Logger) -> dict:
             pass
 
     return ebh_timings
-
 
 
 def get_EBH_comments_from_sbf(
@@ -166,9 +169,11 @@ def get_EBH_comments_from_text(
         logger.error(f"Error reading text file: {e}")
         logger.warning(f"Fallingback to SBF file")
         return get_EBH_comments_from_sbf(parsed_args=parsed_args, logger=logger)
-        
+
     if df_EBH_comments.is_empty():
-        logger.warning(f"No EBH comments found in text file: {parsed_args.ebh_timings_ifn}")
+        logger.warning(
+            f"No EBH comments found in text file: {parsed_args.ebh_timings_ifn}"
+        )
         logger.warning(f"Fallingback to SBF file")
         return get_EBH_comments_from_sbf(parsed_args=parsed_args, logger=logger)
 
@@ -372,8 +377,6 @@ def ebh_timings_to_file(ebh_timings: dict, dest_path: str, logger: Logger) -> No
     else:
         logger.warning(f"Done writing timings file to {dest_path}")
         rprint(f"Done writing timings file to [yellow]{dest_path}[/yellow]")
-
-
 
 
 def main():

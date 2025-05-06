@@ -4,11 +4,12 @@ import os
 import sys
 
 import polars as pl
-from rich import print
+from rich import print as rprint
 
 from analysegnss.glabng.glabng_class import GLABNG
 from analysegnss.utils import init_logger
 from analysegnss.utils.argument_parser import argument_parser_glab_parser
+from analysegnss.utils.utilities import print_df_in_chunks
 
 
 def parse_glab_section(
@@ -32,8 +33,8 @@ def parse_glab_section(
     glab_dfs = glab.glab_dataframe(lst_sections=section)
 
     #     for section, df_section in glab_dfs.items():
-    #         print(f"dataframe from [green][bold]{section}[/bold][/green] section")
-    #         print(df_section)
+    #         print(print_df_in_chunks(df=df_section,
+    #               title=f"dataframe from [green][bold]{section}[/bold][/green] section")
 
     return glab_dfs
 
@@ -70,8 +71,12 @@ def main():
     dfs_glab = glab_parser(argv=sys.argv)
 
     for section, df_section in dfs_glab.items():
-        print(f"dataframe from [green][bold]{section}[/bold][/green] section")
-        print(df_section)
+        rprint(
+            print_df_in_chunks(
+                df=df_section,
+                title=f"dataframe from [green][bold]{section}[/bold][/green] section",
+            )
+        )
 
 
 if __name__ == "__main__":

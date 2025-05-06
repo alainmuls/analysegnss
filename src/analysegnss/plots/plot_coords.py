@@ -13,14 +13,18 @@ import polars as pl
 from rich import print
 
 from analysegnss.config import ERROR_CODES, rich_console
-from analysegnss.glabng import glab_parser
+from analysegnss.glabng import glab_reader
 from analysegnss.nmea import nmea_reader
-from analysegnss.rtkpos import ppk_rnx2rtkp
-from analysegnss.sbf import rtk_pvtgeod
+from analysegnss.rtkpos import rtkpos_reader
+from analysegnss.sbf import sbf_reader
 from analysegnss.plots import plot_utm
 from analysegnss.plots.plot_columns import get_utm_columns
 from analysegnss.utils import init_logger
-from analysegnss.utils.argument_parser import argument_parser_plot_coords
+from analysegnss.utils.utilities import print_df_in_chunks
+from analysegnss.utils.argument_parser import (
+    argument_parser_plot_coords,
+    auto_populate_args_namespace,
+)
 
 
 def get_source(parsed_args: argparse.Namespace) -> str:
@@ -55,20 +59,29 @@ def get_source(parsed_args: argparse.Namespace) -> str:
     return source
 
 
-def plot_coords(args_parsed: argparse.Namespace, logger: logging.Logger):
+def plot_coords(parsed_args: argparse.Namespace, logger: logging.Logger):
     """Plots the coordinates from multiple PNT sources [PPK, RTK, GLABNG, NMEA, PNT_CSV]
 
     Args:
             argv (list): CLI arguments
     """
 
+    # auto populate argparse Namespace
+    parsed_args = auto_populate_args_namespace(
+        parsed_args,
+        argument_parser_plot_coords,
+        os.path.splitext(os.path.basename(__file__))[0],
+    )
+
+    logger.debug(f"Parsed arguments after auto-population: {parsed_args}")
+
     matplotlib.use("TkAgg")
 
     # get the source of the coordinates
-    source = get_source(parsed_args=args_parsed)
+    source = get_source(parsed_args=parsed_args)
 
     # get the source dataframe and standardize it
-    df_source = get_source_df(source=source, parsed_args=args_parsed, logger=logger)
+    df_source = get_source_df(source=source, parsed_args=parsed_args, logger=logger)
 
     # Get column mappings for this source
     utm_columns = get_utm_columns(source=source)
@@ -76,7 +89,7 @@ def plot_coords(args_parsed: argparse.Namespace, logger: logging.Logger):
 
     # create the df_utm dataframe from the dataframe obtained according to each source
     try:
-        if not args_parsed.sd:
+        if not parsed_args.sd:
             df_utm = df_source.select(
                 [
                     utm_columns.time,
@@ -120,11 +133,11 @@ def plot_coords(args_parsed: argparse.Namespace, logger: logging.Logger):
     ifn_full = next(
         ifn
         for ifn in [
-            args_parsed.pos_ifn,
-            args_parsed.sbf_ifn,
-            args_parsed.glab_ifn,
-            args_parsed.nmea_ifn,
-            args_parsed.csv_ifn,
+            parsed_args.pos_ifn,
+            parsed_args.sbf_ifn,
+            parsed_args.glab_ifn,
+            parsed_args.nmea_ifn,
+            parsed_args.csv_ifn,
         ]
         if ifn is not None
     )
@@ -136,7 +149,7 @@ def plot_coords(args_parsed: argparse.Namespace, logger: logging.Logger):
     print(f"creating plot for {source} position file {filename_in}")
 
     # plot the UTM and orthoH coordinates
-    if args_parsed.mpl == False:
+    if parsed_args.mpl == False:
         with rich_console.status(f"Creating UTM scatter plot.\t", spinner="aesthetic"):
             # use plotly for creating html plots
             plot_utm.plot_utm_scatter(
@@ -145,7 +158,7 @@ def plot_coords(args_parsed: argparse.Namespace, logger: logging.Logger):
                 ifn=filename_in,
                 dir_fn=dir_fn,
                 logger=logger,
-                display=args_parsed.display,
+                display=parsed_args.display,
             )
 
         with rich_console.status(f"Creating NEU vs DT plot.\t", spinner="aesthetic"):
@@ -154,9 +167,9 @@ def plot_coords(args_parsed: argparse.Namespace, logger: logging.Logger):
                 source=source,
                 ifn=filename_in,
                 dir_fn=dir_fn,
-                sd=args_parsed.sd,
+                sd=parsed_args.sd,
                 logger=logger,
-                display=args_parsed.display,
+                display=parsed_args.display,
             )
     else:
         with rich_console.status(f"Creating UTM scatter plot.\t", spinner="aesthetic"):
@@ -166,7 +179,7 @@ def plot_coords(args_parsed: argparse.Namespace, logger: logging.Logger):
                 ifn=filename_in,
                 dir_fn=dir_fn,
                 logger=logger,
-                display=args_parsed.display,
+                display=parsed_args.display,
             )
         with rich_console.status(f"Creating NEU vs DT plot.\t", spinner="aesthetic"):
             plot_utm.plot_utm_height_mpl(
@@ -174,12 +187,12 @@ def plot_coords(args_parsed: argparse.Namespace, logger: logging.Logger):
                 source=source,
                 ifn=filename_in,
                 dir_fn=dir_fn,
-                sd=args_parsed.sd,
+                sd=parsed_args.sd,
                 logger=logger,
-                display=args_parsed.display,
+                display=parsed_args.display,
             )
 
-        if args_parsed.display:
+        if parsed_args.display:
             with rich_console.status(f"Displaying plots.\t", spinner="aesthetic"):
                 plt.show(block=True)
 
@@ -203,12 +216,14 @@ def get_source_df(
         case "PPK":
             # Create PPK position dataframe
             logger.debug(f"Creating PPK position dataframe")
-            df_source = ppk_rnx2rtkp.rtkp_pos(parsed_args=parsed_args, logger=logger)
+            df_source, _ = rtkpos_reader.rtkp_pos(
+                parsed_args=parsed_args, logger=logger
+            )
 
         case "RTK":
             # Create RTK position dataframe
             logger.debug(f"Creating RTK position dataframe")
-            df_source = rtk_pvtgeod.sbf_reader(parsed_args=parsed_args, logger=logger)
+            df_source, _ = sbf_reader.sbf_reader(parsed_args=parsed_args, logger=logger)
 
         case "GLABNG":
             # Create GLAB position dataframe
@@ -220,10 +235,12 @@ def get_source_df(
                 "--section",
                 "OUTPUT",
             ]
-            dfs_glab = glab_parser.glab_parser(argv=glab_parser_args)
+            dfs_glab = glab_reader.glab_parser(argv=glab_parser_args)
             df_source = dfs_glab["OUTPUT"]
             if logger:
-                logger.debug(f"GLAB OUTPUT dataframe:\n{df_source}")
+                logger.debug(
+                    print_df_in_chunks(title="GLAB OUTPUT dataframe", df=df_source)
+                )
 
         case "NMEA":
             # Create NMEA dataframe
@@ -284,7 +301,7 @@ def main():
     logger.debug(f"Parsed arguments: {args_parsed}")
 
     # plot the coordinates
-    plot_coords(args_parsed=args_parsed, logger=logger)  # type: ignore
+    plot_coords(parsed_args=args_parsed, logger=logger)  # type: ignore
 
 
 if __name__ == "__main__":
