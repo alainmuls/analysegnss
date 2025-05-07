@@ -2,582 +2,596 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "rtk_pvtgeod: Ocotillo rover",
+            "name": "Python: Debug current file",
             "type": "debugpy",
             "request": "launch",
-            "program": "src/analysegnss/sbf/rtk_pvtgeod.py",
+            "justMyCode": true,
             "console": "integratedTerminal",
-            "args": [
-                "--sbf_ifn",
-                "data/ocotillo/1342172Z.24_",
-                "-vvv",
-                "--sd",
-            ],
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/src" // Add PYTHONPATH to the environment
-            }
-        },
-        {
-            "name": "ppk_rnx2rtkp Keiheuvel 2024/20/01",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/rtkpos/ppk_rnx2rtkp.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--pos_ifn",
-                "data/keiheuvel/134200BEL_R_20242751023_01H_10Z_MO.pos",
-                "-vvv"
-            ],
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src" // Add PYTHONPATH to the environment
-            }
-        },
-        {
-            "name": "plot_coords Keiheuvel 2024/20/01",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/plots/plot_coords.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--pos_ifn",
-                "data/keiheuvel/134200BEL_R_20242751023_01H_10Z_MO.pos",
-                "-vvv",
-                "--display",
-                "--sd",
-                "--mpl",
-            ]
-        },
-        {
-            "name": "plot_coords Ocotillo",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/plots/plot_coords.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--sbf_ifn",
-                "data/ocotillo/1342172Z.24_",
-                "-vvv",
-                "--display",
-                "--sd",
-                "--mpl",
-                "--archive",
-                "/tmp",
-            ]
-        },
-        {
-            "name": "gLABng plot",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/plots/plot_coords.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--glab_ifn",
-                "data/glabng/KMS000BEL_R_20240890943_03H_01S_MO_gal.glab",
-                "-vvv",
-                "--display",
-                "--sd",
-                "--mpl",
-                "--archive",
-                "/tmp",
-            ]
-        },
-        {
-            "name": "rnxobs_csv Keiheuvel 2024/20/01 (base station)",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/rinex/rnxobs_csv.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--obs_ifn",
-                "data/keiheuvel/base00BEL_R_20242751022_01H_05S_MO.rnx",
-                "-vvv",
-            ]
-        },
-        {
-            "name": "rnxnav_csv Keiheuvel 2024/20/01 (base station)",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/rinex/rnxnav_csv.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--nav_ifn",
-                "data/keiheuvel/base00BEL_R_20242751021_01H_MN.rnx",
-                "-vvv",
-                "--gnss",
-                "GREC",
-            ]
-        },
-        {
-            "name": "rnxnav_csv BRUX (from RTCM)",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/rinex/rnxnav_csv.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--nav_ifn",
-                "data/brux/BRUX00BEL0_GREC.nav",
-                "-vvv",
-                "--gnss",
-                "GREC",
-            ]
-        },
-        {
-            "name": "rnxnav_csv BRUX RTCM 2024/06/14 (?) (rnx converted)",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/rinex/rnxnav_csv.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--nav_ifn",
-                "data/brux/BRUX00BEL0_GREC.nav",
-                "-vvv",
-                "--gnss",
-                "R",
-            ]
-        },
-        {
-            "name": "rnxnav_csv BERT00BEL_R_20243640700_41H_MN.rnx",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/rinex/rnxnav_csv.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--nav_ifn",
-                "data/bert/BERT00BEL_R_20243640700_41H_MN.rnx",
-                "-vvv",
-                "--gnss",
-                "R",
-            ]
-        },
-        {
-            "name": "rnx_csv BRUX RTCM 2024/06/14 (?) (rnx converted)",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/rinex/rnx_csv.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--obs_ifn",
-                "data/keiheuvel/base00BEL_R_20242751022_01H_05S_MO.rnx",
-                "--nav_ifn",
-                "data/brux/BRUX00BEL0_GREC.nav",
-                "-vvv",
-                "--gnss",
-                "GE",
-            ]
-        },
-        {
-            "name": "glab_parser KMS000BEL_R_20240890943_03H_01S_MO_gal.glab",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/glabng/glab_parser.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--glab_ifn",
-                "data/glabng/KMS000BEL_R_20240890943_03H_01S_MO_gal.glab",
-                "--section",
-                "OUTPUT,SATSEL",
-                "-vvv"
-            ]
-        },
-        {
-            "name": "sbfmeas_csv ROVR187J.23_",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/sbf/sbfmeas_csv.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--sbf_ifn",
-                "data/sbf/ROVR187J.23_",
-                "-vvv",
-                "--archive",
-                "/tmp",
-            ]
-        },
-        {
-            "name": "sbfnav_csv ROVR187J.23_ GPS only",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/sbf/sbfnav_csv.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--sbf_ifn",
-                "data/sbf/ROVR187J.23_",
-                "-vvv",
-                "--archive",
-                "/tmp",
-                "--gnss",
-                "GE",
-            ]
-        },
-        {
-            "name": "sbfnav_csv KEIHEUVEL BASE275Z.24_",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/sbf/sbfnav_csv.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--sbf_ifn",
-                "data/keiheuvel/BASE275Z.24_",
-                "-vvv",
-                "--archive",
-                "/tmp",
-                "--gnss",
-                "CGE",
-            ]
-        },
-        {
-            "name": "sbfnav_csv MOSAIC X5 MoX3345Z.22_",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/sbf/sbfnav_csv.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--sbf_ifn",
-                "data/sbf/MoX3345Z.22_",
-                "-vvv",
-                "--archive",
-                "/tmp",
-                "--gnss",
-                "GREC",
-            ]
-        },
-        {
-            "name": "Python: Run Tests",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "pytest",
-            "args": [
-                "tests/test_ephemeris.py",
-                "-v",
-                "-s",
-            ],
-            "stopOnEntry": false,
-            "presentation": {
-                "hidden": false,
-                "group": "pvt_data_class_tests",
-                "order": 1
-            }
-        },
-        {
-            "name": "PVT Data reader: sbf",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/sbf/sbf_reader.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "purpose": [
-                "debug-in-terminal"
-            ],
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src",
             },
-            "args": [
-                "--sbf_ifn",
-                "data/20250210_testinghoeilaart_halflength/rover.sbf",
-                "--sd",
-            ],
-            "stopOnEntry": false,
-            "presentation": {
-                "hidden": false,
-                "group": "pvt_data_class_tests",
-                "order": 1
-            }
-        },
-        {
-            "name": "PVT Data reader: rtklib",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/rtkpos/rtkpos_reader.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "purpose": [
-                "debug-in-terminal"
-            ],
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src",
+            "program": "${file}",
+            "args": [],
+            // "cwd": "${workspaceFolder}/src/analysegnss"
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": true,
+            {
+                "name": "rtk_pvtgeod: Ocotillo rover",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/sbf/rtk_pvtgeod.py",
+                "console": "integratedTerminal",
+                "args": [
+                    "--sbf_ifn",
+                    "data/ocotillo/1342172Z.24_",
+                    "-vvv",
+                    "--sd",
+                ],
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src" // Add PYTHONPATH to the environment
+                }
             },
-            "args": [
-                "--pos_ifn",
-                "data/2024-12-19-LZ_Schaffen_Test/rtkl_pos/SEPT00BEL_R_20243540907_14M_10Z_MO_PPK.pos",
-            ],
-            "stopOnEntry": false,
-            "presentation": {
-                "hidden": false,
-                "group": "pvt_data_class_tests",
-                "order": 2
-            }
-        },
-        {
-            "name": "PVT Data reader: nmea",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/nmea/nmea_reader.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "purpose": [
-                "debug-in-terminal"
-            ],
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src",
+            {
+                "name": "ppk_rnx2rtkp Keiheuvel 2024/20/01",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/rtkpos/ppk_rnx2rtkp.py",
+                "console": "integratedTerminal",
+                "args": [
+                    "--pos_ifn",
+                    "data/keiheuvel/134200BEL_R_20242751023_01H_10Z_MO.pos",
+                    "-vvv"
+                ],
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src" // Add PYTHONPATH to the environment
+                }
             },
-            "args": [
-                "--nmea_ifn",
-                "data/nmea/20241128-161759-usb-FTDI_FT230X_Basic_UART_DA0150ZY-if00-port0.out",
-            ],
-            "stopOnEntry": false,
-            "presentation": {
-                "hidden": false,
-                "group": "pvt_data_class_tests",
-                "order": 3
-            }
-        },
-        //        {
-        //            "name": "PVT Data reader: glabng",
-        //            "type": "debugpy",
-        //            "request": "launch",
-        //            "program": "src/analysegnss/glabng/glab_reader.py",
-        //            "console": "integratedTerminal",
-        //            "justMyCode": false,
-        //            "purpose": ["debug-in-terminal"],
-        //            "env": {
-        //                "PYTHONPATH": "${workspaceFolder}/src",
-        //            },
-        //            "args": [
-        //                "--glab_ifn",
-        //            ],
-        //            "stopOnEntry": false,
-        //            "presentation": {
-        //                "hidden": false,
-        //                "group": "pvt_data_class_tests",
-        //                "order": 4
-        //            }
-        //        },
-        {
-            "name": "EBH Process: RTK+PPK (Hoeilaart)",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/launch/launch_ebh_process.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "purpose": [
-                "debug-in-terminal"
-            ],
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src",
+            {
+                "name": "plot_coords Keiheuvel 2024/20/01",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/plots/plot_coords.py",
+                "console": "integratedTerminal",
+                "args": [
+                    "--pos_ifn",
+                    "data/keiheuvel/134200BEL_R_20242751023_01H_10Z_MO.pos",
+                    "-vvv",
+                    "--display",
+                    "--sd",
+                    "--mpl",
+                ]
             },
-            "args": [
-                "--sbf_ifn",
-                "data/20250210_testinghoeilaart_halflength/rover.sbf",
-                "--base_corr",
-                "data/20250210_testinghoeilaart_halflength/base.sbf",
-                "--desc",
-                "ebh_testing_hoeilaart_250210",
-            ],
-            "stopOnEntry": false,
-            "presentation": {
-                "hidden": false,
-                "group": "EBH Tests",
-                "order": 1
-            }
-        },
-        {
-            "name": "EBH Process: RTK Only (Hoeilaart)",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/launch/launch_ebh_process.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "purpose": [
-                "debug-in-terminal"
-            ],
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src",
+            {
+                "name": "plot_coords Ocotillo",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/plots/plot_coords.py",
+                "console": "integratedTerminal",
+                "args": [
+                    "--sbf_ifn",
+                    "data/ocotillo/1342172Z.24_",
+                    "-vvv",
+                    "--display",
+                    "--sd",
+                    "--mpl",
+                    "--archive",
+                    "/tmp",
+                ]
             },
-            "args": [
-                "--sbf_ifn",
-                "data/20250210_testinghoeilaart_halflength/rover.sbf",
-                "--desc",
-                "ebh_testing_hoeilaart_250210",
-            ],
-            "stopOnEntry": false,
-            "presentation": {
-                "hidden": false,
-                "group": "EBH Tests",
-                "order": 2
-            }
-        },
-        {
-            "name": "EBH Process: LZ Schaffen",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/launch/launch_ebh_process.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "purpose": [
-                "debug-in-terminal"
-            ],
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src"
+            {
+                "name": "gLABng plot",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/plots/plot_coords.py",
+                "console": "integratedTerminal",
+                "args": [
+                    "--glab_ifn",
+                    "data/glabng/KMS000BEL_R_20240890943_03H_01S_MO_gal.glab",
+                    "-vvv",
+                    "--display",
+                    "--sd",
+                    "--mpl",
+                    "--archive",
+                    "/tmp",
+                ]
             },
-            "args": [
-                "--sbf_ifn",
-                "data/2024-12-19-LZ_Schaffen_Test/rover.sbf",
-                "--desc",
-                "ebh_testing_LZ_Schaffen_241219",
-                "-v"
-            ],
-            "stopOnEntry": false,
-            "presentation": {
-                "hidden": false,
-                "group": "EBH Tests",
-                "order": 3
-            }
-        },
-        {
-            "name": "EBH Process: JubelPark 5lijnen RTK+PPK",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/launch/launch_ebh_process.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "purpose": [
-                "debug-in-terminal"
-            ],
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src"
+            {
+                "name": "rnxobs_csv Keiheuvel 2024/20/01 (base station)",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/rinex/rnxobs_csv.py",
+                "console": "integratedTerminal",
+                "args": [
+                    "--obs_ifn",
+                    "data/keiheuvel/base00BEL_R_20242751022_01H_05S_MO.rnx",
+                    "-vvv",
+                ]
             },
-            "args": [
-                "--sbf_ifn",
-                "data/20250227_jubelpark_5lijnen/rover.sbf",
-                "--base_corr",
-                "data/20250227_jubelpark_5lijnen/base.sbf",
-                "--desc",
-                "ebh_testing_jubelpark_5lijnen_250227",
-                "-vvv"
-            ],
-            "stopOnEntry": false,
-            "presentation": {
-                "hidden": false,
-                "group": "EBH Tests",
-                "order": 4
-            }
-        },
-        {
-            "name": "EBH Process: JubelPark 3lijnen RTK+PPK",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/launch/launch_ebh_process.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "purpose": [
-                "debug-in-terminal"
-            ],
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src"
+            {
+                "name": "rnxnav_csv Keiheuvel 2024/20/01 (base station)",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/rinex/rnxnav_csv.py",
+                "console": "integratedTerminal",
+                "args": [
+                    "--nav_ifn",
+                    "data/keiheuvel/base00BEL_R_20242751021_01H_MN.rnx",
+                    "-vvv",
+                    "--gnss",
+                    "GREC",
+                ]
             },
-            "args": [
-                "--sbf_ifn",
-                "data/20250227_jubelpark_3lijnen/rover.sbf",
-                "--base_corr",
-                "data/20250227_jubelpark_3lijnen/base.sbf",
-                "--desc",
-                "ebh_testing_jubelpark_3lijnen_250227",
-                "-vvv"
-            ],
-            "stopOnEntry": false,
-            "presentation": {
-                "hidden": false,
-                "group": "EBH Tests",
-                "order": 5
-            }
-        },
-        {
-            "name": "pnt_data_collector: PNT_CSV (default import) and merge",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/pnt/pnt_data_collector.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "purpose": [
-                "debug-in-terminal"
-            ],
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src"
+            {
+                "name": "rnxnav_csv BRUX (from RTCM)",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/rinex/rnxnav_csv.py",
+                "console": "integratedTerminal",
+                "args": [
+                    "--nav_ifn",
+                    "data/brux/BRUX00BEL0_GREC.nav",
+                    "-vvv",
+                    "--gnss",
+                    "GREC",
+                ]
             },
-            "args": [
-                "--csv_ifn",
-                "data/20250227_jubelpark_3lijnen/rover_pnt_standard.csv",
-                "data/20250227_jubelpark_5lijnen/rover_pnt_standard.csv",
-                "--merge",
-                "-vvv"
-            ],
-            "stopOnEntry": false,
-            "presentation": {
-                "hidden": false,
-                "group": "pnt_collector_tests",
-                "order": 1
-            }
-        },
-        {
-            "name": "pnt_data_collector: sbf, rtkpos, nmea and merge",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/pnt/pnt_data_collector.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "purpose": [
-                "debug-in-terminal"
-            ],
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src"
+            {
+                "name": "rnxnav_csv BRUX RTCM 2024/06/14 (?) (rnx converted)",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/rinex/rnxnav_csv.py",
+                "console": "integratedTerminal",
+                "args": [
+                    "--nav_ifn",
+                    "data/brux/BRUX00BEL0_GREC.nav",
+                    "-vvv",
+                    "--gnss",
+                    "R",
+                ]
             },
-            "args": [
-                "--sbf_ifn",
-                "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/MOSX5GO/sbf/20241128-161759-usb-Septentrio_Septentrio_USB_Device_3688193-if02-MOSX5GO.sbf",
-                "--nmea_ifn",
-                "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-161759-usb-FTDI_FT230X_Basic_UART_DA0150ZY-if00-port0.out",
-                "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-181810-usb-FTDI_FT230X_Basic_UART_DA0150ZY-if00-port0.out",
-                "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-201820-usb-FTDI_FT230X_Basic_UART_DA0150ZY-if00-port0.out",
-                "--pos_ifn",
-                "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/MOSX5GO/rtklib_pos/2501171310_SEPT00BEL_R_20243331619_03D_30S_MO_PPK_160000_25200S.pos",
-                "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-161759-unicore-UM982_MO_PPK.pos",
-                "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-181810-unicore-UM982_MO_PPK.pos",
-                "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-201820-unicore-UM982_MO_PPK.pos",
-                "--merge",
-                "-vvv"
-            ],
-            "stopOnEntry": false,
-            "presentation": {
-                "hidden": false,
-                "group": "pnt_collector_tests",
-                "order": 2
-            }
-        },
-        {
-            "name": "plot utm coordinates (source: nmea)",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "src/analysegnss/plots/plot_coords.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "purpose": [
-                "debug-in-terminal"
-            ],
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src"
+            {
+                "name": "rnxnav_csv BERT00BEL_R_20243640700_41H_MN.rnx",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/rinex/rnxnav_csv.py",
+                "console": "integratedTerminal",
+                "args": [
+                    "--nav_ifn",
+                    "data/bert/BERT00BEL_R_20243640700_41H_MN.rnx",
+                    "-vvv",
+                    "--gnss",
+                    "R",
+                ]
             },
-            "args": [
-                "--csv_ifn",
-                "data/merged_pnt_standard.csv",
-                "--display",
-                "--mpl",
-            ],
-            "stopOnEntry": false,
-            "presentation": {
-                "hidden": false,
-                "group": "plot_tests",
-                "order": 1
+            {
+                "name": "rnx_csv BRUX RTCM 2024/06/14 (?) (rnx converted)",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/rinex/rnx_csv.py",
+                "console": "integratedTerminal",
+                "args": [
+                    "--obs_ifn",
+                    "data/keiheuvel/base00BEL_R_20242751022_01H_05S_MO.rnx",
+                    "--nav_ifn",
+                    "data/brux/BRUX00BEL0_GREC.nav",
+                    "-vvv",
+                    "--gnss",
+                    "GE",
+                ]
+            },
+            {
+                "name": "glab_parser KMS000BEL_R_20240890943_03H_01S_MO_gal.glab",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/glabng/glab_parser.py",
+                "console": "integratedTerminal",
+                "args": [
+                    "--glab_ifn",
+                    "data/glabng/KMS000BEL_R_20240890943_03H_01S_MO_gal.glab",
+                    "--section",
+                    "OUTPUT,SATSEL",
+                    "-vvv"
+                ]
+            },
+            {
+                "name": "sbfmeas_csv ROVR187J.23_",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/sbf/sbfmeas_csv.py",
+                "console": "integratedTerminal",
+                "args": [
+                    "--sbf_ifn",
+                    "data/sbf/ROVR187J.23_",
+                    "-vvv",
+                    "--archive",
+                    "/tmp",
+                ]
+            },
+            {
+                "name": "sbfnav_csv ROVR187J.23_ GPS only",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/sbf/sbfnav_csv.py",
+                "console": "integratedTerminal",
+                "args": [
+                    "--sbf_ifn",
+                    "data/sbf/ROVR187J.23_",
+                    "-vvv",
+                    "--archive",
+                    "/tmp",
+                    "--gnss",
+                    "GE",
+                ]
+            },
+            {
+                "name": "sbfnav_csv KEIHEUVEL BASE275Z.24_",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/sbf/sbfnav_csv.py",
+                "console": "integratedTerminal",
+                "args": [
+                    "--sbf_ifn",
+                    "data/keiheuvel/BASE275Z.24_",
+                    "-vvv",
+                    "--archive",
+                    "/tmp",
+                    "--gnss",
+                    "CGE",
+                ]
+            },
+            {
+                "name": "sbfnav_csv MOSAIC X5 MoX3345Z.22_",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/sbf/sbfnav_csv.py",
+                "console": "integratedTerminal",
+                "args": [
+                    "--sbf_ifn",
+                    "data/sbf/MoX3345Z.22_",
+                    "-vvv",
+                    "--archive",
+                    "/tmp",
+                    "--gnss",
+                    "GREC",
+                ]
+            },
+            {
+                "name": "Python: Run Tests",
+                "type": "debugpy",
+                "request": "launch",
+                "module": "pytest",
+                "args": [
+                    "tests/test_ephemeris.py",
+                    "-v",
+                    "-s",
+                ],
+                "stopOnEntry": false,
+                "presentation": {
+                    "hidden": false,
+                    "group": "pvt_data_class_tests",
+                    "order": 1
+                }
+            },
+            {
+                "name": "PVT Data reader: sbf",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/sbf/sbf_reader.py",
+                "console": "integratedTerminal",
+                "justMyCode": false,
+                "purpose": [
+                    "debug-in-terminal"
+                ],
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src",
+                },
+                "args": [
+                    "--sbf_ifn",
+                    "data/20250210_testinghoeilaart_halflength/rover.sbf",
+                    "--sd",
+                ],
+                "stopOnEntry": false,
+                "presentation": {
+                    "hidden": false,
+                    "group": "pvt_data_class_tests",
+                    "order": 1
+                }
+            },
+            {
+                "name": "PVT Data reader: rtklib",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/rtkpos/rtkpos_reader.py",
+                "console": "integratedTerminal",
+                "justMyCode": false,
+                "purpose": [
+                    "debug-in-terminal"
+                ],
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src",
+                },
+                "args": [
+                    "--pos_ifn",
+                    "data/2024-12-19-LZ_Schaffen_Test/rtkl_pos/SEPT00BEL_R_20243540907_14M_10Z_MO_PPK.pos",
+                ],
+                "stopOnEntry": false,
+                "presentation": {
+                    "hidden": false,
+                    "group": "pvt_data_class_tests",
+                    "order": 2
+                }
+            },
+            {
+                "name": "PVT Data reader: nmea",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/nmea/nmea_reader.py",
+                "console": "integratedTerminal",
+                "justMyCode": false,
+                "purpose": [
+                    "debug-in-terminal"
+                ],
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src",
+                },
+                "args": [
+                    "--nmea_ifn",
+                    "data/nmea/20241128-161759-usb-FTDI_FT230X_Basic_UART_DA0150ZY-if00-port0.out",
+                ],
+                "stopOnEntry": false,
+                "presentation": {
+                    "hidden": false,
+                    "group": "pvt_data_class_tests",
+                    "order": 3
+                }
+            },
+            //        {
+            //            "name": "PVT Data reader: glabng",
+            //            "type": "debugpy",
+            //            "request": "launch",
+            //            "program": "src/analysegnss/glabng/glab_reader.py",
+            //            "console": "integratedTerminal",
+            //            "justMyCode": false,
+            //            "purpose": ["debug-in-terminal"],
+            //            "env": {
+            //                "PYTHONPATH": "${workspaceFolder}/src",
+            //            },
+            //            "args": [
+            //                "--glab_ifn",
+            //            ],
+            //            "stopOnEntry": false,
+            //            "presentation": {
+            //                "hidden": false,
+            //                "group": "pvt_data_class_tests",
+            //                "order": 4
+            //            }
+            //        },
+            {
+                "name": "EBH Process: RTK+PPK (Hoeilaart)",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/launch/launch_ebh_process.py",
+                "console": "integratedTerminal",
+                "justMyCode": false,
+                "purpose": [
+                    "debug-in-terminal"
+                ],
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src",
+                },
+                "args": [
+                    "--sbf_ifn",
+                    "data/20250210_testinghoeilaart_halflength/rover.sbf",
+                    "--base_corr",
+                    "data/20250210_testinghoeilaart_halflength/base.sbf",
+                    "--desc",
+                    "ebh_testing_hoeilaart_250210",
+                ],
+                "stopOnEntry": false,
+                "presentation": {
+                    "hidden": false,
+                    "group": "EBH Tests",
+                    "order": 1
+                }
+            },
+            {
+                "name": "EBH Process: RTK Only (Hoeilaart)",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/launch/launch_ebh_process.py",
+                "console": "integratedTerminal",
+                "justMyCode": false,
+                "purpose": [
+                    "debug-in-terminal"
+                ],
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src",
+                },
+                "args": [
+                    "--sbf_ifn",
+                    "data/20250210_testinghoeilaart_halflength/rover.sbf",
+                    "--desc",
+                    "ebh_testing_hoeilaart_250210",
+                ],
+                "stopOnEntry": false,
+                "presentation": {
+                    "hidden": false,
+                    "group": "EBH Tests",
+                    "order": 2
+                }
+            },
+            {
+                "name": "EBH Process: LZ Schaffen",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/launch/launch_ebh_process.py",
+                "console": "integratedTerminal",
+                "justMyCode": false,
+                "purpose": [
+                    "debug-in-terminal"
+                ],
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src"
+                },
+                "args": [
+                    "--sbf_ifn",
+                    "data/2024-12-19-LZ_Schaffen_Test/rover.sbf",
+                    "--desc",
+                    "ebh_testing_LZ_Schaffen_241219",
+                    "-v"
+                ],
+                "stopOnEntry": false,
+                "presentation": {
+                    "hidden": false,
+                    "group": "EBH Tests",
+                    "order": 3
+                }
+            },
+            {
+                "name": "EBH Process: JubelPark 5lijnen RTK+PPK",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/launch/launch_ebh_process.py",
+                "console": "integratedTerminal",
+                "justMyCode": false,
+                "purpose": [
+                    "debug-in-terminal"
+                ],
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src"
+                },
+                "args": [
+                    "--sbf_ifn",
+                    "data/20250227_jubelpark_5lijnen/rover.sbf",
+                    "--base_corr",
+                    "data/20250227_jubelpark_5lijnen/base.sbf",
+                    "--desc",
+                    "ebh_testing_jubelpark_5lijnen_250227",
+                    "-vvv"
+                ],
+                "stopOnEntry": false,
+                "presentation": {
+                    "hidden": false,
+                    "group": "EBH Tests",
+                    "order": 4
+                }
+            },
+            {
+                "name": "EBH Process: JubelPark 3lijnen RTK+PPK",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/launch/launch_ebh_process.py",
+                "console": "integratedTerminal",
+                "justMyCode": false,
+                "purpose": [
+                    "debug-in-terminal"
+                ],
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src"
+                },
+                "args": [
+                    "--sbf_ifn",
+                    "data/20250227_jubelpark_3lijnen/rover.sbf",
+                    "--base_corr",
+                    "data/20250227_jubelpark_3lijnen/base.sbf",
+                    "--desc",
+                    "ebh_testing_jubelpark_3lijnen_250227",
+                    "-vvv"
+                ],
+                "stopOnEntry": false,
+                "presentation": {
+                    "hidden": false,
+                    "group": "EBH Tests",
+                    "order": 5
+                }
+            },
+            {
+                "name": "pnt_data_collector: PNT_CSV (default import) and merge",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/pnt/pnt_data_collector.py",
+                "console": "integratedTerminal",
+                "justMyCode": false,
+                "purpose": [
+                    "debug-in-terminal"
+                ],
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src"
+                },
+                "args": [
+                    "--csv_ifn",
+                    "data/20250227_jubelpark_3lijnen/rover_pnt_standard.csv",
+                    "data/20250227_jubelpark_5lijnen/rover_pnt_standard.csv",
+                    "--merge",
+                    "-vvv"
+                ],
+                "stopOnEntry": false,
+                "presentation": {
+                    "hidden": false,
+                    "group": "pnt_collector_tests",
+                    "order": 1
+                }
+            },
+            {
+                "name": "pnt_data_collector: sbf, rtkpos, nmea and merge",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/pnt/pnt_data_collector.py",
+                "console": "integratedTerminal",
+                "justMyCode": false,
+                "purpose": [
+                    "debug-in-terminal"
+                ],
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src"
+                },
+                "args": [
+                    "--sbf_ifn",
+                    "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/MOSX5GO/sbf/20241128-161759-usb-Septentrio_Septentrio_USB_Device_3688193-if02-MOSX5GO.sbf",
+                    "--nmea_ifn",
+                    "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-161759-usb-FTDI_FT230X_Basic_UART_DA0150ZY-if00-port0.out",
+                    "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-181810-usb-FTDI_FT230X_Basic_UART_DA0150ZY-if00-port0.out",
+                    "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-201820-usb-FTDI_FT230X_Basic_UART_DA0150ZY-if00-port0.out",
+                    "--pos_ifn",
+                    "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/MOSX5GO/rtklib_pos/2501171310_SEPT00BEL_R_20243331619_03D_30S_MO_PPK_160000_25200S.pos",
+                    "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-161759-unicore-UM982_MO_PPK.pos",
+                    "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-181810-unicore-UM982_MO_PPK.pos",
+                    "/home/pj/Documents/GNSS4Def/site-surveys-recordings/KMS_GNSS_LAB/20241128-unicore-UM980_PPP_HAS_LOGS-MOSX5GO_logs/UM980/20241128-201820-unicore-UM982_MO_PPK.pos",
+                    "--merge",
+                    "-vvv"
+                ],
+                "stopOnEntry": false,
+                "presentation": {
+                    "hidden": false,
+                    "group": "pnt_collector_tests",
+                    "order": 2
+                }
+            },
+            {
+                "name": "plot utm coordinates (source: nmea)",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "src/analysegnss/plots/plot_coords.py",
+                "console": "integratedTerminal",
+                "justMyCode": false,
+                "purpose": [
+                    "debug-in-terminal"
+                ],
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/src"
+                },
+                "args": [
+                    "--csv_ifn",
+                    "data/merged_pnt_standard.csv",
+                    "--display",
+                    "--mpl",
+                ],
+                "stopOnEntry": false,
+                "presentation": {
+                    "hidden": false,
+                    "group": "plot_tests",
+                    "order": 1
+                }
             }
-        }
-    ]
-}
+        ]
+    }
