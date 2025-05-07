@@ -6,3 +6,4 @@ with open(
     ubr = UBXReader(stream, protfilter=UBX_PROTOCOL)
     for raw_data, parsed_data in ubr:
         print(parsed_data)
+        input("press a key")
