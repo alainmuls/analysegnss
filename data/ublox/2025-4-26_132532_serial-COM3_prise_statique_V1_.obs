@@ -1,0 +1,19 @@
+     3.03           OBSERVATION DATA    M: Mixed            RINEX VERSION / TYPE
+CONVBIN demo5 b34g                      20250506 135813 UTC PGM / RUN BY / DATE 
+log: 2025-4-26_132532_serial-COM3_prise_statique_V1.ubx     COMMENT             
+format: u-blox UBX                                          COMMENT             
+format: u-blox UBX                                          COMMENT             
+log: 2025-4-26_132532_serial-COM3_prise_statique_V1.ubx     COMMENT             
+                                                            MARKER NAME         
+                                                            MARKER NUMBER       
+                                                            MARKER TYPE         
+                                                            OBSERVER / AGENCY   
+                                                            REC # / TYPE / VERS 
+                                                            ANT # / TYPE        
+        0.0000        0.0000        0.0000                  APPROX POSITION XYZ 
+        0.0000        0.0000        0.0000                  ANTENNA: DELTA H/E/N
+  2025    04    26    11    26   48.5040000     GPS         TIME OF FIRST OBS   
+  2025    04    26    13    33   19.5060000     GPS         TIME OF LAST OBS    
+  0                                                         GLONASS SLOT / FRQ #
+                                                            GLONASS COD/PHS/BIS 
+                                                            END OF HEADER       
