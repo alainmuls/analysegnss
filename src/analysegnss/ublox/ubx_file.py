@@ -1,9 +1,7 @@
 from pyubx2 import UBXReader, UBX_PROTOCOL
 from rich import print as rprint
 
-with open(
-    "./data/ublox/2025-4-26_132532_serial-COM3_prise_statique_V1.ubx", "rb"
-) as stream:
+with open("./data/ublox/20250426_132532.ubx", "rb") as stream:
     ubr = UBXReader(stream, protfilter=UBX_PROTOCOL)
     for raw_data, parsed_data in ubr:
         # print(f"{raw_data}\n") # Original raw bytes, if you still want it
