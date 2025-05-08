@@ -16,9 +16,9 @@ def parse_rawx_from_stream(byte_stream):
     for raw_data, parsed_msg in ubr:
         if (
             len(raw_data) >= 4
-            and raw_data[0:2] == b"\xb5\x62"
-            and raw_data[2] == 2
-            and raw_data[3] == 21
+            and raw_data[0:2] == b"\xb5\x62"  # preamble
+            and raw_data[2] == 2  # class
+            and raw_data[3] == 21  # ID
         ):
             yield raw_data, parsed_msg
 
