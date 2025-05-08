@@ -1,4 +1,5 @@
-from pyubx2 import UBXReader, UBXMessage
+from pyubx2 import UBXMessage, UBXReader
+from pyubx2.ubxtypes_core import UBX_CLASSES
 from rich import print as rprint
 
 
@@ -14,6 +15,8 @@ def parse_rawx_from_stream(byte_stream):
     """
     ubr = UBXReader(byte_stream)
     for raw_data, parsed_msg in ubr:
+        first_four_bytes_hex = " ".join(f"{b:02x}" for b in raw_data[0:4])
+        rprint(f"First 4 bytes (Preamble, Class, ID): {first_four_bytes_hex}")
         if (
             len(raw_data) >= 4
             and raw_data[0:2] == b"\xb5\x62"  # preamble
@@ -50,5 +53,16 @@ if __name__ == "__main__":
         #     hex_string[i : i + 2] for i in range(0, len(hex_string), 2)
         # )
         # rprint(f"{spaced_hex_string} | {len(raw_data)} | {len(raw_data)-8} bytes\n")
-        rprint(parsed_data.__dict__, f"| {parsed_data.__class__.__name__}")
+        message_identity_info = (
+            f"UBX Message: {parsed_data.identity} "
+            # f"(Class: 0x{parsed_data.msg_class[0]:02x}, ID: 0x{parsed_data.msg_id[0]:02x})"
+        )
+        rprint(message_identity_info)
+
+        # class_name_mnemonic = UBX_CLASSES.get(parsed_data.msg_class, "UNKNOWN_CLASS")
+        # rprint(f"Class Name: {class_name_mnemonic}")
+        rprint(f"Message Length: {len(raw_data)} bytes")
+        rprint(f"Payload Length: {len(raw_data) - 8} bytes")
+
+        rprint(parsed_data.__dict__)  # Print the dictionary on a new line for clarity
         rprint(f"-" * 25)
