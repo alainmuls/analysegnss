@@ -23,13 +23,12 @@ from analysegnss.utils.argument_parser import (
 )
 
 
-def ubx_reader(parsed_args: argparse.Namespace, logger: Logger) -> dict:
+def ubx_reader(parsed_args: argparse.Namespace, logger: Logger):
     """
-    Convert PVT Geodetic2 SBF block to dataframe and analyse quality of data
+    Convert UBX binary file to CSV
     Args:
-        argv (list): list of arguments
-    Returns:
-        dict: dict with dataframe for each selected SBF block
+        parsed_args (argparse.Namespace): Parsed arguments
+        logger (Logger): Logger object
     """
     # Ensure compatibility when passing on parsed_args from a higher level script.
     parsed_args = auto_populate_args_namespace(
@@ -37,8 +36,7 @@ def ubx_reader(parsed_args: argparse.Namespace, logger: Logger) -> dict:
         argument_parser_ubx_parser,
         os.path.splitext(os.path.basename(__file__))[0],
     )
-
-    logger.debug(f"auto-populated parsed arguments: {parsed_args}")
+    logger.debug(f"Auto-populated parsed arguments: {parsed_args}")
 
     # create a SBF class object
     try:
@@ -46,6 +44,9 @@ def ubx_reader(parsed_args: argparse.Namespace, logger: Logger) -> dict:
     except Exception as e:
         logger.error(f"Error creating SBF object: {e}")
         sys.exit(ERROR_CODES["E_SBF_OBJECT"])
+
+    # start parsing the ublox file and conversion of selected blocks to CSV
+    ubx.parse_ubx_stream2()
 
 
 def main():
