@@ -46,7 +46,7 @@ def ubx_reader(parsed_args: argparse.Namespace, logger: Logger):
         sys.exit(ERROR_CODES["E_SBF_OBJECT"])
 
     # start parsing the ublox file and conversion of selected blocks to CSV
-    ubx.parse_ubx_stream2()
+    ubx.parse_ubx_stream()
 
 
 def main():

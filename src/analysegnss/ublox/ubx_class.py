@@ -199,62 +199,62 @@ class UBX:
 
         pass
 
+    # def parse_ubx_stream(self):
+    #     """
+    #     Parses the UBX file, identifies specific messages, and dispatches them
+    #     to respective decoding functions.
+    #     """
+    #     if not self.ubx_fn:
+    #         if self.logger:
+    #             self.logger.error("UBX filename (ubx_fn) not set. Cannot parse.")
+    #         return
+
+    #     if self.logger:
+    #         self.logger.info(f"Starting to parse UBX stream from {self.ubx_fn}")
+
+    #     # Target messages (Class, ID)
+    #     MSG_MGA_GPS = (0x13, 0x00)  # UBX-MGA-GPS
+    #     MSG_RXM_RAWX = (0x02, 0x15)  # UBX-RXM-RAWX
+
+    #     processed_messages_count = 0
+
+    #     with open(self.ubx_fn, "rb") as f_ubx:
+    #         ubr = UBXReader(f_ubx)
+
+    #         for raw_data, parsed_msg in ubr:
+    #             rprint(parsed_msg.identity)
+    #             msg_class = raw_data[2]
+    #             msg_id = raw_data[3]
+    #             # payload_len = struct.unpack("<H", raw_data[4:6])[
+    #             #     0
+    #             # ]  # Length is 2 bytes, little-endian
+    #             current_message_type = (msg_class, msg_id)
+    #             if current_message_type == MSG_MGA_GPS:
+    #                 self._decode_mga_gps(parsed_msg)
+    #             elif current_message_type == MSG_RXM_RAWX:
+    #                 self._decode_rxm_rawx(parsed_msg)
+    #             else:
+    #                 if self.logger:
+    #                     self.logger.debug(
+    #                         f"Unhandled UBX message type: "
+    #                         f"Class=0x{msg_class:02X}, ID=0x{msg_id:02X}"  # , Length={payload_len}"
+    #                     )
+
+    #             # Increment the processed messages count
+    #             processed_messages_count += 1
+
+    #     if self.logger:
+    #         self.logger.info(
+    #             str_green(
+    #                 f"Finished parsing UBX stream. Processed {processed_messages_count} "
+    #                 f"targeted messages."
+    #             )
+    #         )
+
     def parse_ubx_stream(self):
         """
         Parses the UBX file, identifies specific messages, and dispatches them
-        to respective decoding functions.
-        """
-        if not self.ubx_fn:
-            if self.logger:
-                self.logger.error("UBX filename (ubx_fn) not set. Cannot parse.")
-            return
-
-        if self.logger:
-            self.logger.info(f"Starting to parse UBX stream from {self.ubx_fn}")
-
-        # Target messages (Class, ID)
-        MSG_MGA_GPS = (0x13, 0x00)  # UBX-MGA-GPS
-        MSG_RXM_RAWX = (0x02, 0x15)  # UBX-RXM-RAWX
-
-        processed_messages_count = 0
-
-        with open(self.ubx_fn, "rb") as f_ubx:
-            ubr = UBXReader(f_ubx)
-
-            for raw_data, parsed_msg in ubr:
-                rprint(parsed_msg.identity)
-                msg_class = raw_data[2]
-                msg_id = raw_data[3]
-                # payload_len = struct.unpack("<H", raw_data[4:6])[
-                #     0
-                # ]  # Length is 2 bytes, little-endian
-                current_message_type = (msg_class, msg_id)
-                if current_message_type == MSG_MGA_GPS:
-                    self._decode_mga_gps(parsed_msg)
-                elif current_message_type == MSG_RXM_RAWX:
-                    self._decode_rxm_rawx(parsed_msg)
-                else:
-                    if self.logger:
-                        self.logger.debug(
-                            f"Unhandled UBX message type: "
-                            f"Class=0x{msg_class:02X}, ID=0x{msg_id:02X}"  # , Length={payload_len}"
-                        )
-
-                # Increment the processed messages count
-                processed_messages_count += 1
-
-        if self.logger:
-            self.logger.info(
-                str_green(
-                    f"Finished parsing UBX stream. Processed {processed_messages_count} "
-                    f"targeted messages."
-                )
-            )
-
-    def parse_ubx_stream2(self):
-        """
-        Parses the UBX file, identifies specific messages, and dispatches them
-        to respective decoding functions.
+        to respective decoding classes.
         """
         if not self.ubx_fn:
             if self.logger:
@@ -283,6 +283,8 @@ class UBX:
                             self.ubx_rawx = ubx_rawx.UBX_RAWX(
                                 # fn_rawx="/tmp/ubx_rawx.csv"
                             )
+
+                        self.ubx_rawx.decode_rawx(rawx=parsed_msg)
 
                         self._decode_rxm_rawx(parsed_msg)
                     case "RXM-MEASX":
