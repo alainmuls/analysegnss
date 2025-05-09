@@ -11,6 +11,7 @@ from pyubx2.ubxtypes_core import UBX_CLASSES
 from rich import print as rprint
 
 from analysegnss.utils.utilities import str_green, str_red
+from analysegnss.ublox import ubx_rawx
 
 
 @dataclass
@@ -21,6 +22,9 @@ class UBX:
 
     logger: logging.Logger = field(default=None)
     _console_loglevel: int = field(default=logging.ERROR)
+
+    # set classes for decoding uBlox messages to None
+    ubx_rawx = None  # decoding of UBX-RXM-RAWX (0xB5 0x62)
 
     def __post_init__(self):
         self.validate_file()
@@ -195,157 +199,6 @@ class UBX:
 
         pass
 
-    # def parse_ubx_stream(self):
-    #     """
-    #     Parses the UBX file, identifies specific messages, and dispatches them
-    #     to respective decoding functions.
-    #     """
-    #     if not self.ubx_fn:
-    #         if self.logger:
-    #             self.logger.error("UBX filename (ubx_fn) not set. Cannot parse.")
-    #         return
-
-    #     if self.logger:
-    #         self.logger.info(f"Starting to parse UBX stream from {self.ubx_fn}")
-
-    #     # UBX message constants
-    #     PREAMBLE1 = 0xB5
-    #     PREAMBLE2 = 0x62
-
-    #     # Target messages (Class, ID)
-    #     MSG_MGA_GPS = (0x13, 0x00)
-    #     MSG_RXM_RAWX = (0x02, 0x15)  # UBX-RXM-RAWX
-
-    #     processed_messages_count = 0
-    #     skipped_bytes_count = 0
-
-    #     try:
-    #         with open(self.ubx_fn, "rb") as f:
-    #             while True:
-    #                 # --- 1. Search for Preamble ---
-    #                 byte1_read = f.read(1)
-    #                 if not byte1_read:
-    #                     break  # End of File
-
-    #                 if byte1_read[0] != PREAMBLE1:
-    #                     skipped_bytes_count += 1
-    #                     continue
-
-    #                 byte2_read = f.read(1)
-    #                 if not byte2_read:
-    #                     break  # End of File
-
-    #                 if byte2_read[0] != PREAMBLE2:
-    #                     # Found 0xB5 but not 0x62, so re-evaluate the second byte read
-    #                     f.seek(-1, os.SEEK_CUR)
-    #                     skipped_bytes_count += 1
-    #                     continue
-
-    #                 # Preamble 0xB5 0x62 found
-    #                 if skipped_bytes_count > 0 and self.logger:
-    #                     self.logger.debug(
-    #                         f"Skipped {skipped_bytes_count} bytes before finding UBX preamble at offset {f.tell()-2}"
-    #                     )
-    #                 skipped_bytes_count = 0
-
-    #                 # --- 2. Read Header (Class, ID, Length) ---
-    #                 header_data = f.read(4)  # Class (1), ID (1), Length (2)
-    #                 if len(header_data) < 4:
-    #                     if self.logger:
-    #                         self.logger.warning(
-    #                             "EOF reached while reading message header."
-    #                         )
-    #                     break
-
-    #                 msg_class = header_data[0]
-    #                 msg_id = header_data[1]
-    #                 payload_len = struct.unpack("<H", header_data[2:4])[
-    #                     0
-    #                 ]  # Length is 2 bytes, little-endian
-
-    #                 # --- 3. Read Payload ---
-    #                 payload = f.read(payload_len)
-    #                 if len(payload) < payload_len:
-    #                     if self.logger:
-    #                         self.logger.warning(
-    #                             f"EOF reached reading payload for {msg_class:02X}-{msg_id:02X}. Expected {payload_len}, got {len(payload)}."
-    #                         )
-    #                     break
-
-    #                 # --- 4. Read and Verify Checksum ---
-    #                 checksum_bytes_read = f.read(2)
-    #                 if len(checksum_bytes_read) < 2:
-    #                     if self.logger:
-    #                         self.logger.warning(
-    #                             f"EOF reached reading checksum for {msg_class:02X}-{msg_id:02X}."
-    #                         )
-    #                     break
-
-    #                 ck_a_recv, ck_b_recv = (
-    #                     checksum_bytes_read[0],
-    #                     checksum_bytes_read[1],
-    #                 )
-
-    #                 # Checksum is calculated over: Class, ID, Length_bytes, Payload
-    #                 bytes_for_checksum = header_data + payload
-    #                 ck_a_calc, ck_b_calc = self._calculate_ubx_checksum(
-    #                     bytes_for_checksum
-    #                 )
-
-    #                 if ck_a_calc != ck_a_recv or ck_b_calc != ck_b_recv:
-    #                     if self.logger:
-    #                         self.logger.warning(
-    #                             f"Checksum mismatch for {msg_class:02X}-{msg_id:02X} at offset {f.tell()-(6+payload_len)}. "
-    #                             f"Recv: {ck_a_recv:02X}{ck_b_recv:02X}, Calc: {ck_a_calc:02X}{ck_b_calc:02X}. Skipping."
-    #                         )
-    #                     continue  # Continue to search for next preamble
-
-    #                 # --- 5. Dispatch to Decoder ---
-    #                 current_message_type = (msg_class, msg_id)
-    #                 # if self.logger:
-    #                 #     self.logger.debug(
-    #                 #         f"Valid UBX message: Class=0x{msg_class:02X}, ID=0x{msg_id:02X}, Length={payload_len}"
-    #                 #     )
-
-    #                 if current_message_type == MSG_MGA_GPS:
-    #                     self._decode_mga_gps(payload)
-    #                 elif current_message_type == MSG_RXM_RAWX:
-    #                     ubx_msg = (
-    #                         byte1_read
-    #                         + byte2_read
-    #                         + header_data
-    #                         + payload
-    #                         + checksum_bytes_read
-    #                     )
-    #                     rprint(ubx_msg.hex())
-    #                     rprint(ubx_msg.identity)
-    #                     self._decode_rxm_rawx(payload)
-    #                 else:
-    #                     if self.logger:
-    #                         self.logger.debug(
-    #                             f"Unhandled UBX message type: Class=0x{msg_class:02X}, ID=0x{msg_id:02X}, Length={payload_len}"
-    #                         )
-
-    #                 # Increment the processed messages count
-    #                 processed_messages_count += 1
-
-    #     except FileNotFoundError:
-    #         if self.logger:
-    #             self.logger.error(f"File not found during parsing: {self.ubx_fn}")
-    #     except Exception as e:
-    #         if self.logger:
-    #             self.logger.error(
-    #                 f"An error occurred during UBX parsing: {e}", exc_info=True
-    #             )
-
-    #     if self.logger:
-    #         self.logger.info(
-    #             str_green(
-    #                 f"Finished parsing UBX stream. Processed {processed_messages_count} "
-    #                 f"targeted messages."
-    #             )
-    #         )
-
     def parse_ubx_stream(self):
         """
         Parses the UBX file, identifies specific messages, and dispatches them
@@ -369,6 +222,7 @@ class UBX:
             ubr = UBXReader(f_ubx)
 
             for raw_data, parsed_msg in ubr:
+                rprint(parsed_msg.identity)
                 msg_class = raw_data[2]
                 msg_id = raw_data[3]
                 # payload_len = struct.unpack("<H", raw_data[4:6])[
@@ -385,6 +239,64 @@ class UBX:
                             f"Unhandled UBX message type: "
                             f"Class=0x{msg_class:02X}, ID=0x{msg_id:02X}"  # , Length={payload_len}"
                         )
+
+                # Increment the processed messages count
+                processed_messages_count += 1
+
+        if self.logger:
+            self.logger.info(
+                str_green(
+                    f"Finished parsing UBX stream. Processed {processed_messages_count} "
+                    f"targeted messages."
+                )
+            )
+
+    def parse_ubx_stream2(self):
+        """
+        Parses the UBX file, identifies specific messages, and dispatches them
+        to respective decoding functions.
+        """
+        if not self.ubx_fn:
+            if self.logger:
+                self.logger.error("UBX filename (ubx_fn) not set. Cannot parse.")
+            return
+
+        if self.logger:
+            self.logger.info(f"Starting to parse UBX stream from {self.ubx_fn}")
+
+        # Target messages (Class, ID)
+        MSG_MGA_GPS = (0x13, 0x00)  # UBX-MGA-GPS
+        MSG_RXM_RAWX = (0x02, 0x15)  # UBX-RXM-RAWX
+
+        processed_messages_count = 0
+
+        with open(self.ubx_fn, "rb") as f_ubx:
+            ubr = UBXReader(f_ubx)
+
+            for _, parsed_msg in ubr:
+                # rprint(parsed_msg.identity)
+                match parsed_msg.identity:
+                    case "MGA-GPS":
+                        self._decode_mga_gps(parsed_msg)
+                    case "RXM-RAWX":
+                        if self.ubx_rawx == None:  # station parameters
+                            self.ubx_rawx = ubx_rawx.UBX_RAWX(
+                                # fn_rawx="/tmp/ubx_rawx.csv"
+                            )
+
+                        self._decode_rxm_rawx(parsed_msg)
+                    case "RXM-MEASX":
+                        if self.logger:
+                            self.logger.warning(
+                                f"Unhandled UBX message type: {parsed_msg.identity} "
+                                f"(0x{parsed_msg.msg_cls.hex()}, 0x{parsed_msg.msg_id.hex()})"
+                                f", payload={parsed_msg.length}"
+                            )
+                    case _:
+                        if self.logger:
+                            self.logger.debug(
+                                f"Unhandled message: {parsed_msg.identity} "
+                            )
 
                 # Increment the processed messages count
                 processed_messages_count += 1

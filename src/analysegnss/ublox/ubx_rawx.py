@@ -1,81 +1,59 @@
-from pyubx2 import UBXMessage, UBXReader
-from pyubx2.ubxtypes_core import UBX_CLASSES
-from rich import print as rprint
-from analysegnss.ublox.ubx_class import UBX
+import csv
+import logging
+
+from analysegnss.utils.utilities import str_yellow
 
 
-def parse_rawx_from_stream(byte_stream):
+class UBX_RAWX:
+    """manages the decoding of uBlox RXM-RAWX (0xB5 0x62) messages
+    and writing of the data to a CSV file
     """
-    Parses UBX-RXM-RAWX messages from a byte stream.
 
-    Args:
-        byte_stream (bytes): A byte stream containing UBX messages.
+    def __init__(self, fn_rawx: str = "/tmp/ubx_rawx.csv") -> None:
+        """initializes instance of UBX_RAWX"""
 
-    Yields:
-        UBXMessage: A UBXMessage object representing a parsed UBX-RXM-RAWX message.
-    """
-    ubr = UBXReader(byte_stream)
-    for raw_data, parsed_msg in ubr:
-        # first_four_bytes_hex = " ".join(f"{b:02x}" for b in raw_data[0:4])
-        # rprint(f"First 4 bytes (Preamble, Class, ID): {first_four_bytes_hex}")
-        if (
-            len(raw_data) >= 4
-            and raw_data[0:2] == b"\xb5\x62"  # preamble
-            and raw_data[2] == 2  # class
-            and raw_data[3] == 21  # ID
-        ):
-            yield raw_data, parsed_msg
+        # # init the global variables
+        # config.initialize()
 
+        self.logger = logging.getLogger("ubx_parser")
 
-def parse_rawx_from_file(filename):
-    """
-    Parses UBX-RXM-RAWX messages from a UBX binary file.
+        # # keep the week number
+        # self.WKNR = None
+        # self.gnss = None
+        # self.TOW = None
+        # self.NSats = None
+        # self.NCells = None
+        # self.ref_station = None
+        # self.rough_data = []
+        # self.sigmap = None  # links RINEX codes to frequency name
+        # self.cfreq_khz = None  # frequency [kHz] of the signal
 
-    Args:
-        filename (str): The path to the UBX binary file.
+        # write the header line to the UBX_RAWX csv file
+        self.fd_rawx = open(fn_rawx, "w")
+        self.writer = csv.writer(self.fd_rawx, delimiter=",")
 
-    Yields:
-        UBXMessage: A UBXMessage object representing a parsed UBX-RXM-RAWX message.
-    """
-    with open(filename, "rb") as file:
-        for msg in parse_rawx_from_stream(file):
-            yield msg
+        # store the observables according to this dictionary
+        self.dict_obs = {
+            "GNSS": [],
+            "WKNR": [],
+            "TOW": [],
+            "PRN": [],
+            "cfreq": [],
+            "sigt": [],
+            "C": [],
+            "L": [],
+            "D": [],
+            "S": [],
+            "locktime": [],
+            "halfcycleamb": [],
+        }
+        self.init_csv_header()
 
+        self.logger.info(f"{str_yellow('UBX_RAWX')} initialized")
 
-# Example usage:
-if __name__ == "__main__":
-    # # Replace "ubx_bin.ubx" with the actual path to your file
-    # for raw_data, parsed_data in parse_rawx_from_file(
-    #     "./data/ublox/2025-4-26_132532_serial-COM3_prise_statique_V1.ubx"
-    # ):
-    #     # print(raw_data)
-    #     hex_string = raw_data.hex()
-    #     # spaced_hex_string = " ".join(
-    #     #     hex_string[i : i + 2] for i in range(0, len(hex_string), 2)
-    #     # )
-    #     # rprint(f"{spaced_hex_string} | {len(raw_data)} | {len(raw_data)-8} bytes\n")
-    #     message_identity_info = (
-    #         f"UBX Message: {parsed_data.identity} "
-    #         # f"(Class: 0x{parsed_data.msg_class[0]:02x}, ID: 0x{parsed_data.msg_id[0]:02x})"
-    #     )
+    def init_csv_header(self):
+        """initializes the csv header for RTCM message rxm_rawx"""
 
-    #     # class_name_mnemonic = UBX_CLASSES.get(parsed_data.msg_class, "UNKNOWN_CLASS")
-    #     # rprint(f"Class Name: {class_name_mnemonic}")
-    #     rprint(
-    #         f"Message: {message_identity_info}"
-    #         f"  | Length: {len(raw_data)} bytes"
-    #         f"  | Payload: {len(raw_data) - 8} bytes"
-    #     )
-
-    #     # rprint(parsed_data.__dict__)  # Print the dictionary on a new line for clarity
-    #     # rprint(f"-" * 25)
-
-    ubx = UBX(
-        ubx_fn="./data/ublox/20250426_132532.ubx",
-        start_time=None,
-        end_time=None,
-        logger=None,
-    )
-    ubx.validate_file()
-    ubx.validate_start_time()
-    ubx.validate_end_time()
+        # write the header line to the UBX_RAWX csv file
+        self.writer.writerow(self.dict_obs.keys())
+        self.fd_rawx.flush()
