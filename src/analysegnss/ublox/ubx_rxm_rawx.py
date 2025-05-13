@@ -11,20 +11,20 @@ from analysegnss.ublox.ubx_definitions import (
 )
 
 
-class UBX_RAWX:
+class UBX_RXM_RAWX:
     """manages the decoding of uBlox RXM-RAWX (0xB5 0x62) messages
     and writing of the data to a CSV file
     """
 
-    def __init__(self, fn_rawx: str = "/tmp/ubx_rawx.csv") -> None:
-        """initializes instance of UBX_RAWX"""
+    def __init__(self, fn_rawx: str = "/tmp/ubx_rxm_rawx.csv") -> None:
+        """initializes instance of UBX_RXM_RAWX"""
 
         # # init the global variables
         # config.initialize()
 
         self.logger = logging.getLogger("ubx_parser")
 
-        # write the header line to the UBX_RAWX csv file
+        # write the header line to the UBX_RXM_RAWX csv file
         self.fd_rawx = open(fn_rawx, "w")
         self.writer = csv.writer(self.fd_rawx, delimiter=",")
 
@@ -45,12 +45,12 @@ class UBX_RAWX:
         }
         self.init_csv_header()
 
-        self.logger.info(f"{str_yellow('UBX_RAWX')} initialized")
+        self.logger.info(f"{str_yellow('UBX_RXM_RAWX')} initialized")
 
     def init_csv_header(self):
         """initializes the csv header for RTCM message rxm_rawx"""
 
-        # write the header line to the UBX_RAWX csv file
+        # write the header line to the UBX_RXM_RAWX csv file
         self.writer.writerow(self.dict_obs.keys())
         self.fd_rawx.flush()
 
