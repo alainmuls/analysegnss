@@ -1,0 +1,29 @@
+./data/ublox/20250426_132532.ubx
+--------------------------------
+
+UBX classes found in the file: 
+    ['ACK-ACK', 'ACK-NAK', 'CFG-VALGET', 'MON-VER', 'RXM-RAWX', 'RXM-SFRBX'] (6 unique classes)
+NMEA classes found in the file: 
+    ['GAGSV', 'GNGGA', 'GNGLL', 'GNGSA', 'GNRMC', 'GNTXT', 'GNVTG', 'GPGSV'] (8 unique classes)
+RTCM classes found in the file: 
+    ['1074', '1077', '1094', '1097'] (4 unique classes)
+
+
+
+./data/ublox/20250426_132532.uc2
+--------------------------------
+UBX classes found in the file: 
+    ['ACK-ACK', 'ACK-NAK', 'CFG-VALGET', 'DBG-0c31-NOMINAL', 'DBG-0c34-NOMINAL', 
+    'DBG-0c35-NOMINAL', 'DBG-0c41-NOMINAL', 'DBG-0c43-NOMINAL', 'DBG-0c4b-NOMINAL', 
+    'MON-0a11-NOMINAL', 'MON-0a30-NOMINAL', 'MON-COMMS', 'MON-HW', 'MON-HW2', 
+    'MON-HW3', 'MON-IO', 'MON-MSGPP', 'MON-RF', 'MON-RXBUF', 'MON-TXBUF', 
+    'NAV-CLOCK', 'NAV-COV', 'NAV-DOP', 'NAV-EOE', 'NAV-GEOFENCE', 'NAV-HPPOSECEF', 
+    'NAV-HPPOSLLH', 'NAV-ODO', 'NAV-ORB', 'NAV-POSECEF', 'NAV-POSLLH', 'NAV-PVT', 
+    'NAV-RELPOSNED', 'NAV-SAT', 'NAV-SIG', 'NAV-STATUS', 'NAV-SVIN', 'NAV-TIMEBDS', 
+    'NAV-TIMEGAL', 'NAV-TIMEGLO', 'NAV-TIMEGPS', 'NAV-TIMELS', 'NAV-TIMEUTC', 'NAV-VELECEF', 
+    'NAV-VELNED', 'RXM-MEASX', 'RXM-RAWX', 'RXM-SFRBX', 'SEC-2700-NOMINAL', 'TIM-TP', 
+    'TRK-0309-NOMINAL', 'TUN-0810-NOMINAL'] (52 unique classes)
+NMEA classes found in the file: 
+    ['GNTXT'] (1 unique classes)
+RTCM classes found in the file: 
+    [] (0 unique classes)    
