@@ -70,12 +70,13 @@ class UBX_RXM_RAWX:
         week = rawx.week
         numMeas = rawx.numMeas
         leapS = rawx.leapS
-        rprint(f"rcvTow: {rcvTow}, week: {week}, numMeas: {numMeas}, leapS: {leapS}")
+        # rprint(f"rcvTow: {rcvTow}, week: {week}, numMeas: {numMeas}, leapS: {leapS}")
 
         # Iterate through the individual measurements.
         # pyubx2 stores these in a list of namedtuples (or similar objects)
         # in an attribute named after the group definition, which is 'group_R001' for RXM-RAWX.
         measurements_found_and_processed = False
+
         if rawx.numMeas > 0:
             if hasattr(rawx, "group_R001"):
                 # Preferred method: iterate through the group
