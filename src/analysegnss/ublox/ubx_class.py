@@ -7,6 +7,8 @@ import sys
 from dataclasses import dataclass, field
 
 from pyubx2 import UBXMessage, UBXReader
+from pynmeagps import NMEAMessage
+from pyrtcm import RTCMMessage
 from pyubx2.ubxtypes_core import UBX_CLASSES
 from rich import print as rprint
 
@@ -189,67 +191,6 @@ class UBX:
         # TODO: Implement actual decoding logic here
         pass
 
-    def _decode_rxm_rawx(self, ubx_msg: bytes):
-        """Placeholder for decoding UBX-RXM-RAWX (0x02-0x15) payload."""
-        if self.logger:
-            self.logger.info(
-                f"Decoding UBX-RXM-RAWX (0x02-0x15), #SV: {ubx_msg.numMeas}"
-            )
-        # TODO: Implement actual decoding logic here
-
-        pass
-
-    # def parse_ubx_stream(self):
-    #     """
-    #     Parses the UBX file, identifies specific messages, and dispatches them
-    #     to respective decoding functions.
-    #     """
-    #     if not self.ubx_fn:
-    #         if self.logger:
-    #             self.logger.error("UBX filename (ubx_fn) not set. Cannot parse.")
-    #         return
-
-    #     if self.logger:
-    #         self.logger.info(f"Starting to parse UBX stream from {self.ubx_fn}")
-
-    #     # Target messages (Class, ID)
-    #     MSG_MGA_GPS = (0x13, 0x00)  # UBX-MGA-GPS
-    #     MSG_RXM_RAWX = (0x02, 0x15)  # UBX-RXM-RAWX
-
-    #     processed_messages_count = 0
-
-    #     with open(self.ubx_fn, "rb") as f_ubx:
-    #         ubr = UBXReader(f_ubx)
-
-    #         for raw_data, parsed_msg in ubr:
-    #             rprint(parsed_msg.identity)
-    #             msg_class = raw_data[2]
-    #             msg_id = raw_data[3]
-    #             # payload_len = struct.unpack("<H", raw_data[4:6])[
-    #             #     0
-    #             # ]  # Length is 2 bytes, little-endian
-    #             current_message_type = (msg_class, msg_id)
-    #             if current_message_type == MSG_MGA_GPS:
-    #                 self._decode_mga_gps(parsed_msg)
-    #             elif current_message_type == MSG_RXM_RAWX:
-    #                 self._decode_rxm_rawx(parsed_msg)
-    #             else:
-    #                 if self.logger:
-    #                     self.logger.debug(
-    #                         f"Unhandled UBX message type: "
-    #                         f"Class=0x{msg_class:02X}, ID=0x{msg_id:02X}"  # , Length={payload_len}"
-    #                     )
-
-    #             # Increment the processed messages count
-    #             processed_messages_count += 1
-
-    #     if self.logger:
-    #         self.logger.info(
-    #             str_green(
-    #                 f"Finished parsing UBX stream. Processed {processed_messages_count} "
-    #                 f"targeted messages."
-    #             )
-    #         )
 
     def parse_ubx_stream(self):
         """
@@ -270,38 +211,79 @@ class UBX:
 
         processed_messages_count = 0
 
+        # for detecting which messages are in the UBX file
+        ubx_msgs = []
+        nmea_msgs = []
+        rtcm_msgs = []
         with open(self.ubx_fn, "rb") as f_ubx:
             ubr = UBXReader(f_ubx)
 
-            for _, parsed_msg in ubr:
-                # rprint(parsed_msg.identity)
-                match parsed_msg.identity:
-                    case "MGA-GPS":
-                        self._decode_mga_gps(parsed_msg)
-                    case "RXM-RAWX":
-                        if self.ubx_rawx == None:  # station parameters
-                            self.ubx_rawx = ubx_rawx.UBX_RAWX(
-                                # fn_rawx="/tmp/ubx_rawx.csv"
-                            )
+            for raw_msg, parsed_msg in ubr:
+                if parsed_msg is not None:
+                    rprint(type(parsed_msg))
+                    # rprint(type(raw_msg))
+                    # Check if the message is a UBX message
+                    if isinstance(parsed_msg, UBXMessage):
+                        rprint(
+                            f"parsed_msg.identity: {parsed_msg.identity} | {parsed_msg.msg_cls} | {parsed_msg.msg_id} | {parsed_msg.length}"
+                        )
+                        if parsed_msg.identity not in ubx_msgs:
+                            ubx_msgs.append(parsed_msg.identity)
 
-                        self.ubx_rawx.decode_rawx(rawx=parsed_msg)
+                        match parsed_msg.identity:
+                            case "MGA-GPS":
+                                self._decode_mga_gps(parsed_msg)
+                            case "RXM-RAWX":
+                                if self.ubx_rawx == None:  # station parameters
+                                    self.ubx_rawx = ubx_rawx.UBX_RAWX(
+                                        # fn_rawx="/tmp/ubx_rawx.csv"
+                                    )
 
-                        self._decode_rxm_rawx(parsed_msg)
-                    case "RXM-MEASX":
-                        if self.logger:
-                            self.logger.warning(
-                                f"Unhandled UBX message type: {parsed_msg.identity} "
-                                f"(0x{parsed_msg.msg_cls.hex()}, 0x{parsed_msg.msg_id.hex()})"
-                                f", payload={parsed_msg.length}"
-                            )
-                    case _:
-                        if self.logger:
-                            self.logger.debug(
-                                f"Unhandled message: {parsed_msg.identity} "
-                            )
+                                self.ubx_rawx.decode_rawx(rawx=parsed_msg)
 
-                # Increment the processed messages count
-                processed_messages_count += 1
+                            case "RXM-MEASX":
+                                if self.logger:
+                                    self.logger.warning(
+                                        f"Unhandled UBX message type: {parsed_msg.identity} "
+                                        f"(0x{parsed_msg.msg_cls.hex()}, 0x{parsed_msg.msg_id.hex()})"
+                                        f", payload={parsed_msg.length}"
+                                    )
+                            case _:
+                                if self.logger:
+                                    self.logger.debug(
+                                        f"Unhandled message: {parsed_msg.identity} "
+                                    )
+
+                        # Increment the processed messages count
+                        processed_messages_count += 1
+
+                    elif isinstance(parsed_msg, NMEAMessage):
+                        nmea_msg = parsed_msg.talker + parsed_msg.msgID
+                        if nmea_msg not in nmea_msgs:
+                            nmea_msgs.append(nmea_msg)
+
+                    elif isinstance(parsed_msg, RTCMMessage):
+                        rtcm_msg = parsed_msg.identity
+                        if rtcm_msg not in rtcm_msgs:
+                            rtcm_msgs.append(rtcm_msg)
+
+        # get a sorted unique list of the ubx_msgs
+        ubx_msgs = sorted(set(ubx_msgs))
+        nmea_msgs = sorted(set(nmea_msgs))
+        rtcm_msgs = sorted(set(rtcm_msgs))
+        if self.logger:
+            self.logger.info(
+                f"UBX classes found in the file: {ubx_msgs} "
+                f"({len(ubx_msgs)} unique classes)"
+            )
+            self.logger.info(
+                f"NMEA classes found in the file: {nmea_msgs} "
+                f"({len(nmea_msgs)} unique classes)"
+            )
+            self.logger.info(
+                f"RTCM classes found in the file: {rtcm_msgs} "
+                f"({len(rtcm_msgs)} unique classes)"
+            )
 
         if self.logger:
             self.logger.info(

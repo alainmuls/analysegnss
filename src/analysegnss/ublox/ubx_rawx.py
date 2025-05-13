@@ -1,10 +1,14 @@
 import csv
 import logging
 
+from pyubx2.ubxmessage import UBXMessage  # Import UBXMessage for type hinting
 from rich import print as rprint
 
 from analysegnss.utils.utilities import str_yellow
-from pyubx2.ubxmessage import UBXMessage  # Import UBXMessage for type hinting
+from analysegnss.ublox.ubx_definitions import (
+    convert_ublox_gnss_identifier,
+    get_ublox_signal_details,
+)
 
 
 class UBX_RAWX:
@@ -55,7 +59,7 @@ class UBX_RAWX:
         Args:
             rawx (UBXMessage): RXM-RAWX parsed UBXMessage object
         """
-        rprint(rawx.identity)
+        # rprint(rawx.identity)
 
         # clear content of dictionary for storing observables
         for k in self.dict_obs.keys():
@@ -83,14 +87,22 @@ class UBX_RAWX:
                     for meas_data in rawx.group_R001:
                         # meas_data is an object/namedtuple with attributes like:
                         # prMes, cpMes, doMes, gnssId, svId, sigId, freqId, locktime, cno, trkStat
-                        self.dict_obs["GNSS"].append(meas_data.gnssId)
+                        self.dict_obs["GNSS"].append(
+                            convert_ublox_gnss_identifier(
+                                gnss_id=meas_data.gnssId, logger=self.logger  # type: ignore
+                            )
+                        )
                         self.dict_obs["WKNR"].append(week)
                         self.dict_obs["TOW"].append(rcvTow)
                         self.dict_obs["PRN"].append(meas_data.svId)
-                        self.dict_obs["cfreq"].append(meas_data.freqId)
-                        self.dict_obs["sigt"].append(
-                            getattr(meas_data, "sigId", None)
+                        # get UBX sigtype value and convert to frequency and signal type
+                        sig_id_val = getattr(meas_data, "sigId", None)
+                        freq_band, signal_code = get_ublox_signal_details(
+                            gnss_id_num=meas_data.gnssId, sig_id=sig_id_val, logger=self.logger  # type: ignore
                         )  # sigId can be optional
+                        self.dict_obs["cfreq"].append(freq_band)
+                        self.dict_obs["sigt"].append(signal_code)
+
                         self.dict_obs["C"].append(meas_data.prMes)
                         self.dict_obs["L"].append(meas_data.cpMes)
                         self.dict_obs["D"].append(meas_data.doMes)
@@ -110,19 +122,19 @@ class UBX_RAWX:
                             f"RXM-RAWX: 'group_R001' found, but its length ({len(rawx.group_R001)}) "
                             f"does not match numMeas ({rawx.numMeas}). Will attempt fallback."
                         )
-            else:  # hasattr(rawx, "group_R001") is False
-                if self.logger:
-                    self.logger.warning(
-                        f"RXM-RAWX: 'group_R001' attribute NOT found for numMeas = {rawx.numMeas}. "
-                        "Will attempt fallback to suffixed attributes (e.g., svId_01)."
-                    )
+            # else:  # hasattr(rawx, "group_R001") is False
+            #     if self.logger:
+            #         self.logger.warning(
+            #             f"RXM-RAWX: 'group_R001' attribute NOT found for numMeas = {rawx.numMeas}. "
+            #             "Will attempt fallback to suffixed attributes (e.g., svId_01)."
+            #         )
 
             # Fallback to suffixed attributes if group_R001 processing was not successful or not possible
             if not measurements_found_and_processed and rawx.numMeas > 0:
-                if self.logger:
-                    self.logger.info(
-                        "RXM-RAWX: Attempting to process measurements using suffixed attributes."
-                    )
+                # if self.logger:
+                #     self.logger.info(
+                #         "RXM-RAWX: Attempting to process measurements using suffixed attributes."
+                #     )
                 processed_in_fallback = 0
                 for i in range(rawx.numMeas):
                     idx_str = f"_{i+1:02d}"  # e.g., _01, _02, ...
@@ -143,12 +155,22 @@ class UBX_RAWX:
                         halfCyc_val = getattr(rawx, f"halfCyc{idx_str}")
 
                         # All essential attributes for this measurement index found, now append
-                        self.dict_obs["GNSS"].append(gnssId_val)
+                        self.dict_obs["GNSS"].append(
+                            convert_ublox_gnss_identifier(
+                                gnss_id=gnssId_val, logger=self.logger  # type: ignore
+                            )
+                        )
                         self.dict_obs["WKNR"].append(week)
                         self.dict_obs["TOW"].append(rcvTow)
                         self.dict_obs["PRN"].append(svId_val)
-                        self.dict_obs["cfreq"].append(freqId_val)
-                        self.dict_obs["sigt"].append(sigId_val)
+
+                        # get UBX sigtype value and convert to frequency and signal type
+                        freq_band, signal_code = get_ublox_signal_details(
+                            gnss_id_num=gnssId_val, sig_id=sigId_val, logger=self.logger  # type: ignore
+                        )  # sigId can be optional
+                        self.dict_obs["cfreq"].append(freq_band)
+                        self.dict_obs["sigt"].append(signal_code)
+
                         self.dict_obs["C"].append(prMes_val)
                         self.dict_obs["L"].append(cpMes_val)
                         self.dict_obs["D"].append(doMes_val)
