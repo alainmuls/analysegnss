@@ -614,5 +614,45 @@
             ],
             "stopOnEntry": false,
         },
+        {
+            "name": "ubx_parser ./data/ublox/20250426_132532.uc2",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/analysegnss/ublox/ubx_parser.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "purpose": [
+                "debug-in-terminal"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
+            "args": [
+                "--ubx_ifn",
+                "./data/ublox/20250426_132532.uc2",
+                "-vvv",
+            ],
+            "stopOnEntry": false,
+        },
+        {
+            "name": "ubx_parser ./data/ublox/EBKH00BEL_2021281063706.ubx",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/analysegnss/ublox/ubx_parser.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "purpose": [
+                "debug-in-terminal"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
+            "args": [
+                "--ubx_ifn",
+                "./data/ublox/EBKH00BEL_2021281063706.ubx",
+                "-vvv",
+            ],
+            "stopOnEntry": false,
+        },
     ]
 }
