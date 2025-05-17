@@ -59,18 +59,26 @@ class UBX_RXM_RAWX:
         Args:
             rawx (UBXMessage): RXM-RAWX parsed UBXMessage object
         """
-        # rprint(rawx.identity)
+        # Check for essential top-level attributes of the RXM-RAWX message
+        essential_attrs = ["rcvTow", "week", "numMeas", "leapS"]
+        missing_attrs = [attr for attr in essential_attrs if not hasattr(rawx, attr)]
 
-        # clear content of dictionary for storing observables
-        for k in self.dict_obs.keys():
-            self.dict_obs[k].clear()
+        if missing_attrs:
+            if self.logger:
+                self.logger.error(
+                    f"RXM-RAWX message is missing essential attribute(s): {', '.join(missing_attrs)}. Cannot process."
+                )
+            return
 
-        # decode the RXM-RAWX message common elements
         rcvTow = rawx.rcvTow
         week = rawx.week
         numMeas = rawx.numMeas
         leapS = rawx.leapS
         # rprint(f"rcvTow: {rcvTow}, week: {week}, numMeas: {numMeas}, leapS: {leapS}")
+
+        # clear content of dictionary for storing observables
+        for k in self.dict_obs.keys():
+            self.dict_obs[k].clear()
 
         # Iterate through the individual measurements.
         # pyubx2 stores these in a list of namedtuples (or similar objects)
@@ -78,6 +86,8 @@ class UBX_RXM_RAWX:
         measurements_found_and_processed = False
 
         if rawx.numMeas > 0:
+            # decode the RXM-RAWX message common elements
+
             if hasattr(rawx, "group_R001"):
                 # Preferred method: iterate through the group
                 if len(rawx.group_R001) == rawx.numMeas:
