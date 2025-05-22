@@ -14,7 +14,7 @@ from pyubx2.ubxtypes_core import UBX_CLASSES, ERR_IGNORE
 from rich import print as rprint
 from rich.status import Status
 
-from analysegnss.ublox import ubx_rxm_rawx
+from analysegnss.ublox import ubx_rxm_rawx, ubx_nav_dop
 from analysegnss.utils.utilities import str_green, str_red
 
 
@@ -31,7 +31,8 @@ class UBX:
     _console_loglevel: int = field(default=logging.ERROR)
 
     # set classes for decoding uBlox messages to None
-    ubx_rxm_rawx = None  # decoding of UBX-RXM-RAWX (0xB5 0x62)
+    ubx_rxm_rawx = None  # decoding of UBX-RXM-RAWX (0xB5 0x62 0x02 0x15)
+    ubx_nav_dop = None  # decoding of UBX-NAV-DOP (0xB5 0x62 0x01 0x04)
 
     def __post_init__(self):
         self.validate_file()
@@ -243,7 +244,8 @@ class UBX:
 
                         match parsed_msg.identity:
                             case "MGA-GPS":
-                                self._decode_mga_gps(payload=parsed_msg)
+                                # self._decode_mga_gps(payload=parsed_msg)
+                                pass
                             case "RXM-RAWX":
                                 if self.ubx_rxm_rawx == None:  # station parameters
                                     self.ubx_rxm_rawx = ubx_rxm_rawx.UBX_RXM_RAWX(
@@ -252,15 +254,13 @@ class UBX:
 
                                 self.ubx_rxm_rawx.decode_rawx(rawx=parsed_msg)
 
-                            # case "RXM-MEASX":
-                            #     if self.logger:
-                            #         self.logger.warning(
-                            #             f"Unhandled UBX message type: {parsed_msg.identity} "
-                            #             f"(0x{parsed_msg.msg_cls.hex()}, 0x{parsed_msg.msg_id.hex()})"
-                            #             f", payload={parsed_msg.length}"
-                            #         )
+                            case "NAV-DOP":
+                                if self.ubx_nav_dop == None:
+                                    self.ubx_nav_dop = ubx_nav_dop.UBX_NAV_DOP(
+                                        fn_dop="/tmp/ubx_nav_dop.csv"
+                                    )
+                                self.ubx_nav_dop.decode_dop(nav_dop=parsed_msg)
 
-                            #         pass
                             case _:
                                 # if self.logger:
                                 #     self.logger.debug(
