@@ -34,11 +34,11 @@ from analysegnss.utils.utilities import (
 
 @dataclass
 class SBF:
-    sbf_fn: "str | None" = field(default=None)
-    start_time: "datetime.time | None" = field(default=None)
-    end_time: "datetime.time | None" = field(default=None)
+    sbf_fn: str = field(default=None)
+    start_time: datetime.time = field(default=None)
+    end_time: datetime.time = field(default=None)
 
-    logger: "logging.Logger | None" = field(default=None)
+    logger: logging.Logger = field(default=None)
     _console_loglevel: int = field(default=logging.ERROR)
 
     def __post_init__(self):
@@ -48,8 +48,8 @@ class SBF:
         self.validate_logger_level()
 
     def validate_file(self):
-        if self.sbf_fn is None or not os.path.isfile(self.sbf_fn):
-            if self.logger is not None:
+        if not os.path.isfile(self.sbf_fn):
+            if self.logger:
                 self.logger.error(f"File does not exist: {self.sbf_fn}")
             raise ValueError(f"File does not exist: {self.sbf_fn}")
 
@@ -58,7 +58,7 @@ class SBF:
             first_two_bytes = f.read(2)
 
         if first_two_bytes != b"$@":
-            if self.logger is not None:
+            if self.logger:
                 self.logger.error(
                     f'Invalid file type, first two bytes must be "$@" for file: {self.sbf_fn}'
                 )
@@ -68,13 +68,13 @@ class SBF:
 			)
 		"""
 
-        if self.logger is not None:
+        if self.logger:
             self.logger.debug(f"File validated successfully: {self.sbf_fn}")
 
     def validate_start_time(self):
         if self.start_time is not None:
             if not isinstance(self.start_time, datetime.time):
-                if self.logger is not None:
+                if self.logger:
                     self.logger.error(
                         f"Invalid start_time {self.start_time}: not a valid datetime.time object."
                     )
@@ -82,18 +82,18 @@ class SBF:
                     f"Invalid start_time {self.start_time}: not a valid datetime.time object."
                 )
             else:
-                if self.logger is not None:
+                if self.logger:
                     self.logger.debug(
                         f"Start time {self.start_time} validated successfully."
                     )
         else:
-            if self.logger is not None:
+            if self.logger:
                 self.logger.debug("No start time specified.")
 
     def validate_end_time(self):
         if self.end_time is not None:
             if not isinstance(self.end_time, datetime.time):
-                if self.logger is not None:
+                if self.logger:
                     self.logger.error(
                         f"Invalid end_time {self.end_time}: not a valid datetime.time object."
                     )
@@ -101,12 +101,12 @@ class SBF:
                     f"Invalid end_time {self.end_time}: not a valid datetime.time object."
                 )
             else:
-                if self.logger is not None:
+                if self.logger:
                     self.logger.debug(
                         f"end time {self.end_time} validated successfully."
                     )
         else:
-            if self.logger is not None:
+            if self.logger:
                 self.logger.debug("No end time specified.")
 
     def validate_logger_level(self):
@@ -138,20 +138,17 @@ class SBF:
         # Getting directory of file to archive
         dir_fn = os.path.dirname(fn)
         dir_archive_ofn = os.path.join(dir_fn, dest_dir)
-        if self.logger is not None:
-            self.logger.debug(f"archive directory of file is {dir_archive_ofn}")
+        self.logger.debug(f"archive directory of file is {dir_archive_ofn}")
 
         # create directory if it does not exist
         if not os.path.exists(dir_archive_ofn):
             try:
                 os.makedirs(dir_archive_ofn, exist_ok=True)
-                if self.logger is not None:
-                    self.logger.info(f"Directory {dir_archive_ofn} created.")
+                self.logger.info(f"Directory {dir_archive_ofn} created.")
             except Exception as e:
-                if self.logger is not None:
-                    self.logger.error(
-                        f"Error creating archive directory {dir_archive_ofn}: {e}"
-                    )
+                self.logger.error(
+                    f"Error creating archive directory {dir_archive_ofn}: {e}"
+                )
 
         # extract base name
         fn_base = os.path.basename(fn)
@@ -166,14 +163,12 @@ class SBF:
         # copy file to archive directory
         try:
             shutil.copy2(fn, dest)
-            if self.logger is not None:
-                self.logger.info(f"Successfully archived file {fn} to {dest}")
+            self.logger.info(f"Successfully archived file {fn} to {dest}")
 
         except Exception as e:
-            if self.logger is not None:
-                self.logger.error(
-                    f"Error moving file {fn} to archive directory {dest}: {e}"
-                )
+            self.logger.error(
+                f"Error moving file {fn} to archive directory {dest}: {e}"
+            )
 
     def get_sbf_blocks(self) -> list:
         """
@@ -200,17 +195,15 @@ class SBF:
             try:
                 process = subprocess.run(cmd_sbfblocks)
             except Exception as e:
-                sys.stderr.write(f"Error: {e}\n")
-                if self.logger is not None:
+                sys.stderr.write(f"{process} Error: {e}\n")
+                if self.logger:
                     self.logger.error(
                         f"\t... subprocess {str_yellow(' '.join(cmd_sbfblocks))} return exit code"
-                        f"\t... {str_red(str(e))}. Program exits."
+                        f"\t... {str_red(e)}. Program exits."
                     )
                 sys.exit(ERROR_CODES["E_PROCESS"])
 
         # read the output of sbfblocks
-        if self.sbf_fn is None:
-            raise ValueError("sbf_fn is None. Cannot construct blocks filename.")
         sbfblocks_ifn = self.sbf_fn + ".blocks.txt"
         with open(sbfblocks_ifn, "r") as f:
             lines = f.readlines()
@@ -244,7 +237,7 @@ class SBF:
         """
         # sbf to CSV conversion utility
         run_bin2asc = locate("bin2asc")
-        if self.logger is not None and self.sbf_fn is not None:
+        if self.logger:
             self.logger.info(
                 f"{str_yellow(run_bin2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files\n"
                 f"Importing into dataframes for SBF blocks: {str_yellow(' '.join(lst_sbfblocks))}"
@@ -287,7 +280,7 @@ class SBF:
         #     cmd_bin2asc.append("-v")
 
         # Convert binary to text messages
-        if self.logger is not None:
+        if self.logger:
             self.logger.debug(f"... running: {str_yellow(' '.join(cmd_bin2asc))}")
 
         with rich_console.status(
@@ -297,11 +290,11 @@ class SBF:
             try:
                 process = subprocess.run(cmd_bin2asc)
             except Exception as e:
-                sys.stderr.write(f"Error: {e}\n")
-                if self.logger is not None:
+                sys.stderr.write(f"{process} Error: {e}\n")
+                if self.logger:
                     self.logger.error(
                         f"\t... subprocess {str_yellow(' '.join(cmd_bin2asc))} return exit code"
-                        f"\t... {str_red(str(e))}. Program exits."
+                        f"\t... {str_red(e)}. Program exits."
                     )
                 sys.exit(ERROR_CODES["E_PROCESS"])
 
@@ -314,7 +307,7 @@ class SBF:
                         rf"{self.sbf_fn}_SBF_{sbf_block}.txt"
                     )[0]
                 except Exception as e:
-                    if self.logger is not None:
+                    if self.logger:
                         self.logger.error(
                             f"Error finding created file for {sbf_block} sbf block: {e}"
                         )
@@ -324,12 +317,12 @@ class SBF:
                         rf"{self.sbf_fn}_measurements.txt"
                     )[0]
                 except Exception as e:
-                    if self.logger is not None:
+                    if self.logger:
                         self.logger.error(
                             f"Error finding created file for {sbf_block} sbf block: {e}"
                         )
 
-        if self.logger is not None:
+        if self.logger:
             self.logger.debug(f"bin2asc_fns: {bin2asc_fns}")
 
         # create dictionary for containing the obtained dataframes
@@ -339,13 +332,13 @@ class SBF:
         for sbf_block, bin2asc_fn in bin2asc_fns.items():
             # check if bin2asc_fn of sbf block is empty
             if len(bin2asc_fn) == 0:
-                if self.logger is not None and self.sbf_fn is not None:
+                if self.logger:
                     self.logger.warning(
-                        f"\t... no file for {str_yellow(sbf_block)} sbf block found. "
+                        f"\t... no file for {str_yellow({sbf_block})} sbf block found. "
                         f"Continuing to next sbf block."
                     )
             else:
-                if self.logger is not None:
+                if self.logger:
                     self.logger.debug(
                         f"\t... converting {str_yellow(bin2asc_fn)} to dataframe"
                     )
@@ -381,7 +374,7 @@ class SBF:
                     keep_cols.pop(col, None)  # Remove safely
 
                 sbf_dfs[sbf_block] = sbf_df  # .collect()
-                if self.logger is not None:
+                if self.logger:
                     self.logger.debug(
                         print_df_in_chunks(
                             title=f"sbf_dfs[{sbf_block}]", df=sbf_dfs[sbf_block]
@@ -392,10 +385,9 @@ class SBF:
                     self.archive_file(fn=bin2asc_fn, dest_dir=archive)
 
         if sbf_dfs == {}:
-            if self.logger is not None:
+            if self.logger:
                 self.logger.error(
-                    f"\t... Unable to create dataframes for the provided SBF blocks "
-                    f"{str_yellow(', '.join(lst_sbfblocks))} found. Exiting."
+                    f"\t... Unable to create dataframes for the provided SBF blocks {str_yellow(lst_sbfblocks)} found. Exiting."
                 )
             sys.exit(ERROR_CODES["E_PROCESS"])
 
@@ -420,13 +412,12 @@ class SBF:
         # sbf to CSV conversion utility
         run_sbf2asc = locate("sbf2asc")
         if run_sbf2asc is None:
-            if self.logger is not None:
-                self.logger.error(
-                    f"sbf2asc not found in PATH. Please install sbf2asc. Program exits."
-                )
+            self.logger.error(
+                f"sbf2asc not found in PATH. Please install sbf2asc. Program exits."
+            )
             sys.exit(ERROR_CODES["E_PROCESS"])
 
-        if self.logger is not None and self.sbf_fn is not None:
+        if self.logger:
             self.logger.info(
                 f"{str_yellow(run_sbf2asc)} conversion of SBF file {str_yellow(self.sbf_fn)} to CSV files "
                 f"and importing into dataframes for SBF blocks\n{str_yellow(' '.join(lst_sbfblocks))}"
@@ -448,27 +439,23 @@ class SBF:
             sbf2asc_block = self.sbf2asc_convert_sbfblock(sbf_block=sbf_block)
             cmd_sbf2asc.append(sbf2asc_block)
 
-            # # add logging level to cmd_sbf2asc when self._console_loglevel is DEBUG
-            # if self._console_loglevel == logging.DEBUG:
-            #     if self.logger is not None:
-            #         self.logger.debug(
-            #             f"Adding verbose flag to cmd_sbf2asc for sbf2asc block {', '.join(sbf_block)}"
-            #         )
-            #     cmd_sbf2asc.append("-v")
+        # add logging level to cmd_sbf2asc when self._console_loglevel is DEBUG
+        if self._console_loglevel == logging.DEBUG:
+            self.logger.debug("Adding verbose flag to cmd_sbf2asc")
+            cmd_sbf2asc.append("-v")
 
         # Convert binary to text messages
-        if self.logger is not None:
+        if self.logger:
             self.logger.debug(f"... running: {str_yellow(' '.join(cmd_sbf2asc))}")
 
         try:
             process = subprocess.run(cmd_sbf2asc)
         except Exception as e:
-            sys.stderr.write(f"Error: {e}\n")
-            if self.logger is not None:
-                self.logger.error(
-                    f"\t... subprocess {str_yellow(' '.join(cmd_sbf2asc))} return exit code"
-                    f"\t... {str_red(str(e))}. Program exits."
-                )
+            sys.stderr.write(f"{process} Error: {e}\n")
+            self.logger.error(
+                f"\t... subprocess {str_yellow(' '.join(cmd_sbf2asc))} return exit code"
+                f"\t... {str_red(e)}. Program exits."
+            )
             sys.exit(ERROR_CODES["E_PROCESS"])
 
         # find created files
@@ -478,12 +465,12 @@ class SBF:
                 sbf2asc_fns[sbf_block] = glob.glob(
                     rf"{self.sbf_fn}_sbf2asc_{sbf_block}.txt"
                 )
-                if self.logger is not None:
+                if self.logger:
                     self.logger.debug(
                         f"Found created file {sbf2asc_fns[sbf_block]} for {sbf_block} sbf block"
                     )
             except Exception as e:
-                if self.logger is not None:
+                if self.logger:
                     self.logger.error(
                         f"Error finding created file for {sbf_block} sbf block: {e}"
                     )
@@ -495,13 +482,12 @@ class SBF:
         for sbf_block, sbf2asc_fn in sbf2asc_fns.items():
             # check if bin2asc_fn of sbf block is empty
             if len(sbf2asc_fn) == 0:
-                if self.logger is not None:
+                if self.logger:
                     self.logger.warning(
-                        f"\t... no file for {str_yellow(sbf_block)} sbf block found. "
-                        f"Continuing to next sbf block."
+                        f"\t... no file for {str_yellow({sbf_block})} sbf block found. Continuing to next sbf block."
                     )
             else:
-                if self.logger is not None:
+                if self.logger:
                     self.logger.debug(
                         f"\t... converting {str_yellow(sbf2asc_fn[0])} to dataframe"
                     )
@@ -524,10 +510,10 @@ class SBF:
             with open(sbf2asc_fn[0], "w") as fd:
                 fd.write(content)
             if os.path.exists(sbf2asc_fn[0]):
-                if self.logger is not None:
+                if self.logger:
                     self.logger.debug(f"File {sbf2asc_fn[0]} created")
             else:
-                if self.logger is not None:
+                if self.logger:
                     self.logger.error(f"File {sbf2asc_fn[0]} not created")
                     print(f"File {sbf2asc_fn[0]} not created")
 
@@ -542,10 +528,10 @@ class SBF:
                     new_columns=self.sbf2asc_sbfblock_colnames(sbf_block=sbf_block),
                 )
             except pl.exceptions.NoDataError as e:
-                if self.logger is not None:
+                if self.logger:
                     self.logger.error(f"Empty file {sbf2asc_fn[0]}: {e}")
             except Exception as e:
-                if self.logger is not None:
+                if self.logger:
                     self.logger.error(f"Error reading file {sbf2asc_fn[0]}: {e}")
 
             # Drop columns with only zeroes
@@ -558,7 +544,7 @@ class SBF:
 
             sbf_dfs[sbf_block] = sbf_df
 
-            if self.logger is not None:
+            if self.logger:
                 self.logger.info(f"successfully created  dataframe for {sbf_block}")
                 self.logger.info(sbf_dfs[sbf_block])
                 if not archive == None:
@@ -566,16 +552,15 @@ class SBF:
                     self.archive_file(fn=sbf2asc_fn[0], dest_dir=archive)
 
         if sbf_dfs == {}:
-            if self.logger is not None:
+            if self.logger:
                 self.logger.error(
-                    f"\t... Unable to create dataframes for the provided SBF blocks "
-                    f"{str_yellow(', '.join(lst_sbfblocks))} found. Exiting."
+                    f"\t... Unable to create dataframes for the provided SBF blocks {str_yellow(lst_sbfblocks)} found. Exiting."
                 )
             sys.exit(ERROR_CODES["E_PROCESS"])
 
         return sbf_dfs
 
-    def add_columns(self, block_df: pl.LazyFrame) -> tuple[pl.DataFrame, dict, list]:
+    def add_columns(self, block_df: pl.DataFrame) -> tuple[pl.DataFrame, dict, list]:
         """checks if we can create a datetime,PRN, UTM columns in the dataframe
 
         Args:
@@ -604,13 +589,13 @@ class SBF:
                 )
                 .alias("pnt_qual")
             ).lazy()
-            if self.logger is not None:
+            if self.logger:
                 self.logger.debug(f"\tcreated new column 'pnt_qual' from 'Type'")
             added_cols["pnt_qual"] = pl.Utf8  # print(f"block_df = \n{block_df}")
 
         # add date-time and PRN (as str) to the dataframe
         if "WNc [w]" in column_infos.keys() and "TOW [0.001 s]" in column_infos.keys():
-            if self.logger is not None:
+            if self.logger:
                 self.logger.debug("\tadding datetime column to the dataframe")
             block_df = block_df.with_columns(
                 pl.struct(["WNc [w]", "TOW [0.001 s]"])
@@ -631,7 +616,7 @@ class SBF:
             pl.Int64,
             pl.Float64,
         ]:
-            if self.logger is not None:
+            if self.logger:
                 self.logger.debug("\tconverting PRN to string")
             block_df = block_df.with_columns(
                 pl.col("PRN").map_elements(
@@ -642,7 +627,7 @@ class SBF:
 
         # convert SVID to PRN (as str) to the dataframe
         if "SVID" in column_infos.keys():
-            if self.logger is not None:
+            if self.logger:
                 self.logger.debug("\tadding PRN column to the dataframe")
             block_df = block_df.with_columns(
                 pl.struct(["SVID"])
@@ -661,7 +646,7 @@ class SBF:
             "Latitude [rad]" in column_infos.keys()
             and "Longitude [rad]" in column_infos.keys()
         ):
-            if self.logger is not None:
+            if self.logger:
                 self.logger.debug("\tadding UTM coordinates to the dataframe")
 
             # Function to convert lat/lon in degrees to UTM
@@ -753,7 +738,7 @@ class SBF:
             ).lazy()
 
             if "Height [m]" in column_infos.keys():
-                if self.logger is not None:
+                if self.logger:
                     self.logger.debug("\tadding orthometric height to the dataframe")
                 block_df = block_df.with_columns(
                     pl.struct(["Height [m]", "undulation [m]"])
@@ -768,26 +753,21 @@ class SBF:
         # the collect() will throw an error.
         with rich_console.status("Collecting dataframe", spinner="aesthetic"):
             if getattr(block_df, "collect", None) is not None:
-                collected_df = block_df.collect()
-            else:
-                collected_df = block_df
+                block_df = block_df.collect()
 
-        # Ensure the returned value is always a pl.DataFrame
-        if isinstance(collected_df, pl.LazyFrame):
-            collected_df = collected_df.collect()
-        return collected_df, added_cols, removed_cols
+        return block_df, added_cols, removed_cols
 
-    def used_columns(self, sbf_block: str) -> dict:
+    def used_columns(self, sbf_block: str) -> list:
         """returns the column names and dtype we use when extracting a SBF block from the SBF file
 
         Args:
             sbf_block (str): the SBF block we are extracting
 
         Returns:
-            dict: column names we use with dtype
+            list: column names we use with dtype
         """
         if sbf_block not in SBF_BLOCK_COLUMNS_BIN2ASC.keys():
-            if self.logger is not None:
+            if self.logger:
                 self.logger.error(f"Unknown SBF block type: {sbf_block}")
             return {}
 
@@ -859,16 +839,11 @@ class SBF:
 
         try:
             sbf_block_sbf2asc = lookup_sbf_block[sbf_block]
-            if self.logger is not None:
-                # self.logger.info(f"Returning sbf block {sbf_block} corresponding arguments {sbf_block_sbf2asc} for sbf2asc")
-                self.logger.debug(
-                    f"Returning sbf block {sbf_block} corresponding arguments {sbf_block_sbf2asc} for sbf2asc"
-                )
+            self.logger.info(
+                f"Returning sbf block {sbf_block} corresponding arguments {sbf_block_sbf2asc} for sbf2asc"
+            )
         except KeyError as e:
-            if self.logger is not None:
-                self.logger.error(
-                    f"Could not find sbf block {sbf_block} in lookup table"
-                )
+            self.logger.error(f"Could not find sbf block {sbf_block} in lookup table")
             sys.exit(ERROR_CODES["E_NO_SBF_BLOCK"])
 
         return sbf_block_sbf2asc
@@ -889,19 +864,18 @@ class SBF:
         rprint(
             "sbf2asc is chosen as sbf converter. Looking up corresponding column names for each sbf block"
         )
-        if self.logger is not None:
-            self.logger.info(
-                "sbf2asc is chosen as sbf converter. Looking up corresponding column names for each sbf block"
-            )
+        self.logger.info(
+            "sbf2asc is chosen as sbf converter. Looking up corresponding column names for each sbf block"
+        )
 
         try:
             sbf_block_colnames = SBF_BLOCK_COLUMNS_SBF2ASC[sbf_block]
-            if self.logger is not None:
+            if self.logger:
                 self.logger.info(
                     f"Returning sbf block {sbf_block} corresponding column names {sbf_block_colnames} for sbf2asc"
                 )
         except KeyError as e:
-            if self.logger is not None:
+            if self.logger:
                 self.logger.error(
                     f"Could not find sbf block {sbf_block} in lookup table"
                 )
