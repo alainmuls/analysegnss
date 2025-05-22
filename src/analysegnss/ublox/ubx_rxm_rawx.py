@@ -12,12 +12,17 @@ from analysegnss.ublox.ubx_definitions import (
 
 
 class UBX_RXM_RAWX:
-    """manages the decoding of uBlox RXM-RAWX (0xB5 0x62) messages
+    """Class to manage the decoding of uBlox RXM-RAWX (0xB5 0x62) messages
     and writing of the data to a CSV file
     """
 
     def __init__(self, fn_rawx: str = "/tmp/ubx_rxm_rawx.csv") -> None:
-        """initializes instance of UBX_RXM_RAWX"""
+        """
+        Initialize instance of UBX_RXM_RAWX
+
+        Args:
+            fn_rawx (str): Path to the CSV file where RXM-RAWX data will be written.
+        """
 
         # # init the global variables
         # config.initialize()
@@ -56,6 +61,7 @@ class UBX_RXM_RAWX:
 
     def decode_rawx(self, rawx: UBXMessage) -> None:
         """decodes the RXM-RAWX message and writes the data to the csv file
+
         Args:
             rawx (UBXMessage): RXM-RAWX parsed UBXMessage object
         """
