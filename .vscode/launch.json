@@ -654,5 +654,45 @@
             ],
             "stopOnEntry": false,
         },
+        {
+            "name": "ubx_parser ./data/ublox/raw_logs_static_2pct.ubx",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/analysegnss/ublox/ubx_parser.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "purpose": [
+                "debug-in-terminal"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
+            "args": [
+                "--ubx_ifn",
+                "./data/ublox/raw_logs_static_2pct.ubx",
+                "-vvv",
+            ],
+            "stopOnEntry": false,
+        },
+        {
+            "name": "ubx_parser ./data/ublox/raw_logs_dynamic_15pct.ubx",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/analysegnss/ublox/ubx_parser.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "purpose": [
+                "debug-in-terminal"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
+            "args": [
+                "--ubx_ifn",
+                "./data/ublox/raw_logs_dynamic_15pct.ubx",
+                "-vvv",
+            ],
+            "stopOnEntry": false,
+        },
     ]
 }
