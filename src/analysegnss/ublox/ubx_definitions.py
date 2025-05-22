@@ -1,4 +1,5 @@
 from logging import Logger
+from typing import Optional
 
 # uBlox GNSS Identifiers mapping to standard single letters
 UBLOX_GNSS_IDENTIFIER = {
@@ -12,7 +13,7 @@ UBLOX_GNSS_IDENTIFIER = {
 }
 
 
-def convert_ublox_gnss_identifier(gnss_id: int, logger: Logger = None) -> str:
+def convert_ublox_gnss_identifier(gnss_id: int, logger: Optional[Logger] = None) -> str:
     """Converts uBlox GNSS ID (numeric) to its standard single-letter identifier."""
     letter = UBLOX_GNSS_IDENTIFIER.get(gnss_id, "U")  # Default to 'U' for Unknown
     if letter == "U" and gnss_id not in UBLOX_GNSS_IDENTIFIER:
@@ -23,7 +24,7 @@ def convert_ublox_gnss_identifier(gnss_id: int, logger: Logger = None) -> str:
 
 
 # Mapping for uBlox (gnssId, sigId) to frequency band and signal code
-# Based on u-blox M8 Receiver Description, RXM-RAWX sigId table and general uBlox signal identifiers
+# Based on uBlox M8 Receiver Description, RXM-RAWX sigId table and general uBlox signal identifiers
 UBLOX_SIGNAL_DETAILS = {
     # GPS (gnssId: 0)
     0: {
@@ -76,7 +77,7 @@ UBLOX_SIGNAL_DETAILS = {
 
 
 def get_ublox_signal_details(
-    gnss_id_num: int, sig_id: int | None, logger: Logger = None
+    gnss_id_num: int, sig_id: int | None, logger: Optional[Logger] = None
 ) -> tuple[str, str]:
     """
     Derives frequency band and signal code from uBlox gnssId (numeric) and sigId.

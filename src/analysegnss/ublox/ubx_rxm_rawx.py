@@ -4,7 +4,7 @@ import logging
 from pyubx2.ubxmessage import UBXMessage  # Import UBXMessage for type hinting
 from rich import print as rprint
 
-from analysegnss.utils.utilities import str_yellow
+from analysegnss.utils.utilities import str_yellow, str_red
 from analysegnss.ublox.ubx_definitions import (
     convert_ublox_gnss_identifier,
     get_ublox_signal_details,
@@ -59,21 +59,21 @@ class UBX_RXM_RAWX:
         Args:
             rawx (UBXMessage): RXM-RAWX parsed UBXMessage object
         """
-        # Check for essential top-level attributes of the RXM-RAWX message
         essential_attrs = ["rcvTow", "week", "numMeas", "leapS"]
         missing_attrs = [attr for attr in essential_attrs if not hasattr(rawx, attr)]
 
         if missing_attrs:
             if self.logger:
                 self.logger.error(
-                    f"RXM-RAWX message is missing essential attribute(s): {', '.join(missing_attrs)}. Cannot process."
+                    f"RXM-RAWX message is missing essential attribute(s): "
+                    f"{str_red(', '.join(missing_attrs))}. Cannot process."
                 )
             return
 
-        rcvTow = rawx.rcvTow
-        week = rawx.week
-        numMeas = rawx.numMeas
-        leapS = rawx.leapS
+        rcvTow = getattr(rawx, "rcvTow", None)
+        week = getattr(rawx, "week", None)
+        numMeas = getattr(rawx, "numMeas", None)
+        leapS = getattr(rawx, "leapS", None)
         # rprint(f"rcvTow: {rcvTow}, week: {week}, numMeas: {numMeas}, leapS: {leapS}")
 
         # clear content of dictionary for storing observables
@@ -85,17 +85,20 @@ class UBX_RXM_RAWX:
         # in an attribute named after the group definition, which is 'group_R001' for RXM-RAWX.
         measurements_found_and_processed = False
 
-        if rawx.numMeas > 0:
+        if numMeas is not None and numMeas > 0:
             # decode the RXM-RAWX message common elements
 
-            if hasattr(rawx, "group_R001"):
-                # Preferred method: iterate through the group
-                if len(rawx.group_R001) == rawx.numMeas:
+            if (
+                hasattr(rawx, "group_R001")
+                and getattr(rawx, "group_R001", None) is not None
+            ):
+                group = getattr(rawx, "group_R001")
+                if isinstance(group, (list, tuple)) and len(group) == numMeas:
                     if self.logger:
                         self.logger.debug(
-                            f"RXM-RAWX: Processing {rawx.numMeas} measurements via group_R001."
+                            f"RXM-RAWX: Processing {numMeas} measurements via group_R001."
                         )
-                    for meas_data in rawx.group_R001:
+                    for meas_data in group:
                         # meas_data is an object/namedtuple with attributes like:
                         # prMes, cpMes, doMes, gnssId, svId, sigId, freqId, locktime, cno, trkStat
                         self.dict_obs["GNSS"].append(
@@ -130,8 +133,8 @@ class UBX_RXM_RAWX:
                 else:  # group_R001 exists, but length mismatch
                     if self.logger:
                         self.logger.warning(
-                            f"RXM-RAWX: 'group_R001' found, but its length ({len(rawx.group_R001)}) "
-                            f"does not match numMeas ({rawx.numMeas}). Will attempt fallback."
+                            f"RXM-RAWX: 'group_R001' found, but its length ({len(group) if isinstance(group, (list, tuple)) else 'N/A'}) "
+                            f"does not match numMeas ({numMeas}). Will attempt fallback."
                         )
             # else:  # hasattr(rawx, "group_R001") is False
             #     if self.logger:
@@ -141,13 +144,17 @@ class UBX_RXM_RAWX:
             #         )
 
             # Fallback to suffixed attributes if group_R001 processing was not successful or not possible
-            if not measurements_found_and_processed and rawx.numMeas > 0:
+            if (
+                not measurements_found_and_processed
+                and numMeas is not None
+                and numMeas > 0
+            ):
                 # if self.logger:
                 #     self.logger.info(
                 #         "RXM-RAWX: Attempting to process measurements using suffixed attributes."
                 #     )
                 processed_in_fallback = 0
-                for i in range(rawx.numMeas):
+                for i in range(numMeas):
                     idx_str = f"_{i+1:02d}"  # e.g., _01, _02, ...
                     try:
                         # Attempt to get all attributes for this measurement index
@@ -206,17 +213,17 @@ class UBX_RXM_RAWX:
                     self.logger
                 ):  # Fallback attempted but processed nothing, though numMeas > 0
                     self.logger.warning(
-                        f"RXM-RAWX: Fallback to suffixed attributes for {rawx.numMeas} measurements "
+                        f"RXM-RAWX: Fallback to suffixed attributes for {numMeas} measurements "
                         "did not yield any complete measurements."
                     )
 
-        if not measurements_found_and_processed and rawx.numMeas > 0:
+        if not measurements_found_and_processed and numMeas is not None and numMeas > 0:
             if self.logger:
                 self.logger.error(
-                    f"RXM-RAWX: Failed to process any of the {rawx.numMeas} measurements for TOW {rcvTow}. "
+                    f"RXM-RAWX: Failed to process any of the {numMeas} measurements for TOW {rcvTow}. "
                     "Check message integrity and pyubx2 compatibility."
                 )
-        elif rawx.numMeas == 0 and self.logger:  # This is a normal case
+        elif numMeas == 0 and self.logger:  # This is a normal case
             self.logger.debug(
                 f"RXM-RAWX: numMeas is 0 for TOW {rcvTow}, no measurements to process."
             )

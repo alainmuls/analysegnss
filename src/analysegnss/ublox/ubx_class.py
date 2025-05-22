@@ -18,13 +18,16 @@ from analysegnss.ublox import ubx_rxm_rawx
 from analysegnss.utils.utilities import str_green, str_red
 
 
+from typing import Optional
+
+
 @dataclass
 class UBX:
-    ubx_fn: str = field(default=None)
-    start_time: datetime.time = field(default=None)
-    end_time: datetime.time = field(default=None)
+    ubx_fn: Optional[str] = field(default=None)
+    start_time: Optional[datetime.time] = field(default=None)
+    end_time: Optional[datetime.time] = field(default=None)
 
-    logger: logging.Logger = field(default=None)
+    logger: Optional[logging.Logger] = field(default=None)
     _console_loglevel: int = field(default=logging.ERROR)
 
     # set classes for decoding uBlox messages to None
@@ -240,7 +243,7 @@ class UBX:
 
                         match parsed_msg.identity:
                             case "MGA-GPS":
-                                self._decode_mga_gps(parsed_msg)
+                                self._decode_mga_gps(payload=parsed_msg)
                             case "RXM-RAWX":
                                 if self.ubx_rxm_rawx == None:  # station parameters
                                     self.ubx_rxm_rawx = ubx_rxm_rawx.UBX_RXM_RAWX(
@@ -276,7 +279,7 @@ class UBX:
 
                     elif isinstance(parsed_msg, RTCMMessage):
                         rich_status.update(
-                            f"\RTCM message: [green]{parsed_msg.identity}[/green]"
+                            f"RTCM message: [green]{parsed_msg.identity}[/green]"
                         )
                         rtcm_msg = parsed_msg.identity
                         if rtcm_msg not in rtcm_msgs:
@@ -309,7 +312,11 @@ class UBX:
         if self.logger:
             self.logger.info(
                 str_green(
-                    f"Finished parsing UBX stream. Processed {processed_messages_count} "
-                    f"targeted messages."
+                    f"Finished parsing UBX stream from {self.ubx_fn}. "
+                    f"Processed {processed_messages_count} targeted messages."
                 )
             )
+        rprint(
+            f"Finished parsing UBX stream from [green]{self.ubx_fn}[/green]. "
+            f"Processed [green]{processed_messages_count}[/green] targeted messages."
+        )

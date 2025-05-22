@@ -3,6 +3,7 @@ import logging as logging
 from logging.handlers import TimedRotatingFileHandler
 import os
 from sys import stderr
+from argparse import Namespace
 
 # Third-party imports
 from rich import print as rprint
@@ -35,7 +36,7 @@ class ColorFormatter(logging.Formatter):
 
 
 def logger_setup(
-    args: list, base_name: str = "logger", log_dest: str = "/tmp/logs/"
+    args: Namespace, base_name: str = "logger", log_dest: str = "/tmp/logs/"
 ) -> logging.Logger:
     """creates console/time rotating file logger.
     Default logging levels are:
@@ -96,7 +97,7 @@ def logger_setup(
 
 
 def set_log_level_from_verbose(
-    logger: logging.Logger, console_handler: logging.StreamHandler, args: list
+    logger: logging.Logger, console_handler: logging.StreamHandler, args: Namespace
 ):
     """defines logging level for the console
 
