@@ -27,13 +27,15 @@ from analysegnss.utils.argument_parser import (
 )
 
 
-def sbf_reader(parsed_args: argparse.Namespace, logger: Logger) -> dict:
+def sbf_reader(
+    parsed_args: argparse.Namespace, logger: Logger
+) -> tuple[pl.DataFrame, list]:
     """
     Convert PVT Geodetic2 SBF block to dataframe and analyse quality of data
     Args:
         argv (list): list of arguments
     Returns:
-        dict: dict with dataframe for each selected SBF block
+        tuple: (dataframe for selected SBF block, quality analysis result)
     """
     # Ensure compatibility when passing on parsed_args from a higher level script.
     parsed_args = auto_populate_args_namespace(
@@ -135,7 +137,7 @@ def sbf_reader(parsed_args: argparse.Namespace, logger: Logger) -> dict:
         if df_xyzcov is not None:
             logger.info(f"df_xyzcov from sbf2asc PosCovCartesian: \n{df_xyzcov}")
 
-        return df_pvt, None
+        return df_pvt, []
 
 
 def main():
@@ -147,7 +149,7 @@ def main():
     )
 
     # create the file/console logger
-    logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
+    logger = init_logger.logger_setup(args=sys.argv[1:], base_name=script_name)
     logger.debug(f"Parsed arguments: {args_parsed}")
 
     df_pnt, qual_analysis = sbf_reader(parsed_args=args_parsed, logger=logger)
