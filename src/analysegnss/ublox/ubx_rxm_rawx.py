@@ -29,7 +29,9 @@ class UBX_RXM_RAWX:
         self.logger = logging.getLogger("ubx_parser")
 
         # write the header line to the UBX_RXM_RAWX csv file
-        self.fd_rawx = open(fn_rawx, "w")
+        self.fn_rawx = fn_rawx
+
+        self.fd_rawx = open(self.fn_rawx, "w")
         self.writer = csv.writer(self.fd_rawx, delimiter=",")
 
         # store the observables according to this dictionary
@@ -238,3 +240,13 @@ class UBX_RXM_RAWX:
         rows_to_write = zip(*self.dict_obs.values())
         self.writer.writerows(rows_to_write)
         self.fd_rawx.flush()
+
+    def close(self) -> None:
+        """Closes the CSV file."""
+        if self.fd_rawx and not self.fd_rawx.closed:
+            self.fd_rawx.close()
+            self.logger.info(f"UBX_RXM_RAWX CSV file '{self.fn_rawx}' closed.")
+
+    def __del__(self) -> None:
+        """Ensures the file is closed when the object is garbage collected."""
+        self.close()
