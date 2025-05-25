@@ -223,6 +223,7 @@ class UBX:
         ubx_msgs = []
         nmea_msgs = []
         rtcm_msgs = []
+
         with open(self.ubx_fn, "rb") as f_ubx:
             error_mode = ERR_IGNORE
             ubr = UBXReader(f_ubx, quitonerror=error_mode)
@@ -260,6 +261,15 @@ class UBX:
                                         fn_dop="/tmp/ubx_nav_dop.csv"
                                     )
                                 self.ubx_nav_dop.decode_dop(nav_dop=parsed_msg)
+
+                            case "MGA_GPS_EPH":
+                                # Placeholder for MGA-GPS-Ephemeris message handling
+                                if self.logger:
+                                    self.logger.info(
+                                        "MGA-GPS-EPH message received, but no specific handling implemented."
+                                    )
+
+                                pass
 
                             case _:
                                 # if self.logger:
