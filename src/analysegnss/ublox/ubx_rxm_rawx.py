@@ -30,7 +30,6 @@ class UBX_RXM_RAWX:
 
         # write the header line to the UBX_RXM_RAWX csv file
         self.fn_rawx = fn_rawx
-
         self.fd_rawx = open(self.fn_rawx, "w")
         self.writer = csv.writer(self.fd_rawx, delimiter=",")
 
@@ -248,5 +247,13 @@ class UBX_RXM_RAWX:
             self.logger.info(f"UBX_RXM_RAWX CSV file '{self.fn_rawx}' closed.")
 
     def __del__(self) -> None:
-        """Ensures the file is closed when the object is garbage collected."""
-        self.close()
+        """Ensures the file is closed when the object is garbage collected.
+        Avoids logging as the logging module may not be available during
+        interpreter shutdown.
+        """
+        try:
+            if hasattr(self, "fd_rawx") and self.fd_rawx and not self.fd_rawx.closed:
+                self.fd_rawx.close()
+        except Exception:
+            # It's generally good practice to suppress exceptions in __del__
+            pass

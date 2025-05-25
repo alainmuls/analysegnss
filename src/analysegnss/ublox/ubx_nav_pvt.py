@@ -4,17 +4,16 @@ from pyubx2.ubxmessage import UBXMessage  # For type hinting
 
 # Assuming str_yellow is available in your project utils
 # If not, you can remove its usage or define a simple version
-try:
-    from analysegnss.utils.utilities import str_yellow
-except ImportError:
-
-    def str_yellow(s):
-        return str(s)  # Fallback if str_yellow is not found
+from analysegnss.utils.utilities import str_yellow
+from analysegnss.ublox.ubx_definitions import (
+    convert_ublox_gnss_identifier,
+    get_ublox_signal_details,
+)
 
 
 class UBX_NAV_PVT:
     """
-    Manages the decoding of u-blox UBX-NAV-PVT messages
+    Manages the decoding of uBlox UBX-NAV-PVT messages (0xB5 0x62 0x01 0x07)
     and writing of the data to a CSV file.
     """
 
@@ -25,10 +24,7 @@ class UBX_NAV_PVT:
         Args:
             fn_nav_pvt (str): The path to the CSV file where NAV-PVT data will be stored.
         """
-        self.logger = logging.getLogger(
-            __name__
-        )  # Uses the module's name for the logger
-        self.fn_nav_pvt = fn_nav_pvt
+        self.logger = logging.getLogger("ubx_parser")
 
         # These are the fields we'll extract from NAV-PVT and write to CSV
         # They correspond to attributes of the pyubx2 parsed NAV-PVT message
@@ -68,7 +64,8 @@ class UBX_NAV_PVT:
             "magAcc",
         ]
 
-        self.fd_pvt = open(self.fn_nav_pvt, "w", newline="")
+        self.fn_nav_pvt = fn_nav_pvt
+        self.fd_pvt = open(self.fn_nav_pvt, "w")
         self.writer = csv.writer(self.fd_pvt, delimiter=",")
         self.init_csv_header()
 
@@ -106,4 +103,9 @@ class UBX_NAV_PVT:
 
     def __del__(self) -> None:
         """Ensures the file is closed when the object is garbage collected."""
-        self.close()
+        try:
+            if hasattr(self, "fd_pvt") and self.fd_pvt and not self.fd_pvt.closed:
+                self.fd_pvt.close()
+        except Exception:
+            # It's generally good practice to suppress exceptions in __del__
+            pass
