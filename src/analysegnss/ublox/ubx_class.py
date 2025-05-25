@@ -14,7 +14,13 @@ from pyubx2.ubxtypes_core import UBX_CLASSES, ERR_IGNORE
 from rich import print as rprint
 from rich.status import Status
 
-from analysegnss.ublox import ubx_rxm_rawx, ubx_nav_dop
+from analysegnss.ublox import (
+    ubx_rxm_rawx,
+    ubx_nav_dop,
+    ubx_mga_gps_nav,
+    ubx_nav_posllh,
+    ubx_nav_pvt,
+)
 from analysegnss.utils.utilities import str_green, str_red
 
 
@@ -33,6 +39,9 @@ class UBX:
     # set classes for decoding uBlox messages to None
     ubx_rxm_rawx = None  # decoding of UBX-RXM-RAWX (0xB5 0x62 0x02 0x15)
     ubx_nav_dop = None  # decoding of UBX-NAV-DOP (0xB5 0x62 0x01 0x04)
+    ubx_mga_gps_nav = None  # decoding of UBX-MGA-GPS (0xB5 0x62 0x13 0x00)
+    ubx_nav_posllh = None  # decoding of UBX-NAV-POSLLH (0xB5 0x62 0x01 0x02)
+    ubx_nav_pvt = None  # decoding of UBX-NAV-PVT (0xB5 0x62 0x01 0x07)
 
     def __post_init__(self):
         self.validate_file()
@@ -265,11 +274,27 @@ class UBX:
                             case "MGA_GPS_EPH":
                                 # Placeholder for MGA-GPS-Ephemeris message handling
                                 if self.logger:
-                                    self.logger.info(
-                                        "MGA-GPS-EPH message received, but no specific handling implemented."
+                                    self.ubx_mga_gps_nav = (
+                                        ubx_mga_gps_nav.UBX_MGA_GPS_EPH(
+                                            fn_eph="/tmp/ubx_mga_gps_eph.csv"
+                                        )
                                     )
-
+                                # self.ubx_mga_gps_nav.decode_eph(mga_gps_eph=parsed_msg)
                                 pass
+
+                            case "NAV-POSLLH":
+                                if self.ubx_nav_posllh is None:
+                                    self.ubx_nav_posllh = ubx_nav_posllh.UBX_NAV_POSLLH(
+                                        fn_posllh="/tmp/ubx_nav_posllh.csv"
+                                    )
+                                self.ubx_nav_posllh.decode_posllh(nav_posllh=parsed_msg)
+
+                            case "NAV-PVT":
+                                if self.ubx_nav_pvt is None:
+                                    self.ubx_nav_pvt = ubx_nav_pvt.UBX_NAV_PVT(
+                                        fn_nav_pvt="/tmp/ubx_nav_pvt.csv"
+                                    )
+                                self.ubx_nav_pvt.decode_pvt(pvt_msg=parsed_msg)
 
                             case _:
                                 # if self.logger:
