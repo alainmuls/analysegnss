@@ -27,7 +27,7 @@ class UBX_MGA_GPS_EPH:
 
         # Write the header line to the MGA-GPS-EPH csv file
         self.fd_eph = open(fn_eph, "w")
-        self.writer = csv.writer(self.df_eph, delimiter=",")
+        self.writer = csv.writer(self.fd_eph, delimiter=",")
         self.init_csv_header()
 
         self.dict_gps_nav = {
