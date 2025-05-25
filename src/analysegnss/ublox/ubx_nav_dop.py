@@ -27,6 +27,7 @@ class UBX_NAV_DOP:
         self.init_csv_header()
 
         # Initialize attributes to store the last written DOP values
+        self.last_iTOW = None
         self.last_gdop = None
         self.last_pdop = None
         self.last_tdop = None
@@ -80,10 +81,12 @@ class UBX_NAV_DOP:
         edop = nav_dop.eDOP
 
         # Check if any DOP value has changed or if it's the first set of values
-        # Using self.last_gdop is None as a proxy for the first valid message,
-        # as all DOP values are checked for presence by essential_attrs.
-        dop_values_changed = (
-            self.last_gdop is None  # Handles the very first message
+        # self.last_iTOW is None indicates the first valid message to be processed.
+        is_first_message_to_log = self.last_iTOW is None
+
+        # Condition to write new data: either it's the first message or DOP values have changed.
+        log_new_data = (
+            is_first_message_to_log
             or gdop != self.last_gdop
             or pdop != self.last_pdop
             or tdop != self.last_tdop
@@ -93,12 +96,29 @@ class UBX_NAV_DOP:
             or edop != self.last_edop
         )
 
-        if dop_values_changed:
+        if log_new_data:
+            # If it's not the first message and DOP values have changed,
+            # write the *previous* state before writing the new one.
+            if not is_first_message_to_log:
+                self.writer.writerow(
+                    [
+                        self.last_iTOW,
+                        self.last_gdop,
+                        self.last_pdop,
+                        self.last_tdop,
+                        self.last_vdop,
+                        self.last_hdop,
+                        self.last_ndop,
+                        self.last_edop,
+                    ]
+                )
+
             # Write the data row to the CSV file
             self.writer.writerow([iTOW, gdop, pdop, tdop, vdop, hdop, ndop, edop])
             self.df_dop.flush()
 
             # Update the last known DOP values
+            self.last_iTOW = iTOW
             self.last_gdop = gdop
             self.last_pdop = pdop
             self.last_tdop = tdop
@@ -106,3 +126,5 @@ class UBX_NAV_DOP:
             self.last_hdop = hdop
             self.last_ndop = ndop
             self.last_edop = edop
+
+        self.last_iTOW = iTOW  # Update last_iTOW to the current iTOW
