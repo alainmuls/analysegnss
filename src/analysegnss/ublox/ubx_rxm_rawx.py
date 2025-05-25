@@ -2,7 +2,6 @@ import csv
 import logging
 
 from pyubx2.ubxmessage import UBXMessage  # Import UBXMessage for type hinting
-from rich import print as rprint
 
 from analysegnss.utils.utilities import str_yellow, str_red
 from analysegnss.ublox.ubx_definitions import (
@@ -53,7 +52,7 @@ class UBX_RXM_RAWX:
         self.logger.info(f"{str_yellow('UBX_RXM_RAWX')} initialized")
 
     def init_csv_header(self):
-        """initializes the csv header for RTCM message rxm_rawx"""
+        """initializes the csv header for UBX message rxm_rawx"""
 
         # write the header line to the UBX_RXM_RAWX csv file
         self.writer.writerow(self.dict_obs.keys())
