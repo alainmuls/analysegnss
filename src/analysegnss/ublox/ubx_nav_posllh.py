@@ -25,6 +25,18 @@ class UBX_NAV_POSLLH:
         """
         self.logger = logging.getLogger("ubx_parser")
 
+        # Define the fields for NAV-POSLLH message
+        self.posllh_fields = [
+            "iTOW",
+            "lon",
+            "lat",
+            "height",
+            "hMSL",
+            "hAcc",
+            "vAcc",
+        ]
+
+        self.fn_posllh = fn_posllh
         # Write the header line to the NAV-POSLLH csv file
         self.fd_posllh = open(fn_posllh, "w")
         self.writer = csv.writer(self.fd_posllh, delimiter=",")
@@ -32,19 +44,7 @@ class UBX_NAV_POSLLH:
 
     def init_csv_header(self):
         """Initializes the csv header for NAV-POSLLH."""
-        self.writer.writerow(
-            [
-                "iTOW",
-                "lon",
-                "lat",
-                "height",
-                "hMSL",
-                "undulation",
-                "latE",
-                "lonE",
-                "heightE",
-            ]
-        )
+        self.writer.writerow(self.posllh_fields)
         self.fd_posllh.flush()
 
     def decode_posllh(self, nav_posllh: UBXMessage) -> None:
@@ -53,31 +53,17 @@ class UBX_NAV_POSLLH:
         Args:
             nav_posllh (UBXMessage): NAV-POSLLH parsed UBXMessage object
         """
-        essential_attrs = [
-            "iTOW",
-            "lon",
-            "lat",
-            "height",
-            "hMSL",
-            "undulation",
-            "latE",
-            "lonE",
-            "heightE",
-        ]
-
         # Check if all essential attributes are present
-        if not all(hasattr(nav_posllh, attr) for attr in essential_attrs):
+        if not all(hasattr(nav_posllh, attr) for attr in self.posllh_fields):
             missing_attrs = [
-                attr for attr in essential_attrs if not hasattr(nav_posllh, attr)
+                attr for attr in self.posllh_fields if not hasattr(nav_posllh, attr)
             ]
             self.logger.error(
                 f"Missing essential attributes in NAV-POSLLH message: {', '.join(missing_attrs)}"
             )
             return
 
-        # Extract values from the NAV-POSLLH message
-        # row_data = [
-        #     nav_posllh.iTOW,
-        #     nav_posllh.lon,
-
-        pass
+        # Extract values using the defined fields and write to CSV
+        row_data = [getattr(nav_posllh, field, None) for field in self.posllh_fields]
+        self.writer.writerow(row_data)
+        self.fd_posllh.flush()

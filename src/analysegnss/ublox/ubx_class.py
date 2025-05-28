@@ -226,7 +226,7 @@ class UBX:
         rich_status = Status("", spinner="aesthetic")
         rich_status.start()
 
-        processed_messages_count = 0
+        processed_ubx_count = 0
 
         # for detecting which messages are in the UBX file
         ubx_msgs = []
@@ -304,7 +304,7 @@ class UBX:
                                 pass
 
                         # Increment the processed messages count
-                        processed_messages_count += 1
+                        processed_ubx_count += 1
 
                     elif isinstance(parsed_msg, NMEAMessage):
                         nmea_msg = parsed_msg.talker + parsed_msg.msgID
@@ -348,10 +348,10 @@ class UBX:
             self.logger.info(
                 str_green(
                     f"Finished parsing UBX stream from {self.ubx_fn}. "
-                    f"Processed {processed_messages_count} targeted messages."
+                    f"Processed {processed_ubx_count} UBX messages."
                 )
             )
         rprint(
             f"Finished parsing UBX stream from [green]{self.ubx_fn}[/green]. "
-            f"Processed [green]{processed_messages_count}[/green] targeted messages."
+            f"Processed [green]{processed_ubx_count}[/green] UBX messages."
         )
