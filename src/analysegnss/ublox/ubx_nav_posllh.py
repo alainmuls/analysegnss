@@ -36,6 +36,14 @@ class UBX_NAV_POSLLH:
             "vAcc",
         ]
 
+        # Fields that need to be converted from mm to m
+        self.fields_to_convert = {
+            "height",
+            "hMSL",
+            "hAcc",
+            "vAcc",
+        }
+
         self.fn_posllh = fn_posllh
         # Write the header line to the NAV-POSLLH csv file
         self.fd_posllh = open(fn_posllh, "w")
@@ -63,7 +71,23 @@ class UBX_NAV_POSLLH:
             )
             return
 
-        # Extract values using the defined fields and write to CSV
-        row_data = [getattr(nav_posllh, field, None) for field in self.posllh_fields]
+        # # Extract values using the defined fields and write to CSV
+        row_data = []
+        for field in self.posllh_fields:
+            value = getattr(nav_posllh, field, None)
+            if field in self.fields_to_convert and value is not None:
+                try:
+                    row_data.append(value / 1000)
+                except TypeError:
+                    # Handle cases where value might not be numeric, though unlikely for these fields
+                    self.logger.warning(
+                        f"Could not divide value for field {field} as it's not numeric: {value}"
+                    )
+                    row_data.append(
+                        value
+                    )  # Append original value or None/specific placeholder
+            else:
+                row_data.append(value)
+
         self.writer.writerow(row_data)
         self.fd_posllh.flush()
