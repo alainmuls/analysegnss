@@ -240,17 +240,24 @@ class UBX:
             for raw_msg, parsed_msg in ubr:
                 if parsed_msg is not None:
                     # rprint(type(parsed_msg))
-                    # rprint(type(raw_msg))
+                    # rprint(raw_msg[:4])
                     # Check if the message is a UBX message
                     if isinstance(parsed_msg, UBXMessage):
                         rich_status.update(
                             f"\rUBX message: [green]{parsed_msg.identity}[/green]"
+                            # Add Class and ID in hex format
+                            f" (0x{raw_msg[2]:02x} 0x{raw_msg[3]:02x})"
                         )
+                        # rprint(f"raw_msg: {raw_msg[:4].hex()}") # Optional: for debugging raw bytes
+
                         # rprint(
                         #     f"parsed_msg.identity: {parsed_msg.identity} | {parsed_msg.msg_cls} | {parsed_msg.msg_id} | {parsed_msg.length}"
                         # )
                         if parsed_msg.identity not in ubx_msgs:
-                            ubx_msgs.append(parsed_msg.identity)
+                            ubx_msgs.append(
+                                f"{parsed_msg.identity}"
+                                f" (0x{raw_msg[2]:02x} 0x{raw_msg[3]:02x})"
+                            )
 
                         match parsed_msg.identity:
                             case "MGA-GPS":
