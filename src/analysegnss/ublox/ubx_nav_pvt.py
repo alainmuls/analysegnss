@@ -64,6 +64,19 @@ class UBX_NAV_PVT:
             "magAcc",
         ]
 
+        # Fields that need to be converted from mm to m
+        self.fields_to_convert = {
+            "height",
+            "hMSL",
+            "hAcc",
+            "vAcc",
+            "velN",
+            "velE",
+            "velD",
+            "gSpeed",
+            "sAcc",
+        }
+
         self.fn_nav_pvt = fn_nav_pvt
         self.fd_pvt = open(self.fn_nav_pvt, "w")
         self.writer = csv.writer(self.fd_pvt, delimiter=",")
@@ -91,7 +104,23 @@ class UBX_NAV_PVT:
             )
             return
 
-        row_data = [getattr(pvt_msg, field, None) for field in self.pvt_fields]
+        row_data = []
+        for field in self.pvt_fields:
+            value = getattr(pvt_msg, field, None)
+            if field in self.fields_to_convert and value is not None:
+                try:
+                    row_data.append(value / 1000)
+                except TypeError:
+                    # Handle cases where value might not be numeric, though unlikely for these fields
+                    self.logger.warning(
+                        f"Could not divide value for field {field} as it's not numeric: {value}"
+                    )
+                    row_data.append(
+                        value
+                    )  # Append original value or None/specific placeholder
+            else:
+                row_data.append(value)
+
         self.writer.writerow(row_data)
         self.fd_pvt.flush()
 
