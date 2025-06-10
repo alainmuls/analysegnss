@@ -20,6 +20,8 @@ from analysegnss.ublox import (
     ubx_mga_gps_nav,
     ubx_nav_posllh,
     ubx_nav_pvt,
+    ubx_nav_relposned,
+    ubx_nav_sat,
 )
 from analysegnss.utils.utilities import str_green, str_red
 
@@ -42,6 +44,8 @@ class UBX:
     ubx_mga_gps_nav = None  # decoding of UBX-MGA-GPS (0xB5 0x62 0x13 0x00)
     ubx_nav_posllh = None  # decoding of UBX-NAV-POSLLH (0xB5 0x62 0x01 0x02)
     ubx_nav_pvt = None  # decoding of UBX-NAV-PVT (0xB5 0x62 0x01 0x07)
+    ubx_nav_relposned = None  # decoding of UBX-NAV-RELPOSNED (0xB5 0x62 0x01 0x3C)
+    ubx_nav_sat = None  # decoding of UBX-NAV-SAT (0xB5 0x62 0x01 0x35)
 
     def __post_init__(self):
         self.validate_file()
@@ -302,6 +306,17 @@ class UBX:
                                         fn_nav_pvt="/tmp/ubx_nav_pvt.csv"
                                     )
                                 self.ubx_nav_pvt.decode_pvt(pvt_msg=parsed_msg)
+
+                            case "NAV-RELPOSNED":
+                                if self.ubx_nav_relposned is None:
+                                    self.ubx_nav_relposned = (
+                                        ubx_nav_relposned.UBX_NAV_RELPOSNED(
+                                            fn_relposned="/tmp/ubx_nav_relposned.csv"
+                                        )
+                                    )
+                                self.ubx_nav_relposned.decode_relposned(
+                                    relposned_msg=parsed_msg
+                                )
 
                             case _:
                                 # if self.logger:
