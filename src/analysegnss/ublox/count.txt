@@ -54,3 +54,17 @@ UBX classes found in the file: ['ACK-ACK', 'ACK-NAK', 'CFG-VALGET', 'DBG-0c31-NO
 'NAV-STATUS', 'NAV-SVIN', 'NAV-TIMEBDS', 'NAV-TIMEGAL', 'NAV-TIMEGLO', 'NAV-TIMEGPS', 
 'NAV-TIMELS', 'NAV-TIMEUTC', 'NAV-VELECEF', 'NAV-VELNED', 'RXM-MEASX', 'RXM-RAWX', 
 'RXM-SFRBX', 'SEC-2700-NOMINAL', 'TIM-TP', 'TRK-0309-NOMINAL', 'TUN-0810-NOMINAL'] (52 unique classes)
+
+
+./data/ublox/2025-6-10_154258_serial-COM8.ubx
+-------------------------------------------------------------------
+UBX classes found in the file: ['ACK-ACK (0x05 0x01)', 'ACK-NAK (0x05 0x00)', 
+'CFG-VALGET (0x06 0x8b)', 'DBG-0c31-NOMINAL (0x0c 0x31)', 'DBG-0c34-NOMINAL (0x0c 0x34)', 
+'DBG-0c43-NOMINAL (0x0c 0x43)', 'DBG-0c4b-NOMINAL (0x0c 0x4b)', 'MON-0a11-NOMINAL (0x0a 0x11)', 
+'MON-0a30-NOMINAL (0x0a 0x30)', 'MON-COMMS (0x0a 0x36)', 'MON-HW (0x0a 0x09)', 
+'MON-IO (0x0a 0x02)', 'MON-MSGPP (0x0a 0x06)', 'MON-RF (0x0a 0x38)', 
+'MON-SPAN (0x0a 0x31)', 'NAV-CLOCK (0x01 0x22)', 'NAV-ORB (0x01 0x34)', 'NAV-PVT (0x01 0x07)', 
+'NAV-RELPOSNED (0x01 0x3c)', 'NAV-SAT (0x01 0x35)', 'NAV-SIG (0x01 0x43)', 
+'NAV-STATUS (0x01 0x03)', 'NAV-SVIN (0x01 0x3b)', 'RXM-RAWX (0x02 0x15)', 
+'RXM-RLM (0x02 0x59)', 'SEC-2700-NOMINAL (0x27 0x00)', 'TRK-0309-NOMINAL (0x03 0x09)', 
+'TUN-0810-NOMINAL (0x08 0x10)'] (28 unique classes)
