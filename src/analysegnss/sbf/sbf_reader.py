@@ -20,7 +20,7 @@ from analysegnss.gnss.standard_pnt_quality_dict import (
 )
 from analysegnss.sbf.sbf_class import SBF
 from analysegnss.utils import init_logger
-from analysegnss.utils.utilities import combine_dfs
+from analysegnss.utils.utilities import combine_dfs, print_df_in_chunks
 from analysegnss.utils.argument_parser import (
     argument_parser_rtk,
     auto_populate_args_namespace,
@@ -152,7 +152,12 @@ def main():
 
     df_pnt, qual_analysis = sbf_reader(parsed_args=args_parsed, logger=logger)
     # print the quality analysis
-    rprint(f"sbf pvt dataframe: \n{df_pnt}")
+    rprint(print_df_in_chunks(df=df_pnt, title="SBF PVT dataframe"))
+    # print the quality analysis
+    rprint(
+        f"quality analysis of {os.path.basename(args_parsed.sbf_ifn)}\
+        from sbf PVTGeodetic:\n{qual_analysis}"
+    )
 
 
 if __name__ == "__main__":

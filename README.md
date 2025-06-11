@@ -15,6 +15,7 @@ The repository contains Python scripts and Python classes for analyzing and visu
 - `sbf`: contains the classes for reading and parsing SBF files
 - `rinex`: contains the classes for reading and parsing RINEX observation and navigation files
 - `rtkpos`: contains the classes for reading and parsing the position and status files obtained by RTKLib processing
+- `ublox`: contains the classes for reading and parsing u-Blox raw files
 - `glabng`: contains the classes for reading and parsing gLAB v6.0 (or gLABng) files
 - `gnss`: contains specific GNSS related functions
 - `plots`: contains functions for plotting GNSS data
@@ -32,6 +33,15 @@ The repository contains the following classes:
   - `rinex_class`:  class containing common elements used by `rinex_obs_class` and `rinex_nav_class`
   - `rinex_obs_class`: class for reading and parsing RINEX observation files
   - `rinex_nav_class`: class for reading and parsing RINEX navigation files
+- `ublox`:
+  - `ublox_class`: class for reading and parsing u-Blox raw files
+  - `ubx_mga_gps_nav.py`: class that decodes ephemeris parameters 
+  - `ubx_nav_dop.py`: class that extracts Dilution of Precision (DOP) values
+  - `ubx_nav_posllh.py`: class that decodes geodetic position 
+  - `ubx_nav_pvt.py`: class that extracts a comprehensive set of navigation solution data 
+  - `ubx_nav_relposned.py`: class that decodes relative positioning information in North-East-Down (NED) frame
+  - `ubx_nav_sat.py`: class that extracts detailed information for each visible satellite
+  - `ubx_rxm_rawx.py`: class that decodes raw measurement data for each satellite signal 
 - `glabng/glabng_class`: class for reading and parsing the gLABng files
 - Other classes for reading and parsing data from other sources will be added similarly.
 
@@ -46,6 +56,10 @@ See [Python logging class](./src/analysegnss/utils/readme.md).
 ### SBF related classes and functions
 
 See [SBF related classes and functions](./src/analysegnss/sbf/readme.md).
+
+### u-Blox related classes and functions
+
+See [u-Blox related classes and functions](./src/analysegnss/ublox/readme.md).
 
 
 ### RTKPos related classes and functions

@@ -1737,3 +1737,43 @@ def argument_parser_compute_position_error(
     args = parser.parse_args(args)
 
     return args
+
+
+def argument_parser_ubx_parser(script_name: str, args: list) -> argparse.Namespace:
+    """parses the arguments
+
+    Args:
+        argv (list): list of arguments
+
+    Returns:
+        argparse.Namespace: parsed arguments
+    """
+    baseName = str_yellow(script_name)
+
+    help_txt = baseName + " parses a uBlox file."
+
+    # create the parser for command line arguments
+    parser = argparse.ArgumentParser(description=help_txt)
+    parser.add_argument("-V", "--version", action="version", version="%(prog)s v0.2")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=None,
+        help="verbose level... repeat up to three times.",
+    )
+
+    parser.add_argument(
+        "--ubx_ifn",
+        "--ubx_ifn",
+        help="UBX filename",
+        type=str,
+        required=True,
+        default=None,
+    )
+
+    # allow argument completion
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args(args)
+
+    return args

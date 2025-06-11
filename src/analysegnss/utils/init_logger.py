@@ -3,9 +3,11 @@ import logging as logging
 from logging.handlers import TimedRotatingFileHandler
 import os
 from sys import stderr
+from argparse import Namespace
 
 # Third-party imports
 from rich import print as rprint
+from analysegnss.utils.utilities import str_yellow
 
 
 class ColorFormatter(logging.Formatter):
@@ -33,7 +35,9 @@ class ColorFormatter(logging.Formatter):
         return super().format(record)
 
 
-def logger_setup(args: list, base_name: str = "logger", log_dest: str = "/tmp/logs/") -> logging.Logger:
+def logger_setup(
+    args: Namespace, base_name: str = "logger", log_dest: str = "/tmp/logs/"
+) -> logging.Logger:
     """creates console/time rotating file logger.
     Default logging levels are:
     - for file logging: logging.DEBUG
@@ -80,14 +84,20 @@ def logger_setup(args: list, base_name: str = "logger", log_dest: str = "/tmp/lo
         logger=logger, console_handler=console_handler, args=args
     )
 
-    rprint(f"[green]---------- START of {base_name} (process logged @ {log_dest}) ----------[/green]")
-    logger.warning(f"---------- START of {base_name} (process logged @ {log_dest}) ----------")
+    rprint(
+        f"[green]---------- START of {base_name} (process logged @ {log_dest}) ----------[/green]"
+    )
+    logger.warning(
+        str_yellow(
+            f"---------- START of {base_name} (process logged @ {log_dest}) ----------"
+        )
+    )
 
     return logger
 
 
 def set_log_level_from_verbose(
-    logger: logging.Logger, console_handler: logging.StreamHandler, args: list
+    logger: logging.Logger, console_handler: logging.StreamHandler, args: Namespace
 ):
     """defines logging level for the console
 

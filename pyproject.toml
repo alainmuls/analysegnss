@@ -39,6 +39,7 @@ dependencies = [
     "termcolor>=2.5.0",
     "tzdata>=2025.0",
     "utm>=0.7.0",
+    "pyubx2>=1.2.52",
 ]
 
 [[project.authors]]
@@ -75,7 +76,7 @@ rnxobs_csv = "analysegnss.rinex.rnxobs_csv:main"
 rtk_pvtgeod = "analysegnss.sbf.rtk_pvtgeod:main"
 sbfmeas_csv = "analysegnss.sbf.sbfmeas_csv:main"
 sbfnav_csv = "analysegnss.sbf.sbfnav_csv:main"
-
+ubx_parser = "analysegnss.ublox.ubx_parser:main"
 
 [tool.setuptools]
 include-package-data = true
