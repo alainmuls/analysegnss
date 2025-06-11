@@ -46,7 +46,7 @@ class UBX_NAV_POSLLH:
 
         self.fn_posllh = fn_posllh
         # Write the header line to the NAV-POSLLH csv file
-        self.fd_posllh = open(fn_posllh, "w")
+        self.fd_posllh = open(fn_posllh, "w", newline="")
         self.writer = csv.writer(self.fd_posllh, delimiter=",")
         self.init_csv_header()
 
@@ -91,3 +91,20 @@ class UBX_NAV_POSLLH:
 
         self.writer.writerow(row_data)
         self.fd_posllh.flush()
+
+    def close(self) -> None:
+        """Closes the CSV file."""
+        if self.fd_posllh and not self.fd_posllh.closed:
+            self.fd_posllh.close()
+            if self.logger:
+                self.logger.info(f"UBX_NAV_DOP CSV file for DOP data closed.")
+
+    def __del__(self) -> None:
+        """Ensures the file is closed when the object is garbage collected."""
+        try:
+            if hasattr(self, "df_dop") and self.fd_posllh and not self.fd_posllh.closed:
+                self.fd_posllh.close()
+        except Exception:
+            # It's generally good practice to suppress exceptions in __del__
+            # as the logger might not be available during interpreter shutdown.
+            pass

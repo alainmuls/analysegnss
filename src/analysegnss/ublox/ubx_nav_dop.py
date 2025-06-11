@@ -22,8 +22,8 @@ class UBX_NAV_DOP:
         self.logger = logging.getLogger("ubx_parser")
 
         # write the header line to the UBX_RXM_RAWX csv file
-        self.df_dop = open(fn_dop, "w")
-        self.writer = csv.writer(self.df_dop, delimiter=",")
+        self.fd_dop = open(fn_dop, "w", newline="")
+        self.writer = csv.writer(self.fd_dop, delimiter=",")
         self.init_csv_header()
 
         # Initialize attributes to store the last written DOP values
@@ -42,7 +42,7 @@ class UBX_NAV_DOP:
         self.writer.writerow(
             ["TOW", "GDOP", "PDOP", "TDOP", "VDOP", "HDOP", "NDOP", "EDOP"]
         )
-        self.df_dop.flush()
+        self.fd_dop.flush()
 
     def decode_dop(self, nav_dop: UBXMessage) -> None:
         """decodes the NAV-DOP message and writes the data to the csv file
@@ -115,7 +115,7 @@ class UBX_NAV_DOP:
 
             # Write the data row to the CSV file
             self.writer.writerow([iTOW, gdop, pdop, tdop, vdop, hdop, ndop, edop])
-            self.df_dop.flush()
+            self.fd_dop.flush()
 
             # Update the last known DOP values
             self.last_iTOW = iTOW
@@ -128,3 +128,20 @@ class UBX_NAV_DOP:
             self.last_edop = edop
 
         self.last_iTOW = iTOW  # Update last_iTOW to the current iTOW
+
+    def close(self) -> None:
+        """Closes the CSV file."""
+        if self.fd_dop and not self.fd_dop.closed:
+            self.fd_dop.close()
+            if self.logger:
+                self.logger.info(f"UBX_NAV_DOP CSV file for DOP data closed.")
+
+    def __del__(self) -> None:
+        """Ensures the file is closed when the object is garbage collected."""
+        try:
+            if hasattr(self, "df_dop") and self.fd_dop and not self.fd_dop.closed:
+                self.fd_dop.close()
+        except Exception:
+            # It's generally good practice to suppress exceptions in __del__
+            # as the logger might not be available during interpreter shutdown.
+            pass
