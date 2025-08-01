@@ -38,7 +38,7 @@ def ubx_reader(parsed_args: argparse.Namespace, logger: Logger):
     try:
         ubx = UBX(ubx_fn=parsed_args.ubx_ifn, logger=logger)
     except Exception as e:
-        logger.error(f"Error creating SBF object: {e}")
+        logger.error(f"Error creating UBX object: {e}")
         sys.exit(ERROR_CODES["E_SBF_OBJECT"])
 
     # start parsing the ublox file and conversion of selected blocks to CSV
