@@ -199,3 +199,11 @@ data/sbf/MoX3345Z.22__SBF_GLONav.txt
 data/sbf/MoX3345Z.22__SBF_GPSNav.txt
 data/sbf/MoX3345Z.22_.blocks.txt
 data/ublox/2025-6-10_154258_serial-COM8_GE.obs
+
+# GNSS Data and Logs
+*.22_
+*.24_
+*.ubx
+*.uc2
+*.pgm
+*.zip
