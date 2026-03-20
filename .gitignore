@@ -207,3 +207,10 @@ data/ublox/2025-6-10_154258_serial-COM8_GE.obs
 *.uc2
 *.pgm
 *.zip
+
+# uv / Python environment
+.venv/
+uv.lock
+__pycache__/
+*.py[cod]
+
