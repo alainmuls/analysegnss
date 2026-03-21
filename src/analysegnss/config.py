@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+import logging
 
 from polars import Config
 from rich.console import Console
@@ -14,8 +16,50 @@ Config.set_tbl_cell_numeric_alignment("RIGHT")
 # Get the directory of the config file
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+logger = logging.getLogger(__name__)
+
+
+def get_geoid_path(model_name="egm2008-1"):
+    """
+    Determines the path to the Geoid PGM file.
+    Order of precedence:
+    1. Environment variable GEOGRAPHICLIB_GEOID_PATH
+    2. System-wide GeographicLib directory (/usr/share/geographicLib/geoids)
+    3. User home directory (~/.local/share/geographicLib/geoids)
+    """
+
+    # 1. Check Environment Variable
+    env_path = os.getenv("GEOGRAPHICLIB_GEOID_PATH")
+    # if env_path and Path(env_path).exists():
+    #     env_path = Path(env_path)
+
+    # 2. Define standard search locations
+    search_dirs = [
+        Path(env_path) if env_path and Path(env_path).exists() else None,
+        Path("/usr/share/GeographicLib/geoids"),
+        Path("/usr/local/share/GeographicLib/geoids"),
+        Path.home() / ".local/share/GeographicLib/geoids",
+    ]
+
+    for base_dir in search_dirs:
+        if base_dir is not None:
+            # GeographicLib expects files named like 'egm2008-1.pgm'
+            geoid_file = base_dir / f"{model_name}.pgm"
+            if geoid_file.exists():
+                return geoid_file
+
+    # 3. Fallback/Error handling
+    error_msg = (
+        f"Geoid model '{model_name}.pgm' not found in standard system paths.\n"
+        "Please install it using: sudo geographiclib-get-geoids best\n"
+        "Or set the GEOGRAPHICLIB_GEOID_PATH environment variable."
+    )
+    logger.error(error_msg)
+    raise FileNotFoundError(error_msg)
+
+
 # Define the path to the geoid file
-GEOID_PATH = os.path.join(BASE_DIR, "gnss", "geoids", "egm2008-1.pgm")
+GEOID_PATH = get_geoid_path()
 
 # Constants
 # Earth's gravitational constant
