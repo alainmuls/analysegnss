@@ -106,9 +106,7 @@ def sbf_reader(parsed_args: argparse.Namespace, logger: Logger) -> dict:
                     .collect()
                 )
 
-                dfs_pvt["PosSDgeodetic"] = sbf.convert_Cov2SD(
-                    dfs_pvt["PosCovGeodetic1"]
-                )
+                dfs_pvt["PosSDgeodetic"] = sbf.convert_Cov2SD(dfs_pvt["PosCovGeodetic1"])
                 # remove the covariance matrix from dfs_pvt
                 dfs_pvt.pop("PosCovGeodetic1")
 
@@ -136,9 +134,9 @@ def sbf_reader(parsed_args: argparse.Namespace, logger: Logger) -> dict:
         return df_pvt, qual_analysis
 
     else:  # conversion using sbf2asc # TODO: next part not yet finished
-        df_pvt = sbf.sbf2asc_dataframe(
-            lst_sbfblocks=["PVTGeodetic2"], archive=parsed_args.archive
-        )["PVTGeodetic2"]
+        df_pvt = sbf.sbf2asc_dataframe(lst_sbfblocks=["PVTGeodetic2"], archive=parsed_args.archive)[
+            "PVTGeodetic2"
+        ]
 
         # sbf2asc cant read the PosCovGeodetic1 block.Only PosCovCartesian1 is available.
         df_xyz = sbf.sbf2asc_dataframe(
@@ -166,9 +164,7 @@ def main():
     # get the name of this script for naming the logger
     script_name = os.path.splitext(os.path.basename(__file__))[0]
 
-    args_parsed = argument_parser_rtk(
-        args=sys.argv[1:], script_name=os.path.basename(__file__)
-    )
+    args_parsed = argument_parser_rtk(args=sys.argv[1:], script_name=os.path.basename(__file__))
 
     # create the file/console logger
     logger = init_logger.logger_setup(args=args_parsed, base_name=script_name)
